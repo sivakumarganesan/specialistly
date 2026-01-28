@@ -5,7 +5,7 @@ import { Badge } from "@/app/components/ui/badge";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
-import { serviceAPI, appointmentAPI } from "@/app/api/apiClient";
+import { serviceAPI, appointmentAPI, customerAPI } from "@/app/api/apiClient";
 import { useAuth } from "@/app/context/AuthContext";
 import {
   Select,
@@ -63,6 +63,8 @@ interface Service {
   startAmPm?: "AM" | "PM";
   endTime?: string;
   endAmPm?: "AM" | "PM";
+  assignedCustomer?: string;
+  assignedCustomerEmail?: string;
 }
 
 interface WeeklyAvailability {
@@ -83,6 +85,13 @@ interface SearchableItem {
   type: "course" | "offering";
 }
 
+interface Customer {
+  _id?: string;
+  id?: string;
+  name: string;
+  email: string;
+}
+
 interface ServicesProps {
   onUpdateSearchableItems: (items: SearchableItem[]) => void;
 }
@@ -90,6 +99,7 @@ interface ServicesProps {
 export function Services({ onUpdateSearchableItems }: ServicesProps) {
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "draft">("all");
 
@@ -116,6 +126,8 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
             sessionFrequency: service.sessionFrequency,
             webinarDates: service.webinarDates,
             weeklySchedule: service.weeklySchedule,
+            assignedCustomer: service.assignedCustomer,
+            assignedCustomerEmail: service.assignedCustomerEmail,
           }));
           setServices(transformedServices);
         }
@@ -129,6 +141,22 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
 
     loadServices();
   }, [user?.email]);
+
+  // Load customers from API
+  useEffect(() => {
+    const loadCustomers = async () => {
+      try {
+        const response = await customerAPI.getAll();
+        if (response.data) {
+          setCustomers(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load customers:", error);
+      }
+    };
+
+    loadCustomers();
+  }, []);
 
   // Update searchable items whenever services change
   useEffect(() => {
@@ -165,6 +193,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
     startAmPm: "AM" as "AM" | "PM",
     endTime: "10",
     endAmPm: "AM" as "AM" | "PM",
+    assignedCustomerEmail: "",
   })
 
   const [webinarDates, setWebinarDates] = useState<{ date: string; time: string }[]>([
@@ -242,6 +271,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
           startAmPm: formData.startAmPm,
           endTime: formData.endTime,
           endAmPm: formData.endAmPm,
+          assignedCustomerEmail: formData.assignedCustomerEmail,
         }),
       };
       
@@ -293,6 +323,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
           startAmPm: formData.startAmPm,
           endTime: formData.endTime,
           endAmPm: formData.endAmPm,
+          assignedCustomerEmail: formData.assignedCustomerEmail,
         }),
       };
       
@@ -367,6 +398,15 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       eventType: service.eventType || "single",
       location: service.location || "zoom",
       sessionFrequency: service.sessionFrequency || "onetime",
+      sessionLocation: service.sessionLocation || "zoom",
+      availabilityType: service.availabilityType || "single_day",
+      sessionDuration: service.sessionDuration || "60",
+      selectedDate: service.selectedDate || new Date().toISOString().split('T')[0],
+      startTime: service.startTime || "09",
+      startAmPm: service.startAmPm || "AM",
+      endTime: service.endTime || "10",
+      endAmPm: service.endAmPm || "AM",
+      assignedCustomerEmail: service.assignedCustomerEmail || "",
     });
     if (service.type === "webinar" && service.webinarDates && service.webinarDates.length > 0) {
       setWebinarDates(service.webinarDates);
@@ -398,6 +438,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       capacity: "",
       schedule: "Flexible",
       eventType: "single",
+      assignedCustomerEmail: "",
       location: "zoom",
       sessionFrequency: "onetime",
     });
@@ -1207,6 +1248,27 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                     </div>
                   </div>
                 </div>
+
+                <div>
+                  <Label htmlFor="assignedCustomer">Assign Customer *</Label>
+                  <Select
+                    value={formData.assignedCustomerEmail}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, assignedCustomerEmail: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer._id || customer.id} value={customer.email}>
+                          {customer.name} ({customer.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </>
             )}
 
@@ -1643,6 +1705,27 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                       </Select>
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="edit-assignedCustomer">Assign Customer *</Label>
+                  <Select
+                    value={formData.assignedCustomerEmail}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, assignedCustomerEmail: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a customer" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {customers.map((customer) => (
+                        <SelectItem key={customer._id || customer.id} value={customer.email}>
+                          {customer.name} ({customer.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             )}

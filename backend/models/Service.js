@@ -65,6 +65,15 @@ const serviceSchema = new mongoose.Schema({
   },
   webinarDates: [webinarDateSchema],
   weeklySchedule: [weeklyScheduleSchema],
+  // Consulting specific - customer assignment
+  assignedCustomerEmail: {
+    type: String,
+    required: false,
+  },
+  assignedCustomer: {
+    type: String,
+    required: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

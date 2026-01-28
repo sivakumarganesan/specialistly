@@ -93,6 +93,14 @@ export const appointmentAPI = {
   create: (data: any) => apiCall("/appointments", "POST", data),
   book: (slotId: string, data: any) =>
     apiCall(`/appointments/${slotId}/book`, "PUT", data),
+  updateStatus: (appointmentId: string, data: any) =>
+    apiCall(`/appointments/${appointmentId}/status`, "PUT", data),
+  sendReminder: (appointmentId: string) =>
+    apiCall(`/appointments/${appointmentId}/send-reminder`, "POST"),
+  shareRecording: (appointmentId: string, data: any) =>
+    apiCall(`/appointments/${appointmentId}/share-recording`, "POST", data),
+  getRecording: (appointmentId: string) =>
+    apiCall(`/appointments/${appointmentId}/recording`, "GET"),
   delete: (id: string) => apiCall(`/appointments/${id}`, "DELETE"),
 };
 
