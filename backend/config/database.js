@@ -3,7 +3,7 @@ import Course from '../models/Course.js';
 import Service from '../models/Service.js';
 import Customer from '../models/Customer.js';
 import AppointmentSlot from '../models/AppointmentSlot.js';
-import CreatorProfile from '../models/CreatorProfile.js';
+import User from '../models/User.js';
 
 const connectDB = async () => {
   try {
@@ -72,13 +72,9 @@ const initializeCollections = async () => {
       console.log('✓ "appointmentslots" collection exists');
     }
 
-    // Create CreatorProfiles collection
-    if (!collectionNames.includes('creatorprofiles')) {
-      await db.createCollection('creatorprofiles');
-      console.log('✓ Created "creatorprofiles" collection');
-    } else {
-      console.log('✓ "creatorprofiles" collection exists');
-    }
+    // Note: CreatorProfile data is now stored in the Users collection
+    // via the unified Specialist model
+    console.log('✓ Specialist profiles stored in "users" collection');
 
     // Ensure indexes are created
     try {
@@ -86,7 +82,7 @@ const initializeCollections = async () => {
       await Service.collection.createIndexes();
       await Customer.collection.createIndexes();
       await AppointmentSlot.collection.createIndexes();
-      await CreatorProfile.collection.createIndexes();
+      await User.collection.createIndexes();
       console.log('✓ All indexes created successfully');
     } catch (indexError) {
       console.log('✓ Indexes already exist or created');

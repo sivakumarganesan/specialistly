@@ -10,6 +10,8 @@ import creatorRoutes from './routes/creatorRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import websiteRoutes from './routes/websiteRoutes.js';
+import zoomRoutes from './routes/zoomRoutes.js';
+import brandingRoutes from './routes/brandingRoutes.js';
 
 dotenv.config();
 
@@ -32,6 +34,8 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/website', websiteRoutes);
+app.use('/api/branding', brandingRoutes);
+app.use('/api/zoom', zoomRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -61,7 +65,12 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Backend server is running on port ${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✓ Backend server is LISTENING on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
+});
+
+server.on('error', (error) => {
+  console.error(`✗ Server error:`, error.message);
+  process.exit(1);
 });

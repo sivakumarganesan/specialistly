@@ -6,11 +6,23 @@ import {
   updateCustomer,
   deleteCustomer,
   addPurchaseToCustomer,
+  enrollCourse,
+  bookService,
+  getEnrollmentsByEmail,
+  getBookingsByEmail,
 } from '../controllers/customerController.js';
 
 const router = express.Router();
 
-// Customer routes
+// Specific POST routes first (before parameterized routes)
+router.post('/enroll', enrollCourse);
+router.post('/book', bookService);
+
+// Email-based retrieval routes (before ID-based routes)
+router.get('/:email/enrollments', getEnrollmentsByEmail);
+router.get('/:email/bookings', getBookingsByEmail);
+
+// General customer routes
 router.post('/', createCustomer);
 router.get('/', getAllCustomers);
 router.get('/:id', getCustomerById);

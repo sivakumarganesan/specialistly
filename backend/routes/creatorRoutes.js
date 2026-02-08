@@ -6,6 +6,7 @@ import {
   updateCreatorAvailability,
   deleteCreatorProfile,
   getAllSpecialists,
+  getCreatorById,
 } from '../controllers/creatorController.js';
 
 const router = express.Router();
@@ -13,6 +14,7 @@ const router = express.Router();
 // Creator profile routes
 router.post('/', saveCreatorProfile);
 router.get('/specialists/all', getAllSpecialists);
+router.get('/id/:id', getCreatorById);
 router.get('/', getAllCreatorProfiles);
 router.get('/:email', getCreatorProfile);
 router.put('/:email/availability', updateCreatorAvailability);

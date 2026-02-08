@@ -32,13 +32,21 @@ const apiCall = async (
 
     if (!response.ok) {
       const errorMessage = result.error || result.message || "API Error";
-      console.error(`API Error (${response.status}):`, errorMessage);
-      throw new Error(typeof errorMessage === 'object' ? JSON.stringify(errorMessage) : errorMessage);
+      // Don't log 404s as they're expected when resources don't exist yet
+      if (response.status !== 404) {
+        console.error(`API Error (${response.status}):`, errorMessage);
+      }
+      const error = new Error(typeof errorMessage === 'object' ? JSON.stringify(errorMessage) : errorMessage) as any;
+      error.status = response.status;
+      throw error;
     }
 
     return result;
   } catch (error) {
-    console.error("API Error:", error);
+    // Don't log errors for expected 404s - they'll be handled by the calling component
+    if (!(error instanceof Error && error.message.includes("404"))) {
+      console.error("API Error:", error);
+    }
     throw error;
   }
 };
@@ -73,7 +81,15 @@ export const serviceAPI = {
 
 // Customer API calls
 export const customerAPI = {
-  getAll: () => apiCall("/customers"),
+  getAll: (filters?: { specialistEmail?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.specialistEmail) {
+      params.append('specialistEmail', filters.specialistEmail);
+    }
+    const queryString = params.toString();
+    const url = queryString ? `/customers?${queryString}` : '/customers';
+    return apiCall(url);
+  },
   getById: (id: string) => apiCall(`/customers/${id}`),
   create: (data: any) => apiCall("/customers", "POST", data),
   update: (id: string, data: any) => apiCall(`/customers/${id}`, "PUT", data),
@@ -89,7 +105,18 @@ export const customerAPI = {
 // Appointment API calls
 export const appointmentAPI = {
   getAll: () => apiCall("/appointments"),
-  getAvailable: () => apiCall("/appointments/available"),
+  getAvailable: (specialistEmail?: string, specialistId?: string) => {
+    const params = new URLSearchParams();
+    if (specialistEmail) params.append('specialistEmail', specialistEmail);
+    if (specialistId) params.append('specialistId', specialistId);
+    const queryString = params.toString();
+    return apiCall(`/appointments/available${queryString ? '?' + queryString : ''}`);
+  },
+  getScheduledWebinars: (specialistEmail: string) => {
+    const params = new URLSearchParams();
+    params.append('specialistEmail', specialistEmail);
+    return apiCall(`/appointments/scheduled-webinars?${params.toString()}`);
+  },
   create: (data: any) => apiCall("/appointments", "POST", data),
   book: (slotId: string, data: any) =>
     apiCall(`/appointments/${slotId}/book`, "PUT", data),
@@ -127,14 +154,29 @@ export const subscriptionAPI = {
   delete: (id: string) => apiCall(`/subscriptions/${id}`, "DELETE"),
 };
 
-// Website API calls
-export const websiteAPI = {
-  getWebsite: (email: string) => apiCall(`/website/${email}`),
-  saveWebsite: (email: string, data: any) => apiCall(`/website/${email}`, "POST", data),
-  updateSubdomain: (email: string, data: any) => apiCall(`/website/${email}/subdomain`, "PUT", data),
-  updateBranding: (email: string, data: any) => apiCall(`/website/${email}/branding`, "PUT", data),
-  updateContent: (email: string, data: any) => apiCall(`/website/${email}/content`, "PUT", data),
-  publishWebsite: (email: string) => apiCall(`/website/${email}/publish`, "PUT"),
+// Branding API calls (Specialist Marketplace Pages)
+export const brandingAPI = {
+  // Public endpoints
+  getPublicBranding: (slug: string) => apiCall(`/branding/public/slug/${slug}`),
+  checkSlugAvailability: (slug: string) => apiCall(`/branding/available/slug?slug=${slug}`),
+  
+  // Specialist endpoints
+  getMyBranding: (email: string) => apiCall(`/branding/${email}`),
+  createBranding: (data: any) => apiCall(`/branding`, "POST", data),
+  updateBranding: (email: string, data: any) => apiCall(`/branding/${email}`, "PUT", data),
+  updateSection: (email: string, section: string, data: any) => 
+    apiCall(`/branding/${email}/section/${section}`, "PUT", data),
+  togglePublish: (email: string) => apiCall(`/branding/${email}/publish`, "PUT"),
+  
+  // Testimonials
+  addTestimonial: (email: string, data: any) => apiCall(`/branding/${email}/testimonials`, "POST", data),
+  removeTestimonial: (email: string, testimonialId: string) => 
+    apiCall(`/branding/${email}/testimonials/${testimonialId}`, "DELETE"),
+  
+  // Social Links
+  addSocialLink: (email: string, data: any) => apiCall(`/branding/${email}/social`, "POST", data),
+  removeSocialLink: (email: string, platform: string) => 
+    apiCall(`/branding/${email}/social/${platform}`, "DELETE"),
 };
 
 // Auth API calls

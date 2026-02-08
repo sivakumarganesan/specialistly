@@ -1,6 +1,8 @@
-import CreatorProfile from '../models/CreatorProfile.js';
+import User from '../models/User.js';
+import Course from '../models/Course.js';
+import Service from '../models/Service.js';
 
-// Create or update creator profile
+// Create or update specialist profile (unified Creator/Specialist)
 export const saveCreatorProfile = async (req, res) => {
   try {
     const { email } = req.body;
@@ -12,7 +14,7 @@ export const saveCreatorProfile = async (req, res) => {
       });
     }
 
-    console.log('Saving creator profile for email:', email);
+    console.log('Saving specialist profile for email:', email);
     console.log('Profile data:', {
       creatorName: req.body.creatorName,
       email: req.body.email,
@@ -24,30 +26,33 @@ export const saveCreatorProfile = async (req, res) => {
       hasProfileImage: !!req.body.profileImage,
     });
     
-    let profile = await CreatorProfile.findOne({ email });
-    
-    if (profile) {
-      console.log('Updating existing profile...');
-      profile = await CreatorProfile.findByIdAndUpdate(
-        profile._id,
-        { ...req.body, updatedAt: Date.now() },
-        { new: true }
-      );
-    } else {
-      console.log('Creating new profile...');
-      profile = new CreatorProfile(req.body);
-      await profile.save();
+    // Update the User document with specialist profile fields
+    const profile = await User.findOneAndUpdate(
+      { email },
+      { 
+        ...req.body, 
+        isSpecialist: true,
+        updatedAt: Date.now() 
+      },
+      { new: true }
+    );
+
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
     }
 
     console.log('Profile saved successfully:', profile.email);
 
     res.status(200).json({
       success: true,
-      message: 'Creator profile saved successfully',
+      message: 'Specialist profile saved successfully',
       data: profile,
     });
   } catch (error) {
-    console.error('Error saving creator profile:', error);
+    console.error('Error saving specialist profile:', error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -55,19 +60,19 @@ export const saveCreatorProfile = async (req, res) => {
   }
 };
 
-// Get creator profile by email
+// Get specialist profile by email
 export const getCreatorProfile = async (req, res) => {
   try {
     const { email } = req.params;
-    console.log('Fetching creator profile for email:', email);
+    console.log('Fetching specialist profile for email:', email);
     
-    const profile = await CreatorProfile.findOne({ email });
+    const profile = await User.findOne({ email });
     
     if (!profile) {
-      console.log('Profile not found for email:', email);
+      console.log('User not found for email:', email);
       return res.status(404).json({
         success: false,
-        message: 'Creator profile not found',
+        message: 'User not found',
       });
     }
 
@@ -77,18 +82,18 @@ export const getCreatorProfile = async (req, res) => {
       data: profile,
     });
   } catch (error) {
-    console.error('Error fetching creator profile:', error);
+    console.error('Error fetching profile:', error);
     res.status(500).json({
       success: false,
       message: error.message,
     });
   }
-};;
+};
 
-// Get all creator profiles
+// Get all specialist profiles
 export const getAllCreatorProfiles = async (req, res) => {
   try {
-    const profiles = await CreatorProfile.find();
+    const profiles = await User.find({ isSpecialist: true });
     res.status(200).json({
       success: true,
       data: profiles,
@@ -101,32 +106,55 @@ export const getAllCreatorProfiles = async (req, res) => {
   }
 };
 
-// Get all specialists (from User collection)
-export const getAllSpecialists = async (req, res) => {
+// Get specialist by ID
+export const getCreatorById = async (req, res) => {
   try {
-    const User = (await import('../models/User.js')).default;
-    const specialists = await User.find({ isSpecialist: true }).select(
-      '_id name email isSpecialist membership subscription'
-    );
+    const { id } = req.params;
     
-    const specialistsData = specialists.map(specialist => ({
-      _id: specialist._id,
-      name: specialist.name,
-      email: specialist.email,
-      bio: 'Expert Specialist',
-      specialization: 'Professional Services',
-      profilePicture: specialist.profilePicture,
-      rating: 4.5,
-      totalStudents: 0,
-      servicesCount: 0,
-      coursesCount: 0,
-      isSpecialist: specialist.isSpecialist,
-      membership: specialist.membership,
-    }));
+    const specialist = await User.findById(id);
+    
+    if (!specialist || !specialist.isSpecialist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist not found',
+      });
+    }
 
     res.status(200).json({
       success: true,
-      data: specialistsData,
+      data: specialist,
+    });
+  } catch (error) {
+    console.error('Error fetching specialist:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get all specialists
+export const getAllSpecialists = async (req, res) => {
+  try {
+    const specialists = await User.find({ isSpecialist: true });
+
+    // Enrich specialists with service and course counts
+    const enrichedSpecialists = await Promise.all(
+      specialists.map(async (specialist) => {
+        const servicesCount = await Service.countDocuments({ creator: specialist.email });
+        const coursesCount = await Course.countDocuments({ creator: specialist.email });
+        
+        return {
+          ...specialist.toObject(),
+          servicesCount,
+          coursesCount,
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: enrichedSpecialists,
     });
   } catch (error) {
     console.error('Error fetching specialists:', error);
@@ -137,13 +165,13 @@ export const getAllSpecialists = async (req, res) => {
   }
 };
 
-// Update creator availability
+// Update specialist availability
 export const updateCreatorAvailability = async (req, res) => {
   try {
     const { email } = req.params;
     const { weeklyAvailability } = req.body;
 
-    const profile = await CreatorProfile.findOneAndUpdate(
+    const profile = await User.findOneAndUpdate(
       { email },
       { weeklyAvailability, updatedAt: Date.now() },
       { new: true }
@@ -152,7 +180,7 @@ export const updateCreatorAvailability = async (req, res) => {
     if (!profile) {
       return res.status(404).json({
         success: false,
-        message: 'Creator profile not found',
+        message: 'User not found',
       });
     }
 
@@ -169,19 +197,25 @@ export const updateCreatorAvailability = async (req, res) => {
   }
 };
 
-// Delete creator profile
+// Delete specialist profile (just set isSpecialist to false)
 export const deleteCreatorProfile = async (req, res) => {
   try {
-    const profile = await CreatorProfile.findByIdAndDelete(req.params.id);
+    const profile = await User.findByIdAndUpdate(
+      req.params.id,
+      { isSpecialist: false, updatedAt: Date.now() },
+      { new: true }
+    );
+    
     if (!profile) {
       return res.status(404).json({
         success: false,
-        message: 'Creator profile not found',
+        message: 'User not found',
       });
     }
+    
     res.status(200).json({
       success: true,
-      message: 'Creator profile deleted successfully',
+      message: 'Specialist profile deleted successfully',
     });
   } catch (error) {
     res.status(500).json({

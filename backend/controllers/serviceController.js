@@ -24,14 +24,35 @@ export const createService = async (req, res) => {
 export const getAllServices = async (req, res) => {
   try {
     // Get optional creator filter from query
-    const { creator } = req.query;
-    const filter = creator ? { creator } : {};
+    const { creator, status } = req.query;
+    const filter = {};
+    
+    // Apply creator filter if provided
+    if (creator) {
+      filter.creator = creator;
+    }
+    
+    // If querying for customer browsing (no status param), only return active services
+    // If status is explicitly requested, use that filter
+    if (status) {
+      filter.status = status;
+    } else if (creator) {
+      // For specialist browsing, default to active services
+      filter.status = 'active';
+    }
+    
+    console.log('📋 Fetching services with filter:', JSON.stringify(filter));
     const services = await Service.find(filter);
+    console.log(`✅ Found ${services.length} services for creator: ${creator}`);
+    if (services.length > 0) {
+      console.log('📝 Sample service:', JSON.stringify(services[0], null, 2));
+    }
     res.status(200).json({
       success: true,
       data: services,
     });
   } catch (error) {
+    console.error('❌ Error fetching services:', error.message);
     res.status(500).json({
       success: false,
       message: error.message,

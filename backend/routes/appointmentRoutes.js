@@ -3,6 +3,7 @@ import {
   createAppointmentSlot,
   getAllAppointmentSlots,
   getAvailableSlots,
+  getScheduledWebinars,
   bookSlot,
   deleteAppointmentSlot,
   sendReminder,
@@ -14,9 +15,11 @@ import {
 const router = express.Router();
 
 // Appointment slot routes
+// More specific routes must come BEFORE generic ones
+router.get('/available', getAvailableSlots);  // Must be before router.get('/')
+router.get('/scheduled-webinars', getScheduledWebinars);  // Must be before router.get('/')
 router.post('/', createAppointmentSlot);
 router.get('/', getAllAppointmentSlots);
-router.get('/available', getAvailableSlots);
 router.put('/:slotId/book', bookSlot);
 router.put('/:appointmentId/status', updateAppointmentStatus);
 

@@ -13,6 +13,7 @@ import { Login } from "@/app/components/Login";
 import { Marketplace } from "@/app/components/Marketplace";
 import { SpecialistProfile } from "@/app/components/SpecialistProfile";
 import { MyPurchases } from "@/app/components/MyPurchases";
+import { PageBuilder } from "@/app/components/PageBuilder";
 
 type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
 type UserType = "specialist" | "customer";
@@ -71,7 +72,7 @@ function AppContent() {
   const allSearchableItems = [...offeringItems, ...courseItems];
 
   // Handle viewing specialist
-  if (viewingSpecialist && currentPage === "marketplace") {
+  if (viewingSpecialist && (currentPage === "marketplace" || currentPage === "dashboard")) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header 
@@ -114,6 +115,7 @@ function AppContent() {
             setViewingSpecialist({ id, email });
           }} />
         )}
+        {currentPage === "page-builder" && <PageBuilder />}
         {currentPage === "mysite" && <MySite />}
         {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} />}
         {currentPage === "courses" && userType === "specialist" && <Courses onUpdateSearchableItems={updateCourseItems} />}

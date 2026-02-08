@@ -100,6 +100,8 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [bookedOfferings, setBookedOfferings] = useState<any[]>([]);
+  const [scheduledWebinars, setScheduledWebinars] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "draft">("all");
 
@@ -158,6 +160,61 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
     loadCustomers();
   }, []);
 
+  // Load booked offerings (appointment slots with status 'booked')
+  useEffect(() => {
+    const loadBookedOfferings = async () => {
+      try {
+        const response = await appointmentAPI.getAll();
+        if (response.data) {
+          // Filter for booked slots for this specialist only
+          const booked = response.data.filter((slot: any) => 
+            slot.status === "booked" && slot.specialistEmail === user?.email
+          );
+          
+          // Group by offering/service title
+          const groupedByOffering = booked.reduce((acc: any, slot: any) => {
+            const offering = acc.find((o: any) => o.serviceTitle === slot.serviceTitle);
+            if (offering) {
+              offering.bookings.push(slot);
+            } else {
+              acc.push({
+                serviceTitle: slot.serviceTitle,
+                bookings: [slot]
+              });
+            }
+            return acc;
+          }, []);
+          
+          setBookedOfferings(groupedByOffering);
+        }
+      } catch (error) {
+        console.error("Failed to load booked offerings:", error);
+      }
+    };
+
+    if (user?.email) {
+      loadBookedOfferings();
+    }
+  }, [user?.email]);
+
+  // Load scheduled webinars with Zoom data
+  useEffect(() => {
+    const loadScheduledWebinars = async () => {
+      try {
+        const response = await appointmentAPI.getScheduledWebinars(user?.email!);
+        if (response.data) {
+          setScheduledWebinars(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load scheduled webinars:", error);
+      }
+    };
+
+    if (user?.email) {
+      loadScheduledWebinars();
+    }
+  }, [user?.email]);
+
   // Update searchable items whenever services change
   useEffect(() => {
     const searchableItems: SearchableItem[] = services.map(service => ({
@@ -166,7 +223,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       type: "offering",
     }));
     onUpdateSearchableItems(searchableItems);
-  }, [services, onUpdateSearchableItems]);
+  }, [services]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -363,12 +420,85 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
     }
   };
 
+  // Helper function to calculate end time (1 hour after start time)
+  const getEndTime = (startTime: string): string => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endHours = (hours + 1) % 24;
+    return `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+
   const toggleStatus = async (id: string) => {
     const service = services.find(s => s.id === id);
     if (service) {
       const newStatus = service.status === "active" ? "draft" : "active";
       try {
         await serviceAPI.update(id, { status: newStatus });
+        
+        // If activating a webinar, create appointment slots from webinar dates
+        if (newStatus === "active" && service.type === "webinar") {
+          if (service.webinarDates && service.webinarDates.length > 0) {
+            for (const dateSlot of service.webinarDates) {
+              try {
+                const endTime = getEndTime(dateSlot.time);
+                await appointmentAPI.create({
+                  date: dateSlot.date,
+                  startTime: dateSlot.time,
+                  endTime: endTime,
+                  status: "available",
+                  specialistEmail: user?.email,
+                  specialistName: user?.name,
+                  serviceTitle: service.title,
+                });
+              } catch (error) {
+                console.error("Failed to create appointment slot:", error);
+              }
+            }
+            alert(`✓ Webinar activated! ${service.webinarDates.length} appointment slot(s) created.`);
+          }
+        }
+        
+        // If activating a consulting service, create appointment slots from consulting schedule
+        if (newStatus === "active" && service.type === "consulting") {
+          try {
+            // Create appointment slot for the consulting session
+            const selectedDate = service.selectedDate || new Date().toISOString().split('T')[0];
+            
+            // Format start time: if startTime is "09", convert to "09:00"
+            let startTime = service.startTime;
+            if (!startTime.includes(':')) {
+              startTime = `${String(startTime).padStart(2, '0')}:00`;
+            }
+            
+            // Format end time: if endTime is "10", convert to "10:00"
+            let endTime = service.endTime;
+            if (!endTime.includes(':')) {
+              endTime = `${String(endTime).padStart(2, '0')}:00`;
+            }
+            
+            console.log('📅 Creating consulting appointment slot:', {
+              date: selectedDate,
+              startTime: startTime,
+              endTime: endTime,
+              serviceTitle: service.title,
+              specialistEmail: user?.email
+            });
+            
+            await appointmentAPI.create({
+              date: selectedDate,
+              startTime: startTime,
+              endTime: endTime,
+              status: "available",
+              specialistEmail: user?.email,
+              specialistName: user?.name,
+              serviceTitle: service.title,
+            });
+            alert(`✓ Consulting service activated! 1 appointment slot created for ${selectedDate} ${startTime}-${endTime}.`);
+          } catch (error) {
+            console.error("Failed to create consulting appointment slot:", error);
+            alert("✓ Service activated, but failed to create appointment slot. You can create it manually in Appointments.");
+          }
+        }
+        
         setServices(
           services.map((s) =>
             s.id === id
@@ -500,6 +630,8 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
           startTime: newSlot.startTime,
           endTime: newSlot.endTime,
           status: "available",
+          specialistEmail: user?.email,
+          specialistName: user?.name,
         };
         
         const response = await appointmentAPI.create(slotData);
@@ -620,7 +752,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         <div>
           <h1 className="text-3xl font-bold mb-1">Services</h1>
           <p className="text-gray-600">
-            Create and manage your service offerings
+            Create and manage your offerings
           </p>
         </div>
         
@@ -730,6 +862,118 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
               <Edit className="h-4 w-4" />
               Manage Slots
             </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Booked Offerings Section */}
+      {bookedOfferings.length > 0 && (
+        <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-1">
+              <Calendar className="h-5 w-5 text-green-600" />
+              Booked Offerings
+            </h2>
+            <p className="text-sm text-gray-600">
+              {bookedOfferings.reduce((total, o) => total + o.bookings.length, 0)} total bookings across {bookedOfferings.length} offering{bookedOfferings.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {bookedOfferings.map((offering, idx) => (
+              <div key={idx} className="bg-white rounded-lg border border-green-100 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold text-lg text-gray-800">{offering.serviceTitle}</h3>
+                    <p className="text-sm text-gray-600">
+                      {offering.bookings.length} customer{offering.bookings.length !== 1 ? 's' : ''} booked
+                    </p>
+                  </div>
+                  <Badge className="bg-green-600 hover:bg-green-700">
+                    {offering.bookings.length} Booking{offering.bookings.length !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
+
+                {/* Bookings List */}
+                <div className="space-y-2">
+                  {offering.bookings.map((booking, bookingIdx) => (
+                    <div key={bookingIdx} className="flex items-start justify-between text-sm bg-gray-50 p-3 rounded border border-gray-200">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-800">{booking.customerName || 'Customer'}</p>
+                        <p className="text-gray-600 text-xs">{booking.customerEmail}</p>
+                        <p className="text-gray-700 mt-1">
+                          <Calendar className="h-4 w-4 inline mr-1" />
+                          {new Date(booking.date).toLocaleDateString()} at {booking.startTime}
+                        </p>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700 ml-2">Booked</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Scheduled Webinars Section - Start Meetings */}
+      {scheduledWebinars.length > 0 && (
+        <Card className="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-1">
+              <Video className="h-5 w-5 text-blue-600" />
+              Scheduled Webinars
+            </h2>
+            <p className="text-sm text-gray-600">
+              {scheduledWebinars.length} webinar{scheduledWebinars.length !== 1 ? 's' : ''} ready to start
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {scheduledWebinars.map((webinar, idx) => {
+              const meetingDate = new Date(webinar.date);
+              const now = new Date();
+              const isUpcoming = meetingDate > now;
+              const timeUntilMeeting = isUpcoming ? Math.ceil((meetingDate.getTime() - now.getTime()) / (1000 * 60)) : null;
+
+              return (
+                <div key={idx} className="flex items-center justify-between bg-white rounded-lg border border-blue-100 p-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-800">{webinar.serviceTitle}</h3>
+                    <p className="text-sm text-gray-600">{webinar.customerName || 'Customer'}</p>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-700">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        {meetingDate.toLocaleDateString()}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4 text-gray-500" />
+                        {webinar.startTime}
+                      </div>
+                      {isUpcoming && timeUntilMeeting !== null && (
+                        <Badge className="bg-amber-100 text-amber-700 ml-auto">
+                          {timeUntilMeeting} min
+                        </Badge>
+                      )}
+                      {!isUpcoming && (
+                        <Badge className="bg-gray-100 text-gray-700 ml-auto">Past</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    className="ml-4 bg-blue-600 hover:bg-blue-700 gap-2 whitespace-nowrap"
+                    onClick={() => {
+                      if (webinar.zoomStartUrl) {
+                        window.open(webinar.zoomStartUrl, '_blank');
+                      }
+                    }}
+                  >
+                    <Video className="h-4 w-4" />
+                    Start Meeting
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         </Card>
       )}
@@ -1003,21 +1247,23 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   </Select>
                 </div>
 
-                {/* Webinar Dates - Show only when "On Selected Dates" is selected */}
-                {formData.sessionFrequency === "selected" && (
+                {/* Webinar Dates - Show for Single Day OR when "On Selected Dates" is selected */}
+                {(formData.eventType === "single" || formData.sessionFrequency === "selected") && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label>Webinar Date & Time *</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addWebinarDate}
-                        className="gap-1"
-                      >
-                        <Plus className="h-3 w-3" />
-                        Add Date
-                      </Button>
+                      {formData.sessionFrequency === "selected" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addWebinarDate}
+                          className="gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Add Date
+                        </Button>
+                      )}
                     </div>
                     <div className="space-y-2">
                       {webinarDates.map((dateTime, index) => (
@@ -1040,7 +1286,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                               }
                             />
                           </div>
-                          {webinarDates.length > 1 && (
+                          {webinarDates.length > 1 && formData.sessionFrequency === "selected" && (
                             <Button
                               type="button"
                               variant="outline"
@@ -1461,21 +1707,23 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   </Select>
                 </div>
 
-                {/* Webinar Dates - Show only when "On Selected Dates" is selected */}
-                {formData.sessionFrequency === "selected" && (
+                {/* Webinar Dates - Show for Single Day OR when "On Selected Dates" is selected */}
+                {(formData.eventType === "single" || formData.sessionFrequency === "selected") && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label>Webinar Date & Time *</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addWebinarDate}
-                        className="gap-1"
-                      >
-                        <Plus className="h-3 w-3" />
-                        Add Date
-                      </Button>
+                      {formData.sessionFrequency === "selected" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addWebinarDate}
+                          className="gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Add Date
+                        </Button>
+                      )}
                     </div>
                     <div className="space-y-2">
                       {webinarDates.map((dateTime, index) => (
@@ -1498,7 +1746,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                               }
                             />
                           </div>
-                          {webinarDates.length > 1 && (
+                          {webinarDates.length > 1 && formData.sessionFrequency === "selected" && (
                             <Button
                               type="button"
                               variant="outline"

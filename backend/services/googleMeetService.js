@@ -1,24 +1,91 @@
 import { google } from 'googleapis';
 import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
 
-// Initialize Google Calendar API (simplified - in production use OAuth2)
+// Ensure dotenv is loaded
+dotenv.config();
+
+// Initialize Google Calendar API (with error handling)
 const getCalendarClient = () => {
-  const auth = new google.auth.GoogleAuth({
-    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-    scopes: ['https://www.googleapis.com/auth/calendar'],
-  });
-  return google.calendar({ version: 'v3', auth });
+  try {
+    const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || './credentials.json';
+    
+    // Check if credentials file exists
+    if (!fs.existsSync(credentialsPath)) {
+      console.warn(`⚠️  Google credentials file not found at: ${credentialsPath}`);
+      return null;
+    }
+
+    const auth = new google.auth.GoogleAuth({
+      keyFile: credentialsPath,
+      scopes: ['https://www.googleapis.com/auth/calendar'],
+    });
+    return google.calendar({ version: 'v3', auth });
+  } catch (error) {
+    console.warn(`⚠️  Google Calendar initialization failed:`, error.message);
+    return null;
+  }
 };
 
-// Initialize Email Client
-const emailTransporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_PASSWORD,
-  },
-});
+// Initialize Email Client (with error handling)
+let emailTransporter = null;
+let emailInitError = null;
+
+const initializeEmailClient = () => {
+  try {
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
+      emailInitError = 'GMAIL_USER or GMAIL_PASSWORD not set in .env file';
+      console.warn(`⚠️  Email Service NOT initialized: ${emailInitError}`);
+      return null;
+    }
+
+    // Support both Gmail and Yahoo Mail
+    const emailService = process.env.EMAIL_SERVICE || 'gmail';
+    
+    let transportConfig = {
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      },
+    };
+
+    if (emailService.toLowerCase() === 'yahoo') {
+      transportConfig.host = 'smtp.mail.yahoo.com';
+      transportConfig.port = 587;
+      transportConfig.secure = false; // Use TLS
+    } else {
+      // Gmail is default
+      transportConfig.service = 'gmail';
+    }
+
+    const transporter = nodemailer.createTransport(transportConfig);
+
+    // Verify connection in background (don't block startup)
+    transporter.verify((error, success) => {
+      if (error) {
+        console.warn(`⚠️  Email service verification failed: ${error.message}`);
+        console.warn(`   This might be because:
+   1. Gmail password is incorrect
+   2. 2FA is enabled - use App Password instead
+   3. "Less secure apps" is disabled - enable it at https://myaccount.google.com/lesssecureapps`);
+        emailInitError = error.message;
+      } else {
+        console.log(`✓ Email service verified successfully (${process.env.GMAIL_USER})`);
+      }
+    });
+
+    return transporter;
+  } catch (error) {
+    console.warn(`⚠️  Email transporter creation failed:`, error.message);
+    emailInitError = error.message;
+    return null;
+  }
+};
+
+emailTransporter = initializeEmailClient();
 
 /**
  * Create a Google Meet event
@@ -26,6 +93,15 @@ const emailTransporter = nodemailer.createTransport({
 export const createGoogleMeet = async (appointmentData) => {
   try {
     const calendar = getCalendarClient();
+    
+    // If Google credentials not configured, generate a placeholder link
+    if (!calendar) {
+      console.warn(`⚠️  Using placeholder Google Meet link (credentials not configured)`);
+      return {
+        googleMeetLink: `https://meet.google.com/placeholder-${uuidv4()}`,
+        googleEventId: `placeholder-${uuidv4()}`,
+      };
+    }
     
     const event = {
       summary: `Consulting Session: ${appointmentData.serviceTitle}`,
@@ -90,10 +166,116 @@ export const createGoogleMeet = async (appointmentData) => {
 };
 
 /**
+ * Send booking confirmation email (simple version)
+ */
+export const sendBookingInviteEmail = async (appointmentData) => {
+  try {
+    console.log('📧 Attempting to send booking invite email...');
+    console.log('Email service configured:', emailTransporter ? 'YES' : 'NO');
+    console.log('GMAIL_USER:', process.env.GMAIL_USER ? 'SET' : 'NOT SET');
+    console.log('GMAIL_PASSWORD:', process.env.GMAIL_PASSWORD ? 'SET' : 'NOT SET');
+    
+    if (!emailTransporter) {
+      console.error(`❌ Email transporter NOT initialized`);
+      if (emailInitError) {
+        console.error(`   Error: ${emailInitError}`);
+      } else {
+        console.error(`   Gmail credentials missing or invalid`);
+      }
+      console.error(`   To fix this:`);
+      console.error(`   1. Set GMAIL_USER and GMAIL_PASSWORD in .env`);
+      console.error(`   2. Use App Password (for 2FA accounts): https://myaccount.google.com/apppasswords`);
+      console.error(`   3. Or enable Less Secure Apps: https://myaccount.google.com/lesssecureapps`);
+      console.error(`   See EMAIL_TROUBLESHOOTING.md for detailed instructions`);
+      return { success: false, message: 'Email service not configured' };
+    }
+
+    const { specialistEmail, specialistName, customerEmail, customerName, serviceTitle, date, startTime, googleMeetLink } = appointmentData;
+    
+    if (!customerEmail || !specialistEmail || !googleMeetLink) {
+      console.error('❌ Missing required email fields:', {
+        customerEmail: customerEmail ? '✓' : '✗',
+        specialistEmail: specialistEmail ? '✓' : '✗',
+        googleMeetLink: googleMeetLink ? '✓' : '✗',
+      });
+      return { success: false, message: 'Missing required email data' };
+    }
+
+    const dateObj = new Date(date);
+    const dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+
+    // Email to customer
+    const customerEmail_html = `
+      <html>
+        <body style="font-family: Arial, sans-serif;">
+          <h3>Booking Confirmed: ${serviceTitle}</h3>
+          <p>Hi ${customerName},</p>
+          <p>Your consulting session is confirmed!</p>
+          <p><strong>Service:</strong> ${serviceTitle}</p>
+          <p><strong>Date:</strong> ${dateStr}</p>
+          <p><strong>Time:</strong> ${startTime} UTC</p>
+          <p><strong>With:</strong> ${specialistName}</p>
+          <p><strong>Join Here:</strong> <a href="${googleMeetLink}">${googleMeetLink}</a></p>
+          <p>See you soon!</p>
+        </body>
+      </html>
+    `;
+
+    // Email to specialist
+    const specialistEmail_html = `
+      <html>
+        <body style="font-family: Arial, sans-serif;">
+          <h3>New Booking: ${serviceTitle}</h3>
+          <p>Hi ${specialistName},</p>
+          <p>You have a new booking!</p>
+          <p><strong>Customer:</strong> ${customerName} (${customerEmail})</p>
+          <p><strong>Service:</strong> ${serviceTitle}</p>
+          <p><strong>Date:</strong> ${dateStr}</p>
+          <p><strong>Time:</strong> ${startTime} UTC</p>
+          <p><strong>Join Here:</strong> <a href="${googleMeetLink}">${googleMeetLink}</a></p>
+        </body>
+      </html>
+    `;
+
+    // Send emails
+    console.log(`📧 Sending email to customer: ${customerEmail}`);
+    await emailTransporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to: customerEmail,
+      subject: `✓ Booking Confirmed: ${serviceTitle}`,
+      html: customerEmail_html,
+    });
+    console.log(`✓ Customer email sent to ${customerEmail}`);
+
+    console.log(`📧 Sending email to specialist: ${specialistEmail}`);
+    await emailTransporter.sendMail({
+      from: process.env.GMAIL_USER,
+      to: specialistEmail,
+      subject: `📞 New Booking: ${customerName} - ${serviceTitle}`,
+      html: specialistEmail_html,
+    });
+    console.log(`✓ Specialist email sent to ${specialistEmail}`);
+
+    console.log(`✅ Booking confirmation emails sent to ${customerEmail} and ${specialistEmail}`);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error sending booking invite email:', error.message);
+    console.error('Full error:', error);
+    // Don't throw - just log and continue
+    return { success: false, error: error.message };
+  }
+};
+
+/**
  * Send reminder email to participants
  */
 export const sendReminderEmail = async (appointment) => {
   try {
+    if (!emailTransporter) {
+      console.warn(`⚠️  Email service not configured, skipping reminder`);
+      return { success: false, message: 'Email service not configured' };
+    }
+
     const { specialistEmail, customerEmail, customerName, serviceTitle, date, startTime } = appointment;
     
     const meetingDateTime = new Date(date);
@@ -147,6 +329,11 @@ export const sendReminderEmail = async (appointment) => {
  */
 export const sendRecordingEmail = async (appointment, recordingLink, expiryDays = 7) => {
   try {
+    if (!emailTransporter) {
+      console.warn(`⚠️  Email service not configured, skipping recording email`);
+      return { success: false, message: 'Email service not configured' };
+    }
+
     const { specialistEmail, customerEmail, customerName, serviceTitle } = appointment;
     
     const expiryDate = new Date();
@@ -217,6 +404,7 @@ export const deleteExpiredRecording = async (appointment) => {
 
 export default {
   createGoogleMeet,
+  sendBookingInviteEmail,
   sendReminderEmail,
   sendRecordingEmail,
   checkRecordingExpiry,

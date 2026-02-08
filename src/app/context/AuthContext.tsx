@@ -22,9 +22,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   currentPage: string;
-  userType: "creator" | "customer" | null;
+  userType: "specialist" | "customer" | null;
   setCurrentPage: (page: string) => void;
-  setUserType: (type: "creator" | "customer") => void;
+  setUserType: (type: "specialist" | "customer") => void;
   signup: (data: any) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -38,13 +38,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('dashboard');
-  const [userType, setUserType] = useState<"creator" | "customer" | null>(null);
+  const [userType, setUserType] = useState<"specialist" | "customer" | null>(null);
 
   // Load auth data from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('authToken');
     const savedUser = localStorage.getItem('user');
-    const savedUserType = localStorage.getItem('userType') as "creator" | "customer" | null;
+    const savedUserType = localStorage.getItem('userType') as "specialist" | "customer" | null;
     
     if (savedToken && savedUser) {
       setToken(savedToken);

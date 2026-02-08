@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Globe, Check, X, Eye, Settings as SettingsIcon, Palette, Layout, Share2, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
-import { websiteAPI, courseAPI, serviceAPI } from "@/app/api/apiClient";
+import { brandingAPI, courseAPI, serviceAPI } from "@/app/api/apiClient";
 import {
   Card,
   CardContent,
@@ -50,7 +50,7 @@ export function MySite() {
       if (!user?.email) return;
       try {
         setIsLoading(true);
-        const response = await websiteAPI.getWebsite(user.email);
+        const response = await brandingAPI.getMyBranding(user.email);
         if (response && response.data) {
           setWebsiteData(response.data);
           console.log("Website data loaded:", response.data);
@@ -142,7 +142,7 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
     
     try {
       setIsSaving(true);
-      const response = await websiteAPI.updateSubdomain(user.email, { subdomain });
+      const response = await brandingAPI.updateBranding(user.email, { slug: subdomain });
       if (response && response.data) {
         setWebsiteData(response.data);
         setSuccessMessage("Subdomain configured successfully!");
@@ -462,10 +462,17 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
     
     try {
       setIsSaving(true);
-      const response = await websiteAPI.updateBranding(user.email, {
-        branding: brandingData,
-        theme: { mode: theme },
-        footer: footerData,
+      const response = await brandingAPI.updateBranding(user.email, {
+        colors: {
+          primary: brandingData?.primaryColor || '#3b82f6',
+          secondary: brandingData?.secondaryColor || '#1f2937',
+          accent: '#f59e0b'
+        },
+        header: {
+          title: brandingData?.siteName || '',
+          subtitle: brandingData?.tagline || '',
+          backgroundImage: brandingData?.logo || ''
+        }
       });
       if (response && response.data) {
         setWebsiteData(response.data);
@@ -877,9 +884,12 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
     
     try {
       setIsSaving(true);
-      const response = await websiteAPI.updateContent(user.email, {
-        selectedCourses,
-        selectedServices,
+      const response = await brandingAPI.updateBranding(user.email, {
+        services: {
+          title: "My Services",
+          displayMode: "grid",
+          enabled: true
+        }
       });
       if (response && response.data) {
         setWebsiteData(response.data);

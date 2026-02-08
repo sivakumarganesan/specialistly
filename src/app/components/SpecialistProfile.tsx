@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { creatorAPI, courseAPI, serviceAPI, customerAPI } from "@/app/api/apiClient";
+import { creatorAPI, courseAPI, serviceAPI, customerAPI, appointmentAPI } from "@/app/api/apiClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import { Star, Users, ArrowLeft, BookOpen, Briefcase } from "lucide-react";
+import { Star, Users, ArrowLeft, BookOpen, Briefcase, Calendar, Clock } from "lucide-react";
 
 interface SpecialistProfileProps {
   specialistId: string;
@@ -30,13 +30,32 @@ interface Service {
   duration: number;
 }
 
+interface AppointmentSlot {
+  _id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: "available" | "booked";
+  serviceTitle?: string;
+}
+
 export function SpecialistProfile({ specialistId, specialistEmail, onBack }: SpecialistProfileProps) {
   const { user } = useAuth();
   const [specialist, setSpecialist] = useState<any>(null);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesCount, setCoursesCount] = useState(0);
   const [services, setServices] = useState<Service[]>([]);
+  const [servicesCount, setServicesCount] = useState(0);
+  const [appointmentSlots, setAppointmentSlots] = useState<AppointmentSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"about" | "courses" | "services">("about");
+  const [activeTab, setActiveTab] = useState<"about" | "courses" | "services" | "appointments">("about");
+  const [bookingSlotId, setBookingSlotId] = useState<string | null>(null);
+  const [isBooking, setIsBooking] = useState(false);
+  const [serviceBookingId, setServiceBookingId] = useState<string | null>(null);
+  const [selectedServiceDate, setSelectedServiceDate] = useState<string>("");
+  const [futureSlots, setFutureSlots] = useState<AppointmentSlot[]>([]);
+  const [showZoomReAuthModal, setShowZoomReAuthModal] = useState(false);
+  const [zoomReAuthMessage, setZoomReAuthMessage] = useState("");
 
   useEffect(() => {
     fetchSpecialistData();
@@ -57,18 +76,96 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
       const activeCourses = Array.isArray(coursesResponse?.data)
         ? coursesResponse.data.filter((c: any) => c.status === "published" || c.status === "active")
         : [];
-      setCourses(activeCourses.slice(0, 6));
+      setCoursesCount(activeCourses.length);  // Store total count
+      setCourses(activeCourses.slice(0, 6));  // Display only first 6
 
       // Fetch specialist's services
       const servicesResponse = await serviceAPI.getAll({ creator: specialistEmail });
+      console.log('🔍 Services response:', servicesResponse);
       const activeServices = Array.isArray(servicesResponse?.data)
         ? servicesResponse.data.filter((s: any) => s.status === "active")
         : [];
-      setServices(activeServices.slice(0, 6));
+      console.log(`📊 Services for ${specialistEmail}:`, activeServices.length);
+      activeServices.forEach((s: any) => {
+        console.log(`  - Service: ${s.title}, Type: ${s.type}, Status: ${s.status}, ID: ${s._id}`);
+      });
+      setServicesCount(activeServices.length);  // Store total count
+      setServices(activeServices.slice(0, 6));  // Display only first 6
+
+      // Fetch available appointment slots for this specialist
+      const appointmentsResponse = await appointmentAPI.getAvailable(specialistEmail);
+      console.log('📅 Appointments API response:', appointmentsResponse?.data);
+      const now = new Date();
+      const availableSlots = Array.isArray(appointmentsResponse?.data)
+        ? appointmentsResponse.data.filter((slot: any) => {
+            // Only show slots with status "available" and dates in the future
+            if (slot.status !== "available") {
+              console.log('  ❌ Slot filtered out (wrong status):', slot.status, slot.serviceTitle);
+              return false;
+            }
+            const slotDate = new Date(slot.date);
+            // Set time to start of day for comparison
+            slotDate.setHours(0, 0, 0, 0);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const isPastDate = slotDate < today;
+            if (isPastDate) {
+              console.log('  ❌ Slot filtered out (past date):', slot.date);
+              return false;
+            }
+            console.log('  ✅ Slot included:', slot.date, slot.startTime, slot.serviceTitle);
+            return true;
+          })
+        : [];
+      console.log(`📊 Final available slots: ${availableSlots.length}`, availableSlots);
+      setAppointmentSlots(availableSlots);
     } catch (error) {
       console.error("Failed to fetch specialist data:", error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleBookAppointment = async (slotId: string) => {
+    if (!user?.email || !specialist?.name || !user?.id) return;
+    try {
+      setIsBooking(true);
+      const bookingData = {
+        bookedBy: user.id,
+        customerEmail: user.email,
+        customerName: user.name || user.email,
+        specialistEmail: specialistEmail,
+        specialistName: specialist.name,
+        specialistId: specialistId,
+        serviceTitle: "Consulting Session",
+      };
+      const response = await appointmentAPI.book(slotId, bookingData);
+      if (response?.success) {
+        alert("✓ Appointment booked successfully! Check your email for Zoom meeting link.");
+        // Refresh appointment slots
+        fetchSpecialistData();
+        setBookingSlotId(null);
+      } else {
+        // Check if it's a Zoom re-auth error
+        if (response?.requiresReAuth) {
+          setZoomReAuthMessage(response?.message || "The specialist needs to re-authorize their Zoom account.");
+          setShowZoomReAuthModal(true);
+        } else {
+          alert("Failed to book appointment. Please try again.");
+        }
+      }
+    } catch (error: any) {
+      console.error("Failed to book appointment:", error);
+      
+      // Check if it's a Zoom-related error
+      if (error.response?.data?.requiresReAuth || error.message?.includes("Zoom") || error.message?.includes("reconnect")) {
+        setZoomReAuthMessage(error.response?.data?.message || "The specialist needs to re-authorize their Zoom account to enable bookings.");
+        setShowZoomReAuthModal(true);
+      } else {
+        alert("Error booking appointment. Please try again or contact the specialist.");
+      }
+    } finally {
+      setIsBooking(false);
     }
   };
 
@@ -91,18 +188,72 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
 
   const handleBookService = async (serviceId: string) => {
     if (!user?.email) return;
+    // Open date selection for booking service
+    setServiceBookingId(serviceId);
+    setSelectedServiceDate("");
+  };
+
+  const handleServiceDateSelect = (date: string) => {
+    setSelectedServiceDate(date);
+    // Get the service title for filtering
+    const service = services.find((s) => s._id === serviceBookingId);
+    const serviceTitle = service?.title || "";
+    
+    // Filter available slots for the selected date AND service
+    const filteredSlots = appointmentSlots.filter((slot) => {
+      const slotDate = new Date(slot.date).toISOString().split('T')[0];
+      return slotDate === date && slot.status === "available" && slot.serviceTitle === serviceTitle;
+    });
+    setFutureSlots(filteredSlots);
+  };
+
+  const handleConfirmServiceBooking = async (slotId?: string) => {
+    if (!user?.email || !serviceBookingId || !slotId) return;
     try {
+      setIsBooking(true);
+      const service = services.find((s) => s._id === serviceBookingId);
+      
+      // Book using the appointment API (which creates Zoom meetings)
       const bookingData = {
-        userId: user.email,
-        serviceId,
-        bookedAt: new Date(),
-        status: "pending",
+        bookedBy: user.id,
+        customerEmail: user.email,
+        customerName: user.name || user.email,
+        specialistEmail: specialistEmail,
+        specialistName: specialist.name,
+        specialistId: specialistId,
+        serviceTitle: service?.title || "Service Booking",
       };
-      await customerAPI.bookService(bookingData);
-      alert("✓ Service booked successfully!");
-    } catch (error) {
+      
+      const response = await appointmentAPI.book(slotId, bookingData);
+      
+      if (response?.success) {
+        alert("✓ Service booked successfully! Check your email for the Zoom meeting link.");
+        // Refresh data
+        fetchSpecialistData();
+        setServiceBookingId(null);
+        setSelectedServiceDate("");
+        setFutureSlots([]);
+      } else {
+        // Check if it's a Zoom re-auth error
+        if (response?.requiresReAuth) {
+          setZoomReAuthMessage(response?.message || "The specialist needs to re-authorize their Zoom account.");
+          setShowZoomReAuthModal(true);
+        } else {
+          alert("Failed to book service. Please try again.");
+        }
+      }
+    } catch (error: any) {
       console.error("Failed to book service:", error);
-      alert("Failed to book service. Please try again.");
+      
+      // Check if it's a Zoom-related error
+      if (error.response?.data?.requiresReAuth || error.message?.includes("Zoom") || error.message?.includes("reconnect")) {
+        setZoomReAuthMessage(error.response?.data?.message || "The specialist needs to re-authorize their Zoom account to enable bookings.");
+        setShowZoomReAuthModal(true);
+      } else {
+        alert("Error booking service. Please try again or contact the specialist.");
+      }
+    } finally {
+      setIsBooking(false);
     }
   };
 
@@ -172,20 +323,21 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
       </Card>
 
       {/* Tabs */}
-      <div className="flex gap-4 mb-6 border-b">
-        {["about", "courses", "services"].map((tab) => (
+      <div className="flex gap-4 mb-6 border-b overflow-x-auto">
+        {["about", "courses", "services", "appointments"].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as any)}
-            className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+            className={`px-6 py-3 font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab
                 ? "border-purple-600 text-purple-600"
                 : "border-transparent text-gray-600 hover:text-gray-900"
             }`}
           >
             {tab === "about" && "About"}
-            {tab === "courses" && `Courses (${courses.length})`}
-            {tab === "services" && `Services (${services.length})`}
+            {tab === "courses" && `Courses (${coursesCount})`}
+            {tab === "services" && `Services (${servicesCount})`}
+            {tab === "appointments" && `Book Appointment (${appointmentSlots.length})`}
           </button>
         ))}
       </div>
@@ -206,11 +358,11 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
             )}
             <div className="grid grid-cols-3 gap-4 py-4 border-t border-b">
               <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">{courses.length}</p>
+                <p className="text-2xl font-bold text-purple-600">{coursesCount}</p>
                 <p className="text-sm text-gray-600">Courses Offered</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-purple-600">{services.length}</p>
+                <p className="text-2xl font-bold text-purple-600">{servicesCount}</p>
                 <p className="text-sm text-gray-600">Services Offered</p>
               </div>
               <div className="text-center">
@@ -267,32 +419,79 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
         <div className="space-y-4">
           {services.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {services.map((service) => (
-                <Card key={service._id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-start gap-2">
-                      <Briefcase className="w-5 h-5 text-purple-600 flex-shrink-0 mt-1" />
-                      <span className="line-clamp-2">{service.title}</span>
-                    </CardTitle>
-                    <CardDescription>{service.type}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-gray-600 text-sm line-clamp-2">{service.description}</p>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-2xl font-bold text-purple-600">₹{service.price}</p>
-                        <p className="text-xs text-gray-600">{service.duration} min</p>
+              {services.map((service) => {
+                // Get available slots for this SPECIFIC service only
+                const serviceSlots = appointmentSlots
+                  .filter((slot) => slot.serviceTitle === service.title && slot.status === "available")
+                  .slice(0, 3); // Show first 3 available slots for this service
+                
+                return (
+                  <Card key={service._id}>
+                    <CardHeader>
+                      <CardTitle className="flex items-start gap-2">
+                        <Briefcase className="w-5 h-5 text-purple-600 flex-shrink-0 mt-1" />
+                        <span className="line-clamp-2">{service.title}</span>
+                      </CardTitle>
+                      <CardDescription>{service.type}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-gray-600 text-sm line-clamp-2">{service.description}</p>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-2xl font-bold text-purple-600">₹{service.price}</p>
+                          <p className="text-xs text-gray-600">{service.duration} min</p>
+                        </div>
                       </div>
-                    </div>
-                    <Button
-                      onClick={() => handleBookService(service._id)}
-                      className="w-full bg-purple-600 hover:bg-purple-700"
-                    >
-                      Book Service
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+
+                      {/* Available Slots Preview - Only for this service */}
+                      {serviceSlots.length > 0 ? (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-green-700 mb-2">
+                            📅 Available Slots ({serviceSlots.length})
+                          </p>
+                          <div className="space-y-1.5">
+                            {serviceSlots.map((slot) => (
+                              <div key={slot._id} className="text-xs text-green-800 bg-white rounded px-2 py-1">
+                                <span className="font-semibold">
+                                  {new Date(slot.date).toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                                <span className="text-green-600 mx-1">•</span>
+                                <span className="font-medium">{slot.startTime} - {slot.endTime}</span>
+                              </div>
+                            ))}
+                            {appointmentSlots.filter((slot) => slot.serviceTitle === service.title && slot.status === "available").length > 3 && (
+                              <p className="text-xs text-green-700 italic mt-2 font-medium">
+                                ➕ +{appointmentSlots.filter((slot) => slot.serviceTitle === service.title && slot.status === "available").length - 3} more slots available
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-yellow-700">
+                            ⏳ No available slots at the moment
+                          </p>
+                          <p className="text-xs text-yellow-600 mt-1">
+                            Check back soon for upcoming availability
+                          </p>
+                        </div>
+                      )}
+
+                      <Button
+                        onClick={() => handleBookService(service._id)}
+                        disabled={serviceSlots.length === 0}
+                        className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {serviceSlots.length > 0 ? "Book Service" : "No Availability"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <Card>
@@ -301,6 +500,186 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
               </CardContent>
             </Card>
           )}
+
+          {/* Service Booking Modal - Enhanced */}
+          {serviceBookingId && appointmentSlots.length > 0 && (
+            <Card className="border-2 border-purple-300 bg-purple-50 shadow-lg">
+              <CardHeader className="bg-purple-100 rounded-t-lg">
+                <CardTitle className="text-purple-800 text-lg">
+                  {services.find((s) => s._id === serviceBookingId)?.title || "Book Service"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-6">
+                <p className="text-sm text-gray-700 font-medium">
+                  📍 Select a date and time to book this service. A Zoom meeting link will be sent to your email.
+                </p>
+
+                {/* Show all available slots grouped by date */}
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <p className="text-sm font-semibold text-gray-800">Available Appointment Slots:</p>
+                  
+                  {appointmentSlots.length > 0 ? (
+                    <div className="space-y-4">
+                      {Array.from(
+                        new Set(
+                          appointmentSlots.map((slot) =>
+                            new Date(slot.date).toISOString().split("T")[0]
+                          )
+                        )
+                      )
+                        .sort()
+                        .map((date) => {
+                          const slotsForDate = appointmentSlots.filter(
+                            (slot) =>
+                              new Date(slot.date).toISOString().split("T")[0] === date
+                          );
+                          return (
+                            <div key={date} className="border-2 border-purple-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                              <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <Calendar className="w-4 h-4 text-purple-600" />
+                                {new Date(date).toLocaleDateString("en-US", {
+                                  weekday: "long",
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                })}
+                              </p>
+                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {slotsForDate.map((slot) => (
+                                  <Button
+                                    key={slot._id}
+                                    onClick={() => handleConfirmServiceBooking(slot._id)}
+                                    disabled={isBooking}
+                                    className="bg-green-600 hover:bg-green-700 text-white text-xs h-auto py-3 font-semibold disabled:opacity-50"
+                                  >
+                                    <div className="flex flex-col items-center">
+                                      <Clock className="w-3 h-3 mb-1" />
+                                      <span>{slot.startTime}</span>
+                                      <span className="text-xs opacity-90">- {slot.endTime}</span>
+                                    </div>
+                                  </Button>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-600 text-lg">No available slots.</p>
+                      <p className="text-sm text-gray-500 mt-2">Please check back later.</p>
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  onClick={() => {
+                    setServiceBookingId(null);
+                    setFutureSlots([]);
+                    setSelectedServiceDate("");
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Cancel
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {activeTab === "appointments" && (
+        <div className="space-y-4">
+          {user?.role === "user" && user?.membership !== "customer" ? (
+            <Card>
+              <CardContent className="pt-6 text-center text-amber-600">
+                <p>Please switch to customer mode to book appointments.</p>
+              </CardContent>
+            </Card>
+          ) : appointmentSlots.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {appointmentSlots.map((slot) => (
+                <Card key={slot._id} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="flex items-start gap-3">
+                      <Calendar className="w-5 h-5 text-purple-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          {new Date(slot.date).toLocaleDateString("en-US", {
+                            weekday: "short",
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </p>
+                        <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          {slot.startTime} - {slot.endTime}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-green-50 border border-green-200 rounded p-3">
+                      <p className="text-sm text-green-800 font-medium">Available</p>
+                    </div>
+                    <Button
+                      onClick={() => handleBookAppointment(slot._id)}
+                      disabled={isBooking || bookingSlotId === slot._id}
+                      className="w-full bg-purple-600 hover:bg-purple-700"
+                    >
+                      {isBooking && bookingSlotId === slot._id ? "Booking..." : "Book Slot"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="pt-6 text-center text-gray-600">
+                <p>No available appointment slots at the moment. Please check back later.</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* Zoom Re-Auth Modal */}
+      {showZoomReAuthModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md mx-4">
+            <CardHeader>
+              <CardTitle className="text-lg">🔄 Zoom Authorization Required</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-700">
+                {zoomReAuthMessage}
+              </p>
+              
+              <div className="bg-blue-50 border border-blue-200 rounded p-4">
+                <p className="text-sm text-blue-800 mb-2">
+                  <strong>What to do:</strong>
+                </p>
+                <ol className="text-sm text-blue-700 list-decimal list-inside space-y-1">
+                  <li>Ask the specialist to open their Settings</li>
+                  <li>Find "Zoom Integration" section</li>
+                  <li>Click "Re-authorize" button</li>
+                  <li>Complete the Zoom authorization</li>
+                </ol>
+              </div>
+
+              <p className="text-xs text-gray-500">
+                The specialist has been sent an email notification with a direct link to re-authorize.
+              </p>
+            </CardContent>
+            <div className="bg-gray-50 px-6 py-4 border-t flex justify-end">
+              <Button
+                onClick={() => setShowZoomReAuthModal(false)}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                Got it, Thanks
+              </Button>
+            </div>
+          </Card>
         </div>
       )}
     </div>

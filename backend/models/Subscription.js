@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const subscriptionSchema = new mongoose.Schema({
   creatorId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'CreatorProfile',
+    ref: 'User',
     required: true,
   },
   email: {
