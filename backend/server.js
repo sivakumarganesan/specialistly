@@ -54,6 +54,25 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Test endpoint to get outbound IP
+app.get('/api/test/outbound-ip', async (req, res) => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    res.status(200).json({
+      success: true,
+      outboundIp: data.ip,
+      message: 'This is the IP to whitelist in MongoDB Atlas',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: 'Failed to get outbound IP',
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
