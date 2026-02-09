@@ -3,6 +3,6 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "env": {
-    "VITE_API_URL": "https://specialistly-production.up.railway.app/api"
+    "VITE_API_URL": "https://specialistly-production-v1.up.railway.app/api"
   }
 }
