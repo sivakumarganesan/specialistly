@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001/api";
+
 interface User {
   id: string;
   name: string;
@@ -56,7 +58,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signup = async (data: any) => {
     try {
-      const response = await fetch('http://localhost:5001/api/auth/signup', {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -84,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('http://localhost:5001/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -121,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const updateSubscription = async (planType: 'free' | 'pro') => {
     try {
-      const response = await fetch('http://localhost:5001/api/auth/subscription', {
+      const response = await fetch(`${API_BASE_URL}/auth/subscription`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
