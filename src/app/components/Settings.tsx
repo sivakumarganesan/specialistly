@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle } from "lucide-react";
+import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { creatorAPI, subscriptionAPI } from "@/app/api/apiClient";
 import {
@@ -84,11 +84,13 @@ function UserProfile() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [zoomConnected, setZoomConnected] = useState(false);
+  const [zoomConnecting, setZoomConnecting] = useState(false);
 
   // Fetch profile data from database when component mounts or user changes
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (!user?.email) return;
+      if (!user?.email || !user?.id) return;
       
       setIsLoading(true);
       try {
@@ -106,11 +108,11 @@ function UserProfile() {
             website: profile.website || prev.website,
             profileImage: profile.profileImage || null,
           }));
-          console.log("Profile data loaded from database:", profile);
+          // Check if Zoom is connected from profile data
+          setZoomConnected(profile.zoomConnected || !!profile.zoomAccessToken);
         }
       } catch (error) {
-        console.log("No saved profile found, using defaults");
-        // If no saved profile, just use the user data from auth
+        // Profile not found is expected - just use defaults
         setProfileData((prev) => ({
           ...prev,
           name: user.name || prev.name,
@@ -122,7 +124,40 @@ function UserProfile() {
     };
 
     fetchProfileData();
-  }, [user?.email]); // Fetch when user email changes (login/logout)
+  }, [user?.email, user?.id]); // Fetch when user email/id changes (login/logout)
+
+  // Check Zoom connection status on mount and when OAuth returns
+  useEffect(() => {
+    const fetchZoomStatus = async () => {
+      if (!user?.id) return;
+
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+        const response = await fetch(`${API_BASE_URL}/api/zoom/oauth/user/status?userId=${user.id}`);
+        const data = await response.json();
+        
+        if (data.success && data.authorized) {
+          setZoomConnected(true);
+        } else {
+          setZoomConnected(false);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Zoom status:', error);
+        // Status check failed, rely on profile data
+      }
+    };
+
+    // Check on mount
+    fetchZoomStatus();
+
+    // Also check for OAuth success in URL params (when returning from OAuth flow)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('oauth_success') === 'true') {
+      setZoomConnected(true);
+      // Clean up URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [user?.id]);
 
   const handleChange = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
@@ -191,6 +226,61 @@ function UserProfile() {
       setErrorMessage(`Failed to save profile: ${error instanceof Error ? error.message : "Please try again"}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleConnectZoom = () => {
+    setZoomConnecting(true);
+    const userId = user?.id;
+    if (!userId) {
+      console.error('User ID not found');
+      alert('Unable to connect to Zoom. Please ensure you are logged in.');
+      setZoomConnecting(false);
+      return;
+    }
+    // Redirect to OAuth authorization URL with userId
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+    window.location.href = `${API_BASE_URL}/api/zoom/oauth/user/authorize?userId=${userId}`;
+  };
+
+  const handleDisconnectZoom = async () => {
+    if (!window.confirm('Are you sure you want to disconnect your Zoom account? You can reconnect anytime.')) {
+      return;
+    }
+
+    if (!user?.id) {
+      alert('Unable to determine your user ID. Please try again.');
+      return;
+    }
+
+    try {
+      setZoomConnecting(true);
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+      
+      const response = await fetch(`${API_BASE_URL}/api/zoom/oauth/user/revoke`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setZoomConnected(false);
+        setSuccessMessage('✓ Zoom account disconnected successfully. You can reconnect anytime.');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setErrorMessage(`Failed to disconnect Zoom: ${data.error || 'Unknown error'}`);
+        setTimeout(() => setErrorMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error disconnecting Zoom:', error);
+      setErrorMessage('Failed to disconnect Zoom account. Please try again.');
+      setTimeout(() => setErrorMessage(''), 3000);
+    } finally {
+      setZoomConnecting(false);
     }
   };
 
@@ -397,6 +487,89 @@ function UserProfile() {
                 </span>
               )}
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Zoom Integration */}
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Video className="w-5 h-5" />
+            Zoom Integration
+          </CardTitle>
+          <CardDescription>Connect your Zoom account to create video meetings</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {zoomConnected ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full" />
+                    <span className="text-green-700 font-medium">✓ Zoom Account Connected</span>
+                  </div>
+                  <p className="text-sm text-green-600 mt-2">Your Zoom account is connected and ready to use. Meetings will be automatically created when participants book appointments.</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleConnectZoom}
+                    disabled={zoomConnecting}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    {zoomConnecting ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Reconnecting...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Video className="w-4 h-4" />
+                        Re-authorize
+                      </span>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleDisconnectZoom}
+                    disabled={zoomConnecting}
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    {zoomConnecting ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                        Disconnecting...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        Disconnect Zoom
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700 mb-4">Connect your Zoom account to enable video meeting creation for appointments and sessions.</p>
+                <Button
+                  onClick={handleConnectZoom}
+                  disabled={zoomConnecting}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {zoomConnecting ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Connecting to Zoom...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Video className="w-4 h-4" />
+                      Connect Zoom Account
+                    </span>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>

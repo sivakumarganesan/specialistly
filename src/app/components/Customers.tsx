@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useAuth } from "@/app/context/AuthContext";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -62,6 +63,7 @@ interface Customer {
 }
 
 export function Customers() {
+  const { user } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -83,7 +85,7 @@ export function Customers() {
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await customerAPI.getAll();
+      const response = await customerAPI.getAll({ specialistEmail: user?.email });
       const customersArray = Array.isArray(response) 
         ? response 
         : (Array.isArray(response.data) ? response.data : []);
@@ -108,8 +110,10 @@ export function Customers() {
   };
 
   useEffect(() => {
-    fetchCustomers();
-  }, []);
+    if (user?.email) {
+      fetchCustomers();
+    }
+  }, [user?.email]);
 
   const filteredCustomers = customers.filter((customer) => {
     const matchesSearch =

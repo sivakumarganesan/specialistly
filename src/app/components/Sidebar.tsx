@@ -25,8 +25,9 @@ interface SidebarProps {
 
 const creatorMenuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "services", label: "Create / Edit Service Offerings", icon: Briefcase },
-  { id: "mysite", label: "My Site", icon: Globe },
+  { id: "services", label: "Create / Edit Offerings", icon: Briefcase },
+  { id: "page-builder", label: "Branded Page Builder", icon: Globe },
+  { id: "mysite", label: "My Site", icon: FileText },
   { id: "courses", label: "Courses", icon: GraduationCap },
   { id: "customers", label: "Customers", icon: Users },
   { id: "messages", label: "Messages", icon: MessageSquare },

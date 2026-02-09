@@ -141,7 +141,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       type: "course",
     }));
     onUpdateSearchableItems(searchableItems);
-  }, [courses, onUpdateSearchableItems]);
+  }, [courses]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);

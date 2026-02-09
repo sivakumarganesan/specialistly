@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import Customer from '../models/Customer.js';
 
 const generateToken = (userId) => {
   return jwt.sign({ userId }, process.env.JWT_SECRET || 'your-secret-key', {
@@ -78,6 +79,23 @@ export const signup = async (req, res) => {
     });
 
     await user.save();
+
+    // Create a Customer record for non-specialist users
+    if (!isSpecialist) {
+      try {
+        const customer = new Customer({
+          email: user.email,
+          name: user.name,
+          enrollments: [],
+          bookings: [],
+        });
+        await customer.save();
+        console.log('✅ Customer record created for:', email);
+      } catch (customerError) {
+        console.warn('⚠️ Failed to create customer record:', customerError.message);
+        // Don't fail the signup if customer creation fails
+      }
+    }
 
     const token = generateToken(user._id);
 
