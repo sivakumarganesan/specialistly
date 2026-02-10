@@ -55,17 +55,24 @@ export const handleUserOAuthCallback = async (req, res) => {
   try {
     const { code, state, error: zoomError } = req.query;
 
+    // Get frontend URL from environment variables
+    // For local dev: http://localhost:5173, for prod: https://www.specialistly.com
+    const frontendUrl = process.env.FRONTEND_URL || 
+                       (process.env.NODE_ENV === 'production' 
+                         ? 'https://www.specialistly.com' 
+                         : 'http://localhost:5173');
+
     // Check for Zoom API errors
     if (zoomError) {
       console.error('❌ Zoom OAuth error:', zoomError);
       return res.redirect(
-        `http://localhost:5173/dashboard?oauth_error=${encodeURIComponent(zoomError)}`
+        `${frontendUrl}/dashboard?oauth_error=${encodeURIComponent(zoomError)}`
       );
     }
 
     if (!code || !state) {
       return res.redirect(
-        'http://localhost:5173/dashboard?oauth_error=Missing code or state'
+        `${frontendUrl}/dashboard?oauth_error=Missing code or state`
       );
     }
 
@@ -84,7 +91,7 @@ export const handleUserOAuthCallback = async (req, res) => {
       console.warn('⚠️  No token record found for state:', state);
       console.warn('  Available states:', allTokens.map(t => ({ userId: t.userId, state: t.oauthState })));
       return res.redirect(
-        'http://localhost:5173/dashboard?oauth_error=Invalid state token'
+        `${frontendUrl}/dashboard?oauth_error=Invalid state token`
       );
     }
 
@@ -103,7 +110,7 @@ export const handleUserOAuthCallback = async (req, res) => {
       console.error('❌ Token exchange failed:', result.error);
       console.log('⚠️  Check backend logs above for detailed error information');
       return res.redirect(
-        `http://localhost:5173/dashboard?oauth_error=${encodeURIComponent(result.error)}`
+        `${frontendUrl}/dashboard?oauth_error=${encodeURIComponent(result.error)}`
       );
     }
     
@@ -122,14 +129,18 @@ export const handleUserOAuthCallback = async (req, res) => {
 
     // Redirect to dashboard with success
     res.redirect(
-      `http://localhost:5173/dashboard?oauth_success=true&zoom_email=${encodeURIComponent(
+      `${frontendUrl}/dashboard?oauth_success=true&zoom_email=${encodeURIComponent(
         result.zoomEmail
       )}`
     );
   } catch (error) {
     console.error('❌ Error handling OAuth callback:', error.message);
+    const frontendUrl = process.env.FRONTEND_URL || 
+                       (process.env.NODE_ENV === 'production' 
+                         ? 'https://www.specialistly.com' 
+                         : 'http://localhost:5173');
     res.redirect(
-      `/dashboard?oauth_error=${encodeURIComponent(error.message)}`
+      `${frontendUrl}/dashboard?oauth_error=${encodeURIComponent(error.message)}`
     );
   }
 };
