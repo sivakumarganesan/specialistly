@@ -1024,23 +1024,48 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
 
       {/* Services List */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">Your Services</h2>
-        {filterStatus !== "all" && (
-          <div className="mb-3 flex items-center gap-2">
-            <Badge className={filterStatus === "active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
-              Filter: {filterStatus}
-            </Badge>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold mb-1">Your Offerings</h2>
+            <p className="text-sm text-gray-600">
+              {filterStatus === "all" 
+                ? `Total: ${services.length} offering${services.length !== 1 ? 's' : ''}`
+                : `${filterStatus}: ${services.filter(s => s.status === filterStatus).length} offering${services.filter(s => s.status === filterStatus).length !== 1 ? 's' : ''}`
+              }
+            </p>
+          </div>
+          {filterStatus !== "all" && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => setFilterStatus("all")}
+              className="whitespace-nowrap"
             >
-              Clear Filter
+              Show All
             </Button>
-          </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {getFilteredServices().map((service) => (
+          )}
+        </div>
+        
+        {services.length === 0 ? (
+          <Card className="p-8 text-center bg-gray-50">
+            <p className="text-gray-600 mb-4">No offerings yet. Create one to get started!</p>
+          </Card>
+        ) : (
+          <>
+            {filterStatus !== "all" && (
+              <div className="mb-3 flex items-center gap-2">
+                <Badge className={filterStatus === "active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
+                  Filter: {filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
+                </Badge>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {getFilteredServices().length === 0 ? (
+                <Card className="p-6 col-span-full text-center bg-gray-50">
+                  <p className="text-gray-600">No {filterStatus === "all" ? "offerings" : filterStatus + " offerings"} yet.</p>
+                </Card>
+              ) : (
+                getFilteredServices().map((service) => (
             <Card key={service.id} className="p-4 hover:shadow-lg transition-all">
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
@@ -1128,8 +1153,11 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                 )}
               </div>
             </Card>
-          ))}
-        </div>
+          ))
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Create Service Dialog */}
