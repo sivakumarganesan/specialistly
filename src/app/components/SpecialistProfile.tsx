@@ -28,6 +28,9 @@ interface Service {
   price: number;
   type: string;
   duration: number;
+  sessionFrequency?: string;
+  webinarDates?: Array<{ date: string; time: string }>;
+  weeklySchedule?: Array<{ day: string; time: string; enabled: boolean }>;
 }
 
 interface AppointmentSlot {
@@ -56,6 +59,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
   const [futureSlots, setFutureSlots] = useState<AppointmentSlot[]>([]);
   const [showZoomReAuthModal, setShowZoomReAuthModal] = useState(false);
   const [zoomReAuthMessage, setZoomReAuthMessage] = useState("");
+  const [selectedWebinarDate, setSelectedWebinarDate] = useState<{ date: string; time: string } | null>(null);
 
   useEffect(() => {
     fetchSpecialistData();
@@ -186,45 +190,92 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
     }
   };
 
-  const handleBookService = async (serviceId: string) => {
+  const handleBookService = async (serviceId: string, service?: any) => {
     if (!user?.email) return;
-    // Open date selection for booking service
-    setServiceBookingId(serviceId);
-    setSelectedServiceDate("");
+    
+    // Check if it's a webinar with specific dates
+    if (service?.type === "webinar" && service?.sessionFrequency === "selected" && service?.webinarDates?.length > 0) {
+      // For webinars with specific dates, proceed directly to webinar date selection
+      setServiceBookingId(serviceId);
+      setSelectedServiceDate(service.webinarDates[0].date);
+    } else {
+      // For consulting or other services, use appointment slots
+      setServiceBookingId(serviceId);
+      setSelectedServiceDate("");
+    }
   };
 
   const handleServiceDateSelect = (date: string) => {
     setSelectedServiceDate(date);
-    // Get the service title for filtering
+    // Get the service for this booking
     const service = services.find((s) => s._id === serviceBookingId);
-    const serviceTitle = service?.title || "";
     
-    // Filter available slots for the selected date AND service
-    const filteredSlots = appointmentSlots.filter((slot) => {
-      const slotDate = new Date(slot.date).toISOString().split('T')[0];
-      return slotDate === date && slot.status === "available" && slot.serviceTitle === serviceTitle;
-    });
-    setFutureSlots(filteredSlots);
+    // Check if this is a webinar with specific dates
+    if (service?.type === "webinar" && service?.sessionFrequency === "selected" && service?.webinarDates?.length > 0) {
+      // For webinars, find the selected date in webinarDates
+      const webinarDateInfo = service.webinarDates.find((wd: any) => wd.date === date);
+      if (webinarDateInfo) {
+        setSelectedWebinarDate(webinarDateInfo);
+        setFutureSlots([]); // No appointment slots for webinars
+      }
+    } else {
+      // For consulting services, filter appointment slots
+      const serviceTitle = service?.title || "";
+      const filteredSlots = appointmentSlots.filter((slot) => {
+        const slotDate = new Date(slot.date).toISOString().split('T')[0];
+        return slotDate === date && slot.status === "available" && slot.serviceTitle === serviceTitle;
+      });
+      setFutureSlots(filteredSlots);
+      setSelectedWebinarDate(null);
+    }
   };
 
   const handleConfirmServiceBooking = async (slotId?: string) => {
-    if (!user?.email || !serviceBookingId || !slotId) return;
+    if (!user?.email || !serviceBookingId) return;
     try {
       setIsBooking(true);
       const service = services.find((s) => s._id === serviceBookingId);
       
-      // Book using the appointment API (which creates Zoom meetings)
-      const bookingData = {
-        bookedBy: user.id,
-        customerEmail: user.email,
-        customerName: user.name || user.email,
-        specialistEmail: specialistEmail,
-        specialistName: specialist.name,
-        specialistId: specialistId,
-        serviceTitle: service?.title || "Service Booking",
-      };
-      
-      const response = await appointmentAPI.book(slotId, bookingData);
+      // Handle webinar booking with specific dates
+      if (service?.type === "webinar" && service?.sessionFrequency === "selected" && selectedWebinarDate) {
+        const webinarBookingData = {
+          customerEmail: user.email,
+          customerName: user.name || user.email,
+          specialistEmail: specialistEmail,
+          specialistName: specialist.name,
+          specialistId: specialistId,
+          serviceId: serviceBookingId,
+          serviceTitle: service.title,
+          webinarDate: selectedWebinarDate.date,
+          webinarTime: selectedWebinarDate.time,
+          status: "confirmed",
+        };
+        
+        // Book the webinar using customer booking endpoint
+        const response = await customerAPI.bookService(webinarBookingData);
+        
+        if (response?.success) {
+          alert("✓ Webinar booked successfully! Check your email for more details.");
+          fetchSpecialistData();
+          setServiceBookingId(null);
+          setSelectedServiceDate("");
+          setSelectedWebinarDate(null);
+        } else {
+          alert("Failed to book webinar: " + (response?.message || "Unknown error"));
+        }
+      } else if (slotId) {
+        // Book using the appointment API (which creates Zoom meetings for consulting services)
+        const bookingData = {
+          bookedBy: user.id,
+          customerEmail: user.email,
+          customerName: user.name || user.email,
+          specialistEmail: specialistEmail,
+          specialistName: specialist.name,
+          specialistId: specialistId,
+          serviceTitle: service?.title || "Service Booking",
+        };
+        
+        const response = await appointmentAPI.book(slotId, bookingData);
       
       if (response?.success) {
         alert("✓ Service booked successfully! Check your email for the Zoom meeting link.");
@@ -443,8 +494,35 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                         </div>
                       </div>
 
-                      {/* Available Slots Preview - Only for this service */}
-                      {serviceSlots.length > 0 ? (
+                      {/* Display webinar dates for webinar services */}
+                      {service.type === "webinar" && service.sessionFrequency === "selected" && service.webinarDates && service.webinarDates.length > 0 ? (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                          <p className="text-xs font-semibold text-blue-700 mb-2">
+                            🎥 Webinar Sessions ({service.webinarDates.length})
+                          </p>
+                          <div className="space-y-1.5">
+                            {service.webinarDates.slice(0, 3).map((wd: any, idx: number) => (
+                              <div key={idx} className="text-xs text-blue-800 bg-white rounded px-2 py-1">
+                                <span className="font-semibold">
+                                  {new Date(wd.date + "T00:00:00").toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                    year: "numeric",
+                                  })}
+                                </span>
+                                <span className="text-blue-600 mx-1">•</span>
+                                <span className="font-medium">{wd.time}</span>
+                              </div>
+                            ))}
+                            {service.webinarDates.length > 3 && (
+                              <p className="text-xs text-blue-700 italic mt-2 font-medium">
+                                ➕ +{service.webinarDates.length - 3} more dates available
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : /* Available Slots Preview - Only for this service */
+                      serviceSlots.length > 0 ? (
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                           <p className="text-xs font-semibold text-green-700 mb-2">
                             📅 Available Slots ({serviceSlots.length})
@@ -482,11 +560,19 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                       )}
 
                       <Button
-                        onClick={() => handleBookService(service._id)}
-                        disabled={serviceSlots.length === 0}
+                        onClick={() => handleBookService(service._id, service)}
+                        disabled={
+                          service.type === "webinar" && service.sessionFrequency === "selected" 
+                            ? !service.webinarDates || service.webinarDates.length === 0
+                            : serviceSlots.length === 0
+                        }
                         className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {serviceSlots.length > 0 ? "Book Service" : "No Availability"}
+                        {(service.type === "webinar" && service.sessionFrequency === "selected" && service.webinarDates && service.webinarDates.length > 0)
+                          ? "Join Webinar"
+                          : serviceSlots.length > 0
+                          ? "Book Service"
+                          : "No Availability"}
                       </Button>
                     </CardContent>
                   </Card>
@@ -501,82 +587,130 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
             </Card>
           )}
 
-          {/* Service Booking Modal - Enhanced */}
-          {serviceBookingId && appointmentSlots.length > 0 && (
+          {/* Service Booking Modal - For both consulting appointments and webinars */}
+          {serviceBookingId && (
+            (() => {
+              const bookingService = services.find((s) => s._id === serviceBookingId);
+              const isWebinar = bookingService?.type === "webinar" && bookingService?.sessionFrequency === "selected" && bookingService?.webinarDates?.length > 0;
+              const hasAppointmentSlots = !isWebinar && appointmentSlots.length > 0;
+
+              return (isWebinar || hasAppointmentSlots) ? (
             <Card className="border-2 border-purple-300 bg-purple-50 shadow-lg">
               <CardHeader className="bg-purple-100 rounded-t-lg">
                 <CardTitle className="text-purple-800 text-lg">
-                  {services.find((s) => s._id === serviceBookingId)?.title || "Book Service"}
+                  {bookingService?.title || "Book Service"}
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
-                <p className="text-sm text-gray-700 font-medium">
-                  📍 Select a date and time to book this service. A Zoom meeting link will be sent to your email.
-                </p>
-
-                {/* Show all available slots grouped by date */}
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  <p className="text-sm font-semibold text-gray-800">Available Appointment Slots:</p>
-                  
-                  {appointmentSlots.length > 0 ? (
-                    <div className="space-y-4">
-                      {Array.from(
-                        new Set(
-                          appointmentSlots.map((slot) =>
-                            new Date(slot.date).toISOString().split("T")[0]
-                          )
-                        )
-                      )
-                        .sort()
-                        .map((date) => {
-                          const slotsForDate = appointmentSlots.filter(
-                            (slot) =>
-                              new Date(slot.date).toISOString().split("T")[0] === date
-                          );
-                          return (
-                            <div key={date} className="border-2 border-purple-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-                              <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-purple-600" />
-                                {new Date(date).toLocaleDateString("en-US", {
-                                  weekday: "long",
+                {isWebinar ? (
+                  <>
+                    <p className="text-sm text-gray-700 font-medium">
+                      🎥 Select a webinar session to join. A confirmation email will be sent to you.
+                    </p>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      <p className="text-sm font-semibold text-gray-800">Available Webinar Sessions:</p>
+                      <div className="space-y-2">
+                        {bookingService?.webinarDates?.map((wd: any, idx: number) => (
+                          <Button
+                            key={idx}
+                            onClick={() => {
+                              setSelectedWebinarDate(wd);
+                              setSelectedServiceDate(wd.date);
+                              handleConfirmServiceBooking();
+                            }}
+                            disabled={isBooking}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-auto py-4 justify-start font-medium text-left flex flex-col items-start"
+                          >
+                            <div className="flex items-center gap-2 w-full">
+                              <Calendar className="w-4 h-4 flex-shrink-0" />
+                              <span>
+                                {new Date(wd.date + "T00:00:00").toLocaleDateString("en-US", {
+                                  weekday: "short",
                                   year: "numeric",
-                                  month: "long",
+                                  month: "short",
                                   day: "numeric",
                                 })}
-                              </p>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {slotsForDate.map((slot) => (
-                                  <Button
-                                    key={slot._id}
-                                    onClick={() => handleConfirmServiceBooking(slot._id)}
-                                    disabled={isBooking}
-                                    className="bg-green-600 hover:bg-green-700 text-white text-xs h-auto py-3 font-semibold disabled:opacity-50"
-                                  >
-                                    <div className="flex flex-col items-center">
-                                      <Clock className="w-3 h-3 mb-1" />
-                                      <span>{slot.startTime}</span>
-                                      <span className="text-xs opacity-90">- {slot.endTime}</span>
-                                    </div>
-                                  </Button>
-                                ))}
-                              </div>
+                              </span>
+                              <Clock className="w-4 h-4 ml-auto flex-shrink-0" />
+                              <span>{wd.time}</span>
                             </div>
-                          );
-                        })}
+                          </Button>
+                        ))}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-gray-600 text-lg">No available slots.</p>
-                      <p className="text-sm text-gray-500 mt-2">Please check back later.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-700 font-medium">
+                      📍 Select a date and time to book this service. A Zoom meeting link will be sent to your email.
+                    </p>
+                    <div className="space-y-3 max-h-96 overflow-y-auto">
+                      <p className="text-sm font-semibold text-gray-800">Available Appointment Slots:</p>
+                      
+                      {appointmentSlots.filter(s => s.status === "available").length > 0 ? (
+                        <div className="space-y-4">
+                          {Array.from(
+                            new Set(
+                              appointmentSlots
+                                .filter(s => s.status === "available")
+                                .map((slot) =>
+                                  new Date(slot.date).toISOString().split("T")[0]
+                                )
+                            )
+                          )
+                            .sort()
+                            .map((date) => {
+                              const slotsForDate = appointmentSlots.filter(
+                                (slot) =>
+                                  new Date(slot.date).toISOString().split("T")[0] === date && slot.status === "available"
+                              );
+                              return (
+                                <div key={date} className="border-2 border-purple-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                                  <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-purple-600" />
+                                    {new Date(date).toLocaleDateString("en-US", {
+                                      weekday: "long",
+                                      year: "numeric",
+                                      month: "long",
+                                      day: "numeric",
+                                    })}
+                                  </p>
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    {slotsForDate.map((slot) => (
+                                      <Button
+                                        key={slot._id}
+                                        onClick={() => handleConfirmServiceBooking(slot._id)}
+                                        disabled={isBooking}
+                                        className="bg-green-600 hover:bg-green-700 text-white text-xs h-auto py-3 font-semibold disabled:opacity-50"
+                                      >
+                                        <div className="flex flex-col items-center">
+                                          <Clock className="w-3 h-3 mb-1" />
+                                          <span>{slot.startTime}</span>
+                                          <span className="text-xs opacity-90">- {slot.endTime}</span>
+                                        </div>
+                                      </Button>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <p className="text-gray-600 text-lg">No available slots.</p>
+                          <p className="text-sm text-gray-500 mt-2">Please check back later.</p>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
 
                 <Button
                   onClick={() => {
                     setServiceBookingId(null);
                     setFutureSlots([]);
                     setSelectedServiceDate("");
+                    setSelectedWebinarDate(null);
                   }}
                   variant="outline"
                   className="w-full"
@@ -585,6 +719,8 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                 </Button>
               </CardContent>
             </Card>
+              ) : null;
+            })()
           )}
         </div>
       )}
