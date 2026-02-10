@@ -32,14 +32,14 @@ export const getAllServices = async (req, res) => {
       filter.creator = creator;
     }
     
-    // If querying for customer browsing (no status param), only return active services
     // If status is explicitly requested, use that filter
     if (status) {
       filter.status = status;
-    } else if (creator) {
-      // For specialist browsing, default to active services
+    } else if (!creator) {
+      // If no creator and no status specified (public browsing), only return active services
       filter.status = 'active';
     }
+    // If creator is specified without status, return ALL their services (both active and draft)
     
     console.log('📋 Fetching services with filter:', JSON.stringify(filter));
     const services = await Service.find(filter);
