@@ -14,12 +14,12 @@ const connectDB = async () => {
     }
 
     console.log('Attempting to connect to MongoDB...');
+    console.log('Database name extracted from URI:', mongoUri.includes('specialistlydb_prod') ? 'specialistlydb_prod' : 'specialistlydb');
     
-    await mongoose.connect(mongoUri, {
-      dbName: 'specialistdb',
-    });
+    // Don't override dbName - let it come from the URI
+    await mongoose.connect(mongoUri);
 
-    console.log('✓ MongoDB connected successfully to specialistdb');
+    console.log('✓ MongoDB connected successfully');
 
     // Initialize collections
     await initializeCollections();
