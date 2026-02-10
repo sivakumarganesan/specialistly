@@ -293,8 +293,8 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
   });
 
   const handleCreateService = async () => {
-    if (!formData.title || !formData.description) {
-      alert("Please fill in all required fields (Title and Description)");
+    if (!formData.title || !formData.description || !formData.capacity) {
+      alert("Please fill in all required fields (Title, Description, and Capacity)");
       return;
     }
     if (serviceType) {
@@ -351,7 +351,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
   };
 
   const handleEditService = async () => {
-    if (selectedService && formData.title) {
+    if (selectedService && formData.title && formData.capacity) {
       const updatedData = {
         title: formData.title,
         description: formData.description,
