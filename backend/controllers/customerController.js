@@ -23,6 +23,7 @@ export const createCustomer = async (req, res) => {
 export const getAllCustomers = async (req, res) => {
   try {
     const { specialistEmail } = req.query;
+    console.log('getAllCustomers called with specialistEmail:', specialistEmail);
     
     let query = {};
     if (specialistEmail) {
@@ -30,12 +31,15 @@ export const getAllCustomers = async (req, res) => {
       query = { 'specialists.specialistEmail': specialistEmail };
     }
     
+    console.log('Query:', query);
     const customers = await Customer.find(query);
+    console.log('Found customers:', customers.length);
     res.status(200).json({
       success: true,
       data: customers,
     });
   } catch (error) {
+    console.error('Error in getAllCustomers:', error);
     res.status(500).json({
       success: false,
       message: error.message,
