@@ -132,7 +132,8 @@ function UserProfile() {
       if (!user?.id) return;
 
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+        const API_BASE_URL = API_URL.replace('/api', '');
         const response = await fetch(`${API_BASE_URL}/api/zoom/oauth/user/status?userId=${user.id}`);
         const data = await response.json();
         
@@ -239,7 +240,8 @@ function UserProfile() {
       return;
     }
     // Redirect to OAuth authorization URL with userId
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+    const API_BASE_URL = API_URL.replace('/api', '');
     window.location.href = `${API_BASE_URL}/api/zoom/oauth/user/authorize?userId=${userId}`;
   };
 
@@ -255,7 +257,8 @@ function UserProfile() {
 
     try {
       setZoomConnecting(true);
-      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001';
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const API_BASE_URL = API_URL.replace('/api', '');
       
       const response = await fetch(`${API_BASE_URL}/api/zoom/oauth/user/revoke`, {
         method: 'POST',
