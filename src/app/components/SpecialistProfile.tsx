@@ -276,21 +276,22 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
         };
         
         const response = await appointmentAPI.book(slotId, bookingData);
-      
-      if (response?.success) {
-        alert("✓ Service booked successfully! Check your email for the Zoom meeting link.");
-        // Refresh data
-        fetchSpecialistData();
-        setServiceBookingId(null);
-        setSelectedServiceDate("");
-        setFutureSlots([]);
-      } else {
-        // Check if it's a Zoom re-auth error
-        if (response?.requiresReAuth) {
-          setZoomReAuthMessage(response?.message || "The specialist needs to re-authorize their Zoom account.");
-          setShowZoomReAuthModal(true);
+        
+        if (response?.success) {
+          alert("✓ Service booked successfully! Check your email for the Zoom meeting link.");
+          // Refresh data
+          fetchSpecialistData();
+          setServiceBookingId(null);
+          setSelectedServiceDate("");
+          setFutureSlots([]);
         } else {
-          alert("Failed to book service. Please try again.");
+          // Check if it's a Zoom re-auth error
+          if (response?.requiresReAuth) {
+            setZoomReAuthMessage(response?.message || "The specialist needs to re-authorize their Zoom account.");
+            setShowZoomReAuthModal(true);
+          } else {
+            alert("Failed to book service. Please try again.");
+          }
         }
       }
     } catch (error: any) {
@@ -727,7 +728,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
 
       {activeTab === "appointments" && (
         <div className="space-y-4">
-          {user?.role === "user" && user?.membership !== "customer" ? (
+          {user?.role === "specialist" ? (
             <Card>
               <CardContent className="pt-6 text-center text-amber-600">
                 <p>Please switch to customer mode to book appointments.</p>
