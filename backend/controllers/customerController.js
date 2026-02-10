@@ -203,14 +203,19 @@ export const enrollCourse = async (req, res) => {
 // Book a service for customer
 export const bookService = async (req, res) => {
   try {
-    const { userId, serviceId, bookedAt, status } = req.body;
+    const { customerEmail, serviceId, bookedAt, status } = req.body;
 
-    const customer = await Customer.findOne({ email: userId });
+    // Find customer by email, or create if doesn't exist
+    let customer = await Customer.findOne({ email: customerEmail });
+    
     if (!customer) {
-      return res.status(404).json({
-        success: false,
-        message: 'Customer not found',
+      // Create a new customer record with the provided info
+      const { customerEmail, customerName } = req.body;
+      customer = new Customer({
+        email: customerEmail,
+        name: customerName || customerEmail.split('@')[0],
       });
+      await customer.save();
     }
 
     // Add service booking
@@ -220,7 +225,7 @@ export const bookService = async (req, res) => {
 
     customer.bookings.push({
       serviceId,
-      bookedAt: new Date(bookedAt),
+      bookedAt: bookedAt ? new Date(bookedAt) : new Date(),
       status: status || 'pending',
     });
 
