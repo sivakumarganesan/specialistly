@@ -129,14 +129,20 @@ export const login = async (req, res) => {
       });
     }
 
+    console.log('Login attempt:', { email, passwordLength: password?.length });
+
     const user = await User.findOne({ email });
     if (!user) {
+      console.log('User not found:', email);
       return res.status(401).json({
         error: 'Invalid email or password',
       });
     }
 
+    console.log('User found:', email);
     const isPasswordValid = await user.comparePassword(password);
+    console.log('Password valid:', isPasswordValid);
+    
     if (!isPasswordValid) {
       return res.status(401).json({
         error: 'Invalid email or password',
