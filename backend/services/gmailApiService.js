@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import fs from 'fs';
+import path from 'path';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -14,16 +15,52 @@ let gmailInitError = null;
 
 const initializeGmailAPI = () => {
   try {
-    const credentialsPath = process.env.GOOGLE_APPLICATION_CREDENTIALS || './credentials.json';
-    
-    if (!fs.existsSync(credentialsPath)) {
-      gmailInitError = `Google credentials file not found at: ${credentialsPath}`;
-      console.warn(`⚠️  ${gmailInitError}`);
+    let authConfig = null;
+
+    // In production, REQUIRE base64 credentials (no file fallback)
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    if (process.env.GOOGLE_CREDENTIALS_BASE64) {
+      console.log('📧 Loading Google credentials from environment variable (GOOGLE_CREDENTIALS_BASE64)');
+      try {
+        const credentialsJson = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('utf-8');
+        authConfig = JSON.parse(credentialsJson);
+      } catch (error) {
+        console.error('❌ Failed to parse GOOGLE_CREDENTIALS_BASE64:', error.message);
+        gmailInitError = 'Invalid GOOGLE_CREDENTIALS_BASE64 format';
+        return null;
+      }
+    } else if (isProduction) {
+      // In production, don't fall back to files
+      gmailInitError = `Gmail API not configured: Set GOOGLE_CREDENTIALS_BASE64 environment variable in Railway`;
+      console.error(`❌ ${gmailInitError}`);
+      console.error(`   Go to Railway Dashboard → Variables → Add: GOOGLE_CREDENTIALS_BASE64`);
       return null;
+    } else {
+      // Local development: try to read credentials.json file
+      const credentialsPath = './credentials.json';
+      console.log(`📧 Loading Google credentials from file: ${credentialsPath}`);
+      
+      if (!fs.existsSync(credentialsPath)) {
+        gmailInitError = `Google credentials file not found at: ${credentialsPath}`;
+        console.error(`❌ ${gmailInitError}`);
+        console.error(`   For production (Railway): Set GOOGLE_CREDENTIALS_BASE64 environment variable`);
+        console.error(`   For local development: Ensure credentials.json exists in backend folder`);
+        return null;
+      }
+
+      try {
+        const credentialsContent = fs.readFileSync(credentialsPath, 'utf-8');
+        authConfig = JSON.parse(credentialsContent);
+      } catch (error) {
+        gmailInitError = `Failed to read credentials: ${error.message}`;
+        console.error(`❌ ${gmailInitError}`);
+        return null;
+      }
     }
 
     const auth = new google.auth.GoogleAuth({
-      keyFile: credentialsPath,
+      credentials: authConfig,
       scopes: ['https://www.googleapis.com/auth/gmail.send'],
     });
 
