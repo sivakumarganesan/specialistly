@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import Customer from '../models/Customer.js';
+import zoomService from '../services/zoomService.js';
+import { UserOAuthToken } from '../models/UserOAuthToken.js';
 
 // Create a new customer
 export const createCustomer = async (req, res) => {
@@ -238,6 +240,212 @@ export const bookService = async (req, res) => {
       data: customer,
     });
   } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Book a webinar session with Zoom meeting creation and email notifications
+ * @route POST /api/customer/book-webinar
+ */
+export const bookWebinar = async (req, res) => {
+  try {
+    const {
+      customerEmail,
+      customerName,
+      specialistEmail,
+      specialistName,
+      specialistId,
+      serviceId,
+      serviceTitle,
+      webinarDate,
+      webinarTime,
+    } = req.body;
+
+    // Validate required fields
+    if (!customerEmail || !specialistId || !webinarDate || !webinarTime) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: customerEmail, specialistId, webinarDate, webinarTime',
+      });
+    }
+
+    try {
+      // Get specialist's Zoom OAuth token
+      const zoomToken = await UserOAuthToken.findOne({ userId: specialistId });
+      
+      if (!zoomToken) {
+        console.error(`❌ No Zoom OAuth token found for specialist ${specialistId}`);
+        
+        // Send re-auth notification
+        try {
+          await zoomService.sendZoomReAuthNotification(
+            specialistEmail,
+            specialistName,
+            customerName,
+            serviceTitle
+          );
+        } catch (emailError) {
+          console.error('❌ Failed to send re-auth notification:', emailError.message);
+        }
+        
+        return res.status(400).json({
+          success: false,
+          message: `❌ The specialist hasn't connected their Zoom account. A notification has been sent.`,
+          requiresReAuth: true,
+        });
+      }
+
+      if (!zoomToken.zoomAccessToken || zoomToken.zoomAccessToken === 'pending') {
+        console.error(`❌ Zoom access token not available for specialist ${specialistId}`);
+        
+        // Send re-auth notification
+        try {
+          await zoomService.sendZoomReAuthNotification(
+            specialistEmail,
+            specialistName,
+            customerName,
+            serviceTitle
+          );
+        } catch (emailError) {
+          console.error('❌ Failed to send re-auth notification:', emailError.message);
+        }
+        
+        return res.status(400).json({
+          success: false,
+          message: `❌ The specialist's Zoom authorization needs to be re-completed. A notification has been sent.`,
+          requiresReAuth: true,
+        });
+      }
+
+      // Calculate meeting times  
+      const startDateTime = new Date(webinarDate);
+      const [startHour, startMin] = webinarTime.split(':');
+      startDateTime.setHours(parseInt(startHour), parseInt(startMin));
+
+      // End time: 1 hour after start time
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setHours(endDateTime.getHours() + 1);
+
+      console.log('🎥 Creating Zoom meeting for webinar:', serviceTitle);
+      let meetData;
+      try {
+        meetData = await zoomService.createZoomMeeting({
+          specialistEmail,
+          specialistName,
+          specialistId,
+          customerEmail,
+          customerName,
+          serviceTitle,
+          startDateTime: startDateTime.toISOString(),
+          endDateTime: endDateTime.toISOString(),
+        });
+        console.log(`✅ Zoom meeting created: ${meetData.zoomMeetingId}`);
+      } catch (zoomError) {
+        console.error('❌ Zoom meeting creation error:', zoomError.message);
+        
+        // Send re-auth notification
+        try {
+          await zoomService.sendZoomReAuthNotification(
+            specialistEmail,
+            specialistName,
+            customerName,
+            serviceTitle
+          );
+        } catch (emailError) {
+          console.error('❌ Failed to send re-auth notification:', emailError.message);
+        }
+        
+        return res.status(400).json({
+          success: false,
+          message: `❌ Failed to create Zoom meeting: ${zoomError.message}`,
+          requiresReAuth: true,
+        });
+      }
+
+      // Create or update customer
+      let customer = await Customer.findOne({ email: customerEmail });
+      if (!customer) {
+        customer = new Customer({
+          email: customerEmail,
+          name: customerName || customerEmail.split('@')[0],
+        });
+      }
+
+      // Add booking to customer
+      if (!customer.bookings) {
+        customer.bookings = [];
+      }
+      customer.bookings.push({
+        serviceId: serviceId,
+        serviceName: serviceTitle,
+        bookedAt: new Date(),
+        status: 'confirmed',
+        zoomMeetingId: meetData.zoomMeetingId,
+        zoomJoinUrl: meetData.joinUrl,
+      });
+
+      // Add specialist to customer's specialists list if not already there
+      if (!customer.specialists) {
+        customer.specialists = [];
+      }
+      const existingSpecialist = customer.specialists.find(
+        (s) => s.specialistEmail === specialistEmail
+      );
+      if (!existingSpecialist) {
+        customer.specialists.push({
+          specialistId: specialistId,
+          specialistEmail: specialistEmail,
+          specialistName: specialistName,
+          firstBookedDate: new Date(),
+        });
+      }
+
+      await customer.save();
+
+      // Send confirmation emails
+      try {
+        console.log('📧 Sending webinar confirmation emails...');
+        await zoomService.sendMeetingInvitation({
+          specialistEmail,
+          specialistName,
+          customerEmail,
+          customerName,
+          serviceTitle,
+          date: webinarDate,
+          startTime: webinarTime,
+          joinUrl: meetData.joinUrl,
+          zoomMeetingId: meetData.zoomMeetingId,
+        });
+        console.log('✅ Webinar confirmation emails sent');
+      } catch (emailError) {
+        console.error('❌ Email sending error:', emailError.message);
+        // Log but don't fail the booking
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Webinar booked successfully with Zoom meeting created and confirmation sent',
+        data: {
+          customerId: customer._id,
+          customerEmail: customerEmail,
+          serviceTitle: serviceTitle,
+          zoomMeetingId: meetData.zoomMeetingId,
+          zoomJoinUrl: meetData.joinUrl,
+        },
+      });
+    } catch (error) {
+      console.error('❌ Webinar booking error:', error.message);
+      res.status(400).json({
+        success: false,
+        message: `Failed to book webinar: ${error.message}`,
+      });
+    }
+  } catch (error) {
+    console.error('❌ Unexpected error:', error.message);
     res.status(400).json({
       success: false,
       message: error.message,

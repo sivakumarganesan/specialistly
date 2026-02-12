@@ -248,14 +248,13 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
           serviceTitle: service.title,
           webinarDate: selectedWebinarDate.date,
           webinarTime: selectedWebinarDate.time,
-          status: "confirmed",
         };
         
-        // Book the webinar using customer booking endpoint
-        const response = await customerAPI.bookService(webinarBookingData);
+        // Book the webinar using new webinar booking endpoint (creates Zoom + sends emails)
+        const response = await customerAPI.bookWebinar(webinarBookingData);
         
         if (response?.success) {
-          alert("✓ Webinar booked successfully! Check your email for more details.");
+          alert("✓ Webinar booked successfully! Check your email for confirmation and Zoom link.");
           fetchSpecialistData();
           setServiceBookingId(null);
           setSelectedServiceDate("");

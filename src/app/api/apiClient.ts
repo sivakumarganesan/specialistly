@@ -98,6 +98,7 @@ export const customerAPI = {
     apiCall(`/customers/${customerId}/purchases`, "POST", data),
   enrollCourse: (data: any) => apiCall("/customers/enroll", "POST", data),
   bookService: (data: any) => apiCall("/customers/book", "POST", data),
+  bookWebinar: (data: any) => apiCall("/customers/book-webinar", "POST", data),
   getEnrollments: (email: string) => apiCall(`/customers/${email}/enrollments`),
   getBookings: (email: string) => apiCall(`/customers/${email}/bookings`),
 };
