@@ -55,6 +55,14 @@ export const handleUserOAuthCallback = async (req, res) => {
   try {
     const { code, state, error: zoomError } = req.query;
 
+    // Log callback received
+    console.log('📍 OAuth Callback Handler Triggered');
+    console.log('   URL:', req.originalUrl);
+    console.log('   Method:', req.method);
+    console.log('   Code present:', !!code);
+    console.log('   State present:', !!state);
+    console.log('   Error present:', !!zoomError);
+
     // Get frontend URL from environment variables
     // For local dev: http://localhost:5173, for prod: https://www.specialistly.com
     const frontendUrl = process.env.FRONTEND_URL || 

@@ -75,11 +75,18 @@ app.get('/api/test/outbound-ip', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('❌ Error caught by error handler:');
+  console.error('   Path:', req.path);
+  console.error('   Method:', req.method);
+  console.error('   Message:', err.message);
+  console.error('   Stack:', err.stack);
+  
+  // Send error response
   res.status(500).json({
     success: false,
     message: 'Internal server error',
     error: err.message,
+    path: req.path,
   });
 });
 
