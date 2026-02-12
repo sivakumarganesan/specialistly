@@ -151,10 +151,19 @@ function UserProfile() {
     // Check on mount
     fetchZoomStatus();
 
-    // Also check for OAuth success in URL params (when returning from OAuth flow)
+    // Also check for OAuth success/error in URL params (when returning from OAuth flow)
     const params = new URLSearchParams(window.location.search);
     if (params.get('oauth_success') === 'true') {
       setZoomConnected(true);
+      setSuccessMessage("✓ Zoom account connected successfully!");
+      setTimeout(() => setSuccessMessage(""), 5000);
+      // Clean up URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get('oauth_error')) {
+      const errorMsg = params.get('oauth_error');
+      setErrorMessage(`Zoom connection failed: ${errorMsg}`);
+      setZoomConnecting(false);
+      setTimeout(() => setErrorMessage(""), 5000);
       // Clean up URL params
       window.history.replaceState({}, document.title, window.location.pathname);
     }
