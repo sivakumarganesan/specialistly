@@ -356,9 +356,13 @@ export const sendMeetingInvitation = async (appointmentData) => {
     console.log('📧 Sending Zoom meeting invitations...');
 
     if (!emailTransporter) {
-      console.error(`❌ Email service not configured`);
-      console.error(`   Set GMAIL_USER and GMAIL_PASSWORD in .env`);
-      return { success: false, message: 'Email service not configured' };
+      console.error(`❌ EMAIL SERVICE NOT CONFIGURED`);
+      console.error(`   Reason: ${emailInitError || 'Unknown'}`);
+      console.error(`   FIX: Verify in .env:`);
+      console.error(`   - GMAIL_USER = ${process.env.GMAIL_USER || '❌ NOT SET'}`);
+      console.error(`   - GMAIL_PASSWORD = ${process.env.GMAIL_PASSWORD ? '✓ SET' : '❌ NOT SET'}`);
+      console.error(`   - If 2FA enabled, use App Password from: https://myaccount.google.com/apppasswords`);
+      return { success: false, message: 'Email service not configured. Check server logs.' };
     }
 
     const {
@@ -465,29 +469,40 @@ export const sendMeetingInvitation = async (appointmentData) => {
     `;
 
     // Send emails
-    console.log(`📧 Sending to participant: ${customerEmail}`);
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
-      to: customerEmail,
-      subject: `🎥 Zoom Meeting Invitation: ${serviceTitle}`,
-      html: participantEmailHtml,
-    });
-    console.log(`✓ Participant email sent to ${customerEmail}`);
+    try {
+      console.log(`📧 Sending to participant: ${customerEmail}`);
+      await emailTransporter.sendMail({
+        from: process.env.GMAIL_USER,
+        to: customerEmail,
+        subject: `🎥 Zoom Meeting Invitation: ${serviceTitle}`,
+        html: participantEmailHtml,
+      });
+      console.log(`✓ Participant email sent to ${customerEmail}`);
+    } catch (participantEmailError) {
+      console.error(`❌ Failed to send participant email to ${customerEmail}:`, participantEmailError.message);
+      throw participantEmailError;
+    }
 
-    console.log(`📧 Sending to host: ${specialistEmail}`);
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
-      to: specialistEmail,
-      subject: `🎥 Your Zoom Meeting: ${customerName} - ${serviceTitle}`,
-      html: hostEmailHtml,
-    });
-    console.log(`✓ Host email sent to ${specialistEmail}`);
+    try {
+      console.log(`📧 Sending to host: ${specialistEmail}`);
+      await emailTransporter.sendMail({
+        from: process.env.GMAIL_USER,
+        to: specialistEmail,
+        subject: `🎥 Your Zoom Meeting: ${customerName} - ${serviceTitle}`,
+        html: hostEmailHtml,
+      });
+      console.log(`✓ Host email sent to ${specialistEmail}`);
+    } catch (hostEmailError) {
+      console.error(`❌ Failed to send host email to ${specialistEmail}:`, hostEmailError.message);
+      throw hostEmailError;
+    }
 
     console.log(`✅ Zoom meeting invitations sent successfully`);
     return { success: true };
   } catch (error) {
-    console.error('❌ Error sending meeting invitation:', error.message);
-    return { success: false, error: error.message };
+    console.error('❌ ERROR sending meeting invitation:', error.message);
+    console.error('   This is why customer did NOT receive the Zoom appointment email');
+    return { success: false, message: error.message, error: error.toString() };
   }
 };
 

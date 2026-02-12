@@ -308,7 +308,7 @@ export const bookSlot = async (req, res) => {
       }
       try {
         console.log('📧 Sending Zoom meeting invitations...');
-        await zoomService.sendMeetingInvitation({
+        const emailResult = await zoomService.sendMeetingInvitation({
           specialistEmail,
           specialistName,
           customerEmail,
@@ -319,9 +319,16 @@ export const bookSlot = async (req, res) => {
           joinUrl: meetData.joinUrl,
           zoomMeetingId: meetData.zoomMeetingId,
         });
+        if (!emailResult.success) {
+          console.error('⚠️  Email sending failed:', emailResult.message || emailResult.error);
+          console.error('   ERROR: Zoom appointment email was NOT sent to customer!');
+          console.error('   Message:', emailResult.message);
+        }
       } catch (emailError) {
-        console.error('⚠️  Email sending error (non-critical):', emailError);
-        // Don't fail the booking if email fails
+        console.error('❌ CRITICAL: Email sending error:', emailError.message);
+        console.error('   ERROR: Zoom appointment email was NOT sent!');
+        console.error('   Stack:', emailError.stack);
+        // Don't fail the booking if email fails, but log the error
       }
 
       res.status(200).json({
