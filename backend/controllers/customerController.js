@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import Customer from '../models/Customer.js';
 import zoomService from '../services/zoomService.js';
-import { UserOAuthToken } from '../models/UserOAuthToken.js';
 
 // Create a new customer
 export const createCustomer = async (req, res) => {
@@ -275,6 +274,7 @@ export const bookWebinar = async (req, res) => {
 
     try {
       // Get specialist's Zoom OAuth token
+      const UserOAuthToken = (await import('../models/UserOAuthToken.js')).default;
       const zoomToken = await UserOAuthToken.findOne({ userId: specialistId });
       
       if (!zoomToken) {
