@@ -188,7 +188,6 @@ export const sendBookingInviteEmail = async (appointmentData) => {
       to: customerEmail,
       subject: `✓ Booking Confirmed: ${serviceTitle}`,
       html: customerEmail_html,
-      from: process.env.GMAIL_USER,
     });
     console.log(`✓ Customer email sent to ${customerEmail}`);
 
@@ -197,7 +196,6 @@ export const sendBookingInviteEmail = async (appointmentData) => {
       to: specialistEmail,
       subject: `📞 New Booking: ${customerName} - ${serviceTitle}`,
       html: specialistEmail_html,
-      from: process.env.GMAIL_USER,
     });
     console.log(`✓ Specialist email sent to ${specialistEmail}`);
 
@@ -245,7 +243,6 @@ export const sendReminderEmail = async (appointment) => {
       to: customerEmail,
       subject: `Reminder: Your Consulting Session - ${serviceTitle}`,
       html: emailTemplate,
-      from: process.env.GMAIL_USER,
     });
 
     // Send to specialist
@@ -253,7 +250,6 @@ export const sendReminderEmail = async (appointment) => {
       to: specialistEmail,
       subject: `Reminder: Consulting Session with ${customerName}`,
       html: emailTemplate.replace('Hi ' + customerName, 'Hi Specialist'),
-      from: process.env.GMAIL_USER,
     });
 
     return true;
@@ -296,7 +292,6 @@ export const sendRecordingEmail = async (appointment, recordingLink, expiryDays 
       to: customerEmail,
       subject: `Recording: Your Consulting Session - ${serviceTitle}`,
       html: emailTemplate,
-      from: process.env.GMAIL_USER,
     });
 
     return true;

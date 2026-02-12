@@ -414,7 +414,6 @@ export const sendMeetingInvitation = async (appointmentData) => {
         to: customerEmail,
         subject: `🎥 Zoom Meeting Invitation: ${serviceTitle}`,
         html: participantEmailHtml,
-        from: process.env.GMAIL_USER,
       });
       console.log(`✓ Participant email sent to ${customerEmail}`);
     } catch (participantEmailError) {
@@ -428,7 +427,6 @@ export const sendMeetingInvitation = async (appointmentData) => {
         to: specialistEmail,
         subject: `🎥 Your Zoom Meeting: ${customerName} - ${serviceTitle}`,
         html: hostEmailHtml,
-        from: process.env.GMAIL_USER,
       });
       console.log(`✓ Host email sent to ${specialistEmail}`);
     } catch (hostEmailError) {
@@ -484,7 +482,6 @@ export const sendRecordingLink = async (appointmentData, recordingUrl) => {
       to: customerEmail,
       subject: `📹 Your Recording: ${serviceTitle}`,
       html: recordingEmailHtml,
-      from: process.env.GMAIL_USER,
     });
 
     console.log(`✅ Recording link sent to ${customerEmail}`);
@@ -542,7 +539,6 @@ export const sendMeetingReminder = async (appointmentData, hoursUntilMeeting) =>
       to: customerEmail,
       subject: `⏰ Reminder: Your ${serviceTitle} Session Starts in ${hoursUntilMeeting} Hours`,
       html: reminderEmailHtml,
-      from: process.env.GMAIL_USER,
     });
 
     console.log(`✅ Reminder sent to ${customerEmail}`);
@@ -559,11 +555,6 @@ export const sendMeetingReminder = async (appointmentData, hoursUntilMeeting) =>
 export const sendZoomReAuthNotification = async (specialistEmail, specialistName, customerName, serviceTitle) => {
   try {
     console.log(`📧 Sending Zoom re-auth notification to ${specialistEmail}...`);
-
-    if (!emailTransporter) {
-      console.error(`❌ Email service not configured`);
-      return { success: false, message: 'Email service not configured' };
-    }
 
     const zoomAuthUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/settings`;
     
@@ -616,8 +607,7 @@ export const sendZoomReAuthNotification = async (specialistEmail, specialistName
       </html>
     `;
 
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
+    await gmailApiService.sendEmail({
       to: specialistEmail,
       subject: `⚠️ Action Required: Re-authorize Your Zoom Account - ${serviceTitle}`,
       html: reAuthEmailHtml,

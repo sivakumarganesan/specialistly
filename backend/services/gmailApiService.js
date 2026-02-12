@@ -12,6 +12,7 @@ dotenv.config();
 
 let gmailClient = null;
 let gmailInitError = null;
+let serviceAccountEmail = null; // Store the service account email
 
 const initializeGmailAPI = () => {
   try {
@@ -59,6 +60,15 @@ const initializeGmailAPI = () => {
       }
     }
 
+    // Extract service account email from credentials
+    serviceAccountEmail = authConfig.client_email;
+    if (!serviceAccountEmail) {
+      gmailInitError = 'Service account email not found in credentials';
+      console.error(`❌ ${gmailInitError}`);
+      return null;
+    }
+    console.log(`✅ Service Account Email: ${serviceAccountEmail}`);
+
     const auth = new google.auth.GoogleAuth({
       credentials: authConfig,
       scopes: ['https://www.googleapis.com/auth/gmail.send'],
@@ -81,7 +91,7 @@ initializeGmailAPI();
 
 /**
  * Send email using Gmail API
- * @param {Object} emailData - { to, subject, html, from }
+ * @param {Object} emailData - { to, subject, html }
  */
 export const sendEmail = async (emailData) => {
   try {
@@ -91,15 +101,19 @@ export const sendEmail = async (emailData) => {
       throw new Error(error);
     }
 
-    const { to, subject, html, from } = emailData;
+    if (!serviceAccountEmail) {
+      throw new Error('Service account email not configured');
+    }
+
+    const { to, subject, html } = emailData;
 
     if (!to || !subject || !html) {
       throw new Error('Missing required email fields: to, subject, html');
     }
 
-    // Create RFC 2822 formatted email
+    // Create RFC 2822 formatted email using service account email
     const message = [
-      `From: ${from || process.env.GMAIL_USER || 'noreply@specialistly.com'}`,
+      `From: ${serviceAccountEmail}`,  // Use service account email, NOT GMAIL_USER
       `To: ${to}`,
       `Subject: ${subject}`,
       'MIME-Version: 1.0',
@@ -125,6 +139,7 @@ export const sendEmail = async (emailData) => {
     });
 
     console.log(`✓ Email sent via Gmail API to: ${to}`);
+    console.log(`  From: ${serviceAccountEmail}`);
     console.log(`  Message ID: ${response.data.id}`);
     return { success: true, messageId: response.data.id };
   } catch (error) {
