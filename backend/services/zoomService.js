@@ -20,23 +20,45 @@ const initializeEmailClient = () => {
       return null;
     }
 
-    // Support both Gmail and Yahoo Mail
+    // Support Gmail, Yahoo Mail, and SendGrid
     const emailService = process.env.EMAIL_SERVICE || 'gmail';
     
-    let transportConfig = {
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
-      },
-    };
+    let transportConfig = {};
 
-    if (emailService.toLowerCase() === 'yahoo') {
+    if (emailService.toLowerCase() === 'sendgrid') {
+      // SendGrid configuration
+      transportConfig.host = 'smtp.sendgrid.net';
+      transportConfig.port = 587;
+      transportConfig.secure = false;
+      transportConfig.auth = {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY || process.env.GMAIL_PASSWORD,
+      };
+      console.log('📧 Email Service: SendGrid');
+    } else if (emailService.toLowerCase() === 'yahoo') {
+      // Yahoo Mail configuration
       transportConfig.host = 'smtp.mail.yahoo.com';
       transportConfig.port = 587;
-      transportConfig.secure = false; // Use TLS
+      transportConfig.secure = false;
+      transportConfig.auth = {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASSWORD,
+      };
+      console.log('📧 Email Service: Yahoo Mail');
     } else {
-      // Gmail is default
-      transportConfig.service = 'gmail';
+      // Gmail configuration - try SSL first (port 465), fallback to TLS (port 587)
+      transportConfig = {
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // SSL
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_PASSWORD,
+        },
+        connectionTimeout: 10000, // 10 seconds
+        socketTimeout: 10000, // 10 seconds
+      };
+      console.log('📧 Email Service: Gmail (SSL port 465)');
     }
 
     const transporter = nodemailer.createTransport(transportConfig);
@@ -44,9 +66,20 @@ const initializeEmailClient = () => {
     transporter.verify((error, success) => {
       if (error) {
         console.warn(`⚠️  Email service verification failed: ${error.message}`);
+        console.warn(`   Service: ${emailService}`);
+        console.warn(`   Port: ${transportConfig.port}`);
+        console.warn(`   Secure: ${transportConfig.secure}`);
+        console.warn(`   TROUBLESHOOTING:`);
+        console.warn(`   1. If Gmail: Use App Password (not regular password)`);
+        console.warn(`      https://myaccount.google.com/apppasswords`);
+        console.warn(`   2. Check GMAIL_USER and GMAIL_PASSWORD in .env`);
+        console.warn(`   3. Try PORT 587 by setting: EMAIL_PORT=587 in .env`);
+        console.warn(`   4. Consider SendGrid for better reliability`);
         emailInitError = error.message;
       } else {
-        console.log(`✓ Email service verified successfully (${process.env.GMAIL_USER})`);
+        console.log(`✓ Email service verified successfully`);
+        console.log(`  Provider: ${emailService}`);
+        console.log(`  User: ${process.env.GMAIL_USER}`);
       }
     });
 
