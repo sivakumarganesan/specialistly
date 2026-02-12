@@ -74,13 +74,13 @@ export const handleUserOAuthCallback = async (req, res) => {
     if (zoomError) {
       console.error('❌ Zoom OAuth error:', zoomError);
       return res.redirect(
-        `${frontendUrl}/dashboard?oauth_error=${encodeURIComponent(zoomError)}`
+        `${frontendUrl}/?oauth_error=${encodeURIComponent(zoomError)}`
       );
     }
 
     if (!code || !state) {
       return res.redirect(
-        `${frontendUrl}/dashboard?oauth_error=Missing code or state`
+        `${frontendUrl}/?oauth_error=Missing code or state`
       );
     }
 
@@ -99,7 +99,7 @@ export const handleUserOAuthCallback = async (req, res) => {
       console.warn('⚠️  No token record found for state:', state);
       console.warn('  Available states:', allTokens.map(t => ({ userId: t.userId, state: t.oauthState })));
       return res.redirect(
-        `${frontendUrl}/dashboard?oauth_error=Invalid state token`
+        `${frontendUrl}/?oauth_error=Invalid state token`
       );
     }
 
@@ -118,7 +118,7 @@ export const handleUserOAuthCallback = async (req, res) => {
       console.error('❌ Token exchange failed:', result.error);
       console.log('⚠️  Check backend logs above for detailed error information');
       return res.redirect(
-        `${frontendUrl}/dashboard?oauth_error=${encodeURIComponent(result.error)}`
+        `${frontendUrl}/?oauth_error=${encodeURIComponent(result.error)}`
       );
     }
     
@@ -135,9 +135,9 @@ export const handleUserOAuthCallback = async (req, res) => {
       console.log(`✅ Updated Zoom status for user ${userId}: ${result.zoomEmail}`);
     }
 
-    // Redirect to dashboard with success
+    // Redirect to root with success (let React Router handle navigation to dashboard)
     res.redirect(
-      `${frontendUrl}/dashboard?oauth_success=true&zoom_email=${encodeURIComponent(
+      `${frontendUrl}/?oauth_success=true&zoom_email=${encodeURIComponent(
         result.zoomEmail
       )}`
     );
@@ -148,7 +148,7 @@ export const handleUserOAuthCallback = async (req, res) => {
                          ? 'https://www.specialistly.com' 
                          : 'http://localhost:5173');
     res.redirect(
-      `${frontendUrl}/dashboard?oauth_error=${encodeURIComponent(error.message)}`
+      `${frontendUrl}/?oauth_error=${encodeURIComponent(error.message)}`
     );
   }
 };
