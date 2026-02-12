@@ -1,97 +1,13 @@
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
-import nodemailer from 'nodemailer';
+import gmailApiService from './gmailApiService.js';
 import UserOAuthToken from '../models/UserOAuthToken.js';
 
 dotenv.config();
 
 // Zoom API base URL
 const ZOOM_API_BASE = 'https://api.zoom.us/v2';
-
-// Email transporter setup
-let emailTransporter = null;
-let emailInitError = null;
-
-const initializeEmailClient = () => {
-  try {
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
-      emailInitError = 'GMAIL_USER or GMAIL_PASSWORD not set in .env file';
-      return null;
-    }
-
-    // Support Gmail, Yahoo Mail, and SendGrid
-    const emailService = process.env.EMAIL_SERVICE || 'gmail';
-    
-    let transportConfig = {};
-
-    if (emailService.toLowerCase() === 'sendgrid') {
-      // SendGrid configuration
-      transportConfig.host = 'smtp.sendgrid.net';
-      transportConfig.port = 587;
-      transportConfig.secure = false;
-      transportConfig.auth = {
-        user: 'apikey',
-        pass: process.env.SENDGRID_API_KEY || process.env.GMAIL_PASSWORD,
-      };
-      console.log('📧 Email Service: SendGrid');
-    } else if (emailService.toLowerCase() === 'yahoo') {
-      // Yahoo Mail configuration
-      transportConfig.host = 'smtp.mail.yahoo.com';
-      transportConfig.port = 587;
-      transportConfig.secure = false;
-      transportConfig.auth = {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
-      };
-      console.log('📧 Email Service: Yahoo Mail');
-    } else {
-      // Gmail configuration - try SSL first (port 465), fallback to TLS (port 587)
-      transportConfig = {
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // SSL
-        auth: {
-          user: process.env.GMAIL_USER,
-          pass: process.env.GMAIL_PASSWORD,
-        },
-        connectionTimeout: 10000, // 10 seconds
-        socketTimeout: 10000, // 10 seconds
-      };
-      console.log('📧 Email Service: Gmail (SSL port 465)');
-    }
-
-    const transporter = nodemailer.createTransport(transportConfig);
-
-    transporter.verify((error, success) => {
-      if (error) {
-        console.warn(`⚠️  Email service verification failed: ${error.message}`);
-        console.warn(`   Service: ${emailService}`);
-        console.warn(`   Port: ${transportConfig.port}`);
-        console.warn(`   Secure: ${transportConfig.secure}`);
-        console.warn(`   TROUBLESHOOTING:`);
-        console.warn(`   1. If Gmail: Use App Password (not regular password)`);
-        console.warn(`      https://myaccount.google.com/apppasswords`);
-        console.warn(`   2. Check GMAIL_USER and GMAIL_PASSWORD in .env`);
-        console.warn(`   3. Try PORT 587 by setting: EMAIL_PORT=587 in .env`);
-        console.warn(`   4. Consider SendGrid for better reliability`);
-        emailInitError = error.message;
-      } else {
-        console.log(`✓ Email service verified successfully`);
-        console.log(`  Provider: ${emailService}`);
-        console.log(`  User: ${process.env.GMAIL_USER}`);
-      }
-    });
-
-    return transporter;
-  } catch (error) {
-    console.warn(`⚠️  Email transporter creation failed:`, error.message);
-    emailInitError = error.message;
-    return null;
-  }
-};
-
-emailTransporter = initializeEmailClient();
 
 /**
  * Refresh Zoom access token using refresh token
@@ -388,16 +304,6 @@ export const sendMeetingInvitation = async (appointmentData) => {
   try {
     console.log('📧 Sending Zoom meeting invitations...');
 
-    if (!emailTransporter) {
-      console.error(`❌ EMAIL SERVICE NOT CONFIGURED`);
-      console.error(`   Reason: ${emailInitError || 'Unknown'}`);
-      console.error(`   FIX: Verify in .env:`);
-      console.error(`   - GMAIL_USER = ${process.env.GMAIL_USER || '❌ NOT SET'}`);
-      console.error(`   - GMAIL_PASSWORD = ${process.env.GMAIL_PASSWORD ? '✓ SET' : '❌ NOT SET'}`);
-      console.error(`   - If 2FA enabled, use App Password from: https://myaccount.google.com/apppasswords`);
-      return { success: false, message: 'Email service not configured. Check server logs.' };
-    }
-
     const {
       specialistEmail,
       specialistName,
@@ -501,14 +407,14 @@ export const sendMeetingInvitation = async (appointmentData) => {
       </html>
     `;
 
-    // Send emails
+    // Send emails using Gmail API
     try {
       console.log(`📧 Sending to participant: ${customerEmail}`);
-      await emailTransporter.sendMail({
-        from: process.env.GMAIL_USER,
+      await gmailApiService.sendEmail({
         to: customerEmail,
         subject: `🎥 Zoom Meeting Invitation: ${serviceTitle}`,
         html: participantEmailHtml,
+        from: process.env.GMAIL_USER,
       });
       console.log(`✓ Participant email sent to ${customerEmail}`);
     } catch (participantEmailError) {
@@ -518,11 +424,11 @@ export const sendMeetingInvitation = async (appointmentData) => {
 
     try {
       console.log(`📧 Sending to host: ${specialistEmail}`);
-      await emailTransporter.sendMail({
-        from: process.env.GMAIL_USER,
+      await gmailApiService.sendEmail({
         to: specialistEmail,
         subject: `🎥 Your Zoom Meeting: ${customerName} - ${serviceTitle}`,
         html: hostEmailHtml,
+        from: process.env.GMAIL_USER,
       });
       console.log(`✓ Host email sent to ${specialistEmail}`);
     } catch (hostEmailError) {
@@ -534,7 +440,7 @@ export const sendMeetingInvitation = async (appointmentData) => {
     return { success: true };
   } catch (error) {
     console.error('❌ ERROR sending meeting invitation:', error.message);
-    console.error('   This is why customer did NOT receive the Zoom appointment email');
+    console.error('   Stack:', error.stack);
     return { success: false, message: error.message, error: error.toString() };
   }
 };
@@ -545,11 +451,6 @@ export const sendMeetingInvitation = async (appointmentData) => {
 export const sendRecordingLink = async (appointmentData, recordingUrl) => {
   try {
     console.log('📧 Sending recording link to participant...');
-
-    if (!emailTransporter) {
-      console.error(`❌ Email service not configured`);
-      return { success: false, message: 'Email service not configured' };
-    }
 
     const { customerEmail, customerName, serviceTitle, specialistName } = appointmentData;
 
@@ -579,11 +480,11 @@ export const sendRecordingLink = async (appointmentData, recordingUrl) => {
       </html>
     `;
 
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
+    await gmailApiService.sendEmail({
       to: customerEmail,
       subject: `📹 Your Recording: ${serviceTitle}`,
       html: recordingEmailHtml,
+      from: process.env.GMAIL_USER,
     });
 
     console.log(`✅ Recording link sent to ${customerEmail}`);
@@ -600,11 +501,6 @@ export const sendRecordingLink = async (appointmentData, recordingUrl) => {
 export const sendMeetingReminder = async (appointmentData, hoursUntilMeeting) => {
   try {
     console.log(`📧 Sending ${hoursUntilMeeting}h reminder for meeting...`);
-
-    if (!emailTransporter) {
-      console.error(`❌ Email service not configured`);
-      return { success: false, message: 'Email service not configured' };
-    }
 
     const {
       customerEmail,
@@ -642,11 +538,11 @@ export const sendMeetingReminder = async (appointmentData, hoursUntilMeeting) =>
       </html>
     `;
 
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
+    await gmailApiService.sendEmail({
       to: customerEmail,
       subject: `⏰ Reminder: Your ${serviceTitle} Session Starts in ${hoursUntilMeeting} Hours`,
       html: reminderEmailHtml,
+      from: process.env.GMAIL_USER,
     });
 
     console.log(`✅ Reminder sent to ${customerEmail}`);

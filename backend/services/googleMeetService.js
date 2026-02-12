@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import nodemailer from 'nodemailer';
+import gmailApiService from './gmailApiService.js';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
@@ -31,87 +31,6 @@ const getCalendarClient = () => {
 };
 
 // Initialize Email Client (with error handling)
-let emailTransporter = null;
-let emailInitError = null;
-
-const initializeEmailClient = () => {
-  try {
-    if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
-      emailInitError = 'GMAIL_USER or GMAIL_PASSWORD not set in .env file';
-      console.warn(`⚠️  Email Service NOT initialized: ${emailInitError}`);
-      return null;
-    }
-
-    // Support Gmail, Yahoo Mail, and SendGrid
-    const emailService = process.env.EMAIL_SERVICE || 'gmail';
-    
-    let transportConfig = {};
-
-    if (emailService.toLowerCase() === 'sendgrid') {
-      // SendGrid configuration
-      transportConfig.host = 'smtp.sendgrid.net';
-      transportConfig.port = 587;
-      transportConfig.secure = false;
-      transportConfig.auth = {
-        user: 'apikey',
-        pass: process.env.SENDGRID_API_KEY || process.env.GMAIL_PASSWORD,
-      };
-      console.log('📧 Email Service: SendGrid');
-    } else if (emailService.toLowerCase() === 'yahoo') {
-      // Yahoo Mail configuration
-      transportConfig.host = 'smtp.mail.yahoo.com';
-      transportConfig.port = 587;
-      transportConfig.secure = false;
-      transportConfig.auth = {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASSWORD,
-      };
-      console.log('📧 Email Service: Yahoo Mail');
-    } else {
-      // Gmail configuration - use SSL port 465
-      transportConfig = {
-        host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // SSL
-        auth: {
-          user: process.env.GMAIL_USER,
-          pass: process.env.GMAIL_PASSWORD,
-        },
-        connectionTimeout: 10000,
-        socketTimeout: 10000,
-      };
-      console.log('📧 Email Service: Gmail (SSL port 465)');
-    }
-
-    const transporter = nodemailer.createTransport(transportConfig);
-
-    // Verify connection in background (don't block startup)
-    transporter.verify((error, success) => {
-      if (error) {
-        console.warn(`⚠️  Email service verification failed: ${error.message}`);
-        console.warn(`   This might be because:`);
-        console.warn(`   1. Gmail password is incorrect or 2FA enabled`);
-        console.warn(`      → Use App Password: https://myaccount.google.com/apppasswords`);
-        console.warn(`   2. Connection timeout to Gmail SMTP`);
-        console.warn(`      → Check firewall/network settings`);
-        console.warn(`   3. "Less secure apps" is disabled`);
-        console.warn(`      → Enable it: https://myaccount.google.com/lesssecureapps`);
-        console.warn(`   4. Consider using SendGrid for better reliability`);
-        emailInitError = error.message;
-      } else {
-        console.log(`✓ Email service verified successfully (${process.env.GMAIL_USER})`);
-      }
-    });
-
-    return transporter;
-  } catch (error) {
-    console.warn(`⚠️  Email transporter creation failed:`, error.message);
-    emailInitError = error.message;
-    return null;
-  }
-};
-
-emailTransporter = initializeEmailClient();
 
 /**
  * Create a Google Meet event
@@ -263,22 +182,22 @@ export const sendBookingInviteEmail = async (appointmentData) => {
       </html>
     `;
 
-    // Send emails
+    // Send emails using Gmail API
     console.log(`📧 Sending email to customer: ${customerEmail}`);
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
+    await gmailApiService.sendEmail({
       to: customerEmail,
       subject: `✓ Booking Confirmed: ${serviceTitle}`,
       html: customerEmail_html,
+      from: process.env.GMAIL_USER,
     });
     console.log(`✓ Customer email sent to ${customerEmail}`);
 
     console.log(`📧 Sending email to specialist: ${specialistEmail}`);
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
+    await gmailApiService.sendEmail({
       to: specialistEmail,
       subject: `📞 New Booking: ${customerName} - ${serviceTitle}`,
       html: specialistEmail_html,
+      from: process.env.GMAIL_USER,
     });
     console.log(`✓ Specialist email sent to ${specialistEmail}`);
 
@@ -286,7 +205,6 @@ export const sendBookingInviteEmail = async (appointmentData) => {
     return { success: true };
   } catch (error) {
     console.error('❌ Error sending booking invite email:', error.message);
-    console.error('Full error:', error);
     // Don't throw - just log and continue
     return { success: false, error: error.message };
   }
@@ -297,11 +215,6 @@ export const sendBookingInviteEmail = async (appointmentData) => {
  */
 export const sendReminderEmail = async (appointment) => {
   try {
-    if (!emailTransporter) {
-      console.warn(`⚠️  Email service not configured, skipping reminder`);
-      return { success: false, message: 'Email service not configured' };
-    }
-
     const { specialistEmail, customerEmail, customerName, serviceTitle, date, startTime } = appointment;
     
     const meetingDateTime = new Date(date);
@@ -328,24 +241,24 @@ export const sendReminderEmail = async (appointment) => {
     `;
 
     // Send to customer
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
+    await gmailApiService.sendEmail({
       to: customerEmail,
       subject: `Reminder: Your Consulting Session - ${serviceTitle}`,
       html: emailTemplate,
+      from: process.env.GMAIL_USER,
     });
 
     // Send to specialist
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
+    await gmailApiService.sendEmail({
       to: specialistEmail,
       subject: `Reminder: Consulting Session with ${customerName}`,
-      html: emailTemplate.replace('Hi ' + customerName, `Hi Specialist`),
+      html: emailTemplate.replace('Hi ' + customerName, 'Hi Specialist'),
+      from: process.env.GMAIL_USER,
     });
 
     return true;
   } catch (error) {
-    console.error('Error sending reminder email:', error);
+    console.error('Error sending reminder email:', error.message);
     throw error;
   }
 };
@@ -355,11 +268,6 @@ export const sendReminderEmail = async (appointment) => {
  */
 export const sendRecordingEmail = async (appointment, recordingLink, expiryDays = 7) => {
   try {
-    if (!emailTransporter) {
-      console.warn(`⚠️  Email service not configured, skipping recording email`);
-      return { success: false, message: 'Email service not configured' };
-    }
-
     const { specialistEmail, customerEmail, customerName, serviceTitle } = appointment;
     
     const expiryDate = new Date();
@@ -384,11 +292,11 @@ export const sendRecordingEmail = async (appointment, recordingLink, expiryDays 
     `;
 
     // Send to customer
-    await emailTransporter.sendMail({
-      from: process.env.GMAIL_USER,
+    await gmailApiService.sendEmail({
       to: customerEmail,
       subject: `Recording: Your Consulting Session - ${serviceTitle}`,
       html: emailTemplate,
+      from: process.env.GMAIL_USER,
     });
 
     return true;
