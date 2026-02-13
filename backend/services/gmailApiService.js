@@ -16,20 +16,38 @@ const initializeEmailService = () => {
     // Get Gmail credentials from environment variables
     const gmailUser = process.env.GMAIL_USER;
     const gmailPassword = process.env.GMAIL_PASSWORD;
+    const useAppPassword = process.env.USE_APP_PASSWORD !== 'false'; // Default: true
 
     if (!gmailUser || !gmailPassword) {
       initError = 'Gmail credentials not configured. Set GMAIL_USER and GMAIL_PASSWORD environment variables.';
       console.error(`❌ ${initError}`);
-      console.error('   For Gmail SMTP:');
+      console.error('');
+      console.error('📧 Setup Options:');
+      console.error('');
+      console.error('Option 1: Use App Password (RECOMMENDED & MORE SECURE):');
       console.error('   1. Enable 2FA on your Gmail account');
       console.error('   2. Generate an App Password: https://myaccount.google.com/apppasswords');
       console.error('   3. Set GMAIL_USER=your-email@gmail.com');
       console.error('   4. Set GMAIL_PASSWORD=your-app-password (16 chars, no spaces)');
+      console.error('   5. Set USE_APP_PASSWORD=true (or omit, this is default)');
+      console.error('');
+      console.error('Option 2: Use Gmail Password (LESS SECURE, BEING PHASED OUT):');
+      console.error('   1. Go to: https://myaccount.google.com/lesssecureapps');
+      console.error('   2. Turn ON "Allow less secure app access"');
+      console.error('   3. Set GMAIL_USER=your-email@gmail.com');
+      console.error('   4. Set GMAIL_PASSWORD=your-gmail-password');
+      console.error('   5. Set USE_APP_PASSWORD=false');
+      console.error('');
       return null;
     }
 
     console.log('📧 Initializing Gmail SMTP service...');
     console.log(`   Email: ${gmailUser}`);
+    if (useAppPassword) {
+      console.log('   Mode: App Password (Secure)');
+    } else {
+      console.log('   Mode: Gmail Password (Less Secure)');
+    }
 
     // Create Gmail SMTP transporter
     transporter = nodemailer.createTransport({
