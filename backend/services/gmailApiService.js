@@ -48,16 +48,31 @@ const initializeEmailService = () => {
     console.log(`   Email: ${gmailUser}`);
     console.log('   Authentication: OAuth via App Password (Secure)');
 
-    // Create Gmail SMTP transporter with App Password
+    // Create Gmail SMTP transporter with explicit configuration
+    // Uses port 587 (STARTTLS) with extended timeouts for cloud environments like Railway
     transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // Use STARTTLS on port 587
       auth: {
         user: gmailUser,
         pass: gmailAppPassword,
       },
+      // Connection pooling and timeout settings
+      pool: {
+        maxConnections: 5,
+        maxMessages: 100,
+        rateDelta: 2000,
+        rateLimit: 5,
+      },
+      // Timeout values (in milliseconds)
+      connectionTimeout: 10000, // 10 seconds to establish connection
+      socketTimeout: 10000, // 10 seconds for socket operations
     });
 
     console.log('✅ Gmail SMTP service initialized successfully');
+    console.log('   Host: smtp.gmail.com:587');
+    console.log('   Connection timeout: 10s');
     return true;
   } catch (error) {
     initError = error.message;
@@ -125,6 +140,23 @@ export const sendEmail = async (emailData) => {
       console.error('  5. Set GMAIL_APP_PASSWORD to the new password');
       console.error('  6. Restart your application');
       console.error('  7. Wait 2-3 minutes before trying again (Google needs time to sync)');
+      console.error('');
+    } else if (error.message.includes('ETIMEDOUT') || error.message.includes('Connection timeout') || error.message.includes('EHOSTUNREACH')) {
+      console.error('');
+      console.error('⚠️  NETWORK ERROR - Cannot reach Gmail SMTP server');
+      console.error('');
+      console.error('Possible causes:');
+      console.error('  1. Network firewall blocking port 587');
+      console.error('  2. Hosting provider restricting outbound SMTP');
+      console.error('  3. Gmail SMTP server temporarily unavailable');
+      console.error('  4. DNS resolution failing');
+      console.error('');
+      console.error('Solutions to try:');
+      console.error('  • Check network connectivity');
+      console.error('  • Verify Gmail SMTP (smtp.gmail.com:587) is accessible');
+      console.error('  • Contact hosting provider to enable SMTP on port 587');
+      console.error('  • Wait a few minutes and retry');
+      console.error('  • If using Railway, check deployment region');
       console.error('');
     }
     
@@ -209,13 +241,29 @@ export const verifyEmailService = async (testEmail) => {
           '   ✓ Restart your application after updating variables',
         ],
       };
-    } else if (error.message.includes('ECONNREFUSED') || error.message.includes('EHOSTUNREACH')) {
+    } else if (error.message.includes('ETIMEDOUT') || error.message.includes('Connection timeout') || error.message.includes('EHOSTUNREACH') || error.message.includes('ECONNREFUSED')) {
       response.troubleshooting = {
-        title: 'Network Connection Failed',
+        title: 'Network Connection Failed - Cannot Reach Gmail SMTP',
         steps: [
-          'Check your internet connection',
-          'Ensure Gmail SMTP (smtp.gmail.com:587) is accessible',
-          'Check firewall rules if behind corporate network',
+          'This means your application cannot connect to Gmail\'s SMTP server (smtp.gmail.com:587)',
+          '',
+          'Possible causes:',
+          '  • Firewall blocking port 587 (SMTP)',
+          '  • Hosting provider (Railway) restricting outbound SMTP',
+          '  • Network connectivity issue',
+          '  • Gmail SMTP server temporarily unavailable',
+          '',
+          'Solutions to try:',
+          '  1. Verify your internet connection is working',
+          '  2. Check if port 587 is accessible from your network',
+          '  3. If on Railway, enable outbound SMTP in security settings',
+          '  4. Try again in a few minutes (server might be temporarily down)',
+          '  5. Contact your hosting provider about SMTP restrictions',
+          '',
+          'If problem persists:',
+          '  • Check Railway networking documentation',
+          '  • Verify deployment region allows SMTP',
+          '  • Consider using a different email service (SendGrid, Resend, etc.)',
         ],
       };
     }
