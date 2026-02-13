@@ -1,19 +1,26 @@
-import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { AppContent } from '@/app/App';
 import { SpecialistLandingPage } from '@/app/components/SpecialistLandingPage';
 
-function SpecialistPageWrapper() {
-  const { slug } = useParams<{ slug: string }>();
-  return slug ? <SpecialistLandingPage slug={slug} /> : <div>Loading...</div>;
-}
-
 export function Router() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/specialist/:slug" element={<SpecialistPageWrapper />} />
-        <Route path="/*" element={<AppContent />} />
-      </Routes>
-    </BrowserRouter>
-  );
+  const [pathname, setPathname] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setPathname(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Check if path matches /specialist/:slug
+  const specialistMatch = pathname.match(/^\/specialist\/(.+)$/);
+  
+  if (specialistMatch) {
+    const slug = specialistMatch[1];
+    return <SpecialistLandingPage slug={slug} />;
+  }
+
+  return <AppContent />;
 }
