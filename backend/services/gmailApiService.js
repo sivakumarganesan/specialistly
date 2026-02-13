@@ -111,55 +111,102 @@ export const sendEmail = async (emailData) => {
       throw new Error('Missing required email fields: to, subject, html');
     }
 
-    console.log('📧 Preparing email...');
-    console.log(`   To: ${to}`);
-    console.log(`   Subject: ${subject}`);
+    // Quoted-printable encoder for HTML body
+    const encodeQuotedPrintable = (str) => {
+      let encoded = '';
+      let lineLength = 0;
+      
+      for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        const code = str.charCodeAt(i);
+        let toAdd = '';
 
-    // Build RFC 2822 message
-    // Normalize all newlines to CRLF for consistency
-    const normalizeNewlines = (str) => str.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n/g, '\r\n');
-    
-    const normalizedHtml = normalizeNewlines(html);
-    const normalizedSubject = normalizeNewlines(subject);
+        if (char === '\r' && str[i + 1] === '\n') {
+          // CRLF
+          toAdd = '\r\n';
+          lineLength = 0;
+          i++; // Skip the \n
+        } else if (char === '\n') {
+          // LF only
+          toAdd = '\r\n';
+          lineLength = 0;
+        } else if (char === '\r') {
+          // CR only
+          toAdd = '\r\n';
+          lineLength = 0;
+        } else if (
+          (code >= 33 && code <= 60) ||
+          (code >= 62 && code <= 126) ||
+          char === ' ' ||
+          char === '\t'
+        ) {
+          // Safe characters
+          toAdd = char;
+          lineLength++;
+        } else {
+          // Encode as =HH
+          toAdd = '=' + code.toString(16).toUpperCase().padStart(2, '0');
+          lineLength += 3;
+        }
 
-    // Build headers
+        // Soft line break if line gets too long
+        if (lineLength > 73) {
+          encoded += '=\r\n';
+          lineLength = 0;
+          if (toAdd !== '\r\n') {
+            encoded += toAdd;
+            lineLength = toAdd.length;
+          }
+        } else {
+          encoded += toAdd;
+        }
+      }
+
+      return encoded;
+    };
+
+    // Prepare headers
     const headers = [
       `From: ${serviceAccountEmail}`,
       `To: ${to}`,
-      `Subject: ${normalizedSubject}`,
+      `Subject: ${subject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset="UTF-8"',
-      'Content-Transfer-Encoding: 8bit',
+      'Content-Transfer-Encoding: quoted-printable',
     ];
 
-    // Combine headers + blank line + body
-    // Use only CRLF throughout
-    const message = headers.join('\r\n') + '\r\n\r\n' + normalizedHtml;
+    // Encode the HTML body
+    const encodedBody = encodeQuotedPrintable(html);
 
-    console.log('📧 Encoding message...');
+    // Build complete message with CRLF line endings
+    const message = headers.join('\r\n') + '\r\n\r\n' + encodedBody;
+
+    console.log('📧 Encoding message to base64url...');
     
-    // Encode to standard base64 (not base64url)
-    const encodedMessage = Buffer.from(message, 'utf-8').toString('base64');
+    // Gmail API requires base64url encoding for the raw field
+    const base64 = Buffer.from(message, 'utf-8').toString('base64');
+    const base64url = base64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
 
-    console.log('📧 Sending via Gmail API...');
+    console.log('📧 Sending to:', to);
 
     // Send via Gmail API
     const response = await gmailClient.users.messages.send({
       userId: 'me',
       requestBody: {
-        raw: encodedMessage,
+        raw: base64url,
       },
     });
 
     console.log(`✅ Email sent successfully!`);
-    console.log(`   To: ${to}`);
     console.log(`   Message ID: ${response.data.id}`);
     return { success: true, messageId: response.data.id };
   } catch (error) {
-    console.error(`❌ Failed to send email via Gmail API`);
-    console.error(`   Error: ${error.message}`);
+    console.error(`❌ Failed to send email via Gmail API: ${error.message}`);
     if (error.response?.data) {
-      console.error(`   API Details:`, error.response.data);
+      console.error(`   Details:`, error.response.data);
     }
     throw error;
   }
