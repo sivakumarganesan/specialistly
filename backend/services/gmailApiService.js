@@ -112,14 +112,33 @@ export const sendEmail = async (emailData) => {
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error(`❌ Failed to send email: ${error.message}`);
+    
+    // Provide specific guidance for common errors
+    if (error.message.includes('Invalid login') || error.message.includes('535') || error.message.includes('auth fail')) {
+      console.error('');
+      console.error('⚠️  AUTHENTICATION ERROR - Gmail login failed');
+      console.error('');
+      console.error('If using Gmail Password (USE_APP_PASSWORD=false):');
+      console.error('  1. Go to: https://myaccount.google.com/lesssecureapps');
+      console.error('  2. Ensure "Allow less secure app access" is ENABLED');
+      console.error('  3. Wait 2-3 minutes for changes to take effect');
+      console.error('  4. Try again');
+      console.error('');
+      console.error('If using App Password (USE_APP_PASSWORD=true):');
+      console.error('  1. Make sure you have 2FA enabled');
+      console.error('  2. Regenerate the app password: https://myaccount.google.com/apppasswords');
+      console.error('  3. Use the full 16-character password (no spaces)');
+      console.error('  4. Try again');
+    }
+    
     throw error;
   }
 };
 
 /**
- * Verify email service is working
+ * Verify email service is working with a test email
  */
-export const verifyGmailAPI = async () => {
+export const verifyEmailService = async (testEmail) => {
   try {
     if (!transporter) {
       return {
@@ -128,23 +147,89 @@ export const verifyGmailAPI = async () => {
       };
     }
 
+    console.log('🧪 Testing email service...');
+    
+    // First verify connection
     await transporter.verify();
+    console.log('✅ SMTP connection verified');
 
-    console.log('✅ Email service verification successful');
+    // Send a test email if testEmail provided
+    if (testEmail) {
+      console.log(`📧 Sending test email to ${testEmail}...`);
+      const result = await transporter.sendMail({
+        from: process.env.GMAIL_USER,
+        to: testEmail,
+        subject: 'Specialistly Email Service Test',
+        html: '<h2>✅ Email Service is Working!</h2><p>Your Specialistly email configuration is set up correctly.</p>',
+      });
+      
+      console.log(`✅ Test email sent! Message ID: ${result.messageId}`);
+      
+      return {
+        success: true,
+        message: 'Email service is working correctly',
+        testEmailSent: true,
+        messageId: result.messageId,
+      };
+    }
+
     return {
       success: true,
-      message: 'Gmail SMTP service is ready',
+      message: 'Email service SMTP connection verified',
+      testEmailSent: false,
     };
   } catch (error) {
     console.error('❌ Email service verification failed:', error.message);
-    return {
+    
+    // Provide specific error guidance
+    const response = {
       success: false,
       message: error.message,
+      error: error.message,
     };
+
+    if (error.message.includes('Invalid login') || error.message.includes('535') || error.message.includes('auth fail')) {
+      response.troubleshooting = {
+        title: 'Authentication Failed',
+        options: [
+          {
+            option: 'Gmail Password (USE_APP_PASSWORD=false)',
+            steps: [
+              'Go to: https://myaccount.google.com/lesssecureapps',
+              'Enable "Allow less secure app access"',
+              'Wait 2-3 minutes',
+              'Try again',
+            ],
+          },
+          {
+            option: 'App Password (USE_APP_PASSWORD=true)',
+            steps: [
+              'Go to: https://myaccount.google.com/apppasswords',
+              'Select Mail and Windows Computer',
+              'Copy the 16-character password',
+              'Ensure 2FA is enabled first',
+              'Set GMAIL_PASSWORD to the new app password',
+            ],
+          },
+        ],
+      };
+    } else if (error.message.includes('ECONNREFUSED') || error.message.includes('EHOSTUNREACH')) {
+      response.troubleshooting = {
+        title: 'Network Connection Failed',
+        steps: [
+          'Check your internet connection',
+          'Ensure Gmail SMTP (smtp.gmail.com:587) is accessible',
+          'Check firewall rules if behind corporate network',
+        ],
+      };
+    }
+
+    return response;
   }
 };
 
 export default {
   sendEmail,
-  verifyGmailAPI,
+  verifyEmailService,
+  verifyGmailAPI: verifyEmailService, // Alias for backwards compatibility
 };
