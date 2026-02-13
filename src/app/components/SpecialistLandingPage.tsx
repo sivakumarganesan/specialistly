@@ -143,9 +143,9 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
             </div>
           </div>
           <nav className="hidden md:flex gap-6">
-            {branding.about.enabled && <a href="#about" className="text-gray-600 hover:text-gray-900">About</a>}
-            {branding.services.enabled && <a href="#services" className="text-gray-600 hover:text-gray-900">Services</a>}
-            {branding.testimonials.enabled && <a href="#testimonials" className="text-gray-600 hover:text-gray-900">Reviews</a>}
+            {branding?.about?.enabled && <a href="#about" className="text-gray-600 hover:text-gray-900">About</a>}
+            {branding?.services?.enabled && <a href="#services" className="text-gray-600 hover:text-gray-900">Services</a>}
+            {branding?.testimonials?.enabled && <a href="#testimonials" className="text-gray-600 hover:text-gray-900">Reviews</a>}
           </nav>
         </div>
       </header>
@@ -156,23 +156,23 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
         style={{ backgroundColor: primaryColor }}
       >
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-5xl font-bold mb-4">{branding.header.title}</h1>
-          <p className="text-xl mb-8 opacity-90">{branding.header.subtitle}</p>
+          <h1 className="text-5xl font-bold mb-4">{branding?.header?.title || 'Welcome'}</h1>
+          <p className="text-xl mb-8 opacity-90">{branding?.header?.subtitle || 'Your professional page'}</p>
           <Button
             size="lg"
             className="bg-white text-blue-600 hover:bg-gray-100"
           >
-            {branding.header.ctaButtonText}
+            {branding?.header?.ctaButtonText || 'Get Started'}
           </Button>
         </div>
       </section>
 
       {/* About Section */}
-      {branding.about.enabled && (
+      {branding?.about?.enabled && (
         <section id="about" className="py-16 px-4 bg-gray-50">
           <div className="max-w-4xl mx-auto">
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              {branding.about.profileImage && (
+              {branding?.about?.profileImage && (
                 <img
                   src={branding.about.profileImage}
                   alt="Profile"
@@ -180,9 +180,9 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
                 />
               )}
               <div>
-                <h2 className="text-4xl font-bold mb-4">{branding.about.title}</h2>
+                <h2 className="text-4xl font-bold mb-4">{branding?.about?.title || 'About Us'}</h2>
                 <p className="text-gray-700 whitespace-pre-wrap leading-relaxed mb-6">
-                  {branding.about.bio}
+                  {branding?.about?.bio || ''}
                 </p>
                 <Button
                   size="lg"
@@ -198,17 +198,17 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
       )}
 
       {/* Services Section */}
-      {branding.services.enabled && (
+      {branding?.services?.enabled && (
         <section id="services" className="py-16 px-4">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">{branding.services.title}</h2>
-              {branding.services.description && (
+              <h2 className="text-4xl font-bold mb-4">{branding?.services?.title || 'Services'}</h2>
+              {branding?.services?.description && (
                 <p className="text-gray-600 text-lg">{branding.services.description}</p>
               )}
             </div>
 
-            {branding.services.displayMode === 'grid' && (
+            {branding?.services?.displayMode === 'grid' && (
               <div className="grid md:grid-cols-3 gap-6">
                 {services.map((service) => (
                   <Card key={service._id} className="p-6 hover:shadow-lg transition">
@@ -226,7 +226,7 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
               </div>
             )}
 
-            {branding.services.displayMode === 'list' && (
+            {branding?.services?.displayMode === 'list' && (
               <div className="space-y-4">
                 {services.map((service) => (
                   <Card key={service._id} className="p-6">
@@ -251,15 +251,15 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
       )}
 
       {/* Testimonials Section */}
-      {branding.testimonials.enabled && branding.testimonials.testimonials.length > 0 && (
+      {branding?.testimonials?.enabled && branding?.testimonials?.testimonials?.length > 0 && (
         <section id="testimonials" className="py-16 px-4 bg-gray-50">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold mb-4">{branding.testimonials.title}</h2>
+              <h2 className="text-4xl font-bold mb-4">{branding?.testimonials?.title || 'Testimonials'}</h2>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
-              {branding.testimonials.testimonials.map((testimonial, idx) => (
+              {branding?.testimonials?.testimonials?.map((testimonial, idx) => (
                 <Card key={idx} className="p-6">
                   <div className="flex items-center gap-1 mb-4">
                     {Array.from({ length: testimonial.rating || 5 }).map((_, i) => (
@@ -281,25 +281,25 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
       )}
 
       {/* CTA Section */}
-      {branding.cta.enabled && (
+      {branding?.cta?.enabled && (
         <section className="py-16 px-4 text-white text-center" style={{ backgroundColor: secondaryColor }}>
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-4xl font-bold mb-4">{branding.cta.title}</h2>
-            <p className="text-xl mb-8 opacity-90">{branding.cta.description}</p>
+            <h2 className="text-4xl font-bold mb-4">{branding?.cta?.title || 'Ready to get started?'}</h2>
+            <p className="text-xl mb-8 opacity-90">{branding?.cta?.description || 'Contact us today'}</p>
             <Button size="lg" className="bg-white" style={{ color: secondaryColor }}>
-              {branding.cta.buttonText}
+              {branding?.cta?.buttonText || 'Contact Us'}
             </Button>
           </div>
         </section>
       )}
 
       {/* Social Links */}
-      {branding.footer.showSocialLinks && branding.socialLinks.length > 0 && (
+      {branding?.footer?.showSocialLinks && branding?.socialLinks?.length > 0 && (
         <section className="py-8 px-4 bg-gray-100">
           <div className="max-w-6xl mx-auto text-center">
             <p className="text-gray-600 mb-4">Connect with me on social media</p>
             <div className="flex justify-center gap-6 flex-wrap">
-              {branding.socialLinks.map((link, idx) => (
+              {branding?.socialLinks?.map((link, idx) => (
                 <a
                   key={idx}
                   href={link.url}
@@ -318,9 +318,9 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
       )}
 
       {/* Footer */}
-      {branding.footer.enabled && (
+      {branding?.footer?.enabled && (
         <footer className="bg-gray-900 text-white py-8 px-4 text-center">
-          <p>{branding.footer.copyrightText || `© 2024 ${branding.businessName}. All rights reserved.`}</p>
+          <p>{branding?.footer?.copyrightText || `© 2024 ${branding?.businessName || 'Specialist'}. All rights reserved.`}</p>
           <p className="text-gray-400 text-sm mt-2">Powered by Specialistly Marketplace</p>
         </footer>
       )}
