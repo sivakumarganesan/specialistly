@@ -131,7 +131,7 @@ const specialistBrandingSchema = new mongoose.Schema({
     unique: true,
   },
   
-  // Slug for subdomain (e.g., "john-smith" for john-smith.myapp.com)
+  // Slug for subdomain (e.g., "john-smith" for john-smith.specialistly.com)
   slug: {
     type: String,
     required: true,

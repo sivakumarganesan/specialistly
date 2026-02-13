@@ -9,7 +9,7 @@ This implementation adds a complete user-owned branded subdomain system with a c
 **Location**: `backend/models/SpecialistBranding.js`
 
 Stores all branding and page content data:
-- **Slug**: Unique identifier for subdomain (e.g., `john-smith` for `john-smith.myapp.com`)
+- **Slug**: Unique identifier for subdomain (e.g., `john-smith` for `john-smith.specialistly.com`)
 - **Business Info**: Name, tagline, logo, colors
 - **Page Sections**: 
   - Header (title, subtitle, CTA)
@@ -110,13 +110,13 @@ brandingAPI.removeSocialLink(email, platform)  // Remove social link
    - Choose layout style
 
 3. **Access Public Page**:
-   - View live page URL: `https://{slug}.myapp.com`
+   - View live page URL: `https://{slug}.specialistly.com`
    - Copy URL to share with customers
    - Toggle publish status to draft/live
 
 ### For Customers
 1. **Access Specialist Page**:
-   - Visit specialist's subdomain (e.g., `https://john-smith.myapp.com`)
+   - Visit specialist's subdomain (e.g., `https://john-smith.specialistly.com`)
    - View branded page with custom colors and content
    - See all services in configured display mode
    - Read testimonials and social links

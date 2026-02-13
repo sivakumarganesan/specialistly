@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-A comprehensive **user-owned branded subdomain system** that gives each specialist a unique, customizable public marketplace page accessible via their own branded subdomain (e.g., `https://john-smith.myapp.com`).
+A comprehensive **user-owned branded subdomain system** that gives each specialist a unique, customizable public marketplace page accessible via their own branded subdomain (e.g., `https://john-smith.specialistly.com`).
 
 ## Key Features
 
@@ -121,7 +121,7 @@ Specialist Dashboard
 Public Page Access
     Customer Browser
         ↓
-  Visit: https://{slug}.myapp.com
+  Visit: https://{slug}.specialistly.com
         ↓
   SpecialistLandingPage Component
         ↓
@@ -191,7 +191,7 @@ Public Page Access
 
 ### Accessing a Specialist's Page
 1. Customer receives specialist's URL
-2. Visits: `https://specialist-slug.myapp.com`
+2. Visits: `https://specialist-slug.specialistly.com`
 3. Sees professionally branded page with:
    - Custom colors and logo
    - Specialist's bio and photo

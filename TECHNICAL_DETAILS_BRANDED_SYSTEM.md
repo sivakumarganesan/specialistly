@@ -44,7 +44,7 @@
                  MongoDB
 
         Public Landing Page Access:
-        https://{slug}.myapp.com
+        https://{slug}.specialistly.com
         └─────────────────┬─────────────────┘
                           │
                           ▼
@@ -93,7 +93,7 @@
 8. Public URL becomes accessible
 
 ### Accessing Public Page
-1. Customer visits `https://{slug}.myapp.com`
+1. Customer visits `https://{slug}.specialistly.com`
 2. Browser makes request with slug in URL
 3. SpecialistLandingPage component receives slug prop
 4. useEffect hook triggers data fetch

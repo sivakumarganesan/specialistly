@@ -11,7 +11,7 @@
 1. Enter your **Business Name** (e.g., "Sarah's Consulting")
 2. Add a **Business Tagline** (e.g., "Expert Career Coaching")
 3. Set your **Page Slug** (URL-friendly name, e.g., "sarah-consulting")
-   - This becomes your public URL: `https://sarah-consulting.myapp.com`
+   - This becomes your public URL: `https://sarah-consulting.specialistly.com`
 4. Upload your **Logo URL** (link to your logo image)
 
 ### Step 3: Customize Design
@@ -61,15 +61,15 @@ From the main page builder:
 
 ### Step 8: Share Your URL
 1. Click the **Copy** button next to your subdomain URL
-2. Share `https://your-slug.myapp.com` with customers
+2. Share `https://your-slug.specialistly.com` with customers
 3. Customers can visit to see your branded page and book services
 
 ## For Customers: Viewing Specialist Pages
 
 ### Access a Specialist's Page
 1. Type the specialist's URL in your browser:
-   - Format: `https://{specialist-slug}.myapp.com`
-   - Example: `https://sarah-consulting.myapp.com`
+   - Format: `https://{specialist-slug}.specialistly.com`
+   - Example: `https://sarah-consulting.specialistly.com`
 
 2. View their branded page with:
    - Business name and logo
