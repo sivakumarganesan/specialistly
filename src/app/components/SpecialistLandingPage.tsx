@@ -123,8 +123,13 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
     );
   }
 
+  // Safe color access with defaults
+  const primaryColor = branding?.colors?.primary || "#3B82F6";
+  const secondaryColor = branding?.colors?.secondary || "#1F2937";
+  const accentColor = branding?.colors?.accent || "#10B981";
+
   return (
-    <div className="min-h-screen" style={{ '--primary': branding.colors.primary } as any}>
+    <div className="min-h-screen" style={{ '--primary': primaryColor } as any}>
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -148,7 +153,7 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
       {/* Hero Section */}
       <section
         className="py-16 px-4 text-white text-center"
-        style={{ backgroundColor: branding.colors.primary }}
+        style={{ backgroundColor: primaryColor }}
       >
         <div className="max-w-4xl mx-auto">
           <h1 className="text-5xl font-bold mb-4">{branding.header.title}</h1>
@@ -181,7 +186,7 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
                 </p>
                 <Button
                   size="lg"
-                  style={{ backgroundColor: branding.colors.secondary }}
+                  style={{ backgroundColor: secondaryColor }}
                   className="text-white"
                 >
                   Get in Touch
@@ -213,7 +218,7 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
                       <span className="text-2xl font-bold">${service.price}</span>
                       <Badge>{service.duration}</Badge>
                     </div>
-                    <Button className="w-full" style={{ backgroundColor: branding.colors.accent }}>
+                    <Button className="w-full" style={{ backgroundColor: accentColor }}>
                       Book Now
                     </Button>
                   </Card>
@@ -232,7 +237,7 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
                       </div>
                       <div className="text-right ml-4">
                         <p className="text-2xl font-bold mb-2">${service.price}</p>
-                        <Button size="sm" style={{ backgroundColor: branding.colors.accent }}>
+                        <Button size="sm" style={{ backgroundColor: accentColor }}>
                           Book
                         </Button>
                       </div>
@@ -277,11 +282,11 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
 
       {/* CTA Section */}
       {branding.cta.enabled && (
-        <section className="py-16 px-4 text-white text-center" style={{ backgroundColor: branding.colors.secondary }}>
+        <section className="py-16 px-4 text-white text-center" style={{ backgroundColor: secondaryColor }}>
           <div className="max-w-2xl mx-auto">
             <h2 className="text-4xl font-bold mb-4">{branding.cta.title}</h2>
             <p className="text-xl mb-8 opacity-90">{branding.cta.description}</p>
-            <Button size="lg" className="bg-white" style={{ color: branding.colors.secondary }}>
+            <Button size="lg" className="bg-white" style={{ color: secondaryColor }}>
               {branding.cta.buttonText}
             </Button>
           </div>
@@ -301,7 +306,7 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white transition"
-                  style={{ backgroundColor: `${branding.colors.primary}20` }}
+                  style={{ backgroundColor: `${primaryColor}20` }}
                 >
                   <span className="capitalize text-sm font-medium">{link.platform}</span>
                   <ExternalLink className="h-4 w-4" />
