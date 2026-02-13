@@ -111,36 +111,68 @@ export const sendEmail = async (emailData) => {
       throw new Error('Missing required email fields: to, subject, html');
     }
 
-    // Create RFC 2822 formatted email using service account email
-    // Properly encode the subject if it contains special characters
-    const encodeSubject = (subj) => {
-      // Check if subject contains non-ASCII characters
-      if (/[^\x00-\x7F]/.test(subj)) {
-        return `=?UTF-8?B?${Buffer.from(subj).toString('base64')}?=`;
-      }
-      return subj;
+    // Create RFC 2822 formatted email
+    // Escape quotes and backslashes in subject
+    const escapeSubject = (subj) => {
+      return subj
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, ' ');
     };
 
-    const encodedSubject = encodeSubject(subject);
+    const escapedSubject = escapeSubject(subject);
     
-    // Create RFC 2822 formatted email using service account email
-    const message = [
+    // Build RFC 2822 message with HTML body (use quoted-printable for body safety)
+    // Headers must be separated from body by CRLF CRLF
+    const headers = [
       `From: ${serviceAccountEmail}`,
       `To: ${to}`,
-      `Subject: ${encodedSubject}`,
+      `Subject: ${escapedSubject}`,
       'MIME-Version: 1.0',
-      'Content-Type: text/html; charset=utf-8',
-      'Content-Transfer-Encoding: base64',
-      '',
-      Buffer.from(html).toString('base64'),
-    ].join('\n');
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: quoted-printable',
+    ].join('\r\n');
 
-    // Encode to base64url
-    const encodedMessage = Buffer.from(message)
+    // Use quoted-printable encoding for HTML body
+    const quotedPrintableEncode = (str) => {
+      return str
+        .split('\n')
+        .map(line => {
+          // Replace spaces at end of line with =20
+          let encoded = line.replace(/ +$/g, match => '=' + match.charCodeAt(0).toString(16).toUpperCase());
+          // Ensure lines aren't too long (max 76 chars for quoted-printable)
+          if (encoded.length > 76) {
+            let result = '';
+            for (let i = 0; i < encoded.length; i++) {
+              result += encoded[i];
+              if (result.length > 73 && encoded[i] !== '=') {
+                result += '=\r\n';
+              }
+            }
+            return result;
+          }
+          return encoded;
+        })
+        .join('\r\n');
+    };
+
+    const encodedBody = quotedPrintableEncode(html);
+    
+    // Combine headers and body with CRLF CRLF separator
+    const message = headers + '\r\n\r\n' + encodedBody;
+
+    // Encode to base64url for Gmail API raw field
+    const encodedMessage = Buffer.from(message, 'utf-8')
       .toString('base64')
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
-      .replace(/=+$/, '');
+      .replace(/=/g, '');
+
+    console.log('📧 Sending email via Gmail API...');
+    console.log(`   To: ${to}`);
+    console.log(`   From: ${serviceAccountEmail}`);
+    console.log(`   Subject: ${subject}`);
 
     // Send via Gmail API
     const response = await gmailClient.users.messages.send({
@@ -150,12 +182,14 @@ export const sendEmail = async (emailData) => {
       },
     });
 
-    console.log(`✓ Email sent via Gmail API to: ${to}`);
-    console.log(`  From: ${serviceAccountEmail}`);
-    console.log(`  Message ID: ${response.data.id}`);
+    console.log(`✅ Email sent via Gmail API to: ${to}`);
+    console.log(`   Message ID: ${response.data.id}`);
     return { success: true, messageId: response.data.id };
   } catch (error) {
     console.error(`❌ Failed to send email via Gmail API:`, error.message);
+    if (error.response?.data) {
+      console.error('   API Error Details:', JSON.stringify(error.response.data, null, 2));
+    }
     throw error;
   }
 };
