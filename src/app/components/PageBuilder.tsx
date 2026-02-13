@@ -383,7 +383,7 @@ export function PageBuilder() {
           <div>
             <Label>Business Name</Label>
             <Input
-              value={branding.businessName}
+              value={branding?.businessName || ""}
               onChange={(e) => setBranding({ ...branding, businessName: e.target.value })}
               placeholder="Your business name"
             />
@@ -392,7 +392,7 @@ export function PageBuilder() {
           <div>
             <Label>Business Tagline</Label>
             <Input
-              value={branding.businessTagline}
+              value={branding?.businessTagline || ""}
               onChange={(e) => setBranding({ ...branding, businessTagline: e.target.value })}
               placeholder="Your tagline or slogan"
             />
@@ -401,7 +401,7 @@ export function PageBuilder() {
           <div>
             <Label>Page Slug</Label>
             <Input
-              value={branding.slug}
+              value={branding?.slug || ""}
               onChange={(e) => setBranding({ ...branding, slug: e.target.value })}
               placeholder="your-slug"
               className="font-mono"
@@ -412,7 +412,7 @@ export function PageBuilder() {
           <div>
             <Label>Logo URL</Label>
             <Input
-              value={branding.logoUrl}
+              value={branding?.logoUrl || ""}
               onChange={(e) => setBranding({ ...branding, logoUrl: e.target.value })}
               placeholder="https://example.com/logo.png"
             />
@@ -421,7 +421,7 @@ export function PageBuilder() {
           <div>
             <Label>Layout Style</Label>
             <select
-              value={branding.layoutStyle}
+              value={branding?.layoutStyle || "modern"}
               onChange={(e) => setBranding({ ...branding, layoutStyle: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             >
@@ -445,18 +445,18 @@ export function PageBuilder() {
               <div className="flex gap-2 items-center">
                 <input
                   type="color"
-                  value={branding.colors.primary}
+                  value={branding?.colors?.primary || "#3B82F6"}
                   onChange={(e) => setBranding({
                     ...branding,
-                    colors: { ...branding.colors, primary: e.target.value }
+                    colors: { ...branding?.colors, primary: e.target.value }
                   })}
                   className="w-12 h-10 rounded cursor-pointer"
                 />
                 <Input
-                  value={branding.colors.primary}
+                  value={branding?.colors?.primary || "#3B82F6"}
                   onChange={(e) => setBranding({
                     ...branding,
-                    colors: { ...branding.colors, primary: e.target.value }
+                    colors: { ...branding?.colors, primary: e.target.value }
                   })}
                   className="font-mono text-sm"
                 />
@@ -468,18 +468,18 @@ export function PageBuilder() {
               <div className="flex gap-2 items-center">
                 <input
                   type="color"
-                  value={branding.colors.secondary}
+                  value={branding?.colors?.secondary || "#10B981"}
                   onChange={(e) => setBranding({
                     ...branding,
-                    colors: { ...branding.colors, secondary: e.target.value }
+                    colors: { ...branding?.colors, secondary: e.target.value }
                   })}
                   className="w-12 h-10 rounded cursor-pointer"
                 />
                 <Input
-                  value={branding.colors.secondary}
+                  value={branding?.colors?.secondary || "#10B981"}
                   onChange={(e) => setBranding({
                     ...branding,
-                    colors: { ...branding.colors, secondary: e.target.value }
+                    colors: { ...branding?.colors, secondary: e.target.value }
                   })}
                   className="font-mono text-sm"
                 />
@@ -491,18 +491,18 @@ export function PageBuilder() {
               <div className="flex gap-2 items-center">
                 <input
                   type="color"
-                  value={branding.colors.accent}
+                  value={branding?.colors?.accent || "#F59E0B"}
                   onChange={(e) => setBranding({
                     ...branding,
-                    colors: { ...branding.colors, accent: e.target.value }
+                    colors: { ...branding?.colors, accent: e.target.value }
                   })}
                   className="w-12 h-10 rounded cursor-pointer"
                 />
                 <Input
-                  value={branding.colors.accent}
+                  value={branding?.colors?.accent || "#F59E0B"}
                   onChange={(e) => setBranding({
                     ...branding,
-                    colors: { ...branding.colors, accent: e.target.value }
+                    colors: { ...branding?.colors, accent: e.target.value }
                   })}
                   className="font-mono text-sm"
                 />
@@ -517,20 +517,20 @@ export function PageBuilder() {
               <div>
                 <Label>Header Title</Label>
                 <Input
-                  value={branding.header.title}
+                  value={branding?.header?.title || ""}
                   onChange={(e) => setBranding({
                     ...branding,
-                    header: { ...branding.header, title: e.target.value }
+                    header: { ...branding?.header, title: e.target.value }
                   })}
                 />
               </div>
               <div>
                 <Label>Header Subtitle</Label>
                 <Input
-                  value={branding.header.subtitle}
+                  value={branding?.header?.subtitle || ""}
                   onChange={(e) => setBranding({
                     ...branding,
-                    header: { ...branding.header, subtitle: e.target.value }
+                    header: { ...branding?.header, subtitle: e.target.value }
                   })}
                 />
               </div>
@@ -549,10 +549,10 @@ export function PageBuilder() {
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={branding.about.enabled}
+                  checked={branding?.about?.enabled || false}
                   onChange={(e) => setBranding({
                     ...branding,
-                    about: { ...branding.about, enabled: e.target.checked }
+                    about: { ...branding?.about, enabled: e.target.checked }
                   })}
                 />
                 Enable
@@ -562,20 +562,20 @@ export function PageBuilder() {
               <div>
                 <Label>About Title</Label>
                 <Input
-                  value={branding.about.title}
+                  value={branding?.about?.title || ""}
                   onChange={(e) => setBranding({
                     ...branding,
-                    about: { ...branding.about, title: e.target.value }
+                    about: { ...branding?.about, title: e.target.value }
                   })}
                 />
               </div>
               <div>
                 <Label>Bio</Label>
                 <Textarea
-                  value={branding.about.bio}
+                  value={branding?.about?.bio || ""}
                   onChange={(e) => setBranding({
                     ...branding,
-                    about: { ...branding.about, bio: e.target.value }
+                    about: { ...branding?.about, bio: e.target.value }
                   })}
                   rows={4}
                 />
@@ -590,10 +590,10 @@ export function PageBuilder() {
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={branding.services.enabled}
+                  checked={branding?.services?.enabled || false}
                   onChange={(e) => setBranding({
                     ...branding,
-                    services: { ...branding.services, enabled: e.target.checked }
+                    services: { ...branding?.services, enabled: e.target.checked }
                   })}
                 />
                 Enable
@@ -603,20 +603,20 @@ export function PageBuilder() {
               <div>
                 <Label>Section Title</Label>
                 <Input
-                  value={branding.services.title}
+                  value={branding?.services?.title || ""}
                   onChange={(e) => setBranding({
                     ...branding,
-                    services: { ...branding.services, title: e.target.value }
+                    services: { ...branding?.services, title: e.target.value }
                   })}
                 />
               </div>
               <div>
                 <Label>Display Mode</Label>
                 <select
-                  value={branding.services.displayMode}
+                  value={branding?.services?.displayMode || "grid"}
                   onChange={(e) => setBranding({
                     ...branding,
-                    services: { ...branding.services, displayMode: e.target.value }
+                    services: { ...branding?.services, displayMode: e.target.value }
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
@@ -635,10 +635,10 @@ export function PageBuilder() {
               <label className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={branding.cta.enabled}
+                  checked={branding?.cta?.enabled || false}
                   onChange={(e) => setBranding({
                     ...branding,
-                    cta: { ...branding.cta, enabled: e.target.checked }
+                    cta: { ...branding?.cta, enabled: e.target.checked }
                   })}
                 />
                 Enable
@@ -648,20 +648,20 @@ export function PageBuilder() {
               <div>
                 <Label>CTA Title</Label>
                 <Input
-                  value={branding.cta.title}
+                  value={branding?.cta?.title || ""}
                   onChange={(e) => setBranding({
                     ...branding,
-                    cta: { ...branding.cta, title: e.target.value }
+                    cta: { ...branding?.cta, title: e.target.value }
                   })}
                 />
               </div>
               <div>
                 <Label>CTA Description</Label>
                 <Textarea
-                  value={branding.cta.description}
+                  value={branding?.cta?.description || ""}
                   onChange={(e) => setBranding({
                     ...branding,
-                    cta: { ...branding.cta, description: e.target.value }
+                    cta: { ...branding?.cta, description: e.target.value }
                   })}
                   rows={3}
                 />
@@ -669,10 +669,10 @@ export function PageBuilder() {
               <div>
                 <Label>Button Text</Label>
                 <Input
-                  value={branding.cta.buttonText}
+                  value={branding?.cta?.buttonText || ""}
                   onChange={(e) => setBranding({
                     ...branding,
-                    cta: { ...branding.cta, buttonText: e.target.value }
+                    cta: { ...branding?.cta, buttonText: e.target.value }
                   })}
                 />
               </div>
@@ -687,7 +687,7 @@ export function PageBuilder() {
           <div>
             <Label>Page Title (SEO)</Label>
             <Input
-              value={branding.seoTitle}
+              value={branding?.seoTitle || ""}
               onChange={(e) => setBranding({ ...branding, seoTitle: e.target.value })}
               placeholder="Your page title for search engines"
             />
@@ -697,7 +697,7 @@ export function PageBuilder() {
           <div>
             <Label>Meta Description</Label>
             <Textarea
-              value={branding.seoDescription}
+              value={branding?.seoDescription || ""}
               onChange={(e) => setBranding({ ...branding, seoDescription: e.target.value })}
               placeholder="Description that appears in search results"
               rows={3}
@@ -708,7 +708,7 @@ export function PageBuilder() {
           <div>
             <Label>Keywords</Label>
             <Textarea
-              value={branding.seoTitle}
+              value={branding?.seoTitle || ""}
               onChange={(e) => setBranding({ ...branding, seoTitle: e.target.value })}
               placeholder="Comma-separated keywords"
               rows={3}
