@@ -111,54 +111,50 @@ export const sendEmail = async (emailData) => {
       throw new Error('Missing required email fields: to, subject, html');
     }
 
-    console.log('📧 Building RFC 2822 message...');
+    // Use a simple, bulletproof RFC 2822 format
+    // Headers must end with CRLF, blank line separates headers from body
+    const lines = [
+      `From: ${serviceAccountEmail}`,
+      `To: ${to}`,
+      `Subject: ${subject}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: base64',
+    ];
 
-    // Build message manually with proper MIME structure
-    const messageLines = [];
-    
-    // Headers
-    messageLines.push(`From: ${serviceAccountEmail}`);
-    messageLines.push(`To: ${to}`);
-    messageLines.push(`Subject: ${subject}`);
-    messageLines.push('MIME-Version: 1.0');
-    messageLines.push('Content-Type: text/html; charset=UTF-8');
-    messageLines.push('Content-Transfer-Encoding: base64');
-    
-    // Blank line separating headers from body
-    messageLines.push('');
-    
-    // Body - encode the HTML to base64
-    const htmlBase64 = Buffer.from(html, 'utf-8').toString('base64');
-    
-    // Break base64 string into lines of 76 characters (RFC 2822 requirement)
-    const wrappedBase64 = htmlBase64.replace(/(.{76})/g, '$1\r\n');
-    messageLines.push(wrappedBase64);
+    // Encode HTML content to base64
+    const encodedContent = Buffer.from(html, 'utf-8').toString('base64');
 
-    // Join everything with CRLF
-    const message = messageLines.join('\r\n');
+    // Add the base64-encoded content
+    // Split at 76 chars per line for email standards
+    let wrappedContent = '';
+    for (let i = 0; i < encodedContent.length; i += 76) {
+      wrappedContent += encodedContent.substr(i, 76) + '\r\n';
+    }
 
-    console.log('📧 Encoding complete message to base64...');
-    
-    // Encode the entire RFC 2822 message to base64 for Gmail API
+    // Build complete message: headers (CRLF separated) + CRLF + CRLF + body
+    const message = lines.join('\r\n') + '\r\n\r\n' + wrappedContent.trimEnd();
+
+    // Encode the entire message to base64 for the 'raw' field  
+    // Gmail API RFC 2822 messages should be base64 (standard, not URL-safe)
     const encodedMessage = Buffer.from(message, 'utf-8').toString('base64');
 
-    console.log('📧 Sending to:', to);
+    console.log(`📧 Sending email to ${to}...`);
 
-    // Send via Gmail API with the raw base64-encoded message
-    const response = await gmailClient.users.messages.send({
+    // Create and send the message
+    const res = await gmailClient.users.messages.send({
       userId: 'me',
       requestBody: {
         raw: encodedMessage,
       },
     });
 
-    console.log(`✅ Email sent successfully!`);
-    console.log(`   Message ID: ${response.data.id}`);
-    return { success: true, messageId: response.data.id };
+    console.log(`✅ Email sent! ID: ${res.data.id}`);
+    return { success: true, messageId: res.data.id };
   } catch (error) {
-    console.error(`❌ Failed to send email: ${error.message}`);
-    if (error.response?.data) {
-      console.error('   Details:', error.response.data);
+    console.error(`❌ Email failed: ${error.message}`);
+    if (error.response?.data?.error) {
+      console.error('Details:', error.response.data.error);
     }
     throw error;
   }
