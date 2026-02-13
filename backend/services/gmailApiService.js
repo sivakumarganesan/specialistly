@@ -111,50 +111,47 @@ export const sendEmail = async (emailData) => {
       throw new Error('Missing required email fields: to, subject, html');
     }
 
-    // Use a simple, bulletproof RFC 2822 format
-    // Headers must end with CRLF, blank line separates headers from body
-    const lines = [
+    console.log(`📧 Preparing email for ${to}...`);
+
+    // Build RFC 2822 message with plain UTF-8 body (8bit encoding)
+    // This avoids issues with double-encoding or format violations
+    const emailMessage = [
       `From: ${serviceAccountEmail}`,
       `To: ${to}`,
       `Subject: ${subject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=UTF-8',
-      'Content-Transfer-Encoding: base64',
-    ];
+      'Content-Transfer-Encoding: 8bit',
+      '',  // Blank line separates headers from body
+      html, // HTML content as UTF-8
+    ].join('\r\n');
 
-    // Encode HTML content to base64
-    const encodedContent = Buffer.from(html, 'utf-8').toString('base64');
+    // Encode to base64url for Gmail API
+    // Gmail API expects: base64 encoding where + becomes -, / becomes _, and padding is removed
+    const buffer = Buffer.from(emailMessage, 'utf-8');
+    const base64 = buffer.toString('base64');
+    
+    // Convert to base64url (RFC 4648)
+    const base64url = base64
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
 
-    // Add the base64-encoded content
-    // Split at 76 chars per line for email standards
-    let wrappedContent = '';
-    for (let i = 0; i < encodedContent.length; i += 76) {
-      wrappedContent += encodedContent.substr(i, 76) + '\r\n';
-    }
+    console.log(`📧 Sending via Gmail API...`);
 
-    // Build complete message: headers (CRLF separated) + CRLF + CRLF + body
-    const message = lines.join('\r\n') + '\r\n\r\n' + wrappedContent.trimEnd();
-
-    // Encode the entire message to base64 for the 'raw' field  
-    // Gmail API RFC 2822 messages should be base64 (standard, not URL-safe)
-    const encodedMessage = Buffer.from(message, 'utf-8').toString('base64');
-
-    console.log(`📧 Sending email to ${to}...`);
-
-    // Create and send the message
     const res = await gmailClient.users.messages.send({
       userId: 'me',
       requestBody: {
-        raw: encodedMessage,
+        raw: base64url,
       },
     });
 
-    console.log(`✅ Email sent! ID: ${res.data.id}`);
+    console.log(`✅ Email sent! Message ID: ${res.data.id}`);
     return { success: true, messageId: res.data.id };
   } catch (error) {
     console.error(`❌ Email failed: ${error.message}`);
     if (error.response?.data?.error) {
-      console.error('Details:', error.response.data.error);
+      console.error('   Details:', JSON.stringify(error.response.data.error, null, 2));
     }
     throw error;
   }
