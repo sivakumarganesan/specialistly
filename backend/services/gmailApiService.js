@@ -1,108 +1,67 @@
-import { google } from 'googleapis';
-import fs from 'fs';
-import path from 'path';
+import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 /**
- * Gmail API Email Service
- * Uses Google Service Account instead of SMTP for better reliability on Railway
+ * Gmail SMTP Email Service
+ * Uses Nodemailer with Gmail SMTP for reliability
  */
 
-let gmailClient = null;
-let gmailInitError = null;
-let serviceAccountEmail = null; // Store the service account email
+let transporter = null;
+let initError = null;
 
-const initializeGmailAPI = () => {
+const initializeEmailService = () => {
   try {
-    let authConfig = null;
+    // Get Gmail credentials from environment variables
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPassword = process.env.GMAIL_PASSWORD;
 
-    // In production, REQUIRE base64 credentials (no file fallback)
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    if (process.env.GOOGLE_CREDENTIALS_BASE64) {
-      console.log('📧 Loading Google credentials from environment variable (GOOGLE_CREDENTIALS_BASE64)');
-      try {
-        const credentialsJson = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('utf-8');
-        authConfig = JSON.parse(credentialsJson);
-      } catch (error) {
-        console.error('❌ Failed to parse GOOGLE_CREDENTIALS_BASE64:', error.message);
-        gmailInitError = 'Invalid GOOGLE_CREDENTIALS_BASE64 format';
-        return null;
-      }
-    } else if (isProduction) {
-      // In production, don't fall back to files
-      gmailInitError = `Gmail API not configured: Set GOOGLE_CREDENTIALS_BASE64 environment variable in Railway`;
-      console.error(`❌ ${gmailInitError}`);
-      console.error(`   Go to Railway Dashboard → Variables → Add: GOOGLE_CREDENTIALS_BASE64`);
-      return null;
-    } else {
-      // Local development: try to read credentials.json file
-      const credentialsPath = './credentials.json';
-      console.log(`📧 Loading Google credentials from file: ${credentialsPath}`);
-      
-      if (!fs.existsSync(credentialsPath)) {
-        gmailInitError = `Google credentials file not found at: ${credentialsPath}`;
-        console.error(`❌ ${gmailInitError}`);
-        console.error(`   For production (Railway): Set GOOGLE_CREDENTIALS_BASE64 environment variable`);
-        console.error(`   For local development: Ensure credentials.json exists in backend folder`);
-        return null;
-      }
-
-      try {
-        const credentialsContent = fs.readFileSync(credentialsPath, 'utf-8');
-        authConfig = JSON.parse(credentialsContent);
-      } catch (error) {
-        gmailInitError = `Failed to read credentials: ${error.message}`;
-        console.error(`❌ ${gmailInitError}`);
-        return null;
-      }
-    }
-
-    // Extract service account email from credentials
-    serviceAccountEmail = authConfig.client_email;
-    if (!serviceAccountEmail) {
-      gmailInitError = 'Service account email not found in credentials';
-      console.error(`❌ ${gmailInitError}`);
+    if (!gmailUser || !gmailPassword) {
+      initError = 'Gmail credentials not configured. Set GMAIL_USER and GMAIL_PASSWORD environment variables.';
+      console.error(`❌ ${initError}`);
+      console.error('   For Gmail SMTP:');
+      console.error('   1. Enable 2FA on your Gmail account');
+      console.error('   2. Generate an App Password: https://myaccount.google.com/apppasswords');
+      console.error('   3. Set GMAIL_USER=your-email@gmail.com');
+      console.error('   4. Set GMAIL_PASSWORD=your-app-password (16 chars, no spaces)');
       return null;
     }
-    console.log(`✅ Service Account Email: ${serviceAccountEmail}`);
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: authConfig,
-      scopes: ['https://www.googleapis.com/auth/gmail.send'],
+    console.log('📧 Initializing Gmail SMTP service...');
+    console.log(`   Email: ${gmailUser}`);
+
+    // Create Gmail SMTP transporter
+    transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailPassword,
+      },
     });
 
-    gmailClient = google.gmail({ version: 'v1', auth });
-    console.log('✅ Gmail API service initialized successfully');
-    console.log('   Method: Service Account (no SMTP timeout issues)');
-    console.log('   Scope: Gmail Send API');
+    console.log('✅ Gmail SMTP service initialized successfully');
     return true;
   } catch (error) {
-    gmailInitError = error.message;
-    console.error('❌ Gmail API initialization failed:', error.message);
+    initError = error.message;
+    console.error('❌ Failed to initialize email service:', error.message);
     return false;
   }
 };
 
 // Initialize on module load
-initializeGmailAPI();
+initializeEmailService();
 
 /**
- * Send email using Gmail API
+ * Send email using Gmail SMTP
  * @param {Object} emailData - { to, subject, html }
  */
 export const sendEmail = async (emailData) => {
   try {
-    if (!gmailClient) {
-      const error = gmailInitError || 'Gmail API not initialized';
+    if (!transporter) {
+      const error = initError || 'Email service not initialized';
       console.error('❌ Cannot send email:', error);
       throw new Error(error);
-    }
-
-    if (!serviceAccountEmail) {
-      throw new Error('Service account email not configured');
     }
 
     const { to, subject, html } = emailData;
@@ -111,91 +70,55 @@ export const sendEmail = async (emailData) => {
       throw new Error('Missing required email fields: to, subject, html');
     }
 
-    console.log(`📧 Preparing email for ${to}...`);
+    const gmailUser = process.env.GMAIL_USER;
+    if (!gmailUser) {
+      throw new Error('GMAIL_USER environment variable not set');
+    }
 
-    // Encode subject with MIME encoding if it contains non-ASCII characters
-    const encodeSubject = (subj) => {
-      // Check if subject contains non-ASCII characters
-      if (/[^\x00-\x7F]/.test(subj)) {
-        // Use RFC 2047 MIME header encoding for non-ASCII
-        return `=?UTF-8?B?${Buffer.from(subj, 'utf-8').toString('base64')}?=`;
-      }
-      return subj;
+    console.log(`📧 Sending email to ${to}...`);
+
+    const mailOptions = {
+      from: gmailUser,
+      to: to,
+      subject: subject,
+      html: html,
     };
 
-    const encodedSubject = encodeSubject(subject);
+    const result = await transporter.sendMail(mailOptions);
 
-    // Build RFC 2822 message with UTF-8 body (8bit encoding)
-    const emailMessage = [
-      `From: ${serviceAccountEmail}`,
-      `To: ${to}`,
-      `Subject: ${encodedSubject}`,
-      'MIME-Version: 1.0',
-      'Content-Type: text/html; charset=UTF-8',
-      'Content-Transfer-Encoding: 8bit',
-      '',  // Blank line separates headers from body
-      html, // HTML content as UTF-8
-    ].join('\r\n');
+    console.log(`✅ Email sent successfully!`);
+    console.log(`   To: ${to}`);
+    console.log(`   Subject: ${subject}`);
+    console.log(`   Message ID: ${result.messageId}`);
 
-    // Encode to base64url for Gmail API
-    // Gmail API expects: base64 encoding where + becomes -, / becomes _, and padding is removed
-    const buffer = Buffer.from(emailMessage, 'utf-8');
-    const base64 = buffer.toString('base64');
-    
-    // Convert to base64url (RFC 4648)
-    const base64url = base64
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
-
-    console.log(`📧 Sending via Gmail API...`);
-
-    const res = await gmailClient.users.messages.send({
-      userId: 'me',
-      requestBody: {
-        raw: base64url,
-      },
-    });
-
-    console.log(`✅ Email sent! Message ID: ${res.data.id}`);
-    return { success: true, messageId: res.data.id };
+    return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error(`❌ Email failed: ${error.message}`);
-    if (error.response?.data?.error) {
-      console.error('   Details:', JSON.stringify(error.response.data.error, null, 2));
-    }
+    console.error(`❌ Failed to send email: ${error.message}`);
     throw error;
   }
 };
 
 /**
- * Verify Gmail API is working
+ * Verify email service is working
  */
 export const verifyGmailAPI = async () => {
   try {
-    if (!gmailClient) {
+    if (!transporter) {
       return {
         success: false,
-        message: gmailInitError || 'Gmail API not initialized',
+        message: initError || 'Email service not initialized',
       };
     }
 
-    // Try to get Gmail profile
-    const profile = await gmailClient.users.getProfile({
-      userId: 'me',
-    });
+    await transporter.verify();
 
-    console.log('✅ Gmail API verification successful');
-    console.log(`   Email: ${profile.data.emailAddress}`);
-    console.log(`   Messages total: ${profile.data.messagesTotal}`);
-
+    console.log('✅ Email service verification successful');
     return {
       success: true,
-      email: profile.data.emailAddress,
-      messagesTotal: profile.data.messagesTotal,
+      message: 'Gmail SMTP service is ready',
     };
   } catch (error) {
-    console.error('❌ Gmail API verification failed:', error.message);
+    console.error('❌ Email service verification failed:', error.message);
     return {
       success: false,
       message: error.message,
