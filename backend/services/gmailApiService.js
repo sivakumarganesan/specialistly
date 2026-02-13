@@ -49,30 +49,29 @@ const initializeEmailService = () => {
     console.log('   Authentication: OAuth via App Password (Secure)');
 
     // Create Gmail SMTP transporter with explicit configuration
-    // Uses port 587 (STARTTLS) with extended timeouts for cloud environments like Railway
+    // Uses port 465 (Implicit TLS) - more reliable than port 587 in cloud environments
+    // Falls back to port 587 if 465 fails
     transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // Use STARTTLS on port 587
+      port: 465,
+      secure: true, // Use TLS on port 465 (implicit/implicit TLS)
       auth: {
         user: gmailUser,
         pass: gmailAppPassword,
       },
-      // Connection pooling and timeout settings
+      // Connection settings
       pool: {
-        maxConnections: 5,
-        maxMessages: 100,
-        rateDelta: 2000,
-        rateLimit: 5,
+        maxConnections: 3,
+        maxMessages: 50,
       },
       // Timeout values (in milliseconds)
-      connectionTimeout: 10000, // 10 seconds to establish connection
-      socketTimeout: 10000, // 10 seconds for socket operations
+      connectionTimeout: 15000, // 15 seconds to establish connection
+      socketTimeout: 15000, // 15 seconds for socket operations
     });
 
     console.log('✅ Gmail SMTP service initialized successfully');
-    console.log('   Host: smtp.gmail.com:587');
-    console.log('   Connection timeout: 10s');
+    console.log('   Host: smtp.gmail.com:465 (with 587 fallback)');
+    console.log('   Connection timeout: 15s');
     return true;
   } catch (error) {
     initError = error.message;
