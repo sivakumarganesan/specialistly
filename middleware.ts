@@ -1,24 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const host = request.headers.get('host') || '';
   const pathname = request.nextUrl.pathname;
 
-  // Extract subdomain
-  const hostParts = host.split('.');
+  // Extract subdomain from host
+  const parts = host.split('.');
   
-  // If there are more than 2 parts (e.g., siva-pickelballcoach.specialistly.com)
-  if (hostParts.length > 2) {
-    const subdomain = hostParts[0];
-    
-    // Exclude common subdomains
+  if (parts.length > 2) {
+    const subdomain = parts[0];
     const excludedSubdomains = ['www', 'api', 'admin', 'mail', 'ftp', 'localhost'];
     
-    if (!excludedSubdomains.includes(subdomain)) {
-      // Rewrite to /specialist/[slug] route
-      return NextResponse.rewrite(
-        new URL(`/specialist/${subdomain}${pathname}`, request.url)
-      );
+    if (!excludedSubdomains.includes(subdomain) && subdomain !== 'specialistly') {
+      // Rewrite to specialist route
+      const url = request.nextUrl.clone();
+      url.pathname = `/specialist/${subdomain}`;
+      return NextResponse.rewrite(url);
     }
   }
 
@@ -27,7 +25,13 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths except static files and api
-    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 };
