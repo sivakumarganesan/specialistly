@@ -113,12 +113,23 @@ export const sendEmail = async (emailData) => {
 
     console.log(`📧 Preparing email for ${to}...`);
 
-    // Build RFC 2822 message with plain UTF-8 body (8bit encoding)
-    // This avoids issues with double-encoding or format violations
+    // Encode subject with MIME encoding if it contains non-ASCII characters
+    const encodeSubject = (subj) => {
+      // Check if subject contains non-ASCII characters
+      if (/[^\x00-\x7F]/.test(subj)) {
+        // Use RFC 2047 MIME header encoding for non-ASCII
+        return `=?UTF-8?B?${Buffer.from(subj, 'utf-8').toString('base64')}?=`;
+      }
+      return subj;
+    };
+
+    const encodedSubject = encodeSubject(subject);
+
+    // Build RFC 2822 message with UTF-8 body (8bit encoding)
     const emailMessage = [
       `From: ${serviceAccountEmail}`,
       `To: ${to}`,
-      `Subject: ${subject}`,
+      `Subject: ${encodedSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=UTF-8',
       'Content-Transfer-Encoding: 8bit',
