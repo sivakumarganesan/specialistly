@@ -270,7 +270,7 @@ export function PageBuilder() {
 
   const copySlugUrl = () => {
     if (branding?.slug) {
-      navigator.clipboard.writeText(`https://${branding.slug}.specialistly.com`);
+      navigator.clipboard.writeText(`https://specialistly.com/specialist/${branding.slug}`);
       setSlugCopied(true);
       setTimeout(() => setSlugCopied(false), 2000);
     }
@@ -328,7 +328,7 @@ export function PageBuilder() {
             <p className="text-sm text-gray-600 mb-2">Your marketplace page is accessible at:</p>
             <div className="flex items-center gap-2">
               <code className="bg-white px-3 py-2 rounded border border-blue-200 font-mono text-sm">
-                https://{branding.slug}.specialistly.com
+                https://specialistly.com/specialist/{branding.slug}
               </code>
               <Button
                 size="sm"
