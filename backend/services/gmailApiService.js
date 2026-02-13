@@ -111,92 +111,44 @@ export const sendEmail = async (emailData) => {
       throw new Error('Missing required email fields: to, subject, html');
     }
 
-    // Quoted-printable encoder for HTML body
-    const encodeQuotedPrintable = (str) => {
-      let encoded = '';
-      let lineLength = 0;
-      
-      for (let i = 0; i < str.length; i++) {
-        const char = str[i];
-        const code = str.charCodeAt(i);
-        let toAdd = '';
+    console.log('📧 Building RFC 2822 message...');
 
-        if (char === '\r' && str[i + 1] === '\n') {
-          // CRLF
-          toAdd = '\r\n';
-          lineLength = 0;
-          i++; // Skip the \n
-        } else if (char === '\n') {
-          // LF only
-          toAdd = '\r\n';
-          lineLength = 0;
-        } else if (char === '\r') {
-          // CR only
-          toAdd = '\r\n';
-          lineLength = 0;
-        } else if (
-          (code >= 33 && code <= 60) ||
-          (code >= 62 && code <= 126) ||
-          char === ' ' ||
-          char === '\t'
-        ) {
-          // Safe characters
-          toAdd = char;
-          lineLength++;
-        } else {
-          // Encode as =HH
-          toAdd = '=' + code.toString(16).toUpperCase().padStart(2, '0');
-          lineLength += 3;
-        }
-
-        // Soft line break if line gets too long
-        if (lineLength > 73) {
-          encoded += '=\r\n';
-          lineLength = 0;
-          if (toAdd !== '\r\n') {
-            encoded += toAdd;
-            lineLength = toAdd.length;
-          }
-        } else {
-          encoded += toAdd;
-        }
-      }
-
-      return encoded;
-    };
-
-    // Prepare headers
-    const headers = [
-      `From: ${serviceAccountEmail}`,
-      `To: ${to}`,
-      `Subject: ${subject}`,
-      'MIME-Version: 1.0',
-      'Content-Type: text/html; charset="UTF-8"',
-      'Content-Transfer-Encoding: quoted-printable',
-    ];
-
-    // Encode the HTML body
-    const encodedBody = encodeQuotedPrintable(html);
-
-    // Build complete message with CRLF line endings
-    const message = headers.join('\r\n') + '\r\n\r\n' + encodedBody;
-
-    console.log('📧 Encoding message to base64url...');
+    // Build message manually with proper MIME structure
+    const messageLines = [];
     
-    // Gmail API requires base64url encoding for the raw field
-    const base64 = Buffer.from(message, 'utf-8').toString('base64');
-    const base64url = base64
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
+    // Headers
+    messageLines.push(`From: ${serviceAccountEmail}`);
+    messageLines.push(`To: ${to}`);
+    messageLines.push(`Subject: ${subject}`);
+    messageLines.push('MIME-Version: 1.0');
+    messageLines.push('Content-Type: text/html; charset=UTF-8');
+    messageLines.push('Content-Transfer-Encoding: base64');
+    
+    // Blank line separating headers from body
+    messageLines.push('');
+    
+    // Body - encode the HTML to base64
+    const htmlBase64 = Buffer.from(html, 'utf-8').toString('base64');
+    
+    // Break base64 string into lines of 76 characters (RFC 2822 requirement)
+    const wrappedBase64 = htmlBase64.replace(/(.{76})/g, '$1\r\n');
+    messageLines.push(wrappedBase64);
+
+    // Join everything with CRLF
+    const message = messageLines.join('\r\n');
+
+    console.log('📧 Encoding complete message to base64...');
+    
+    // Encode the entire RFC 2822 message to base64 for Gmail API
+    const encodedMessage = Buffer.from(message, 'utf-8').toString('base64');
 
     console.log('📧 Sending to:', to);
 
-    // Send via Gmail API
+    // Send via Gmail API with the raw base64-encoded message
     const response = await gmailClient.users.messages.send({
       userId: 'me',
       requestBody: {
-        raw: base64url,
+        raw: encodedMessage,
       },
     });
 
@@ -204,9 +156,9 @@ export const sendEmail = async (emailData) => {
     console.log(`   Message ID: ${response.data.id}`);
     return { success: true, messageId: response.data.id };
   } catch (error) {
-    console.error(`❌ Failed to send email via Gmail API: ${error.message}`);
+    console.error(`❌ Failed to send email: ${error.message}`);
     if (error.response?.data) {
-      console.error(`   Details:`, error.response.data);
+      console.error('   Details:', error.response.data);
     }
     throw error;
   }
