@@ -24,7 +24,7 @@ interface SearchableItem {
   type: "course" | "offering";
 }
 
-function AppContent() {
+export function AppContent() {
   const { isAuthenticated, currentPage, setCurrentPage, userType } = useAuth();
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
