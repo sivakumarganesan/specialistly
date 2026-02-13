@@ -1,77 +1,60 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 /**
- * Gmail SMTP Email Service
- * Uses Nodemailer with Gmail SMTP for reliability
+ * Email Service using Resend API
+ * Modern email API that works reliably on Railway (no SMTP needed)
+ * Free tier: 100 emails/day
  */
 
-let transporter = null;
+let resend = null;
 let initError = null;
 
 const initializeEmailService = () => {
   try {
-    // Get Gmail credentials from environment variables
-    const gmailUser = process.env.GMAIL_USER;
-    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+    const resendApiKey = process.env.RESEND_API_KEY;
 
-    if (!gmailUser || !gmailAppPassword) {
-      initError = 'Gmail App Password not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD environment variables.';
+    if (!resendApiKey) {
+      initError = 'Resend API key not configured. Set RESEND_API_KEY environment variable.';
       console.error(`❌ ${initError}`);
       console.error('');
-      console.error('📧 Setup Gmail App Password (Modern & Secure):');
+      console.error('📧 Setup Resend Email Service (Modern & Reliable):');
       console.error('');
-      console.error('Step 1: Enable 2-Factor Authentication');
-      console.error('   Go to: https://myaccount.google.com/security');
-      console.error('   Click "2-Step Verification" and follow the steps');
+      console.error('Step 1: Sign up at Resend');
+      console.error('   Go to: https://resend.com');
+      console.error('   Sign up with your email (takes 1 minute)');
       console.error('');
-      console.error('Step 2: Generate App Password');
-      console.error('   Go to: https://myaccount.google.com/apppasswords');
-      console.error('   Select: Mail / Windows Computer');
-      console.error('   Google will generate a 16-character password');
+      console.error('Step 2: Get API Key');
+      console.error('   Go to: https://resend.com/api-keys');
+      console.error('   Click "Create API Key"');
+      console.error('   Copy the API key');
       console.error('');
-      console.error('Step 3: Set Environment Variables');
-      console.error('   GMAIL_USER=your-email@gmail.com');
-      console.error('   GMAIL_APP_PASSWORD=your-16-char-app-password (no spaces)');
+      console.error('Step 3: Set Environment Variable');
+      console.error('   RESEND_API_KEY=your_api_key_here');
       console.error('');
-      console.error('⚠️  IMPORTANT:');
-      console.error('   - Never use your actual Gmail password');
-      console.error('   - Always use the 16-character App Password');
-      console.error('   - Do not commit passwords to git');
+      console.error('Step 4: Verify Domain (Optional)');
+      console.error('   Resend gives you a free @resend.dev subdomain');
+      console.error('   For production, verify your domain: https://resend.com/domains');
+      console.error('');
+      console.error('✅ Benefits:');
+      console.error('   • Works on Railway (no SMTP needed)');
+      console.error('   • Free tier: 100 emails/day');
+      console.error('   • Simple API, no SMTP complications');
+      console.error('   • Spam protection built-in');
       console.error('');
       return null;
     }
 
-    console.log('📧 Initializing Gmail SMTP with App Password...');
-    console.log(`   Email: ${gmailUser}`);
-    console.log('   Authentication: OAuth via App Password (Secure)');
+    console.log('📧 Initializing Resend Email Service...');
+    console.log('   API: Resend (https://resend.com)');
+    console.log('   Authentication: API Key');
 
-    // Create Gmail SMTP transporter with explicit configuration
-    // Uses port 465 (Implicit TLS) - more reliable than port 587 in cloud environments
-    // Falls back to port 587 if 465 fails
-    transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // Use TLS on port 465 (implicit/implicit TLS)
-      auth: {
-        user: gmailUser,
-        pass: gmailAppPassword,
-      },
-      // Connection settings
-      pool: {
-        maxConnections: 3,
-        maxMessages: 50,
-      },
-      // Timeout values (in milliseconds)
-      connectionTimeout: 15000, // 15 seconds to establish connection
-      socketTimeout: 15000, // 15 seconds for socket operations
-    });
+    // Initialize Resend client
+    resend = new Resend(resendApiKey);
 
-    console.log('✅ Gmail SMTP service initialized successfully');
-    console.log('   Host: smtp.gmail.com:465 (with 587 fallback)');
-    console.log('   Connection timeout: 15s');
+    console.log('✅ Resend email service initialized successfully');
     return true;
   } catch (error) {
     initError = error.message;
@@ -84,12 +67,12 @@ const initializeEmailService = () => {
 initializeEmailService();
 
 /**
- * Send email using Gmail SMTP
+ * Send email using Resend API
  * @param {Object} emailData - { to, subject, html }
  */
 export const sendEmail = async (emailData) => {
   try {
-    if (!transporter) {
+    if (!resend) {
       const error = initError || 'Email service not initialized';
       console.error('❌ Cannot send email:', error);
       throw new Error(error);
@@ -101,168 +84,192 @@ export const sendEmail = async (emailData) => {
       throw new Error('Missing required email fields: to, subject, html');
     }
 
-    const gmailUser = process.env.GMAIL_USER;
-    if (!gmailUser) {
-      throw new Error('GMAIL_USER environment variable not set');
-    }
-
     console.log(`📧 Sending email to ${to}...`);
 
-    const mailOptions = {
-      from: gmailUser,
+    // Use Resend's free @resend.dev domain by default
+    // Production: Update to your verified domain
+    const fromEmail = process.env.FROM_EMAIL || 'notifications@resend.dev';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
       to: to,
       subject: subject,
       html: html,
-    };
+      // For future: add reply-to address if needed
+      // replyTo: process.env.REPLY_TO_EMAIL,
+    });
 
-    const result = await transporter.sendMail(mailOptions);
+    // Check if Resend API returned an error
+    if (result.error) {
+      throw new Error(`Resend API error: ${result.error.message || JSON.stringify(result.error)}`);
+    }
 
     console.log(`✅ Email sent successfully!`);
     console.log(`   To: ${to}`);
     console.log(`   Subject: ${subject}`);
-    console.log(`   Message ID: ${result.messageId}`);
+    console.log(`   Message ID: ${result.data?.id || 'N/A'}`);
 
-    return { success: true, messageId: result.messageId };
+    return { success: true, messageId: result.data?.id };
   } catch (error) {
     console.error(`❌ Failed to send email: ${error.message}`);
-    
+
     // Provide specific guidance for common errors
-    if (error.message.includes('Invalid login') || error.message.includes('535') || error.message.includes('auth fail')) {
+    if (error.message.includes('invalid API key') || error.message.includes('401')) {
       console.error('');
-      console.error('⚠️  AUTHENTICATION ERROR - Gmail login failed');
+      console.error('⚠️  AUTHENTICATION ERROR - Invalid Resend API key');
       console.error('');
       console.error('Troubleshooting steps:');
-      console.error('  1. Ensure 2FA is enabled on your Gmail account');
-      console.error('  2. Go to: https://myaccount.google.com/apppasswords');
-      console.error('  3. Re-generate a fresh App Password');
-      console.error('  4. Use the FULL 16-character password (including any hyphens, no spaces)');
-      console.error('  5. Set GMAIL_APP_PASSWORD to the new password');
+      console.error('  1. Go to: https://resend.com/api-keys');
+      console.error('  2. Verify your API key is correct');
+      console.error('  3. Make sure the key hasn\'t been revoked');
+      console.error('  4. Create a new API key if needed');
+      console.error('  5. Update RESEND_API_KEY environment variable');
       console.error('  6. Restart your application');
-      console.error('  7. Wait 2-3 minutes before trying again (Google needs time to sync)');
       console.error('');
-    } else if (error.message.includes('ETIMEDOUT') || error.message.includes('Connection timeout') || error.message.includes('EHOSTUNREACH')) {
+    } else if (error.message.includes('rate limit') || error.message.includes('429')) {
       console.error('');
-      console.error('⚠️  NETWORK ERROR - Cannot reach Gmail SMTP server');
+      console.error('⚠️  RATE LIMIT - Too many emails sent');
       console.error('');
-      console.error('Possible causes:');
-      console.error('  1. Network firewall blocking port 587');
-      console.error('  2. Hosting provider restricting outbound SMTP');
-      console.error('  3. Gmail SMTP server temporarily unavailable');
-      console.error('  4. DNS resolution failing');
+      console.error('Free tier limits:');
+      console.error('  • 100 emails per day');
+      console.error('  • If you need more, upgrade your plan at resend.com');
       console.error('');
-      console.error('Solutions to try:');
-      console.error('  • Check network connectivity');
-      console.error('  • Verify Gmail SMTP (smtp.gmail.com:587) is accessible');
-      console.error('  • Contact hosting provider to enable SMTP on port 587');
-      console.error('  • Wait a few minutes and retry');
-      console.error('  • If using Railway, check deployment region');
+    } else if (error.message.includes('invalid email') || error.message.includes('invalid recipient')) {
+      console.error('');
+      console.error('⚠️  INVALID EMAIL ADDRESS');
+      console.error('');
+      console.error('Check that:');
+      console.error('  • Email address is properly formatted');
+      console.error('  • Email is not a typo');
+      console.error('  • Domain exists and can receive mail');
       console.error('');
     }
-    
+
     throw error;
   }
 };
 
 /**
- * Verify email service is working with a test email
+ * Verify email service is working
  */
 export const verifyEmailService = async (testEmail) => {
   try {
-    if (!transporter) {
+    if (!resend) {
       return {
         success: false,
         message: initError || 'Email service not initialized',
       };
     }
 
-    console.log('🧪 Testing email service...');
-    
-    // First verify connection
-    await transporter.verify();
-    console.log('✅ SMTP connection verified');
+    console.log('🧪 Testing Resend email service...');
 
-    // Send a test email if testEmail provided
+    // If test email provided, send a test email
     if (testEmail) {
       console.log(`📧 Sending test email to ${testEmail}...`);
-      const result = await transporter.sendMail({
-        from: process.env.GMAIL_USER,
+      
+      const fromEmail = process.env.FROM_EMAIL || 'notifications@resend.dev';
+      
+      const result = await resend.emails.send({
+        from: fromEmail,
         to: testEmail,
-        subject: 'Specialistly Email Service Test',
-        html: '<h2>✅ Email Service is Working!</h2><p>Your Specialistly email configuration is set up correctly.</p>',
+        subject: '✅ Specialistly Email Service Test',
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2 style="color: #10b981;">✅ Email Service is Working!</h2>
+            <p>Your Specialistly email configuration is set up correctly using Resend.</p>
+            <hr style="border: 1px solid #ddd; margin: 20px 0;">
+            <p style="color: #666; font-size: 12px;">
+              This is a test email from Specialistly. 
+              If you received this, your email service is working perfectly.
+            </p>
+          </div>
+        `,
       });
-      
-      console.log(`✅ Test email sent! Message ID: ${result.messageId}`);
-      
+
+      if (result.error) {
+        throw new Error(`Resend API error: ${result.error.message || JSON.stringify(result.error)}`);
+      }
+
+      console.log(`✅ Test email sent! Message ID: ${result.data?.id}`);
+
       return {
         success: true,
         message: 'Email service is working correctly',
         testEmailSent: true,
-        messageId: result.messageId,
+        messageId: result.data?.id,
+        service: 'Resend',
+        info: {
+          apiEndpoint: 'https://api.resend.com/emails',
+          fromEmail: fromEmail,
+        },
       };
     }
 
     return {
       success: true,
-      message: 'Email service SMTP connection verified',
+      message: 'Email service (Resend) is configured and ready',
       testEmailSent: false,
+      service: 'Resend',
     };
   } catch (error) {
     console.error('❌ Email service verification failed:', error.message);
-    
-    // Provide specific error guidance
+
     const response = {
       success: false,
       message: error.message,
       error: error.message,
+      service: 'Resend',
     };
 
-    if (error.message.includes('Invalid login') || error.message.includes('535') || error.message.includes('auth fail')) {
+    if (error.message.includes('invalid API key') || error.message.includes('401')) {
       response.troubleshooting = {
-        title: 'Gmail App Password Setup Required',
+        title: 'Invalid Resend API Key',
         steps: [
-          'Step 1: Ensure 2-Factor Authentication is enabled',
-          '   Go to: https://myaccount.google.com/security',
-          '   Click "2-Step Verification" and follow the steps',
+          'Step 1: Verify your API key',
+          '   Go to: https://resend.com/api-keys',
+          '   Copy your active API key',
           '',
-          'Step 2: Generate an App Password',
-          '   Go to: https://myaccount.google.com/apppasswords',
-          '   Select: Mail / Windows Computer',
-          '   Google will generate a 16-character password',
+          'Step 2: Update environment variable',
+          '   Set: RESEND_API_KEY=your_api_key_here',
           '',
-          'Step 3: Update Environment Variables',
-          '   GMAIL_USER=your-email@gmail.com',
-          '   GMAIL_APP_PASSWORD=paste-the-16-char-password-here',
+          'Step 3: Restart your application',
+          '   The change will take effect immediately',
           '',
-          'Step 4: Important Notes',
-          '   ✓ Use the FULL 16-character password (no spaces)',
-          '   ✓ Do NOT use your actual Gmail password',
-          '   ✓ Wait 2-3 minutes after changes for Gmail to sync',
-          '   ✓ Restart your application after updating variables',
+          'If you don\'t have an account:',
+          '   1. Go to: https://resend.com',
+          '   2. Sign up (it\'s free)',
+          '   3. Create your first API key',
+          '   4. Set it as RESEND_API_KEY',
         ],
       };
-    } else if (error.message.includes('ETIMEDOUT') || error.message.includes('Connection timeout') || error.message.includes('EHOSTUNREACH') || error.message.includes('ECONNREFUSED')) {
+    } else if (error.message.includes('rate limit') || error.message.includes('429')) {
       response.troubleshooting = {
-        title: 'Network Connection Failed - Cannot Reach Gmail SMTP',
+        title: 'Rate Limit Exceeded',
         steps: [
-          'This means your application cannot connect to Gmail\'s SMTP server (smtp.gmail.com:587)',
+          'Free tier limit reached:',
+          '  • Resend free tier: 100 emails per day',
+          '  • You\'ve used up your daily limit',
           '',
-          'Possible causes:',
-          '  • Firewall blocking port 587 (SMTP)',
-          '  • Hosting provider (Railway) restricting outbound SMTP',
-          '  • Network connectivity issue',
-          '  • Gmail SMTP server temporarily unavailable',
+          'Solutions:',
+          '  1. Wait until tomorrow (limit resets daily)',
+          '  2. Upgrade to a paid plan: https://resend.com/pricing',
+          '  3. Or use environment-specific API keys for testing',
+        ],
+      };
+    } else if (
+      error.message.includes('invalid email') ||
+      error.message.includes('invalid recipient')
+    ) {
+      response.troubleshooting = {
+        title: 'Invalid Email Address',
+        steps: [
+          'The email address format is invalid',
           '',
-          'Solutions to try:',
-          '  1. Verify your internet connection is working',
-          '  2. Check if port 587 is accessible from your network',
-          '  3. If on Railway, enable outbound SMTP in security settings',
-          '  4. Try again in a few minutes (server might be temporarily down)',
-          '  5. Contact your hosting provider about SMTP restrictions',
-          '',
-          'If problem persists:',
-          '  • Check Railway networking documentation',
-          '  • Verify deployment region allows SMTP',
-          '  • Consider using a different email service (SendGrid, Resend, etc.)',
+          'Check that:',
+          '  • Email has correct format (user@example.com)',
+          '  • No spaces or special characters',
+          '  • Domain is real (e.g., gmail.com, company.com)',
+          '  • Not a test/fake address',
         ],
       };
     }
