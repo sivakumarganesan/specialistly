@@ -112,15 +112,27 @@ export const sendEmail = async (emailData) => {
     }
 
     // Create RFC 2822 formatted email using service account email
+    // Properly encode the subject if it contains special characters
+    const encodeSubject = (subj) => {
+      // Check if subject contains non-ASCII characters
+      if (/[^\x00-\x7F]/.test(subj)) {
+        return `=?UTF-8?B?${Buffer.from(subj).toString('base64')}?=`;
+      }
+      return subj;
+    };
+
+    const encodedSubject = encodeSubject(subject);
+    
+    // Create RFC 2822 formatted email using service account email
     const message = [
-      `From: ${serviceAccountEmail}`,  // Use service account email, NOT GMAIL_USER
+      `From: ${serviceAccountEmail}`,
       `To: ${to}`,
-      `Subject: ${subject}`,
+      `Subject: ${encodedSubject}`,
       'MIME-Version: 1.0',
       'Content-Type: text/html; charset=utf-8',
-      'Content-Transfer-Encoding: quoted-printable',
+      'Content-Transfer-Encoding: base64',
       '',
-      html,
+      Buffer.from(html).toString('base64'),
     ].join('\n');
 
     // Encode to base64url
