@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
-import { Plus, Edit, Trash2, Eye, Lock, ChevronRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Lock, ChevronRight, Upload } from 'lucide-react';
 import WebinarManager from './WebinarManager';
 import { serviceAPI } from '@/app/api/apiClient';
 
@@ -109,6 +109,37 @@ export const WebinarsSection: React.FC<Props> = ({ specialistEmail, specialistId
       }, 1500);
     } catch (err: any) {
       setError(err.message || 'Failed to delete webinar');
+    }
+  };
+
+  const handlePublishWebinar = async (id: string) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${process.env.VITE_API_URL}/services/${id}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          specialistEmail,
+          specialistId,
+          specialistName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to publish webinar');
+      }
+
+      const result = await response.json();
+      setSuccessMessage(`Webinar published! ${result.slotsGenerated} booking slots created.`);
+      setTimeout(() => {
+        setSuccessMessage('');
+        fetchWebinars();
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to publish webinar');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -251,6 +282,16 @@ export const WebinarsSection: React.FC<Props> = ({ specialistEmail, specialistId
                 </div>
 
                 <div className="flex gap-2">
+                  {webinar.status === 'draft' && (
+                    <Button
+                      onClick={() => handlePublishWebinar(webinar._id)}
+                      className="gap-1 bg-green-600 hover:bg-green-700"
+                      size="sm"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Publish
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
