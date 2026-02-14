@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge } from '../ui';
+import { Card } from '@/app/components/ui/card';
+import { Button } from '@/app/components/ui/button';
+import { Badge } from '@/app/components/ui/badge';
 import { Calendar, Clock, Users, MapPin, ChevronRight, AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 

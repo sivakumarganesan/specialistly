@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge, Input, Textarea, Select } from '../ui';
+import { Card } from '@/app/components/ui/card';
+import { Button } from '@/app/components/ui/button';
+import { Badge } from '@/app/components/ui/badge';
 import { Plus, Edit, Trash2, Eye, Lock, ChevronRight } from 'lucide-react';
 import WebinarManager from './WebinarManager';
-import { serviceAPI } from '../api/apiClient';
+import { serviceAPI } from '@/app/api/apiClient';
 
 interface Webinar {
   _id: string;

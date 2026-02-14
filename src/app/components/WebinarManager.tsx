@@ -1,6 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Input, Textarea, Select, Badge, Switch } from '../ui';
+import { Card } from '@/app/components/ui/card';
+import { Button } from '@/app/components/ui/button';
+import { Input } from '@/app/components/ui/input';
+import { Textarea } from '@/app/components/ui/textarea';
+import { Badge } from '@/app/components/ui/badge';
 import { X, Plus, Clock, Calendar } from 'lucide-react';
+
+// Simple Select component
+const Select = ({ value, onChange, children }: any) => (
+  <select
+    value={value}
+    onChange={onChange}
+    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+  >
+    {children}
+  </select>
+);
+
+// Simple Switch component
+const Switch = ({ checked, onChange }: any) => (
+  <input
+    type="checkbox"
+    checked={checked}
+    onChange={onChange}
+    className="w-5 h-5 cursor-pointer"
+  />
+);
 
 interface WebinarDate {
   date: string;
