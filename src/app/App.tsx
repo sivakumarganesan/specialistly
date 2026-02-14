@@ -14,6 +14,7 @@ import { Marketplace } from "@/app/components/Marketplace";
 import { SpecialistProfile } from "@/app/components/SpecialistProfile";
 import { MyPurchases } from "@/app/components/MyPurchases";
 import { PageBuilder } from "@/app/components/PageBuilder";
+import { ServiceDetail } from "@/app/components/ServiceDetail";
 
 type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
 type UserType = "specialist" | "customer";
@@ -34,6 +35,7 @@ export function AppContent() {
     id: string;
     email: string;
   } | null>(null);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
   // If user is not authenticated, show login/signup pages
   if (!isAuthenticated) {
@@ -70,6 +72,41 @@ export function AppContent() {
 
   // Combine both offering and course items
   const allSearchableItems = [...offeringItems, ...courseItems];
+
+  // Handle viewing service details
+  if (selectedServiceId && userType === "specialist") {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header 
+          onMenuClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          onNavigateToSettings={handleNavigateToSettings}
+          searchableItems={allSearchableItems}
+          onSearchItemClick={handleSearchItemClick}
+        />
+        <Sidebar 
+          activeTab={currentPage} 
+          onTabChange={setCurrentPage}
+          isMobileOpen={isMobileSidebarOpen}
+          onClose={() => setIsMobileSidebarOpen(false)}
+          userType={userType || "customer"}
+        />
+        <main className="md:ml-64 pt-16">
+          <ServiceDetail
+            serviceId={selectedServiceId}
+            onBack={() => setSelectedServiceId(null)}
+            onEdit={(service) => {
+              setSelectedServiceId(null);
+              setCurrentPage("services");
+            }}
+            onDelete={(serviceId) => {
+              setSelectedServiceId(null);
+              setCurrentPage("services");
+            }}
+          />
+        </main>
+      </div>
+    );
+  }
 
   // Handle viewing specialist
   if (viewingSpecialist && (currentPage === "marketplace" || currentPage === "dashboard")) {
@@ -108,7 +145,11 @@ export function AppContent() {
       
       <main className="md:ml-64 pt-16">
         {currentPage === "dashboard" && userType === "specialist" && (
-          <Dashboard onNavigateToCustomers={() => setCurrentPage("customers")} onNavigateToServices={() => setCurrentPage("services")} />
+          <Dashboard 
+            onNavigateToCustomers={() => setCurrentPage("customers")} 
+            onNavigateToServices={() => setCurrentPage("services")}
+            onViewServiceDetail={(serviceId) => setSelectedServiceId(serviceId)}
+          />
         )}
         {currentPage === "dashboard" && userType === "customer" && (
           <Marketplace onViewSpecialist={(id, email) => {

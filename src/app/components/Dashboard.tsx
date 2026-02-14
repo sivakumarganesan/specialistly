@@ -33,7 +33,15 @@ interface Offering {
 
 const mockOfferings: Offering[] = [];
 
-export function Dashboard({ onNavigateToCustomers, onNavigateToServices }: { onNavigateToCustomers?: () => void; onNavigateToServices?: () => void }) {
+export function Dashboard({ 
+  onNavigateToCustomers, 
+  onNavigateToServices,
+  onViewServiceDetail
+}: { 
+  onNavigateToCustomers?: () => void; 
+  onNavigateToServices?: () => void;
+  onViewServiceDetail?: (serviceId: string) => void;
+}) {
   const { user } = useAuth();
   const [filterTab, setFilterTab] = useState("all");
   const [offerings, setOfferings] = useState<Offering[]>([]);
@@ -257,7 +265,12 @@ export function Dashboard({ onNavigateToCustomers, onNavigateToServices }: { onN
                     </div>
                   </div>
 
-                  <Button className="w-full" variant="outline" size="sm">
+                  <Button 
+                    className="w-full" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => onViewServiceDetail?.(offering._id || offering.id || "")}
+                  >
                     View Details
                   </Button>
                 </div>
