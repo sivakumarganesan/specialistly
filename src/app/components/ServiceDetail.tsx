@@ -36,7 +36,7 @@ export function ServiceDetail({ serviceId, onBack, onEdit, onDelete }: ServiceDe
   const fetchServiceDetails = async () => {
     try {
       setLoading(true);
-      const response = await serviceAPI.getServiceById(serviceId);
+      const response = await serviceAPI.getById(serviceId);
       setService(response?.data || response);
     } catch (err: any) {
       setError(err.message || "Failed to load service details");
