@@ -4,6 +4,7 @@ import { Button } from "@/app/components/ui/button";
 import { Card } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
 import { Mail, Phone, MapPin, ExternalLink, Star } from "lucide-react";
+import WebinarBooking from "@/app/components/WebinarBooking";
 
 interface BrandingData {
   slug: string;
@@ -279,6 +280,19 @@ export function SpecialistLandingPage({ slug }: SpecialistLandingPageProps) {
           </div>
         </section>
       )}
+
+      {/* Webinars Section */}
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="max-w-6xl mx-auto">
+          <WebinarBooking
+            specialistEmail={branding?.email || ''}
+            onBook={async (slot) => {
+              // Handle booking - could integrate with payment or confirmation
+              console.log('Booking slot:', slot);
+            }}
+          />
+        </div>
+      </section>
 
       {/* CTA Section */}
       {branding?.cta?.enabled && (

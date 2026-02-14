@@ -7,6 +7,7 @@ import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
 import { useAuth } from "@/app/context/AuthContext";
 import { brandingAPI, serviceAPI, courseAPI } from "@/app/api/apiClient";
+import WebinarsSection from "@/app/components/WebinarsSection";
 import {
   Palette,
   Globe,
@@ -19,6 +20,7 @@ import {
   Trash2,
   Copy,
   Check,
+  Video,
 } from "lucide-react";
 
 interface BrandingData {
@@ -70,7 +72,7 @@ export function PageBuilder() {
   const { user } = useAuth();
   const [branding, setBranding] = useState<BrandingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"general" | "design" | "sections" | "seo" | "content">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "design" | "sections" | "seo" | "content" | "webinars">("general");
   const [slugCopied, setSlugCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
@@ -357,12 +359,12 @@ export function PageBuilder() {
       </Card>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b">
-        {(["general", "design", "sections", "seo", "content"] as const).map((tab) => (
+      <div className="flex gap-2 border-b overflow-x-auto">
+        {(["general", "design", "sections", "seo", "content", "webinars"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 font-medium border-b-2 transition ${
+            className={`px-4 py-2 font-medium border-b-2 transition whitespace-nowrap ${
               activeTab === tab
                 ? "border-blue-600 text-blue-600"
                 : "border-transparent text-gray-600 hover:text-gray-900"
@@ -373,6 +375,7 @@ export function PageBuilder() {
             {tab === "sections" && <span className="flex items-center gap-2"><Layout className="h-4 w-4" /> Sections</span>}
             {tab === "seo" && <span className="flex items-center gap-2"><Globe className="h-4 w-4" /> SEO</span>}
             {tab === "content" && <span className="flex items-center gap-2"><Globe className="h-4 w-4" /> Content</span>}
+            {tab === "webinars" && <span className="flex items-center gap-2"><Video className="h-4 w-4" /> Webinars</span>}
           </button>
         ))}
       </div>
@@ -787,6 +790,17 @@ export function PageBuilder() {
             </p>
           </div>
         </Card>
+      )}
+
+      {/* Webinars */}
+      {activeTab === "webinars" && (
+        <div className="space-y-6">
+          <WebinarsSection
+            specialistEmail={user?.email || ''}
+            specialistId={user?.id || ''}
+            specialistName={branding?.businessName || 'Specialist'}
+          />
+        </div>
       )}
     </div>
   );
