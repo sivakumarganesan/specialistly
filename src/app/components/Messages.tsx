@@ -163,9 +163,11 @@ export function Messages() {
     setShowNewConversationModal(true);
     setIsLoadingCustomers(true);
     try {
-      const customers = await customerAPI.getAll({ specialistEmail: user?.email });
-      // Ensure we have an array
-      setAvailableCustomers(Array.isArray(customers) ? customers : []);
+      const response = await customerAPI.getAll({ specialistEmail: user?.email });
+      // Handle response with 'data' wrapper
+      const customers = response?.data ? response.data : Array.isArray(response) ? response : [];
+      setAvailableCustomers(customers);
+      console.log('Loaded customers:', customers);
     } catch (error) {
       console.error('Failed to load customers:', error);
       setAvailableCustomers([]);
@@ -221,16 +223,19 @@ export function Messages() {
 
   // Filter customers based on search
   const filteredCustomers = (Array.isArray(availableCustomers) ? availableCustomers : []).filter(customer => {
+    if (!customer || !customer._id) return false;
+    
     const query = customerSearchQuery.toLowerCase();
     const existingConvIds = new Set(conversationsCustomers.map(c => c?._id));
     
     // Don't show customers we already have conversations with
     if (existingConvIds.has(customer._id)) return false;
     
-    return (
-      customer.name.toLowerCase().includes(query) ||
-      customer.email.toLowerCase().includes(query)
-    );
+    // Safe property access with defaults
+    const name = (customer.name || '').toLowerCase();
+    const email = (customer.email || '').toLowerCase();
+    
+    return name.includes(query) || email.includes(query);
   });
 
   // Get unread count for a conversation
