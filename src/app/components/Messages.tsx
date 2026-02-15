@@ -164,9 +164,11 @@ export function Messages() {
     setIsLoadingCustomers(true);
     try {
       const customers = await customerAPI.getAll({ specialistEmail: user?.email });
-      setAvailableCustomers(customers);
+      // Ensure we have an array
+      setAvailableCustomers(Array.isArray(customers) ? customers : []);
     } catch (error) {
       console.error('Failed to load customers:', error);
+      setAvailableCustomers([]);
     } finally {
       setIsLoadingCustomers(false);
     }
@@ -199,6 +201,11 @@ export function Messages() {
     return conversation.participants.find(p => p.userId !== user?.id);
   };
 
+  // Get list of customer IDs we already have conversations with
+  const conversationsCustomers = conversations
+    .map(conv => getOtherParticipant(conv))
+    .filter(p => p?.userType === 'customer');
+
   // Filter conversations based on search
   const filteredConversations = conversations.filter(conv => {
     const otherParticipant = getOtherParticipant(conv);
@@ -213,9 +220,9 @@ export function Messages() {
   });
 
   // Filter customers based on search
-  const filteredCustomers = availableCustomers.filter(customer => {
+  const filteredCustomers = (Array.isArray(availableCustomers) ? availableCustomers : []).filter(customer => {
     const query = customerSearchQuery.toLowerCase();
-    const existingConvIds = new Set(conversationsCustomers.map(c => c._id));
+    const existingConvIds = new Set(conversationsCustomers.map(c => c?._id));
     
     // Don't show customers we already have conversations with
     if (existingConvIds.has(customer._id)) return false;
@@ -225,11 +232,6 @@ export function Messages() {
       customer.email.toLowerCase().includes(query)
     );
   });
-
-  // Get list of customer IDs we already have conversations with
-  const conversationsCustomers = conversations
-    .map(conv => getOtherParticipant(conv))
-    .filter(p => p?.userType === 'customer');
 
   // Get unread count for a conversation
   const getUnreadCount = (conversation: Conversation) => {

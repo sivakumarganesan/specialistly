@@ -16,10 +16,12 @@ const apiCall = async (
       },
     };
 
-    if (token) {
+    // Get token from parameter or localStorage
+    const authToken = token || localStorage.getItem('token');
+    if (authToken) {
       options.headers = {
         ...options.headers,
-        "Authorization": `Bearer ${token}`,
+        "Authorization": `Bearer ${authToken}`,
       };
     }
 
