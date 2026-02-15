@@ -10,6 +10,7 @@ import { Customers } from "@/app/components/Customers";
 import { Settings } from "@/app/components/Settings";
 import { Signup } from "@/app/components/Signup";
 import { Login } from "@/app/components/Login";
+import { Homepage } from "@/app/components/Homepage";
 import { Marketplace } from "@/app/components/Marketplace";
 import { SpecialistProfile } from "@/app/components/SpecialistProfile";
 import { MyPurchases } from "@/app/components/MyPurchases";
@@ -38,12 +39,21 @@ export function AppContent() {
   } | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
-  // If user is not authenticated, show login/signup pages
+  // If user is not authenticated, show appropriate page
   if (!isAuthenticated) {
     if (currentPage === "signup") {
       return <Signup />;
     }
-    return <Login />;
+    if (currentPage === "login") {
+      return <Login />;
+    }
+    // Show homepage by default for unauthenticated users
+    return (
+      <Homepage
+        onSignup={() => setCurrentPage("signup")}
+        onLogin={() => setCurrentPage("login")}
+      />
+    );
   }
 
   const handleNavigateToSettings = (tab?: string) => {

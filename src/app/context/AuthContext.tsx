@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState('homepage');
   const [userType, setUserType] = useState<"specialist" | "customer" | null>(null);
 
   // Load auth data from localStorage on mount
@@ -78,6 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(result.token);
       setUser(result.user);
       setUserType(data.userType || 'customer');
+      setCurrentPage('dashboard');
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -106,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(result.token);
       setUser(result.user);
       setUserType(result.userType || 'customer');
+      setCurrentPage('dashboard');
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -119,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
     setUserType(null);
+    setCurrentPage('homepage');
   };
 
   const updateSubscription = async (planType: 'free' | 'pro') => {
