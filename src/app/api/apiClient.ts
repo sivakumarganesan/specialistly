@@ -196,7 +196,7 @@ export const messageAPI = {
   getMessages: (conversationId: string, limit: number = 50, skip: number = 0) => 
     apiCall(`/messages/${conversationId}?limit=${limit}&skip=${skip}`),
   markAsRead: (conversationId: string) => apiCall(`/messages/${conversationId}/read`, "PUT"),
-  getUnreadCount: () => apiCall("/messages/unread"),
+  getUnreadCount: () => apiCall("/messages/unread/count"),
   deleteMessage: (messageId: string) => apiCall(`/messages/${messageId}`, "DELETE"),
   archiveConversation: (conversationId: string) => apiCall(`/messages/${conversationId}/archive`, "PUT"),
 };

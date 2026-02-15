@@ -16,16 +16,20 @@ const router = express.Router();
 // All routes require authentication
 router.use(authMiddleware);
 
-// Conversations
+// Conversations (must come before /:conversationId routes)
 router.get('/conversations', getConversations);
 router.post('/conversations', getOrCreateConversation);
+
+// Unread count (must come before /:conversationId routes)
+router.get('/unread/count', getUnreadCount);
 
 // Messages
 router.post('/', sendMessage);
 router.get('/:conversationId', getMessages);
 router.put('/:conversationId/read', markAsRead);
-router.get('/unread', getUnreadCount);
-router.delete('/:messageId', deleteMessage);
 router.put('/:conversationId/archive', archiveConversation);
+
+// Single message operations
+router.delete('/:messageId', deleteMessage);
 
 export default router;
