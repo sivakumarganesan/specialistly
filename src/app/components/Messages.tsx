@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-import { messageAPI } from '@/app/api/apiClient';
+import { messageAPI, customerAPI } from '@/app/api/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Badge } from '@/app/components/ui/badge';
-import { Send, Search, Archive, Trash2 } from 'lucide-react';
+import { Send, Search, Archive, Trash2, Plus, X } from 'lucide-react';
 
 interface Participant {
   userId: string;
@@ -49,6 +49,10 @@ export function Messages() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
+  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
+  const [availableCustomers, setAvailableCustomers] = useState<any[]>([]);
+  const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
 
   // Load conversations
   useEffect(() => {
@@ -154,6 +158,42 @@ export function Messages() {
     }
   };
 
+  // Load available customers when modal opens
+  const handleOpenNewConversation = async () => {
+    setShowNewConversationModal(true);
+    setIsLoadingCustomers(true);
+    try {
+      const customers = await customerAPI.getAll({ specialistEmail: user?.email });
+      setAvailableCustomers(customers);
+    } catch (error) {
+      console.error('Failed to load customers:', error);
+    } finally {
+      setIsLoadingCustomers(false);
+    }
+  };
+
+  // Start a new conversation with a customer
+  const handleStartConversation = async (customer: any) => {
+    if (!user?.id) return;
+    
+    try {
+      // Create or get conversation
+      const conversation = await messageAPI.getOrCreateConversation({
+        otherUserId: customer._id,
+        otherUserEmail: customer.email,
+        otherUserName: customer.name,
+        otherUserType: 'customer',
+      });
+
+      setConversations([conversation, ...conversations.filter(c => c._id !== conversation._id)]);
+      setSelectedConversation(conversation);
+      setShowNewConversationModal(false);
+      setCustomerSearchQuery('');
+    } catch (error) {
+      console.error('Failed to start conversation:', error);
+    }
+  };
+
   // Get other participant
   const getOtherParticipant = (conversation: Conversation) => {
     return conversation.participants.find(p => p.userId !== user?.id);
@@ -172,6 +212,25 @@ export function Messages() {
     );
   });
 
+  // Filter customers based on search
+  const filteredCustomers = availableCustomers.filter(customer => {
+    const query = customerSearchQuery.toLowerCase();
+    const existingConvIds = new Set(conversationsCustomers.map(c => c._id));
+    
+    // Don't show customers we already have conversations with
+    if (existingConvIds.has(customer._id)) return false;
+    
+    return (
+      customer.name.toLowerCase().includes(query) ||
+      customer.email.toLowerCase().includes(query)
+    );
+  });
+
+  // Get list of customer IDs we already have conversations with
+  const conversationsCustomers = conversations
+    .map(conv => getOtherParticipant(conv))
+    .filter(p => p?.userType === 'customer');
+
   // Get unread count for a conversation
   const getUnreadCount = (conversation: Conversation) => {
     return conversation.unreadCounts?.[user?.id || ''] || 0;
@@ -188,14 +247,24 @@ export function Messages() {
         {/* Conversations List */}
         <div className="lg:col-span-1 flex flex-col bg-white rounded-lg border">
           <div className="p-4 border-b space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                onClick={handleOpenNewConversation}
+                className="bg-purple-600 hover:bg-purple-700 gap-2"
+                size="sm"
+              >
+                <Plus className="h-4 w-4" />
+                New
+              </Button>
             </div>
             <div className="text-sm text-gray-600">
               {filteredConversations.length} conversation{filteredConversations.length !== 1 ? 's' : ''}
@@ -332,6 +401,62 @@ export function Messages() {
           )}
         </div>
       </div>
+
+      {/* New Conversation Modal */}
+      {showNewConversationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle>Start New Conversation</CardTitle>
+              <button
+                onClick={() => {
+                  setShowNewConversationModal(false);
+                  setCustomerSearchQuery('');
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </CardHeader>
+            <CardContent className="flex flex-col flex-1 overflow-hidden space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search customers..."
+                  value={customerSearchQuery}
+                  onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2">
+                {isLoadingCustomers ? (
+                  <div className="text-center text-gray-500 text-sm py-4">
+                    Loading customers...
+                  </div>
+                ) : filteredCustomers.length === 0 ? (
+                  <div className="text-center text-gray-500 text-sm py-4">
+                    {availableCustomers.length === 0
+                      ? 'No customers yet'
+                      : 'No matching customers'}
+                  </div>
+                ) : (
+                  filteredCustomers.map(customer => (
+                    <button
+                      key={customer._id}
+                      onClick={() => handleStartConversation(customer)}
+                      className="w-full p-3 text-left border rounded-lg hover:bg-purple-50 hover:border-purple-300 transition"
+                    >
+                      <div className="font-semibold text-sm">{customer.name}</div>
+                      <div className="text-xs text-gray-600">{customer.email}</div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
