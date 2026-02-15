@@ -188,5 +188,18 @@ export const authAPI = {
   updateSubscription: (token: string, data: any) => apiCall("/auth/subscription", "PUT", data, token),
 };
 
+// Messages API calls
+export const messageAPI = {
+  getConversations: () => apiCall("/messages/conversations"),
+  getOrCreateConversation: (data: any) => apiCall("/messages/conversations", "POST", data),
+  sendMessage: (data: any) => apiCall("/messages", "POST", data),
+  getMessages: (conversationId: string, limit: number = 50, skip: number = 0) => 
+    apiCall(`/messages/${conversationId}?limit=${limit}&skip=${skip}`),
+  markAsRead: (conversationId: string) => apiCall(`/messages/${conversationId}/read`, "PUT"),
+  getUnreadCount: () => apiCall("/messages/unread"),
+  deleteMessage: (messageId: string) => apiCall(`/messages/${messageId}`, "DELETE"),
+  archiveConversation: (conversationId: string) => apiCall(`/messages/${conversationId}/archive`, "PUT"),
+};
+
 // Health check
 export const healthCheck = () => apiCall("/health");

@@ -15,6 +15,7 @@ import { SpecialistProfile } from "@/app/components/SpecialistProfile";
 import { MyPurchases } from "@/app/components/MyPurchases";
 import { PageBuilder } from "@/app/components/PageBuilder";
 import { ServiceDetail } from "@/app/components/ServiceDetail";
+import { Messages } from "@/app/components/Messages";
 
 type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
 type UserType = "specialist" | "customer";
@@ -161,6 +162,7 @@ export function AppContent() {
         {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} />}
         {currentPage === "courses" && userType === "specialist" && <Courses onUpdateSearchableItems={updateCourseItems} />}
         {currentPage === "customers" && <Customers />}
+        {currentPage === "messages" && <Messages />}
         {currentPage === "settings" && <Settings initialTab={settingsTab} />}
         {currentPage === "marketplace" && <Marketplace onViewSpecialist={(id, email) => {
           setViewingSpecialist({ id, email });
