@@ -259,14 +259,16 @@ export function Messages() {
                   className="pl-10"
                 />
               </div>
-              <Button
-                onClick={handleOpenNewConversation}
-                className="bg-purple-600 hover:bg-purple-700 gap-2"
-                size="sm"
-              >
-                <Plus className="h-4 w-4" />
-                New
-              </Button>
+              {userType === 'specialist' && (
+                <Button
+                  onClick={handleOpenNewConversation}
+                  className="bg-purple-600 hover:bg-purple-700 gap-2"
+                  size="sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  New
+                </Button>
+              )}
             </div>
             <div className="text-sm text-gray-600">
               {filteredConversations.length} conversation{filteredConversations.length !== 1 ? 's' : ''}
