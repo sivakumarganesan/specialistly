@@ -216,10 +216,10 @@ export const WebinarBooking: React.FC<Props> = ({ specialistEmail, onBook }) => 
                       </p>
                     </div>
                     {webinar.eventType === 'single' && (
-                      <Badge className="bg-blue-100 text-blue-800">Single Day</Badge>
+                      <Badge className="bg-cyan-100 text-blue-800">Single Day</Badge>
                     )}
                     {webinar.eventType === 'multiple' && (
-                      <Badge className="bg-purple-100 text-purple-800">Multiple</Badge>
+                      <Badge className="bg-indigo-100 text-purple-800">Multiple</Badge>
                     )}
                   </div>
 
@@ -298,7 +298,7 @@ export const WebinarBooking: React.FC<Props> = ({ specialistEmail, onBook }) => 
             {availableSlots.map(slot => (
               <Card
                 key={slot._id}
-                className="p-4 hover:border-blue-500 cursor-pointer transition"
+                className="p-4 hover:border-cyan-500 cursor-pointer transition"
                 onClick={() => handleSelectSlot(slot)}
               >
                 <div className="flex items-center justify-between gap-4">
@@ -362,7 +362,7 @@ export const WebinarBooking: React.FC<Props> = ({ specialistEmail, onBook }) => 
         )}
 
         {/* Booking Summary */}
-        <Card className="p-6 space-y-4 bg-blue-50 border-blue-200">
+        <Card className="p-6 space-y-4 bg-cyan-50 border-blue-200">
           <h3 className="font-bold text-lg">Booking Summary</h3>
           
           <div className="space-y-3 text-sm">
@@ -454,7 +454,7 @@ export const WebinarBooking: React.FC<Props> = ({ specialistEmail, onBook }) => 
               <Button
                 type="submit"
                 disabled={booking || bookingSuccess}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 bg-cyan-600 hover:bg-cyan-700"
               >
                 {booking ? 'Processing...' : 'Confirm Booking'}
               </Button>

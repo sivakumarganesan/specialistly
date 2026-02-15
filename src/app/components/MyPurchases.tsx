@@ -152,7 +152,7 @@ export function MyPurchases() {
       case "pending":
         return "bg-yellow-100 text-yellow-800";
       case "completed":
-        return "bg-blue-100 text-blue-800";
+        return "bg-cyan-100 text-blue-800";
       case "cancelled":
         return "bg-red-100 text-red-800";
       default:
@@ -188,7 +188,7 @@ export function MyPurchases() {
           onClick={() => setActiveTab("courses")}
           className={`px-6 py-3 font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === "courses"
-              ? "border-purple-600 text-purple-600"
+              ? "border-indigo-600 text-indigo-600"
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
@@ -199,7 +199,7 @@ export function MyPurchases() {
           onClick={() => setActiveTab("services")}
           className={`px-6 py-3 font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === "services"
-              ? "border-purple-600 text-purple-600"
+              ? "border-indigo-600 text-indigo-600"
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
@@ -210,7 +210,7 @@ export function MyPurchases() {
           onClick={() => setActiveTab("appointments")}
           className={`px-6 py-3 font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === "appointments"
-              ? "border-purple-600 text-purple-600"
+              ? "border-indigo-600 text-indigo-600"
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
@@ -235,7 +235,7 @@ export function MyPurchases() {
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <BookOpen className="w-5 h-5 text-purple-600" />
+                        <BookOpen className="w-5 h-5 text-indigo-600" />
                         <h3 className="text-lg font-bold">{enrollment.courseName}</h3>
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
@@ -249,7 +249,7 @@ export function MyPurchases() {
                       {/* Progress Bar */}
                       <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-purple-600 h-2 rounded-full transition-all"
+                          className="bg-indigo-600 h-2 rounded-full transition-all"
                           style={{ width: `${enrollment.progress}%` }}
                         ></div>
                       </div>
@@ -268,7 +268,7 @@ export function MyPurchases() {
                         <span className="capitalize">{enrollment.status}</span>
                       </div>
                       <Button
-                        className="bg-purple-600 hover:bg-purple-700"
+                        className="bg-indigo-600 hover:bg-indigo-700"
                         onClick={() =>
                           window.open(`/course/${enrollment.courseId}`, "_blank")
                         }
@@ -285,7 +285,7 @@ export function MyPurchases() {
               <CardContent className="pt-6 text-center">
                 <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-600 mb-4">No enrolled courses yet</p>
-                <Button className="bg-purple-600 hover:bg-purple-700">
+                <Button className="bg-indigo-600 hover:bg-indigo-700">
                   Browse Courses
                 </Button>
               </CardContent>
@@ -305,7 +305,7 @@ export function MyPurchases() {
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <Briefcase className="w-5 h-5 text-purple-600" />
+                          <Briefcase className="w-5 h-5 text-indigo-600" />
                           <h3 className="text-lg font-bold">{booking.serviceName}</h3>
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
@@ -357,7 +357,7 @@ export function MyPurchases() {
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <Briefcase className="w-5 h-5 text-purple-600" />
+                            <Briefcase className="w-5 h-5 text-indigo-600" />
                             <h3 className="text-lg font-bold">{appointment.serviceTitle}</h3>
                           </div>
                           <div className="space-y-2 ml-8 text-sm text-gray-600">
@@ -400,7 +400,7 @@ export function MyPurchases() {
                           <div
                             className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
                               appointmentDate > new Date()
-                                ? "bg-blue-100 text-blue-800"
+                                ? "bg-cyan-100 text-blue-800"
                                 : "bg-green-100 text-green-800"
                             }`}
                           >
@@ -409,7 +409,7 @@ export function MyPurchases() {
                           </div>
                           {appointmentDate > new Date() && appointment.zoomJoinUrl && (
                             <Button
-                              className="bg-purple-600 hover:bg-purple-700"
+                              className="bg-indigo-600 hover:bg-indigo-700"
                               onClick={() =>
                                 window.open(appointment.zoomJoinUrl, "_blank")
                               }
@@ -429,7 +429,7 @@ export function MyPurchases() {
               <CardContent className="pt-6 text-center">
                 <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-600 mb-4">No booked services yet</p>
-                <Button className="bg-purple-600 hover:bg-purple-700">
+                <Button className="bg-indigo-600 hover:bg-indigo-700">
                   Browse Services
                 </Button>
               </CardContent>
@@ -450,7 +450,7 @@ export function MyPurchases() {
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <Calendar className="w-5 h-5 text-purple-600" />
+                          <Calendar className="w-5 h-5 text-indigo-600" />
                           <h3 className="text-lg font-bold">{appointment.serviceTitle}</h3>
                         </div>
                         <div className="space-y-2 ml-8 text-sm text-gray-600">
@@ -489,7 +489,7 @@ export function MyPurchases() {
                         <div
                           className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${
                             isUpcoming
-                              ? "bg-blue-100 text-blue-800"
+                              ? "bg-cyan-100 text-blue-800"
                               : "bg-green-100 text-green-800"
                           }`}
                         >
@@ -498,7 +498,7 @@ export function MyPurchases() {
                         </div>
                         {isUpcoming && appointment.zoomJoinUrl && (
                           <Button
-                            className="bg-purple-600 hover:bg-purple-700"
+                            className="bg-indigo-600 hover:bg-indigo-700"
                             onClick={() =>
                               window.open(appointment.zoomJoinUrl, "_blank")
                             }

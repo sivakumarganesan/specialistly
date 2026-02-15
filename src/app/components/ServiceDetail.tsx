@@ -180,8 +180,8 @@ export function ServiceDetail({ serviceId, onBack, onEdit, onDelete }: ServiceDe
                     <Badge
                       className={
                         isSingleDay
-                          ? "bg-blue-100 text-blue-800"
-                          : "bg-purple-100 text-purple-800"
+                          ? "bg-cyan-100 text-blue-800"
+                          : "bg-indigo-100 text-purple-800"
                       }
                     >
                       {isSingleDay ? "Single Day" : "Multiple Sessions"}
@@ -320,7 +320,7 @@ export function ServiceDetail({ serviceId, onBack, onEdit, onDelete }: ServiceDe
               <h2 className="text-xl font-bold mb-4">Performance</h2>
               <div className="grid md:grid-cols-3 gap-4">
                 {service.sales !== undefined && (
-                  <div className="text-center p-4 bg-blue-50 rounded">
+                  <div className="text-center p-4 bg-cyan-50 rounded">
                     <p className="text-2xl font-bold text-blue-600">{service.sales || 0}</p>
                     <p className="text-sm text-gray-600">Sales</p>
                   </div>
@@ -334,8 +334,8 @@ export function ServiceDetail({ serviceId, onBack, onEdit, onDelete }: ServiceDe
                   </div>
                 )}
                 {service.bookings !== undefined && (
-                  <div className="text-center p-4 bg-purple-50 rounded">
-                    <p className="text-2xl font-bold text-purple-600">
+                  <div className="text-center p-4 bg-indigo-50 rounded">
+                    <p className="text-2xl font-bold text-indigo-600">
                       {service.bookings || 0}
                     </p>
                     <p className="text-sm text-gray-600">Bookings</p>

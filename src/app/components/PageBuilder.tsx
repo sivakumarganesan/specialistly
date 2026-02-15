@@ -313,7 +313,7 @@ export function PageBuilder() {
             )}
           </Button>
           <Button
-            className="bg-blue-600 hover:bg-blue-700 gap-2"
+            className="bg-cyan-600 hover:bg-cyan-700 gap-2"
             onClick={handleSaveBranding}
             disabled={isSaving}
           >
@@ -323,7 +323,7 @@ export function PageBuilder() {
       </div>
 
       {/* Subdomain Info */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
+      <Card className="p-4 bg-cyan-50 border-blue-200">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-lg mb-1">Your Public Page</h3>
@@ -785,7 +785,7 @@ export function PageBuilder() {
             )}
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-cyan-50 border border-blue-200 rounded-lg p-4">
             <p className="text-sm text-blue-900">
               💡 <strong>Tip:</strong> Selected courses and services will appear on your public branding page. You can change these selections at any time.
             </p>
@@ -935,7 +935,7 @@ export function PageBuilder() {
           </Card>
 
           {/* Preview Info Card */}
-          <Card className="p-6 bg-blue-50 border-blue-200">
+          <Card className="p-6 bg-cyan-50 border-blue-200">
             <p className="text-sm text-blue-900">
               💡 <strong>Preview Info:</strong> This is how your page will look when published. Make changes in other tabs and they will appear here in real-time.
             </p>

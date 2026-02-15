@@ -737,7 +737,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case "webinar":
-        return "bg-blue-100 text-blue-700";
+        return "bg-cyan-100 text-blue-700";
       case "consulting":
         return "bg-green-100 text-green-700";
       default:
@@ -759,7 +759,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         {/* Set Availability Button */}
         {getTotalConsultingServices() > 0 && (
           <Button
-            className="bg-blue-600 hover:bg-blue-700 gap-2"
+            className="bg-cyan-600 hover:bg-cyan-700 gap-2"
             onClick={openAppointmentDialog}
           >
             <CalendarClock className="h-5 w-5" />
@@ -778,8 +778,8 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
           onClick={() => setFilterStatus("all")}
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Briefcase className="h-5 w-5 text-purple-600" />
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <Briefcase className="h-5 w-5 text-indigo-600" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Services</p>
@@ -821,7 +821,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
+            <div className="p-2 bg-cyan-100 rounded-lg">
               <CalendarClock className="h-5 w-5 text-blue-600" />
             </div>
             <div>
@@ -839,7 +839,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-600 rounded-lg">
+              <div className="p-3 bg-cyan-600 rounded-lg">
                 <CalendarClock className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -961,7 +961,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                     </div>
                   </div>
                   <Button
-                    className="ml-4 bg-blue-600 hover:bg-blue-700 gap-2 whitespace-nowrap"
+                    className="ml-4 bg-cyan-600 hover:bg-cyan-700 gap-2 whitespace-nowrap"
                     onClick={() => {
                       if (webinar.zoomStartUrl) {
                         window.open(webinar.zoomStartUrl, '_blank');
@@ -983,18 +983,18 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         <h2 className="text-lg font-semibold mb-3">Create New Service</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-blue-500"
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-cyan-500"
             onClick={() => openCreateDialog("webinar")}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-blue-100 rounded-full">
+              <div className="p-4 bg-cyan-100 rounded-full">
                 <Video className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="font-semibold text-lg">Live Webinar</h3>
               <p className="text-sm text-gray-600">
                 Host live webinars for multiple participants
               </p>
-              <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+              <Button className="bg-cyan-600 hover:bg-cyan-700 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Webinar
               </Button>
@@ -1145,7 +1145,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   <div className="mt-2 pt-2 border-t">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Linked to your availability</span>
-                      <Badge className="bg-blue-100 text-blue-700">
+                      <Badge className="bg-cyan-100 text-blue-700">
                         {getAvailableSlots().length} slots
                       </Badge>
                     </div>
@@ -1613,7 +1613,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
               Cancel
             </Button>
             <Button
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-indigo-600 hover:bg-indigo-700"
               onClick={handleCreateService}
             >
               Create Service
@@ -2073,7 +2073,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
               Cancel
             </Button>
             <Button
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-indigo-600 hover:bg-indigo-700"
               onClick={handleEditService}
             >
               Save Changes
@@ -2265,7 +2265,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                 </Button>
                 <Button
                   onClick={saveWeeklyAvailability}
-                  className="bg-blue-600 hover:bg-blue-700 gap-2"
+                  className="bg-cyan-600 hover:bg-cyan-700 gap-2"
                 >
                   <Calendar className="h-4 w-4" />
                   Save Availability

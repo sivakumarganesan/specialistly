@@ -41,7 +41,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
         <Card className="shadow-lg">
           <CardHeader className="text-center">
@@ -84,7 +84,7 @@ export function Login() {
 
               <Button
                 type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full bg-indigo-600 hover:bg-indigo-700"
                 disabled={isLoading}
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
@@ -95,7 +95,7 @@ export function Login() {
                 <button
                   type="button"
                   onClick={() => setCurrentPage('signup')}
-                  className="text-purple-600 hover:underline font-medium"
+                  className="text-indigo-600 hover:underline font-medium"
                 >
                   Sign up here
                 </button>

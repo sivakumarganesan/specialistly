@@ -401,9 +401,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case "self-paced":
-        return "bg-blue-100 text-blue-700";
+        return "bg-cyan-100 text-blue-700";
       case "cohort-based":
-        return "bg-purple-100 text-purple-700";
+        return "bg-indigo-100 text-indigo-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -440,8 +440,8 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <GraduationCap className="h-5 w-5 text-purple-600" />
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <GraduationCap className="h-5 w-5 text-indigo-600" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Courses</p>
@@ -468,11 +468,11 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         <h2 className="text-lg font-semibold mb-3">Create New Course</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-blue-500"
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-cyan-500"
             onClick={() => openCreateDialog("self-paced")}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-blue-100 rounded-full">
+              <div className="p-4 bg-cyan-100 rounded-full">
                 <PlayCircle className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="font-semibold text-lg">Self-Paced Course</h3>
@@ -493,7 +493,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   Certificates
                 </Badge>
               </div>
-              <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+              <Button className="bg-cyan-600 hover:bg-cyan-700 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Self-Paced
               </Button>
@@ -501,12 +501,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           </Card>
 
           <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-purple-500"
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-indigo-500"
             onClick={() => openCreateDialog("cohort-based")}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-purple-100 rounded-full">
-                <Users className="h-8 w-8 text-purple-600" />
+              <div className="p-4 bg-indigo-100 rounded-full">
+                <Users className="h-8 w-8 text-indigo-600" />
               </div>
               <h3 className="font-semibold text-lg">Cohort-Based Course</h3>
               <p className="text-sm text-gray-600">
@@ -526,7 +526,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   Interactive
                 </Badge>
               </div>
-              <Button className="bg-purple-600 hover:bg-purple-700 gap-2">
+              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Cohort-Based
               </Button>

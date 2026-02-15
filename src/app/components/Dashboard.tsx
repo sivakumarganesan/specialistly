@@ -139,11 +139,11 @@ export function Dashboard({
     <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
       {/* Membership Banner */}
       {user && (
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 md:p-6">
+        <div className="bg-gradient-to-r from-indigo-50 to-indigo-50 border border-purple-200 rounded-lg p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                Current Plan: <Badge className={user.subscription?.planType === 'pro' ? 'bg-purple-600' : 'bg-gray-600'}>{user.subscription?.planType?.toUpperCase() || 'FREE'}</Badge>
+                Current Plan: <Badge className={user.subscription?.planType === 'pro' ? 'bg-indigo-600' : 'bg-gray-600'}>{user.subscription?.planType?.toUpperCase() || 'FREE'}</Badge>
               </h2>
               <p className="text-sm text-gray-600">
                 {user.subscription?.features?.join(' • ') || 'Free tier features'}
@@ -154,7 +154,7 @@ export function Dashboard({
                 <Button 
                   onClick={handleUpgradeToPro}
                   disabled={isUpgrading}
-                  className="bg-purple-600 hover:bg-purple-700" 
+                  className="bg-indigo-600 hover:bg-indigo-700" 
                   size="sm"
                 >
                   {isUpgrading ? 'Upgrading...' : 'Upgrade to Pro'}
@@ -280,7 +280,7 @@ export function Dashboard({
                     <Badge 
                       className={
                         offering.type === "webinar" 
-                          ? "bg-blue-100 text-blue-700" 
+                          ? "bg-cyan-100 text-blue-700" 
                           : "bg-green-100 text-green-700"
                       }
                     >

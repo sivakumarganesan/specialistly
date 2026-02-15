@@ -79,7 +79,7 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userTyp
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
                   isActive 
-                    ? "bg-purple-50 text-purple-600" 
+                    ? "bg-indigo-50 text-indigo-600" 
                     : "text-gray-700 hover:bg-gray-50"
                 )}
               >

@@ -182,7 +182,7 @@ export const WebinarsSection: React.FC<Props> = ({ specialistEmail, specialistId
         </div>
         <Button
           onClick={() => setIsCreating(true)}
-          className="gap-2 bg-blue-600 hover:bg-blue-700"
+          className="gap-2 bg-cyan-600 hover:bg-cyan-700"
         >
           <Plus className="h-4 w-4" />
           Create Webinar
@@ -214,7 +214,7 @@ export const WebinarsSection: React.FC<Props> = ({ specialistEmail, specialistId
           </p>
           <Button
             onClick={() => setIsCreating(true)}
-            className="gap-2 bg-blue-600 hover:bg-blue-700"
+            className="gap-2 bg-cyan-600 hover:bg-cyan-700"
           >
             <Plus className="h-4 w-4" />
             Create Your First Webinar
@@ -242,9 +242,9 @@ export const WebinarsSection: React.FC<Props> = ({ specialistEmail, specialistId
                       )}
                     </Badge>
                     {webinar.eventType === 'single' ? (
-                      <Badge className="bg-blue-100 text-blue-800">Single Day</Badge>
+                      <Badge className="bg-cyan-100 text-blue-800">Single Day</Badge>
                     ) : (
-                      <Badge className="bg-purple-100 text-purple-800">Multiple Sessions</Badge>
+                      <Badge className="bg-indigo-100 text-purple-800">Multiple Sessions</Badge>
                     )}
                   </div>
 
@@ -316,7 +316,7 @@ export const WebinarsSection: React.FC<Props> = ({ specialistEmail, specialistId
         </div>
       )}
 
-      <Card className="bg-blue-50 border-blue-200 p-4">
+      <Card className="bg-cyan-50 border-blue-200 p-4">
         <p className="text-sm text-blue-900">
           <strong>💡 How it works:</strong> When you publish a webinar, available booking slots are automatically created. Users can book any available slot, and you'll receive a notification for each booking.
         </p>

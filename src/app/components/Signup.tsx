@@ -101,7 +101,7 @@ export function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 py-12 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">Join Specialistly</h1>
@@ -113,7 +113,7 @@ export function Signup() {
             {/* Signup Form */}
             <div>
               <Card className="shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50">
+                <CardHeader className="bg-gradient-to-r from-indigo-50 to-indigo-50">
                   <CardTitle>Create Your Account</CardTitle>
                   <CardDescription>Sign up to get started on Specialistly</CardDescription>
                 </CardHeader>
@@ -182,7 +182,7 @@ export function Signup() {
                         name="isSpecialist"
                         checked={formData.isSpecialist}
                         onChange={handleChange}
-                        className="w-4 h-4 rounded border-gray-300 text-purple-600 cursor-pointer"
+                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 cursor-pointer"
                       />
                       <Label htmlFor="isSpecialist" className="cursor-pointer text-gray-700">
                         I want to be a Specialist and earn by sharing my expertise
@@ -197,7 +197,7 @@ export function Signup() {
 
                     <Button
                       type="submit"
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2.5 text-base"
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 text-base"
                       disabled={isLoading}
                     >
                       {isLoading ? 'Creating Account...' : 'Create Account'}
@@ -208,7 +208,7 @@ export function Signup() {
                       <button
                         type="button"
                         onClick={() => setCurrentPage('login')}
-                        className="text-purple-600 hover:underline font-semibold"
+                        className="text-indigo-600 hover:underline font-semibold"
                       >
                         Login here
                       </button>
@@ -220,10 +220,10 @@ export function Signup() {
 
             {/* Why Specialist Benefits */}
             <div className="space-y-6">
-              <Card className="border-2 border-purple-200 bg-purple-50">
+              <Card className="border-2 border-purple-200 bg-indigo-50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-purple-600" />
+                    <Zap className="h-5 w-5 text-indigo-600" />
                     Why Become a Specialist?
                   </CardTitle>
                 </CardHeader>
@@ -261,22 +261,22 @@ export function Signup() {
                   key={plan.id}
                   className={`relative cursor-pointer transition-all transform hover:scale-105 ${
                     selectedPlan === plan.id
-                      ? 'border-purple-600 ring-2 ring-purple-600 shadow-xl'
-                      : 'border-gray-200 hover:border-purple-300 shadow-lg'
+                      ? 'border-indigo-600 ring-2 ring-indigo-600 shadow-xl'
+                      : 'border-gray-200 hover:border-indigo-300 shadow-lg'
                   } ${plan.id === 'pro' && selectedPlan !== plan.id ? 'md:scale-105' : ''}`}
                   onClick={() => setSelectedPlan(plan.id as 'free' | 'pro')}
                 >
                   {plan.badge && (
-                    <Badge className="absolute -top-3 left-4 bg-purple-600 px-4 py-1">
+                    <Badge className="absolute -top-3 left-4 bg-indigo-600 px-4 py-1">
                       {plan.badge}
                     </Badge>
                   )}
                   
-                  <CardHeader className={plan.id === 'pro' ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white' : ''}>
+                  <CardHeader className={plan.id === 'pro' ? 'bg-gradient-to-r from-indigo-600 to-indigo-600 text-white' : ''}>
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className={plan.id === 'pro' ? 'text-white' : ''}>{plan.name}</CardTitle>
-                        <CardDescription className={plan.id === 'pro' ? 'text-purple-100' : ''}>
+                        <CardDescription className={plan.id === 'pro' ? 'text-indigo-100' : ''}>
                           {plan.description}
                         </CardDescription>
                       </div>
@@ -396,7 +396,7 @@ export function Signup() {
 
                     <Button
                       type="submit"
-                      className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6"
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6"
                       disabled={isLoading}
                     >
                       {isLoading ? 'Creating Account...' : `Continue with ${selectedPlan === 'pro' ? 'Pro' : 'Free'} Plan`}

@@ -89,7 +89,7 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
             placeholder="Search specialists by name or expertise..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
       </div>
@@ -113,7 +113,7 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
                         className="w-16 h-16 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-xl">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-400 flex items-center justify-center text-white font-bold text-xl">
                         {specialist.name ? specialist.name[0] : "S"}
                       </div>
                     )}
@@ -133,17 +133,17 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
 
                 <div className="grid grid-cols-3 gap-3 text-center py-3 border-y">
                   <div>
-                    <p className="text-lg font-bold text-purple-600">{specialist.coursesCount}</p>
+                    <p className="text-lg font-bold text-indigo-600">{specialist.coursesCount}</p>
                     <p className="text-xs text-gray-600">Courses</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-purple-600">{specialist.servicesCount}</p>
+                    <p className="text-lg font-bold text-indigo-600">{specialist.servicesCount}</p>
                     <p className="text-xs text-gray-600">Services</p>
                   </div>
                   <div className="flex flex-col items-center">
                     <div className="flex items-center gap-1">
                       <Users className="w-4 h-4 text-gray-600" />
-                      <p className="text-lg font-bold text-purple-600">{specialist.totalStudents}</p>
+                      <p className="text-lg font-bold text-indigo-600">{specialist.totalStudents}</p>
                     </div>
                     <p className="text-xs text-gray-600">Students</p>
                   </div>
@@ -151,7 +151,7 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
 
                 <Button
                   onClick={() => onViewSpecialist(specialist._id, specialist.email)}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
                 >
                   View Profile
                 </Button>

@@ -29,7 +29,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-cyan-600 rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">S</span>
               </div>
               <span className="font-bold text-lg text-gray-900">Specialistly</span>
@@ -51,7 +51,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
               <Button variant="ghost" onClick={onLogin}>
                 Sign In
               </Button>
-              <Button className="bg-purple-600 hover:bg-purple-700" onClick={onSignup}>
+              <Button className="bg-indigo-600 hover:bg-indigo-700" onClick={onSignup}>
                 Get Started
               </Button>
             </div>
@@ -63,7 +63,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
-            <div className="inline-block bg-purple-100 text-purple-700 px-4 py-2 rounded-full text-sm font-medium">
+            <div className="inline-block bg-indigo-100 text-indigo-700 px-4 py-2 rounded-full text-sm font-medium">
               Transform Your Expertise Into Income
             </div>
 
@@ -80,7 +80,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button
                 size="lg"
-                className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2"
+                className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2"
                 onClick={onSignup}
               >
                 Start Free <ArrowRight className="w-4 h-4" />
@@ -96,7 +96,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="w-8 h-8 bg-gradient-to-br from-purple-400 to-pink-400 rounded-full border-2 border-white"
+                    className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-cyan-400 rounded-full border-2 border-white"
                   />
                 ))}
               </div>
@@ -107,7 +107,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
           </div>
 
           <div className="relative">
-            <div className="bg-gradient-to-br from-purple-400 via-pink-400 to-purple-600 rounded-2xl h-96 flex items-center justify-center text-white text-center p-8">
+            <div className="bg-gradient-to-br from-indigo-400 via-cyan-400 to-indigo-600 rounded-2xl h-96 flex items-center justify-center text-white text-center p-8">
               <div className="space-y-4">
                 <div className="text-6xl">📅</div>
                 <p className="text-lg font-semibold">Manage Bookings Seamlessly</p>
@@ -138,7 +138,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
                 onClick={() => setActiveTab('specialist')}
                 className={`px-6 py-3 rounded-md font-medium transition flex items-center gap-2 ${
                   activeTab === 'specialist'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-indigo-600 text-white'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -149,7 +149,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
                 onClick={() => setActiveTab('customer')}
                 className={`px-6 py-3 rounded-md font-medium transition flex items-center gap-2 ${
                   activeTab === 'customer'
-                    ? 'bg-purple-600 text-white'
+                    ? 'bg-indigo-600 text-white'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
               >
@@ -163,8 +163,8 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
           <div className="grid md:grid-cols-3 gap-8">
             {activeTab === 'specialist' ? (
               <>
-                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-purple-300 transition">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
+                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-indigo-300 transition">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-6">
                     <span className="text-2xl">1</span>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Create Your Profile</h3>
@@ -173,8 +173,8 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
                   </p>
                 </div>
 
-                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-purple-300 transition">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
+                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-indigo-300 transition">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-6">
                     <span className="text-2xl">2</span>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Receive Bookings</h3>
@@ -183,8 +183,8 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
                   </p>
                 </div>
 
-                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-purple-300 transition">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-6">
+                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-indigo-300 transition">
+                  <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-6">
                     <span className="text-2xl">3</span>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Grow & Earn</h3>
@@ -195,8 +195,8 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
               </>
             ) : (
               <>
-                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-purple-300 transition">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-cyan-300 transition">
+                  <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-6">
                     <span className="text-2xl">1</span>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Browse Specialists</h3>
@@ -205,8 +205,8 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
                   </p>
                 </div>
 
-                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-purple-300 transition">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-indigo-300 transition">
+                  <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-6">
                     <span className="text-2xl">2</span>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Book & Pay</h3>
@@ -215,8 +215,8 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
                   </p>
                 </div>
 
-                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-purple-300 transition">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
+                <div className="bg-white rounded-xl p-8 border border-gray-200 hover:border-indigo-300 transition">
+                  <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center mb-6">
                     <span className="text-2xl">3</span>
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Meet & Connect</h3>
@@ -266,7 +266,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
           ].map((feature, idx) => (
             <div key={idx} className="flex gap-6">
               <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-purple-600">
+                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-indigo-600">
                   <feature.icon className="w-6 h-6 text-white" />
                 </div>
               </div>
@@ -280,7 +280,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
       </section>
 
       {/* Social Proof / Testimonials */}
-      <section className="bg-gradient-to-br from-purple-50 to-blue-50 py-20 md:py-24">
+      <section className="bg-gradient-to-br from-indigo-50 to-cyan-50 py-20 md:py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -334,17 +334,17 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
 
       {/* CTA Section */}
       <section id="pricing" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-24">
-        <div className="bg-gradient-to-r from-purple-600 to-purple-800 rounded-2xl p-12 md:p-16 text-center">
+        <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-2xl p-12 md:p-16 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
             Ready to Get Started?
           </h2>
-          <p className="text-xl text-purple-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
             Join hundreds of specialists earning on their own terms. It's free to get started.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
-              className="bg-white text-purple-600 hover:bg-gray-100"
+              className="bg-white text-indigo-600 hover:bg-gray-100"
               onClick={onSignup}
             >
               As a Specialist
@@ -352,13 +352,13 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
             <Button
               size="lg"
               variant="outline"
-              className="border-white text-white hover:bg-purple-700"
+              className="border-white text-white hover:bg-indigo-700"
               onClick={onSignup}
             >
               As a Customer
             </Button>
           </div>
-          <p className="text-purple-100 text-sm mt-6">
+          <p className="text-indigo-100 text-sm mt-6">
             No credit card required • Free to join • Start earning today
           </p>
         </div>

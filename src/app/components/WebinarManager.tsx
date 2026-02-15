@@ -310,7 +310,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
               onClick={() => setFormData(prev => ({ ...prev, eventType: 'single', sessionFrequency: 'onetime' }))}
               className={`p-4 rounded-lg border-2 text-left transition ${
                 formData.eventType === 'single'
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-blue-500 bg-cyan-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
@@ -325,7 +325,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
               onClick={() => setFormData(prev => ({ ...prev, eventType: 'multiple', sessionFrequency: 'selected' }))}
               className={`p-4 rounded-lg border-2 text-left transition ${
                 formData.eventType === 'multiple'
-                  ? 'border-blue-500 bg-blue-50'
+                  ? 'border-blue-500 bg-cyan-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
@@ -339,7 +339,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
 
         {/* Single Day Event */}
         {formData.eventType === 'single' && (
-          <Card className="p-6 space-y-4 border-blue-200 bg-blue-50">
+          <Card className="p-6 space-y-4 border-blue-200 bg-cyan-50">
             <h3 className="text-xl font-bold flex items-center gap-2">
               <Calendar className="h-5 w-5" />
               Single Day Event Details
@@ -444,7 +444,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
 
         {/* Multiple Day Event */}
         {formData.eventType === 'multiple' && (
-          <Card className="p-6 space-y-4 border-purple-200 bg-purple-50">
+          <Card className="p-6 space-y-4 border-purple-200 bg-indigo-50">
             <h3 className="text-xl font-bold flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Multiple Sessions Setup
@@ -461,7 +461,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
                   onClick={() => setFormData(prev => ({ ...prev, sessionFrequency: 'selected' }))}
                   className={`p-3 rounded-lg border text-left transition ${
                     formData.sessionFrequency === 'selected'
-                      ? 'border-purple-500 bg-white'
+                      ? 'border-indigo-500 bg-white'
                       : 'border-gray-200'
                   }`}
                 >
@@ -474,7 +474,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
                   onClick={() => setFormData(prev => ({ ...prev, sessionFrequency: 'repeat' }))}
                   className={`p-3 rounded-lg border text-left transition ${
                     formData.sessionFrequency === 'repeat'
-                      ? 'border-purple-500 bg-white'
+                      ? 'border-indigo-500 bg-white'
                       : 'border-gray-200'
                   }`}
                 >
@@ -716,7 +716,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
           <Button
             type="submit"
             disabled={saving}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-cyan-600 hover:bg-cyan-700"
           >
             {saving ? 'Saving...' : 'Save Webinar'}
           </Button>

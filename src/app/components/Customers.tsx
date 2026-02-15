@@ -235,7 +235,7 @@ export function Customers() {
       case "completed":
         return "bg-green-100 text-green-700";
       case "active":
-        return "bg-blue-100 text-blue-700";
+        return "bg-cyan-100 text-blue-700";
       case "cancelled":
         return "bg-red-100 text-red-700";
       default:
@@ -266,7 +266,7 @@ export function Customers() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
+            <div className="p-2 bg-cyan-100 rounded-lg">
               <Users className="h-5 w-5 text-blue-600" />
             </div>
             <div>
@@ -328,7 +328,7 @@ export function Customers() {
                   {/* Customer Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                      <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
                         {getInitials(customer.name)}
                       </div>
                       <div>
@@ -432,7 +432,7 @@ export function Customers() {
             <div className="space-y-6 py-4">
               {/* Customer Info */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xl">
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xl">
                   {getInitials(selectedCustomer.name)}
                 </div>
                 <div className="flex-1">
@@ -477,7 +477,7 @@ export function Customers() {
                 <div className="grid grid-cols-2 gap-4">
                   <Card className="p-3">
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-purple-600" />
+                      <DollarSign className="h-5 w-5 text-indigo-600" />
                       <div>
                         <p className="text-xs text-gray-600">Total Spent</p>
                         <p className="text-xl font-bold">
@@ -512,7 +512,7 @@ export function Customers() {
                             <div
                               className={`p-2 rounded-lg ${
                                 purchase.offeringType === "course"
-                                  ? "bg-blue-100"
+                                  ? "bg-cyan-100"
                                   : "bg-green-100"
                               }`}
                             >
