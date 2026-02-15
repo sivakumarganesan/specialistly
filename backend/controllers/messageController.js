@@ -84,19 +84,24 @@ export const getOrCreateConversation = async (req, res) => {
 export const sendMessage = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const { conversationId, receiverId, text } = req.body;
+    const { conversationId, receiverId, senderName, senderEmail, text } = req.body;
 
-    if (!userId || !conversationId || !receiverId || !text) {
+    if (!userId || !conversationId || !receiverId || !senderName || !senderEmail || !text) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
+
+    // Determine sender type from conversation participants
+    const conversation = await Conversation.findById(conversationId);
+    const currentUserParticipant = conversation?.participants?.find(p => p.userId === userId);
+    const senderType = currentUserParticipant?.userType || 'customer';
 
     // Create message
     const message = new Message({
       conversationId,
       senderId: userId,
-      senderName: req.user?.name,
-      senderEmail: req.user?.email,
-      senderType: req.user?.isSpecialist ? 'specialist' : 'customer',
+      senderName,
+      senderEmail,
+      senderType,
       receiverId,
       text,
     });

@@ -131,6 +131,8 @@ export function Messages() {
       const newMessage = await messageAPI.sendMessage({
         conversationId: selectedConversation._id,
         receiverId: otherParticipant.userId,
+        senderName: user.name || user.email,
+        senderEmail: user.email,
         text: messageText.trim(),
       });
 
