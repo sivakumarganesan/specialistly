@@ -17,7 +17,7 @@ const apiCall = async (
     };
 
     // Get token from parameter or localStorage
-    const authToken = token || localStorage.getItem('token');
+    const authToken = token || localStorage.getItem('authToken');
     if (authToken) {
       options.headers = {
         ...options.headers,
