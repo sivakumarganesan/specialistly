@@ -48,7 +48,6 @@ export function Messages() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
   const [availableCustomers, setAvailableCustomers] = useState<any[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
@@ -75,10 +74,9 @@ export function Messages() {
     loadConversations();
   }, [user?.id]);
 
-  // Load messages for selected conversation and setup polling
+  // Load messages for selected conversation (one time, no polling)
   useEffect(() => {
     if (!selectedConversation?._id || !user?.id) {
-      if (pollInterval) clearInterval(pollInterval);
       return;
     }
 
@@ -107,14 +105,6 @@ export function Messages() {
     };
 
     loadMessages();
-
-    // Poll for new messages every 2 seconds
-    const interval = setInterval(loadMessages, 2000);
-    setPollInterval(interval);
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
   }, [selectedConversation?._id, user?.id]);
 
   // Handle send message
