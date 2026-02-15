@@ -40,7 +40,7 @@ interface Message {
 }
 
 export function Messages() {
-  const { user } = useAuth();
+  const { user, userType } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -185,7 +185,7 @@ export function Messages() {
       const conversation = await messageAPI.getOrCreateConversation({
         currentUserEmail: user.email,
         currentUserName: user.name || user.email,
-        currentUserType: user.userType,
+        currentUserType: userType || 'specialist',
         otherUserId: customer._id,
         otherUserEmail: customer.email,
         otherUserName: customer.name,
