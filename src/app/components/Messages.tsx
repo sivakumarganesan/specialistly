@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { messageAPI, customerAPI } from '@/app/api/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Badge } from '@/app/components/ui/badge';
-import { Send, Search, Archive, Trash2, Plus, X } from 'lucide-react';
+import { Send, Search, Archive, Trash2, Plus, X, AlertCircle } from 'lucide-react';
 
 interface Participant {
   userId: string;
@@ -41,6 +41,7 @@ interface Message {
 
 export function Messages() {
   const { user, userType } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -52,6 +53,12 @@ export function Messages() {
   const [availableCustomers, setAvailableCustomers] = useState<any[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Load conversations
   useEffect(() => {
@@ -212,11 +219,29 @@ export function Messages() {
     if (!otherParticipant) return false;
     
     const query = searchQuery.toLowerCase();
-    return (
+    const matchesSearch = (
       otherParticipant.name.toLowerCase().includes(query) ||
       otherParticipant.email.toLowerCase().includes(query) ||
       conv.preview.toLowerCase().includes(query)
     );
+
+    // If customer wants to show unread only
+    if (showUnreadOnly && userType === 'customer') {
+      return matchesSearch && getUnreadCount(conv) > 0;
+    }
+    
+    return matchesSearch;
+  });
+
+  // Sort conversations: unread first for customers
+  const sortedConversations = [...filteredConversations].sort((a, b) => {
+    if (userType === 'customer') {
+      const aUnread = getUnreadCount(a);
+      const bUnread = getUnreadCount(b);
+      if (aUnread !== bUnread) return bUnread - aUnread; // Unread first
+    }
+    // Then by last message time
+    return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
   });
 
   // Filter customers based on search
@@ -240,6 +265,9 @@ export function Messages() {
   const getUnreadCount = (conversation: Conversation) => {
     return conversation.unreadCounts?.[user?.id || ''] || 0;
   };
+
+  // Calculate total unread count across all conversations
+  const totalUnreadCount = conversations.reduce((sum, conv) => sum + getUnreadCount(conv), 0);
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -273,18 +301,34 @@ export function Messages() {
                 </Button>
               )}
             </div>
+            
+            {/* Unread Filter Toggle for Customers */}
+            {userType === 'customer' && totalUnreadCount > 0 && (
+              <div className="flex items-center justify-between">
+                <Button
+                  variant={showUnreadOnly ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+                  className={showUnreadOnly ? 'bg-red-500 hover:bg-red-600 w-full' : 'w-full'}
+                >
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  Unread ({totalUnreadCount})
+                </Button>
+              </div>
+            )}
+            
             <div className="text-sm text-gray-600">
-              {filteredConversations.length} conversation{filteredConversations.length !== 1 ? 's' : ''}
+              {sortedConversations.length} conversation{sortedConversations.length !== 1 ? 's' : ''}
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
-            {filteredConversations.length === 0 ? (
+            {sortedConversations.length === 0 ? (
               <div className="p-4 text-center text-gray-500 text-sm">
-                {searchQuery ? 'No conversations found' : 'No conversations yet'}
+                {searchQuery ? 'No conversations found' : userType === 'customer' && showUnreadOnly ? 'No unread messages' : 'No conversations yet'}
               </div>
             ) : (
-              filteredConversations.map(conversation => {
+              sortedConversations.map(conversation => {
                 const otherParticipant = getOtherParticipant(conversation);
                 const unreadCount = getUnreadCount(conversation);
 
@@ -294,14 +338,14 @@ export function Messages() {
                     onClick={() => setSelectedConversation(conversation)}
                     className={`w-full p-4 border-b text-left transition hover:bg-gray-50 ${
                       selectedConversation?._id === conversation._id ? 'bg-indigo-50' : ''
-                    }`}
+                    } ${unreadCount > 0 ? 'bg-blue-50' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <div className="font-semibold text-sm truncate">
+                      <div className={`text-sm truncate ${unreadCount > 0 ? 'font-bold text-blue-900' : 'font-semibold'}`}>
                         {otherParticipant?.name}
                       </div>
                       {unreadCount > 0 && (
-                        <Badge className="bg-indigo-600 h-5 px-2 flex items-center justify-center text-xs">
+                        <Badge className="bg-red-500 h-5 px-2 flex items-center justify-center text-xs font-semibold whitespace-nowrap">
                           {unreadCount}
                         </Badge>
                       )}
@@ -309,7 +353,7 @@ export function Messages() {
                     <div className="text-xs text-gray-600 truncate mb-1">
                       {otherParticipant?.email}
                     </div>
-                    <div className="text-xs text-gray-500 truncate">
+                    <div className={`text-xs truncate ${unreadCount > 0 ? 'text-blue-700 font-medium' : 'text-gray-500'}`}>
                       {conversation.preview || 'No messages yet'}
                     </div>
                   </button>
@@ -361,31 +405,34 @@ export function Messages() {
                 ) : messages.length === 0 ? (
                   <div className="text-center text-gray-500">No messages yet. Start the conversation!</div>
                 ) : (
-                  messages.map(message => (
-                    <div
-                      key={message._id}
-                      className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
-                    >
+                  <>
+                    {messages.map(message => (
                       <div
-                        className={`max-w-xs px-4 py-2 rounded-lg ${
-                          message.senderId === user?.id
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-white border'
-                        }`}
+                        key={message._id}
+                        className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
                       >
-                        <p className="text-sm break-words">{message.text}</p>
-                        <p className={`text-xs mt-1 ${
-                          message.senderId === user?.id ? 'text-indigo-100' : 'text-gray-500'
-                        }`}>
-                          {new Date(message.createdAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                          {message.isRead && message.senderId === user?.id && ' ✓'}
-                        </p>
+                        <div
+                          className={`max-w-xs px-4 py-2 rounded-lg ${
+                            message.senderId === user?.id
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-white border'
+                          }`}
+                        >
+                          <p className="text-sm break-words">{message.text}</p>
+                          <p className={`text-xs mt-1 ${
+                            message.senderId === user?.id ? 'text-indigo-100' : 'text-gray-500'
+                          }`}>
+                            {new Date(message.createdAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                            {message.isRead && message.senderId === user?.id && ' ✓'}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </>
                 )}
               </div>
 

@@ -14,6 +14,7 @@ import {
   ShoppingCart
 } from "lucide-react";
 import { cn } from "@/app/components/ui/utils";
+import { Badge } from "@/app/components/ui/badge";
 
 interface SidebarProps {
   activeTab: string;
@@ -21,6 +22,7 @@ interface SidebarProps {
   isMobileOpen?: boolean;
   onClose?: () => void;
   userType?: "specialist" | "customer";
+  unreadMessageCount?: number;
 }
 
 const creatorMenuItems = [
@@ -41,7 +43,7 @@ const customerMenuItems = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userType = "customer" }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userType = "customer", unreadMessageCount = 0 }: SidebarProps) {
   const handleItemClick = (id: string) => {
     onTabChange(id);
     if (onClose) {
@@ -71,20 +73,28 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userTyp
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const showBadge = item.id === "messages" && unreadMessageCount > 0;
             
             return (
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item.id)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left justify-between",
                   isActive 
                     ? "bg-indigo-50 text-indigo-600" 
                     : "text-gray-700 hover:bg-gray-50"
                 )}
               >
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </div>
+                {showBadge && (
+                  <Badge className="bg-red-500 h-5 px-2 flex items-center justify-center text-xs font-semibold">
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                  </Badge>
+                )}
               </button>
             );
           })}

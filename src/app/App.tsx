@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
+import { messageAPI } from "@/app/api/apiClient";
 import { Header } from "@/app/components/Header";
 import { Sidebar } from "@/app/components/Sidebar";
 import { Dashboard } from "@/app/components/Dashboard";
@@ -28,7 +29,7 @@ interface SearchableItem {
 }
 
 export function AppContent() {
-  const { isAuthenticated, currentPage, setCurrentPage, userType } = useAuth();
+  const { isAuthenticated, currentPage, setCurrentPage, userType, user } = useAuth();
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [offeringItems, setOfferingItems] = useState<SearchableItem[]>([]);
@@ -38,6 +39,30 @@ export function AppContent() {
     email: string;
   } | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+
+  // Fetch unread message count periodically
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id || currentPage !== 'messages') return;
+
+    const fetchUnreadCount = async () => {
+      try {
+        const conversations = await messageAPI.getConversations();
+        const totalUnread = conversations.reduce((sum, conv) => {
+          return sum + (conv.unreadCounts?.[user.id] || 0);
+        }, 0);
+        setUnreadMessageCount(totalUnread);
+      } catch (error) {
+        console.error('Failed to fetch unread count:', error);
+      }
+    };
+
+    // Fetch immediately and then set up interval
+    fetchUnreadCount();
+    const interval = setInterval(fetchUnreadCount, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, user?.id, currentPage]);
 
   // If user is not authenticated, show appropriate page
   if (!isAuthenticated) {
@@ -100,6 +125,7 @@ export function AppContent() {
           isMobileOpen={isMobileSidebarOpen}
           onClose={() => setIsMobileSidebarOpen(false)}
           userType={userType || "customer"}
+          unreadMessageCount={unreadMessageCount}
         />
         <main className="md:ml-64 pt-16">
           <ServiceDetail
@@ -152,6 +178,7 @@ export function AppContent() {
         isMobileOpen={isMobileSidebarOpen}
         onClose={() => setIsMobileSidebarOpen(false)}
         userType={userType || "customer"}
+        unreadMessageCount={unreadMessageCount}
       />
       
       <main className="md:ml-64 pt-16">
