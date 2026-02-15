@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-import { messageAPI, customerAPI } from '@/app/api/apiClient';
+import { messageAPI, customerAPI, creatorAPI } from '@/app/api/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
@@ -51,7 +51,8 @@ export function Messages() {
   const [isSending, setIsSending] = useState(false);
   const [showNewConversationModal, setShowNewConversationModal] = useState(false);
   const [availableCustomers, setAvailableCustomers] = useState<any[]>([]);
-  const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
+  const [availableSpecialists, setAvailableSpecialists] = useState<any[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
@@ -160,38 +161,50 @@ export function Messages() {
     }
   };
 
-  // Load available customers when modal opens
+  // Load available contacts when modal opens
   const handleOpenNewConversation = async () => {
     setShowNewConversationModal(true);
-    setIsLoadingCustomers(true);
+    setIsLoadingContacts(true);
     try {
-      const response = await customerAPI.getAll({ specialistEmail: user?.email });
-      // Handle response with 'data' wrapper
-      const customers = response?.data ? response.data : Array.isArray(response) ? response : [];
-      setAvailableCustomers(customers);
-      console.log('Loaded customers:', customers);
+      if (userType === 'specialist') {
+        // Load customers for specialists
+        const response = await customerAPI.getAll({ specialistEmail: user?.email });
+        const customers = response?.data ? response.data : Array.isArray(response) ? response : [];
+        setAvailableCustomers(customers);
+        console.log('Loaded customers:', customers);
+      } else {
+        // Load specialists for customers
+        const response = await creatorAPI.getAllSpecialists();
+        const specialists = response?.data ? response.data : Array.isArray(response) ? response : [];
+        setAvailableSpecialists(specialists);
+        console.log('Loaded specialists:', specialists);
+      }
     } catch (error) {
-      console.error('Failed to load customers:', error);
-      setAvailableCustomers([]);
+      console.error('Failed to load contacts:', error);
+      if (userType === 'specialist') {
+        setAvailableCustomers([]);
+      } else {
+        setAvailableSpecialists([]);
+      }
     } finally {
-      setIsLoadingCustomers(false);
+      setIsLoadingContacts(false);
     }
   };
 
-  // Start a new conversation with a customer
-  const handleStartConversation = async (customer: any) => {
+  // Start a new conversation with a customer or specialist
+  const handleStartConversation = async (contact: any) => {
     if (!user?.id || !user?.email) return;
     
     try {
-      // Create or get conversation
+      const isSpecialist = userType === 'specialist';
       const conversation = await messageAPI.getOrCreateConversation({
         currentUserEmail: user.email,
         currentUserName: user.name || user.email,
         currentUserType: userType || 'specialist',
-        otherUserId: customer._id,
-        otherUserEmail: customer.email,
-        otherUserName: customer.name,
-        otherUserType: 'customer',
+        otherUserId: contact._id,
+        otherUserEmail: contact.email,
+        otherUserName: contact.name,
+        otherUserType: isSpecialist ? 'customer' : 'specialist',
       });
 
       setConversations([conversation, ...conversations.filter(c => c._id !== conversation._id)]);
@@ -244,22 +257,48 @@ export function Messages() {
     return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
   });
 
-  // Filter customers based on search
-  const filteredCustomers = (Array.isArray(availableCustomers) ? availableCustomers : []).filter(customer => {
-    if (!customer || !customer._id) return false;
-    
-    const query = customerSearchQuery.toLowerCase();
-    const existingConvIds = new Set(conversationsCustomers.map(c => c?._id));
-    
-    // Don't show customers we already have conversations with
-    if (existingConvIds.has(customer._id)) return false;
-    
-    // Safe property access with defaults
-    const name = (customer.name || '').toLowerCase();
-    const email = (customer.email || '').toLowerCase();
-    
-    return name.includes(query) || email.includes(query);
-  });
+  // Filter specialists/customers based on search
+  const getFilteredContacts = () => {
+    if (userType === 'specialist') {
+      // For specialists: filter customers
+      return (Array.isArray(availableCustomers) ? availableCustomers : []).filter(customer => {
+        if (!customer || !customer._id) return false;
+        
+        const query = customerSearchQuery.toLowerCase();
+        const existingConvIds = new Set(conversationsCustomers.map(c => c?._id));
+        
+        // Don't show customers we already have conversations with
+        if (existingConvIds.has(customer._id)) return false;
+        
+        const name = (customer.name || '').toLowerCase();
+        const email = (customer.email || '').toLowerCase();
+        
+        return name.includes(query) || email.includes(query);
+      });
+    } else {
+      // For customers: filter specialists
+      const specialistsInConversations = conversations
+        .map(conv => getOtherParticipant(conv))
+        .filter(p => p?.userType === 'specialist');
+      
+      return (Array.isArray(availableSpecialists) ? availableSpecialists : []).filter(specialist => {
+        if (!specialist || !specialist._id) return false;
+        
+        const query = customerSearchQuery.toLowerCase();
+        const existingConvIds = new Set(specialistsInConversations.map(s => s?._id));
+        
+        // Don't show specialists we already have conversations with
+        if (existingConvIds.has(specialist._id)) return false;
+        
+        const name = (specialist.name || '').toLowerCase();
+        const email = (specialist.email || '').toLowerCase();
+        
+        return name.includes(query) || email.includes(query);
+      });
+    }
+  };
+
+  const filteredContacts = getFilteredContacts();
 
   // Get unread count for a conversation
   const getUnreadCount = (conversation: Conversation) => {
@@ -273,7 +312,11 @@ export function Messages() {
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold mb-2">Messages</h1>
-        <p className="text-gray-600">Connect directly with specialists and customers</p>
+        <p className="text-gray-600">
+          {userType === 'specialist' 
+            ? 'Connect directly with customers'
+            : 'Connect directly with specialists'}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] overflow-hidden">
@@ -290,16 +333,14 @@ export function Messages() {
                   className="pl-10"
                 />
               </div>
-              {userType === 'specialist' && (
-                <Button
-                  onClick={handleOpenNewConversation}
-                  className="bg-indigo-600 hover:bg-indigo-700 gap-2"
-                  size="sm"
-                >
-                  <Plus className="h-4 w-4" />
-                  New
-                </Button>
-              )}
+              <Button
+                onClick={handleOpenNewConversation}
+                className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+                size="sm"
+              >
+                <Plus className="h-4 w-4" />
+                {userType === 'specialist' ? 'New' : 'Message'}
+              </Button>
             </div>
             
             {/* Unread Filter Toggle for Customers */}
@@ -469,7 +510,9 @@ export function Messages() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-              <CardTitle>Start New Conversation</CardTitle>
+              <CardTitle>
+                {userType === 'specialist' ? 'Start New Conversation' : 'Message a Specialist'}
+              </CardTitle>
               <button
                 onClick={() => {
                   setShowNewConversationModal(false);
@@ -484,7 +527,7 @@ export function Messages() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
-                  placeholder="Search customers..."
+                  placeholder={userType === 'specialist' ? 'Search customers...' : 'Search specialists...'}
                   value={customerSearchQuery}
                   onChange={(e) => setCustomerSearchQuery(e.target.value)}
                   className="pl-10"
@@ -492,25 +535,25 @@ export function Messages() {
               </div>
 
               <div className="flex-1 overflow-y-auto space-y-2">
-                {isLoadingCustomers ? (
+                {isLoadingContacts ? (
                   <div className="text-center text-gray-500 text-sm py-4">
-                    Loading customers...
+                    Loading {userType === 'specialist' ? 'customers' : 'specialists'}...
                   </div>
-                ) : filteredCustomers.length === 0 ? (
+                ) : filteredContacts.length === 0 ? (
                   <div className="text-center text-gray-500 text-sm py-4">
-                    {availableCustomers.length === 0
-                      ? 'No customers yet'
-                      : 'No matching customers'}
+                    {(userType === 'specialist' ? availableCustomers : availableSpecialists).length === 0
+                      ? `No ${userType === 'specialist' ? 'customers' : 'specialists'} yet`
+                      : `No matching ${userType === 'specialist' ? 'customers' : 'specialists'}`}
                   </div>
                 ) : (
-                  filteredCustomers.map(customer => (
+                  filteredContacts.map(contact => (
                     <button
-                      key={customer._id}
-                      onClick={() => handleStartConversation(customer)}
+                      key={contact._id}
+                      onClick={() => handleStartConversation(contact)}
                       className="w-full p-3 text-left border rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition"
                     >
-                      <div className="font-semibold text-sm">{customer.name}</div>
-                      <div className="text-xs text-gray-600">{customer.email}</div>
+                      <div className="font-semibold text-sm">{contact.name}</div>
+                      <div className="text-xs text-gray-600">{contact.email}</div>
                     </button>
                   ))
                 )}
