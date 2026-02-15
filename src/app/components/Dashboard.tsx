@@ -42,9 +42,11 @@ export function Dashboard({
   onNavigateToServices?: () => void;
   onViewServiceDetail?: (serviceId: string) => void;
 }) {
-  const { user } = useAuth();
+  const { user, updateSubscription } = useAuth();
   const [filterTab, setFilterTab] = useState("all");
   const [offerings, setOfferings] = useState<Offering[]>([]);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const [activeCustomers, setActiveCustomers] = useState(0);
   const [activeSessions, setActiveSessions] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -109,6 +111,26 @@ export function Dashboard({
     fetchDashboardData();
   }, [user?.email, user?.name]);
 
+  const handleUpgradeToPro = async () => {
+    try {
+      setIsUpgrading(true);
+      setUpgradeMessage(null);
+      
+      await updateSubscription('pro');
+      setUpgradeMessage('✓ Successfully upgraded to Pro Plan!');
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setUpgradeMessage(null), 3000);
+      
+      // Reload page after 2 seconds to reflect changes
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (error) {
+      setUpgradeMessage(`Failed to upgrade: ${error instanceof Error ? error.message : 'Please try again.'}`);
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
   const filteredOfferings = filterTab === "all" 
     ? offerings 
     : offerings.filter(o => o.type === filterTab);
@@ -128,9 +150,25 @@ export function Dashboard({
               </p>
             </div>
             {user.subscription?.planType === 'free' && (
-              <Button className="bg-purple-600 hover:bg-purple-700" size="sm">
-                Upgrade to Pro
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button 
+                  onClick={handleUpgradeToPro}
+                  disabled={isUpgrading}
+                  className="bg-purple-600 hover:bg-purple-700" 
+                  size="sm"
+                >
+                  {isUpgrading ? 'Upgrading...' : 'Upgrade to Pro'}
+                </Button>
+                {upgradeMessage && (
+                  <div className={`px-4 py-2 rounded text-sm font-medium ${
+                    upgradeMessage.includes('\u2713') 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {upgradeMessage}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
