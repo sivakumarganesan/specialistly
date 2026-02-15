@@ -4,7 +4,6 @@ import { messageAPI } from "@/app/api/apiClient";
 import { Header } from "@/app/components/Header";
 import { Sidebar } from "@/app/components/Sidebar";
 import { Dashboard } from "@/app/components/Dashboard";
-import { MySite } from "@/app/components/MySite";
 import { Services } from "@/app/components/Services";
 import { Courses } from "@/app/components/Courses";
 import { Customers } from "@/app/components/Customers";
@@ -195,7 +194,6 @@ export function AppContent() {
           }} />
         )}
         {currentPage === "page-builder" && <PageBuilder />}
-        {currentPage === "mysite" && <MySite />}
         {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} />}
         {currentPage === "courses" && userType === "specialist" && <Courses onUpdateSearchableItems={updateCourseItems} />}
         {currentPage === "customers" && <Customers />}
