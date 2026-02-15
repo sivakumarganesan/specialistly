@@ -99,11 +99,11 @@ export const sendMessage = async (req, res) => {
     await Conversation.findByIdAndUpdate(
       conversationId,
       {
-        lastMessage: text,
-        lastMessageTime: new Date(),
-        lastMessageSenderId: userId,
-        preview: text.substring(0, 100),
         $set: {
+          lastMessage: text,
+          lastMessageTime: new Date(),
+          lastMessageSenderId: userId,
+          preview: text.substring(0, 100),
           [`unreadCounts.${receiverId}`]: (await Message.countDocuments({
             conversationId,
             receiverId,
