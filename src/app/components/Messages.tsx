@@ -52,6 +52,7 @@ export function Messages() {
   const [availableCustomers, setAvailableCustomers] = useState<any[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Load conversations
   useEffect(() => {
@@ -74,9 +75,11 @@ export function Messages() {
     loadConversations();
   }, [user?.id]);
 
-  // Load messages for selected conversation (one time, no polling)
+  // Load messages for selected conversation with polling for specialists
   useEffect(() => {
     if (!selectedConversation?._id || !user?.id) {
+      if (pollInterval) clearInterval(pollInterval);
+      setPollInterval(null);
       return;
     }
 
@@ -105,7 +108,17 @@ export function Messages() {
     };
 
     loadMessages();
-  }, [selectedConversation?._id, user?.id]);
+
+    // Poll for new messages every 5 seconds for specialists only
+    if (userType === 'specialist') {
+      const interval = setInterval(loadMessages, 5000);
+      setPollInterval(interval);
+
+      return () => {
+        if (interval) clearInterval(interval);
+      };
+    }
+  }, [selectedConversation?._id, user?.id, userType]);
 
   // Handle send message
   const handleSendMessage = async (e: React.FormEvent) => {
