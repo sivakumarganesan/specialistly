@@ -72,7 +72,7 @@ export function PageBuilder() {
   const { user } = useAuth();
   const [branding, setBranding] = useState<BrandingData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"general" | "design" | "sections" | "seo" | "content" | "webinars">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "design" | "sections" | "seo" | "content" | "webinars" | "preview">("general");
   const [slugCopied, setSlugCopied] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
@@ -360,7 +360,7 @@ export function PageBuilder() {
 
       {/* Tabs */}
       <div className="flex gap-2 border-b overflow-x-auto">
-        {(["general", "design", "sections", "seo", "content", "webinars"] as const).map((tab) => (
+        {(["general", "design", "sections", "seo", "content", "webinars", "preview"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -376,6 +376,7 @@ export function PageBuilder() {
             {tab === "seo" && <span className="flex items-center gap-2"><Globe className="h-4 w-4" /> SEO</span>}
             {tab === "content" && <span className="flex items-center gap-2"><Globe className="h-4 w-4" /> Content</span>}
             {tab === "webinars" && <span className="flex items-center gap-2"><Video className="h-4 w-4" /> Webinars</span>}
+            {tab === "preview" && <span className="flex items-center gap-2"><Eye className="h-4 w-4" /> Preview</span>}
           </button>
         ))}
       </div>
@@ -800,6 +801,145 @@ export function PageBuilder() {
             specialistId={user?.id || ''}
             specialistName={branding?.businessName || 'Specialist'}
           />
+        </div>
+      )}
+
+      {/* Preview */}
+      {activeTab === "preview" && (
+        <div className="space-y-6">
+          {/* Preview Card */}
+          <Card className="p-8 bg-white">
+            <div className="max-w-4xl mx-auto">
+              {/* Header Section */}
+              <div 
+                className="rounded-lg p-12 mb-8 text-white text-center"
+                style={{ backgroundColor: branding?.colors?.primary || '#3B82F6' }}
+              >
+                {branding?.logoUrl && (
+                  <img 
+                    src={branding.logoUrl} 
+                    alt="Logo" 
+                    className="h-16 mx-auto mb-4 rounded"
+                  />
+                )}
+                <h1 className="text-4xl font-bold mb-2">{branding?.businessName || 'Your Business Name'}</h1>
+                <p className="text-xl opacity-90">{branding?.businessTagline || 'Your tagline or slogan'}</p>
+              </div>
+
+              {/* About Section */}
+              {branding?.about?.enabled && (
+                <div className="mb-12 pb-8 border-b">
+                  <h2 
+                    className="text-3xl font-bold mb-6"
+                    style={{ color: branding?.colors?.primary || '#3B82F6' }}
+                  >
+                    {branding?.about?.title || 'About Me'}
+                  </h2>
+                  <div className="flex gap-8 items-start">
+                    {branding?.about?.profileImage && (
+                      <img 
+                        src={branding.about.profileImage} 
+                        alt="Profile" 
+                        className="w-48 h-48 rounded-lg object-cover flex-shrink-0"
+                      />
+                    )}
+                    <div>
+                      <p className="text-gray-700 text-lg leading-relaxed">{branding?.about?.bio || 'Your bio goes here'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Services Section */}
+              {branding?.services?.enabled && selectedServices.length > 0 && (
+                <div className="mb-12 pb-8 border-b">
+                  <h2 
+                    className="text-3xl font-bold mb-6"
+                    style={{ color: branding?.colors?.primary || '#3B82F6' }}
+                  >
+                    {branding?.services?.title || 'Services'}
+                  </h2>
+                  {branding?.services?.description && (
+                    <p className="text-gray-600 mb-8 text-lg">{branding.services.description}</p>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {services
+                      .filter(s => selectedServices.includes(s._id))
+                      .map((service) => (
+                        <div 
+                          key={service._id} 
+                          className="p-6 rounded-lg border-2 transition hover:shadow-lg"
+                          style={{ borderColor: branding?.colors?.secondary || '#10B981' }}
+                        >
+                          <h3 className="text-xl font-bold mb-2 text-gray-900">{service.title}</h3>
+                          <p className="text-gray-600 mb-4">{service.description}</p>
+                          <div className="flex justify-between items-center">
+                            <span className="text-2xl font-bold" style={{ color: branding?.colors?.accent || '#F59E0B' }}>₹{service.cost}</span>
+                            <span className="text-sm text-gray-500">{service.duration} min</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Courses Section */}
+              {selectedCourses.length > 0 && (
+                <div className="mb-12 pb-8 border-b">
+                  <h2 
+                    className="text-3xl font-bold mb-6"
+                    style={{ color: branding?.colors?.primary || '#3B82F6' }}
+                  >
+                    Courses
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {courses
+                      .filter(c => selectedCourses.includes(c._id))
+                      .map((course) => (
+                        <div 
+                          key={course._id} 
+                          className="p-6 rounded-lg border-2 transition hover:shadow-lg"
+                          style={{ borderColor: branding?.colors?.secondary || '#10B981' }}
+                        >
+                          <h3 className="text-xl font-bold mb-2 text-gray-900">{course.title}</h3>
+                          <p className="text-gray-600 mb-4">{course.description}</p>
+                          <div className="flex justify-between items-center">
+                            <span className="text-2xl font-bold" style={{ color: branding?.colors?.accent || '#F59E0B' }}>
+                              {course.cost ? `₹${course.cost}` : 'Free'}
+                            </span>
+                            <span className="text-sm text-gray-500">{course.courseType}</span>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {/* CTA Section */}
+              {branding?.cta?.enabled && (
+                <div 
+                  className="rounded-lg p-8 text-center text-white"
+                  style={{ backgroundColor: branding?.colors?.secondary || '#10B981' }}
+                >
+                  <h2 className="text-2xl font-bold mb-2">{branding?.cta?.title || 'Ready to Get Started?'}</h2>
+                  <p className="mb-6 text-lg opacity-90">{branding?.cta?.description || 'Contact us to learn more'}</p>
+                  <button 
+                    className="px-8 py-3 rounded-lg font-semibold transition hover:opacity-90"
+                    style={{ backgroundColor: branding?.colors?.accent || '#F59E0B', color: '#ffffff' }}
+                  >
+                    {branding?.cta?.buttonText || 'Get Started'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Preview Info Card */}
+          <Card className="p-6 bg-blue-50 border-blue-200">
+            <p className="text-sm text-blue-900">
+              💡 <strong>Preview Info:</strong> This is how your page will look when published. Make changes in other tabs and they will appear here in real-time.
+            </p>
+          </Card>
         </div>
       )}
     </div>
