@@ -930,7 +930,7 @@ function AllotmentSlots() {
 }
 
 function MySubscriptions() {
-  const { user } = useAuth();
+  const { user, updateSubscription } = useAuth();
   const [currentPlan, setCurrentPlan] = useState<"free" | "pro">(
     (user?.subscription?.planType as "free" | "pro") || "free"
   );
@@ -977,22 +977,10 @@ function MySubscriptions() {
         setMessage("Unable to determine your email address");
         return;
       }
-      const subscriptionData = {
-        email,
-        planType: "pro",
-        price: 999,
-        currency: "₹",
-        billingCycle: "monthly",
-        features: plans.find(p => p.id === "pro")?.features || [],
-        status: "active",
-        autoRenew: true,
-      };
       
-      await subscriptionAPI.changePlan(email, subscriptionData);
+      // Update subscription via auth context
+      await updateSubscription("pro");
       setCurrentPlan("pro");
-      
-      // Update auth context
-      await updateSubscription(subscriptionData);
       
       setMessage("✓ Upgraded to Pro Plan successfully!");
       setTimeout(() => setMessage(""), 3000);
@@ -1013,22 +1001,10 @@ function MySubscriptions() {
         setMessage("Unable to determine your email address");
         return;
       }
-      const subscriptionData = {
-        email,
-        planType: "free",
-        price: 0,
-        currency: "₹",
-        billingCycle: "forever",
-        features: plans.find(p => p.id === "free")?.features || [],
-        status: "active",
-        autoRenew: false,
-      };
       
-      await subscriptionAPI.changePlan(email, subscriptionData);
+      // Update subscription via auth context
+      await updateSubscription("free");
       setCurrentPlan("free");
-      
-      // Update auth context
-      await updateSubscription(subscriptionData);
       
       setMessage("✓ Switched to Free Plan successfully!");
       setTimeout(() => setMessage(""), 3000);
