@@ -178,11 +178,14 @@ export function Messages() {
 
   // Start a new conversation with a customer
   const handleStartConversation = async (customer: any) => {
-    if (!user?.id) return;
+    if (!user?.id || !user?.email) return;
     
     try {
       // Create or get conversation
       const conversation = await messageAPI.getOrCreateConversation({
+        currentUserEmail: user.email,
+        currentUserName: user.name || user.email,
+        currentUserType: user.userType,
         otherUserId: customer._id,
         otherUserEmail: customer.email,
         otherUserName: customer.name,

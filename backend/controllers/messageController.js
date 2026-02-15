@@ -27,7 +27,15 @@ export const getConversations = async (req, res) => {
 export const getOrCreateConversation = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const { otherUserId, otherUserEmail, otherUserName, otherUserType } = req.body;
+    const { 
+      currentUserEmail, 
+      currentUserName,
+      currentUserType,
+      otherUserId, 
+      otherUserEmail, 
+      otherUserName, 
+      otherUserType 
+    } = req.body;
 
     if (!userId || !otherUserId) {
       return res.status(400).json({ error: 'Missing user information' });
@@ -47,9 +55,9 @@ export const getOrCreateConversation = async (req, res) => {
       participants: [
         {
           userId,
-          email: req.user?.email,
-          name: req.user?.name,
-          userType: req.user?.isSpecialist ? 'specialist' : 'customer',
+          email: currentUserEmail,
+          name: currentUserName,
+          userType: currentUserType,
         },
         {
           userId: otherUserId,
