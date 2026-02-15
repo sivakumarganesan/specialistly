@@ -52,7 +52,6 @@ export function Messages() {
   const [availableCustomers, setAvailableCustomers] = useState<any[]>([]);
   const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState('');
-  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
 
   // Load conversations
   useEffect(() => {
@@ -75,50 +74,38 @@ export function Messages() {
     loadConversations();
   }, [user?.id]);
 
-  // Load messages for selected conversation with polling for specialists
+  // Load messages for selected conversation (on demand only)
+  const loadMessagesHandler = async () => {
+    if (!selectedConversation?._id || !user?.id) return;
+
+    try {
+      setIsLoading(true);
+      const data = await messageAPI.getMessages(selectedConversation._id);
+      setMessages(data.messages);
+
+      // Mark as read
+      await messageAPI.markAsRead(selectedConversation._id);
+      
+      // Update conversation list to remove unread badge
+      setConversations(convs =>
+        convs.map(conv =>
+          conv._id === selectedConversation._id
+            ? { ...conv, unreadCounts: { ...conv.unreadCounts, [user.id]: 0 } }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load messages when conversation is selected
   useEffect(() => {
-    if (!selectedConversation?._id || !user?.id) {
-      if (pollInterval) clearInterval(pollInterval);
-      setPollInterval(null);
-      return;
-    }
-
-    const loadMessages = async () => {
-      try {
-        setIsLoading(true);
-        const data = await messageAPI.getMessages(selectedConversation._id);
-        setMessages(data.messages);
-
-        // Mark as read
-        await messageAPI.markAsRead(selectedConversation._id);
-        
-        // Update conversation list to remove unread badge
-        setConversations(convs =>
-          convs.map(conv =>
-            conv._id === selectedConversation._id
-              ? { ...conv, unreadCounts: { ...conv.unreadCounts, [user.id]: 0 } }
-              : conv
-          )
-        );
-      } catch (error) {
-        console.error('Failed to load messages:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadMessages();
-
-    // Poll for new messages every 5 seconds for specialists only
-    if (userType === 'specialist') {
-      const interval = setInterval(loadMessages, 5000);
-      setPollInterval(interval);
-
-      return () => {
-        if (interval) clearInterval(interval);
-      };
-    }
-  }, [selectedConversation?._id, user?.id, userType]);
+    if (!selectedConversation?._id || !user?.id) return;
+    loadMessagesHandler();
+  }, [selectedConversation?._id, user?.id]);
 
   // Handle send message
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -141,6 +128,9 @@ export function Messages() {
 
       setMessages([...messages, newMessage]);
       setMessageText('');
+
+      // Reload messages to ensure consistency
+      await loadMessagesHandler();
 
       // Update conversation list with new message
       setConversations(convs =>
@@ -346,6 +336,14 @@ export function Messages() {
                   </p>
                 </div>
                 <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={loadMessagesHandler}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Refreshing...' : 'Refresh'}
+                  </Button>
                   <Button 
                     variant="ghost" 
                     size="sm"
