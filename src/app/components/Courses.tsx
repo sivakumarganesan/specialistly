@@ -65,6 +65,7 @@ interface Course {
   totalLessons?: number;
   certificateIncluded?: boolean;
   accessDuration?: string;
+  lessons?: any[];
   // Cohort-based specific fields
   cohortSize?: string;
   startDate?: string;
@@ -113,6 +114,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             totalLessons: course.totalLessons,
             certificateIncluded: course.certificateIncluded !== undefined ? course.certificateIncluded : true,
             accessDuration: course.accessDuration || "Lifetime",
+            lessons: course.lessons || [],
             cohortSize: course.cohortSize || "",
             startDate: course.startDate || "",
             endDate: course.endDate || "",
@@ -145,8 +147,18 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [manageLessonsDialogOpen, setManageLessonsDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courseType, setCourseType] = useState<"self-paced" | "cohort-based" | null>(null);
+
+  interface Lesson {
+    _id?: string;
+    title: string;
+    videoUrl: string;
+    order: number;
+  }
+
+  const [lessons, setLessons] = useState<Lesson[]>([]);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -386,6 +398,96 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         m.id === id ? { ...m, [field]: value } : m
       )
     );
+  };
+
+  const addLesson = () => {
+    const newLesson: Lesson = {
+      title: "",
+      videoUrl: "",
+      order: lessons.length + 1,
+    };
+    setLessons([...lessons, newLesson]);
+  };
+
+  const removeLesson = (index: number) => {
+    setLessons(lessons.filter((_, i) => i !== index));
+  };
+
+  const updateLesson = (index: number, field: keyof Lesson, value: string | number) => {
+    setLessons(
+      lessons.map((lesson, i) =>
+        i === index ? { ...lesson, [field]: value } : lesson
+      )
+    );
+  };
+
+  const openManageLessonsDialog = (course: Course) => {
+    setSelectedCourse(course);
+    // Initialize lessons from course if they exist
+    if (course.lessons && Array.isArray(course.lessons)) {
+      setLessons(course.lessons.map((l: any, idx) => ({
+        _id: l._id,
+        title: l.title,
+        videoUrl: l.videoUrl,
+        order: idx + 1,
+      })));
+    } else {
+      setLessons([]);
+    }
+    setManageLessonsDialogOpen(true);
+  };
+
+  const handleSaveLessons = async () => {
+    if (!selectedCourse) return;
+
+    try {
+      // Add new lessons that don't have _id
+      for (const lesson of lessons) {
+        if (!lesson._id) {
+          await courseAPI.addLesson(selectedCourse.id, {
+            title: lesson.title,
+            videoUrl: lesson.videoUrl,
+            order: lesson.order,
+          });
+        }
+      }
+      
+      setManageLessonsDialogOpen(false);
+      alert("✓ Lessons saved successfully!");
+      
+      // Refresh courses
+      const response = await courseAPI.getAll({ creator: user?.email });
+      const courseData = response.data || response;
+      if (courseData) {
+        const transformedCourses: Course[] = (Array.isArray(courseData) ? courseData : []).map((course: any) => ({
+          id: course._id || course.id,
+          title: course.title,
+          type: course.courseType || course.type,
+          description: course.description,
+          price: course.price?.toString() || "",
+          duration: course.duration || "",
+          studentsEnrolled: course.studentsEnrolled || 0,
+          status: course.status || "draft",
+          level: course.level || "Beginner",
+          category: course.category || "Technology",
+          modules: course.modules,
+          totalLessons: course.totalLessons,
+          certificateIncluded: course.certificateIncluded !== undefined ? course.certificateIncluded : true,
+          accessDuration: course.accessDuration || "Lifetime",
+          cohortSize: course.cohortSize || "",
+          startDate: course.startDate || "",
+          endDate: course.endDate || "",
+          schedule: course.schedule || "",
+          meetingPlatform: course.meetingPlatform || "Zoom",
+          liveSessions: course.liveSessions,
+          lessons: course.lessons,
+        }));
+        setCourses(transformedCourses);
+      }
+    } catch (error) {
+      console.error("Failed to save lessons:", error);
+      alert(`Failed to save lessons: ${error instanceof Error ? error.message : "Please try again."}`);
+    }
   };
 
   const getTypeIcon = (type: string) => {
@@ -632,6 +734,17 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                     <Edit className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
+                  {course.type === "self-paced" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openManageLessonsDialog(course)}
+                      title="Add lessons/videos to your course"
+                    >
+                      <Video className="h-4 w-4 mr-1" />
+                      Lessons
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -1329,6 +1442,96 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </Button>
             <Button onClick={handleEditCourse}>
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Lessons Dialog */}
+      <Dialog open={manageLessonsDialogOpen} onOpenChange={setManageLessonsDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Course Lessons</DialogTitle>
+            <DialogDescription>
+              Add video lessons to your course. Students will see these lessons after enrolling.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
+              <p className="text-sm text-blue-800">
+                💡 <strong>Tip:</strong> Use embed URLs from YouTube, Vimeo, or similar platforms.
+                For YouTube: https://www.youtube.com/embed/VIDEO_ID
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {lessons.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No lessons added yet. Click "Add Lesson" to get started.</p>
+              ) : (
+                lessons.map((lesson, index) => (
+                  <Card key={index} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">Lesson {index + 1}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeLesson(index)}
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div>
+                        <Label htmlFor={`lesson-title-${index}`} className="text-xs">
+                          Lesson Title *
+                        </Label>
+                        <Input
+                          id={`lesson-title-${index}`}
+                          placeholder="e.g., Introduction to React"
+                          value={lesson.title}
+                          onChange={(e) => updateLesson(index, "title", e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`lesson-url-${index}`} className="text-xs">
+                          Video URL (Embed URL) *
+                        </Label>
+                        <Input
+                          id={`lesson-url-${index}`}
+                          placeholder="e.g., https://www.youtube.com/embed/dQw4w9WgXcQ"
+                          value={lesson.videoUrl}
+                          onChange={(e) => updateLesson(index, "videoUrl", e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={addLesson}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Lesson
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManageLessonsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveLessons}
+              disabled={lessons.some(l => !l.title || !l.videoUrl)}
+            >
+              Save Lessons
             </Button>
           </DialogFooter>
         </DialogContent>
