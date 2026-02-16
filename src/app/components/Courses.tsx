@@ -178,7 +178,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       const modulesData = modules.map(({ id, ...rest }) => rest);
       const courseData = {
         title: formData.title,
-        type: courseType,
+        courseType: courseType,
         description: formData.description,
         price: formData.price,
         duration: formData.duration,
