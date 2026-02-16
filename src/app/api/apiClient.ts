@@ -77,8 +77,12 @@ export const courseAPI = {
   // Self-Paced Enrollment
   enrollSelfPaced: (courseId: string, customerId?: string, customerEmail?: string) => 
     apiCall("/courses/enrollments/self-paced", "POST", { courseId, customerId, customerEmail }),
-  getMySelfPacedCourses: () => 
-    apiCall("/courses/enrollments/self-paced/my-courses"),
+  getMySelfPacedCourses: (customerId?: string) => {
+    const endpoint = customerId 
+      ? `/courses/enrollments/self-paced/my-courses?customerId=${customerId}`
+      : `/courses/enrollments/self-paced/my-courses`;
+    return apiCall(endpoint);
+  },
   getSelfPacedEnrollmentDetails: (enrollmentId: string) => 
     apiCall(`/courses/enrollments/self-paced/${enrollmentId}`),
   markLessonComplete: (enrollmentId: string, lessonId: string) => 
@@ -101,8 +105,12 @@ export const courseAPI = {
   // Cohort Enrollment
   enrollCohort: (cohortId: string) => 
     apiCall("/courses/enrollments/cohort", "POST", { cohortId }),
-  getMyCohorts: () => 
-    apiCall("/courses/enrollments/cohort/my-courses"),
+  getMyCohorts: (customerId?: string) => {
+    const endpoint = customerId 
+      ? `/courses/enrollments/cohort/my-courses?customerId=${customerId}`
+      : `/courses/enrollments/cohort/my-courses`;
+    return apiCall(endpoint);
+  },
   markSessionAttended: (enrollmentId: string, sessionId: string) => 
     apiCall(`/courses/enrollments/cohort/${enrollmentId}/sessions/${sessionId}/attend`, "POST"),
   getSessionJoinLink: (cohortId: string, sessionId: string) => 

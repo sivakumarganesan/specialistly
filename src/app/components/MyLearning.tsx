@@ -35,7 +35,7 @@ interface CohortCourse {
 }
 
 export function MyLearning() {
-  const { setCurrentPage } = useAuth();
+  const { user, setCurrentPage } = useAuth();
   const [selfPacedCourses, setSelfPacedCourses] = useState<SelfPacedCourse[]>([]);
   const [cohortCourses, setCohortCourses] = useState<CohortCourse[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,11 +52,11 @@ export function MyLearning() {
       setLoading(true);
       setError(null);
       const [selfPaced, cohorts] = await Promise.all([
-        courseAPI.getMySelfPacedCourses().catch((err) => {
+        courseAPI.getMySelfPacedCourses(user?.id).catch((err) => {
           console.error("Error fetching self-paced courses:", err);
           return { data: [] };
         }),
-        courseAPI.getMyCohorts().catch((err) => {
+        courseAPI.getMyCohorts(user?.id).catch((err) => {
           console.error("Error fetching cohort courses:", err);
           return { data: [] };
         }),
