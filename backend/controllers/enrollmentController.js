@@ -95,24 +95,48 @@ export const getMyCourses = async (req, res) => {
       .populate('courseId', 'title thumbnail lessons')
       .sort({ createdAt: -1 });
 
+    if (!enrollments || enrollments.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
     // Filter out enrollments where course doesn't exist (deleted courses)
-    const validEnrollments = enrollments.filter(e => e.courseId && e.courseId._id);
+    const validEnrollments = enrollments.filter((e) => {
+      // Check if courseId exists after populate
+      if (!e.courseId) {
+        console.warn(`Enrollment ${e._id} has null courseId - course may have been deleted`);
+        return false;
+      }
+      return true;
+    });
 
     const formatted = validEnrollments.map((e) => {
-      const lessonsTotal = e.courseId.lessons && e.courseId.lessons.length ? e.courseId.lessons.length : 0;
-      const lessonsCompleted = e.completedLessons && e.completedLessons.length ? e.completedLessons.length : 0;
-      
-      return {
-        enrollmentId: e._id,
-        courseId: e.courseId._id,
-        title: e.courseId.title,
-        thumbnail: e.courseId.thumbnail,
-        lessonsTotal: lessonsTotal,
-        lessonsCompleted: lessonsCompleted,
-        percentComplete: lessonsTotal > 0 ? Math.round((lessonsCompleted / lessonsTotal) * 100) : 0,
-        completed: e.completed,
-        certificate: e.certificate,
-      };
+      try {
+        // Double-check course exists before accessing properties
+        if (!e.courseId || !e.courseId._id) {
+          throw new Error(`Course reference invalid for enrollment ${e._id}`);
+        }
+
+        const lessonsTotal = (e.courseId.lessons && Array.isArray(e.courseId.lessons)) ? e.courseId.lessons.length : 0;
+        const lessonsCompleted = (e.completedLessons && Array.isArray(e.completedLessons)) ? e.completedLessons.length : 0;
+        
+        return {
+          enrollmentId: e._id,
+          courseId: e.courseId._id,
+          title: e.courseId.title || 'Untitled Course',
+          thumbnail: e.courseId.thumbnail || null,
+          lessonsTotal: lessonsTotal,
+          lessonsCompleted: lessonsCompleted,
+          percentComplete: lessonsTotal > 0 ? Math.round((lessonsCompleted / lessonsTotal) * 100) : 0,
+          completed: e.completed || false,
+          certificate: e.certificate || null,
+        };
+      } catch (mapError) {
+        console.error(`Error mapping enrollment:`, mapError.message);
+        throw mapError;
+      }
     });
 
     res.status(200).json({
@@ -157,13 +181,18 @@ export const getEnrollmentDetails = async (req, res) => {
     const completedCount = enrollment.completedLessons && enrollment.completedLessons.length ? enrollment.completedLessons.length : 0;
     const percentComplete = lessonsTotal > 0 ? Math.round((completedCount / lessonsTotal) * 100) : 0;
 
-    const lessons = (course.lessons || []).map((lesson) => ({
-      _id: lesson._id,
-      title: lesson.title,
-      order: lesson.order,
-      videoUrl: lesson.videoUrl,
-      completed: enrollment.completedLessons.includes(lesson._id),
-    }));
+    const lessons = ((course.lessons && Array.isArray(course.lessons)) ? course.lessons : []).map((lesson) => {
+      if (!lesson) {
+        return null;
+      }
+      return {
+        _id: lesson._id,
+        title: lesson.title || 'Untitled Lesson',
+        order: lesson.order || 0,
+        videoUrl: lesson.videoUrl || null,
+        completed: enrollment.completedLessons && enrollment.completedLessons.includes(lesson._id),
+      };
+    }).filter(l => l !== null);
 
     res.status(200).json({
       success: true,

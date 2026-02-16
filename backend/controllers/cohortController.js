@@ -353,24 +353,46 @@ export const getMyCohorts = async (req, res) => {
       .populate('cohortId') // Get full cohort data
       .sort({ createdAt: -1 });
 
+    if (!enrollments || enrollments.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
     // Filter out enrollments where cohort doesn't exist (deleted cohorts)
-    const validEnrollments = enrollments.filter(e => e.cohortId && e.cohortId._id);
+    const validEnrollments = enrollments.filter((e) => {
+      if (!e.cohortId) {
+        console.warn(`Enrollment ${e._id} has null cohortId - cohort may have been deleted`);
+        return false;
+      }
+      return true;
+    });
 
     const formatted = validEnrollments.map((e) => {
-      const sessionsTotal = e.cohortId.sessions && e.cohortId.sessions.length ? e.cohortId.sessions.length : 0;
-      const sessionsAttended = e.attendedSessions && e.attendedSessions.length ? e.attendedSessions.length : 0;
+      try {
+        if (!e.cohortId || !e.cohortId._id) {
+          throw new Error(`Cohort reference invalid for enrollment ${e._id}`);
+        }
 
-      return {
-        enrollmentId: e._id,
-        cohortId: e.cohortId._id,
-        batchName: e.cohortId.batchName,
-        startDate: e.cohortId.startDate,
-        sessionsTotal: sessionsTotal,
-        sessionsAttended: sessionsAttended,
-        percentComplete: sessionsTotal > 0 ? Math.round((sessionsAttended / sessionsTotal) * 100) : 0,
-        completed: e.completed,
-        certificate: e.certificate,
-      };
+        const sessionsTotal = (e.cohortId.sessions && Array.isArray(e.cohortId.sessions)) ? e.cohortId.sessions.length : 0;
+        const sessionsAttended = (e.attendedSessions && Array.isArray(e.attendedSessions)) ? e.attendedSessions.length : 0;
+
+        return {
+          enrollmentId: e._id,
+          cohortId: e.cohortId._id,
+          batchName: e.cohortId.batchName || 'Untitled Cohort',
+          startDate: e.cohortId.startDate || null,
+          sessionsTotal: sessionsTotal,
+          sessionsAttended: sessionsAttended,
+          percentComplete: sessionsTotal > 0 ? Math.round((sessionsAttended / sessionsTotal) * 100) : 0,
+          completed: e.completed || false,
+          certificate: e.certificate || null,
+        };
+      } catch (mapError) {
+        console.error(`Error mapping cohort enrollment:`, mapError.message);
+        throw mapError;
+      }
     });
 
     res.status(200).json({
