@@ -186,7 +186,8 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         status: "draft",
         level: formData.level,
         category: formData.category,
-        creator: user?.email,
+        specialistId: user?.id,
+        specialistEmail: user?.email,
         ...(courseType === "self-paced" && {
           totalLessons: parseInt(formData.totalLessons) || 0,
           certificateIncluded: formData.certificateIncluded,
