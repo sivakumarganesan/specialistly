@@ -40,6 +40,19 @@ const courseSchema = new mongoose.Schema({
   },
   thumbnail: String,
   
+  // Course Details
+  duration: String,
+  level: {
+    type: String,
+    enum: ['Beginner', 'Intermediate', 'Advanced', 'All Levels'],
+    default: 'Beginner',
+  },
+  category: {
+    type: String,
+    enum: ['Technology', 'Marketing', 'Business', 'Design', 'Personal Development', 'Health & Fitness'],
+    default: 'Technology',
+  },
+  
   // Course Type
   courseType: {
     type: String,
@@ -55,6 +68,28 @@ const courseSchema = new mongoose.Schema({
   
   // Lessons (for both types)
   lessons: [lessonSchema],
+  
+  // Self-Paced Specific Fields
+  totalLessons: Number,
+  certificateIncluded: {
+    type: Boolean,
+    default: true,
+  },
+  accessDuration: {
+    type: String,
+    default: 'Lifetime',
+  },
+  
+  // Cohort-Based Specific Fields
+  cohortSize: String,
+  startDate: Date,
+  endDate: Date,
+  schedule: String,
+  meetingPlatform: {
+    type: String,
+    default: 'Zoom',
+  },
+  liveSessions: Number,
   
   // Status
   status: {
