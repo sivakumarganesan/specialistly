@@ -414,11 +414,55 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   };
 
   const updateLesson = (index: number, field: keyof Lesson, value: string | number) => {
+    let finalValue = value;
+    
+    // Auto-convert YouTube URLs to embed format
+    if (field === "videoUrl" && typeof value === "string") {
+      finalValue = convertToEmbedUrl(value);
+    }
+    
     setLessons(
       lessons.map((lesson, i) =>
-        i === index ? { ...lesson, [field]: value } : lesson
+        i === index ? { ...lesson, [field]: finalValue } : lesson
       )
     );
+  };
+
+  const convertToEmbedUrl = (url: string): string => {
+    if (!url.trim()) return "";
+    
+    url = url.trim();
+    
+    // Already an embed URL
+    if (url.includes("youtube.com/embed/") || url.includes("youtube-nocookie.com/embed/")) {
+      return url;
+    }
+    
+    // YouTube watch URL: youtube.com/watch?v=VIDEO_ID
+    if (url.includes("youtube.com/watch")) {
+      const videoId = new URL(url, "http://localhost").searchParams.get("v");
+      if (videoId) {
+        return `https://www.youtube.com/embed/${videoId}`;
+      }
+    }
+    
+    // YouTube short URL: youtu.be/VIDEO_ID
+    if (url.includes("youtu.be/")) {
+      const match = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+      if (match?.[1]) {
+        return `https://www.youtube.com/embed/${match[1]}`;
+      }
+    }
+    
+    // Vimeo URL
+    if (url.includes("vimeo.com")) {
+      const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+      if (match?.[1]) {
+        return `https://player.vimeo.com/video/${match[1]}`;
+      }
+    }
+    
+    return url;
   };
 
   const openManageLessonsDialog = (course: Course) => {
@@ -1459,27 +1503,34 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
           <div className="space-y-4 py-4">
             <div className="bg-blue-50 border border-blue-200 p-4 rounded-md space-y-3">
-              <p className="text-sm font-semibold text-blue-900">📺 How to Add Video Lessons</p>
+              <p className="text-sm font-semibold text-blue-900">📺 Add Video Lessons (Auto-Conversion)</p>
               <div className="text-sm text-blue-800 space-y-2">
-                <div>
-                  <strong>YouTube:</strong> Use embed URLs only
-                  <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
-                    https://www.youtube.com/embed/VIDEO_ID
-                  </div>
-                </div>
-                <div>
-                  <strong>Vimeo:</strong> Use embed format
-                  <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
-                    https://player.vimeo.com/video/VIDEO_ID
-                  </div>
-                </div>
-                <div className="bg-yellow-50 border border-yellow-200 p-2 rounded">
-                  <strong className="text-yellow-900">⚠️ Don't use:</strong>
-                  <ul className="text-xs text-yellow-800 ml-4 mt-1 list-disc">
-                    <li>Watch/regular URLs (youtube.com/watch?v=...)</li>
-                    <li>Short links or redirects</li>
-                    <li>URLs that don't support embedding</li>
+                <div className="bg-white p-3 rounded border border-green-300 border-dashed">
+                  <strong className="text-green-700">✓ Easy method:</strong>
+                  <p className="text-xs text-green-700 mt-1">
+                    Just paste any YouTube or Vimeo URL below, and we'll automatically convert it to the correct embed format!
+                  </p>
+                  <ul className="text-xs text-green-700 ml-4 mt-2 list-disc space-y-1">
+                    <li>Regular YouTube: <code className="bg-green-100 px-1 rounded">youtube.com/watch?v=VIDEO_ID</code></li>
+                    <li>YouTube short: <code className="bg-green-100 px-1 rounded">youtu.be/VIDEO_ID</code></li>
+                    <li>Vimeo: <code className="bg-green-100 px-1 rounded">vimeo.com/VIDEO_ID</code></li>
                   </ul>
+                </div>
+                
+                <div>
+                  <strong>If auto-conversion doesn't work, use these directly:</strong>
+                  <div>
+                    <strong className="text-blue-900">YouTube:</strong>
+                    <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
+                      https://www.youtube.com/embed/VIDEO_ID
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <strong className="text-blue-900">Vimeo:</strong>
+                    <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
+                      https://player.vimeo.com/video/VIDEO_ID
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1516,14 +1567,24 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                       </div>
                       <div>
                         <Label htmlFor={`lesson-url-${index}`} className="text-xs">
-                          Video URL (Embed URL) *
+                          Video URL *
                         </Label>
                         <Input
                           id={`lesson-url-${index}`}
-                          placeholder="e.g., https://www.youtube.com/embed/dQw4w9WgXcQ"
+                          placeholder="Paste any YouTube/Vimeo URL - we'll auto-convert it!"
                           value={lesson.videoUrl}
                           onChange={(e) => updateLesson(index, "videoUrl", e.target.value)}
                         />
+                        {lesson.videoUrl && (
+                          <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
+                            <p className="text-xs text-gray-600">
+                              <strong>Will be converted to:</strong>
+                              <div className="font-mono text-xs bg-white p-1 rounded mt-1 break-all text-green-700">
+                                {convertToEmbedUrl(lesson.videoUrl)}
+                              </div>
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </Card>
