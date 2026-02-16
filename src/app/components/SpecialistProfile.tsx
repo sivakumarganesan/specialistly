@@ -176,7 +176,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
   const handleEnrollCourse = async (courseId: string) => {
     if (!user?.id || !user?.email) return;
     try {
-      await courseAPI.enrollSelfPaced(courseId);
+      await courseAPI.enrollSelfPaced(courseId, user.id, user.email);
       alert("✓ Successfully enrolled in course! View it in My Learning & Bookings.");
     } catch (error) {
       console.error("Failed to enroll:", error);

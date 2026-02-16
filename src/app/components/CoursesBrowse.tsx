@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { courseAPI } from "@/app/api/apiClient";
+import { useAuth } from "@/app/context/AuthContext";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -19,6 +20,7 @@ interface Course {
 }
 
 export function CoursesBrowse() {
+  const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,7 +68,7 @@ export function CoursesBrowse() {
     try {
       setEnrolling(courseId);
       if (courseType === "self-paced") {
-        await courseAPI.enrollSelfPaced(courseId);
+        await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
         alert("Enrolled successfully! Check My Learning to start.");
       } else {
         alert("Please select a cohort to enroll");

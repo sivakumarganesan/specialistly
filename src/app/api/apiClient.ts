@@ -75,8 +75,8 @@ export const courseAPI = {
   delete: (id: string) => apiCall(`/courses/${id}`, "DELETE"),
   
   // Self-Paced Enrollment
-  enrollSelfPaced: (courseId: string) => 
-    apiCall("/courses/enrollments/self-paced", "POST", { courseId }),
+  enrollSelfPaced: (courseId: string, customerId?: string, customerEmail?: string) => 
+    apiCall("/courses/enrollments/self-paced", "POST", { courseId, customerId, customerEmail }),
   getMySelfPacedCourses: () => 
     apiCall("/courses/enrollments/self-paced/my-courses"),
   getSelfPacedEnrollmentDetails: (enrollmentId: string) => 

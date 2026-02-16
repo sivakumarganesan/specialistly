@@ -10,14 +10,23 @@ const generateCertificateId = () => {
 // Enroll in self-paced course
 export const enrollSelfPaced = async (req, res) => {
   try {
-    const { courseId } = req.body;
-    const customerId = req.user?.id || req.body.customerId;
-    const customerEmail = req.user?.email || req.body.customerEmail;
+    const { courseId, customerId, customerEmail } = req.body;
+    
+    // Use values from body or from auth middleware if available
+    const finalCustomerId = customerId || req.user?.id;
+    const finalCustomerEmail = customerEmail || req.user?.email;
 
     if (!courseId) {
       return res.status(400).json({
         success: false,
         message: 'Course ID is required',
+      });
+    }
+
+    if (!finalCustomerId || !finalCustomerEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer ID and email are required',
       });
     }
 
@@ -33,7 +42,7 @@ export const enrollSelfPaced = async (req, res) => {
     // Check for existing enrollment
     const existingEnrollment = await SelfPacedEnrollment.findOne({
       courseId,
-      customerId,
+      customerId: finalCustomerId,
     });
 
     if (existingEnrollment) {
@@ -46,8 +55,8 @@ export const enrollSelfPaced = async (req, res) => {
     // Create enrollment
     const enrollment = new SelfPacedEnrollment({
       courseId,
-      customerId,
-      customerEmail,
+      customerId: finalCustomerId,
+      customerEmail: finalCustomerEmail,
       completedLessons: [],
       completed: false,
       paidAt: course.price > 0 ? new Date() : null,
