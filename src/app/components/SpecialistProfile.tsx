@@ -174,19 +174,13 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
   };
 
   const handleEnrollCourse = async (courseId: string) => {
-    if (!user?.email) return;
+    if (!user?.id || !user?.email) return;
     try {
-      const enrollmentData = {
-        userId: user.email,
-        courseId,
-        enrolledAt: new Date(),
-        status: "active",
-      };
-      await customerAPI.enrollCourse(enrollmentData);
-      alert("✓ Successfully enrolled in course!");
+      await courseAPI.enrollSelfPaced(courseId);
+      alert("✓ Successfully enrolled in course! View it in My Learning & Bookings.");
     } catch (error) {
       console.error("Failed to enroll:", error);
-      alert("Failed to enroll. Please try again.");
+      alert(`Failed to enroll. Please try again.`);
     }
   };
 
