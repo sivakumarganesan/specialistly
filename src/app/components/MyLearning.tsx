@@ -126,12 +126,17 @@ export function MyLearning() {
             <Play className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">No Courses Yet</h2>
             <p className="text-gray-600 mb-6">Start learning by browsing our course catalog</p>
-            <Button className="bg-indigo-600 hover:bg-indigo-700">Browse Courses</Button>
+            <Button 
+              onClick={() => setCurrentPage("browse-courses")}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              Browse Courses
+            </Button>
           </div>
         ) : (
           <>
             {/* Tabs */}
-            <div className="mb-6 border-b border-gray-200">
+            <div className="mb-6 border-b border-gray-200 flex items-end justify-between">
               <div className="flex gap-8">
                 <button
                   onClick={() => setSelectedTab("self-paced")}
@@ -154,6 +159,13 @@ export function MyLearning() {
                   Cohort-Based ({cohortCourses.length})
                 </button>
               </div>
+              <Button 
+                onClick={() => setCurrentPage("browse-courses")}
+                variant="outline"
+                size="sm"
+              >
+                + Browse More Courses
+              </Button>
             </div>
 
             {/* Self-Paced Courses */}
