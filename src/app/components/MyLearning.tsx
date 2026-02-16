@@ -41,6 +41,7 @@ export function MyLearning() {
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<"self-paced" | "cohort">("self-paced");
   const [viewingEnrollmentId, setViewingEnrollmentId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCourses();
@@ -49,14 +50,24 @@ export function MyLearning() {
   const fetchCourses = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [selfPaced, cohorts] = await Promise.all([
-        courseAPI.getMySelfPacedCourses().catch(() => ({ data: [] })),
-        courseAPI.getMyCohorts().catch(() => ({ data: [] })),
+        courseAPI.getMySelfPacedCourses().catch((err) => {
+          console.error("Error fetching self-paced courses:", err);
+          return { data: [] };
+        }),
+        courseAPI.getMyCohorts().catch((err) => {
+          console.error("Error fetching cohort courses:", err);
+          return { data: [] };
+        }),
       ]);
-      setSelfPacedCourses(selfPaced.data || []);
-      setCohortCourses(cohorts.data || []);
-    } catch (error) {
-      console.error("Error fetching courses:", error);
+      const selfPacedData = Array.isArray(selfPaced) ? selfPaced : (selfPaced?.data || []);
+      const cohortsData = Array.isArray(cohorts) ? cohorts : (cohorts?.data || []);
+      setSelfPacedCourses(selfPacedData);
+      setCohortCourses(cohortsData);
+    } catch (err) {
+      console.error("Error fetching courses:", err);
+      setError("Failed to load courses. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -80,10 +91,34 @@ export function MyLearning() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Learning</h1>
-          <p className="text-gray-600">
-            You have {allCourses} course{allCourses !== 1 ? "s" : ""} enrolled
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">My Learning</h1>
+              <p className="text-gray-600">
+                You have {allCourses} course{allCourses !== 1 ? "s" : ""} enrolled
+              </p>
+            </div>
+            <Button 
+              onClick={fetchCourses}
+              disabled={loading}
+              variant="outline"
+            >
+              Refresh
+            </Button>
+          </div>
+          
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+              <p className="text-red-700">{error}</p>
+              <Button 
+                onClick={fetchCourses}
+                size="sm"
+                className="mt-2 bg-red-600 hover:bg-red-700"
+              >
+                Try Again
+              </Button>
+            </div>
+          )}
         </div>
 
         {allCourses === 0 ? (
