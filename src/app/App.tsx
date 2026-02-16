@@ -19,6 +19,7 @@ import { ServiceDetail } from "@/app/components/ServiceDetail";
 import { Messages } from "@/app/components/Messages";
 import { CoursesBrowse } from "@/app/components/CoursesBrowse";
 import { MyLearning } from "@/app/components/MyLearning";
+import { CourseDetail } from "@/app/components/CourseDetail";
 
 type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
 type UserType = "specialist" | "customer";
@@ -200,6 +201,9 @@ export function AppContent() {
         {currentPage === "courses" && userType === "specialist" && <Courses onUpdateSearchableItems={updateCourseItems} />}
         {currentPage === "browse-courses" && userType === "customer" && <CoursesBrowse />}
         {currentPage === "my-learning" && userType === "customer" && <MyLearning />}
+        {currentPage.startsWith("learn-course-") && userType === "customer" && (
+          <CourseDetail enrollmentId={currentPage.replace("learn-course-", "")} />
+        )}
         {currentPage === "customers" && <Customers />}
         {currentPage === "messages" && <Messages />}
         {currentPage === "settings" && <Settings initialTab={settingsTab} />}

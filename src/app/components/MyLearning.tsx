@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useAuth } from "@/app/context/AuthContext";
 import { courseAPI } from "@/app/api/apiClient";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
@@ -34,10 +35,12 @@ interface CohortCourse {
 }
 
 export function MyLearning() {
+  const { setCurrentPage } = useAuth();
   const [selfPacedCourses, setSelfPacedCourses] = useState<SelfPacedCourse[]>([]);
   const [cohortCourses, setCohortCourses] = useState<CohortCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<"self-paced" | "cohort">("self-paced");
+  const [viewingEnrollmentId, setViewingEnrollmentId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCourses();
@@ -169,7 +172,14 @@ export function MyLearning() {
                           </div>
 
                           {/* Actions */}
-                          <Button className="gap-2" variant="outline">
+                          <Button 
+                            className="gap-2" 
+                            variant="outline"
+                            onClick={() => {
+                              setViewingEnrollmentId(course.enrollmentId);
+                              setCurrentPage(`learn-course-${course.enrollmentId}`);
+                            }}
+                          >
                             <span>Continue Learning</span>
                             <ArrowRight className="w-4 h-4" />
                           </Button>
