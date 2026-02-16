@@ -203,7 +203,8 @@ export const publishCourse = async (req, res) => {
       });
     }
 
-    if (course.lessons.length === 0) {
+    const lessonsCount = course.lessons && course.lessons.length ? course.lessons.length : 0;
+    if (lessonsCount === 0) {
       return res.status(400).json({
         success: false,
         message: 'Course must have at least 1 lesson',

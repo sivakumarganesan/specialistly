@@ -84,29 +84,43 @@ export const getMyCourses = async (req, res) => {
   try {
     const customerId = req.user?.id || req.query.customerId;
 
+    if (!customerId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer ID is required',
+      });
+    }
+
     const enrollments = await SelfPacedEnrollment.find({ customerId })
       .populate('courseId', 'title thumbnail lessons')
       .sort({ createdAt: -1 });
 
-    const formatted = enrollments.map((e) => ({
-      enrollmentId: e._id,
-      courseId: e.courseId._id,
-      title: e.courseId.title,
-      thumbnail: e.courseId.thumbnail,
-      lessonsTotal: e.courseId.lessons.length,
-      lessonsCompleted: e.completedLessons.length,
-      percentComplete: Math.round(
-        (e.completedLessons.length / e.courseId.lessons.length) * 100
-      ),
-      completed: e.completed,
-      certificate: e.certificate,
-    }));
+    // Filter out enrollments where course doesn't exist (deleted courses)
+    const validEnrollments = enrollments.filter(e => e.courseId && e.courseId._id);
+
+    const formatted = validEnrollments.map((e) => {
+      const lessonsTotal = e.courseId.lessons && e.courseId.lessons.length ? e.courseId.lessons.length : 0;
+      const lessonsCompleted = e.completedLessons && e.completedLessons.length ? e.completedLessons.length : 0;
+      
+      return {
+        enrollmentId: e._id,
+        courseId: e.courseId._id,
+        title: e.courseId.title,
+        thumbnail: e.courseId.thumbnail,
+        lessonsTotal: lessonsTotal,
+        lessonsCompleted: lessonsCompleted,
+        percentComplete: lessonsTotal > 0 ? Math.round((lessonsCompleted / lessonsTotal) * 100) : 0,
+        completed: e.completed,
+        certificate: e.certificate,
+      };
+    });
 
     res.status(200).json({
       success: true,
       data: formatted,
     });
   } catch (error) {
+    console.error("Error fetching my courses:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -131,11 +145,19 @@ export const getEnrollmentDetails = async (req, res) => {
     }
 
     const course = enrollment.courseId;
-    const percentComplete = Math.round(
-      (enrollment.completedLessons.length / course.lessons.length) * 100
-    );
+    
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found. It may have been deleted.',
+      });
+    }
 
-    const lessons = course.lessons.map((lesson) => ({
+    const lessonsTotal = course.lessons && course.lessons.length ? course.lessons.length : 0;
+    const completedCount = enrollment.completedLessons && enrollment.completedLessons.length ? enrollment.completedLessons.length : 0;
+    const percentComplete = lessonsTotal > 0 ? Math.round((completedCount / lessonsTotal) * 100) : 0;
+
+    const lessons = (course.lessons || []).map((lesson) => ({
       _id: lesson._id,
       title: lesson.title,
       order: lesson.order,
@@ -148,6 +170,7 @@ export const getEnrollmentDetails = async (req, res) => {
       data: {
         enrollmentId: enrollment._id,
         courseTitle: course.title,
+        courseDescription: course.description,
         lessons,
         percentComplete,
         completed: enrollment.completed,
@@ -155,6 +178,7 @@ export const getEnrollmentDetails = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Error fetching enrollment details:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -182,12 +206,19 @@ export const markLessonComplete = async (req, res) => {
 
     // Get course for total count
     const course = await Course.findById(enrollment.courseId);
-    const totalLessons = course.lessons.length;
-    const completedCount = enrollment.completedLessons.length;
-    const percentComplete = (completedCount / totalLessons) * 100;
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    const totalLessons = course.lessons && course.lessons.length ? course.lessons.length : 0;
+    const completedCount = enrollment.completedLessons && enrollment.completedLessons.length ? enrollment.completedLessons.length : 0;
+    const percentComplete = totalLessons > 0 ? (completedCount / totalLessons) * 100 : 0;
 
     // Check if all lessons done
-    if (completedCount === totalLessons) {
+    if (totalLessons > 0 && completedCount === totalLessons) {
       enrollment.completed = true;
 
       // Auto-generate certificate
@@ -228,6 +259,7 @@ export const markLessonComplete = async (req, res) => {
       certificate: enrollment.certificate,
     });
   } catch (error) {
+    console.error("Error marking lesson complete:", error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -252,9 +284,18 @@ export const checkCertificateEligibility = async (req, res) => {
     }
 
     const course = enrollment.courseId;
-    const totalLessons = course.lessons.length;
-    const completedCount = enrollment.completedLessons.length;
-    const allDone = completedCount === totalLessons;
+    
+    // Check if course exists (may be deleted)
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found or deleted',
+      });
+    }
+
+    const totalLessons = course.lessons && course.lessons.length ? course.lessons.length : 0;
+    const completedCount = enrollment.completedLessons && enrollment.completedLessons.length ? enrollment.completedLessons.length : 0;
+    const allDone = totalLessons > 0 && completedCount === totalLessons;
 
     res.status(200).json({
       success: true,
@@ -265,6 +306,7 @@ export const checkCertificateEligibility = async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Error checking certificate eligibility:", error);
     res.status(500).json({
       success: false,
       message: error.message,

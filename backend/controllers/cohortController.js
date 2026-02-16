@@ -82,7 +82,8 @@ export const publishCohort = async (req, res) => {
       });
     }
 
-    if (cohort.sessions.length === 0) {
+    const sessionsCount = cohort.sessions && cohort.sessions.length ? cohort.sessions.length : 0;
+    if (sessionsCount === 0) {
       return res.status(400).json({
         success: false,
         message: 'Cohort must have at least one session',
@@ -164,45 +165,54 @@ export const markSessionAttended = async (req, res) => {
 
     // Get cohort for total sessions
     const cohort = await Cohort.findById(enrollment.cohortId);
-    const totalSessions = cohort.sessions.length;
-    const attendedCount = enrollment.attendedSessions.length;
+    if (!cohort) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cohort not found or deleted',
+      });
+    }
+
+    const totalSessions = cohort.sessions && cohort.sessions.length ? cohort.sessions.length : 0;
+    const attendedCount = enrollment.attendedSessions && enrollment.attendedSessions.length ? enrollment.attendedSessions.length : 0;
 
     // Check if all sessions attended
-    if (attendedCount === totalSessions) {
+    if (totalSessions > 0 && attendedCount === totalSessions) {
       enrollment.completed = true;
 
       // Auto-generate certificate
       const course = await Course.findById(cohort.courseId);
-      const certificateId = generateCertificateId();
-      const certificate = new Certificate({
-        certificateId,
-        courseId: course._id,
-        courseName: course.title,
-        courseType: 'cohort',
-        customerId: enrollment.customerId,
-        customerName: enrollment.customerEmail,
-        customerEmail: enrollment.customerEmail,
-        specialistId: cohort.specialistId,
-        specialistName: cohort.specialistEmail,
-        enrollmentId: enrollment._id,
-        pdfUrl: `https://specialistly.com/certificates/${certificateId}.pdf`,
-        verifyUrl: `https://specialistly.com/verify/${certificateId}`,
-      });
+      if (course) {
+        const certificateId = generateCertificateId();
+        const certificate = new Certificate({
+          certificateId,
+          courseId: course._id,
+          courseName: course.title,
+          courseType: 'cohort',
+          customerId: enrollment.customerId,
+          customerName: enrollment.customerEmail,
+          customerEmail: enrollment.customerEmail,
+          specialistId: cohort.specialistId,
+          specialistName: cohort.specialistEmail,
+          enrollmentId: enrollment._id,
+          pdfUrl: `https://specialistly.com/certificates/${certificateId}.pdf`,
+          verifyUrl: `https://specialistly.com/verify/${certificateId}`,
+        });
 
-      await certificate.save();
+        await certificate.save();
 
-      enrollment.certificate = {
-        issued: true,
-        certificateId,
-        issuedDate: new Date(),
-        downloadUrl: `https://specialistly.com/certificates/${certificateId}/download`,
-      };
+        enrollment.certificate = {
+          issued: true,
+          certificateId,
+          issuedDate: new Date(),
+          downloadUrl: `https://specialistly.com/certificates/${certificateId}/download`,
+        };
+      }
     }
 
     enrollment.updatedAt = new Date();
     await enrollment.save();
 
-    const percentComplete = Math.round((attendedCount / totalSessions) * 100);
+    const percentComplete = totalSessions > 0 ? Math.round((attendedCount / totalSessions) * 100) : 0;
 
     res.status(200).json({
       success: true,
@@ -212,6 +222,7 @@ export const markSessionAttended = async (req, res) => {
       certificate: enrollment.certificate,
     });
   } catch (error) {
+    console.error("Error marking session attended:", error);
     res.status(400).json({
       success: false,
       message: error.message,
@@ -227,7 +238,7 @@ export const getCohortsByCourse = async (req, res) => {
     const cohorts = await Cohort.find({
       courseId,
       status: 'published',
-    }).select('-sessions'); // Don't expose all session details yet
+    }); // Get full cohort data including sessions for counting
 
     const formatted = cohorts.map((c) => ({
       cohortId: c._id,
@@ -237,7 +248,7 @@ export const getCohortsByCourse = async (req, res) => {
       maxStudents: c.maxStudents,
       enrolledCount: c.enrolledCount,
       spotsAvailable: c.maxStudents - c.enrolledCount,
-      sessionsCount: c.sessions.length,
+      sessionsCount: c.sessions && c.sessions.length ? c.sessions.length : 0,
     }));
 
     res.status(200).json({
@@ -245,6 +256,7 @@ export const getCohortsByCourse = async (req, res) => {
       data: formatted,
     });
   } catch (error) {
+    console.error("Error getting cohorts by course:", error);
     res.status(500).json({
       success: false,
       message: error.message,
@@ -295,7 +307,8 @@ export const getSessionJoinLink = async (req, res) => {
       });
     }
 
-    const session = cohort.sessions.find(
+    const sessions = cohort.sessions || [];
+    const session = sessions.find(
       (s) => s._id.toString() === sessionId
     );
 
@@ -329,29 +342,43 @@ export const getMyCohorts = async (req, res) => {
   try {
     const customerId = req.user?.id || req.query.customerId;
 
+    if (!customerId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer ID is required',
+      });
+    }
+
     const enrollments = await CohortEnrollment.find({ customerId })
       .populate('cohortId') // Get full cohort data
       .sort({ createdAt: -1 });
 
-    const formatted = enrollments.map((e) => ({
-      enrollmentId: e._id,
-      cohortId: e.cohortId._id,
-      batchName: e.cohortId.batchName,
-      startDate: e.cohortId.startDate,
-      sessionsTotal: e.cohortId.sessions.length,
-      sessionsAttended: e.attendedSessions.length,
-      percentComplete: Math.round(
-        (e.attendedSessions.length / e.cohortId.sessions.length) * 100
-      ),
-      completed: e.completed,
-      certificate: e.certificate,
-    }));
+    // Filter out enrollments where cohort doesn't exist (deleted cohorts)
+    const validEnrollments = enrollments.filter(e => e.cohortId && e.cohortId._id);
+
+    const formatted = validEnrollments.map((e) => {
+      const sessionsTotal = e.cohortId.sessions && e.cohortId.sessions.length ? e.cohortId.sessions.length : 0;
+      const sessionsAttended = e.attendedSessions && e.attendedSessions.length ? e.attendedSessions.length : 0;
+
+      return {
+        enrollmentId: e._id,
+        cohortId: e.cohortId._id,
+        batchName: e.cohortId.batchName,
+        startDate: e.cohortId.startDate,
+        sessionsTotal: sessionsTotal,
+        sessionsAttended: sessionsAttended,
+        percentComplete: sessionsTotal > 0 ? Math.round((sessionsAttended / sessionsTotal) * 100) : 0,
+        completed: e.completed,
+        certificate: e.certificate,
+      };
+    });
 
     res.status(200).json({
       success: true,
       data: formatted,
     });
   } catch (error) {
+    console.error("Error fetching my cohorts:", error);
     res.status(500).json({
       success: false,
       message: error.message,
