@@ -56,7 +56,7 @@ interface Course {
   price: string;
   duration: string;
   studentsEnrolled: number;
-  status: "active" | "draft";
+  status: "published" | "draft";
   level: string;
   category: string;
   thumbnail?: string;
@@ -289,7 +289,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const toggleStatus = async (id: string) => {
     const course = courses.find(c => c.id === id);
     if (course) {
-      const newStatus = course.status === "active" ? "draft" : "active";
+      const newStatus = course.status === "published" ? "draft" : "published";
       try {
         await courseAPI.update(id, { status: newStatus });
         setCourses(
@@ -302,7 +302,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               : c
           )
         );
-        alert(`✓ Course status updated to ${newStatus}!`);
+        alert(`✓ Course ${newStatus === 'published' ? 'published' : 'unpublished'} successfully!`);
       } catch (error) {
         console.error("Failed to update course status:", error);
         alert(`Failed to update course status: ${error instanceof Error ? error.message : "Please try again."}`);
@@ -415,7 +415,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   };
 
   const getActiveCourses = () => {
-    return courses.filter((c) => c.status === "active").length;
+    return courses.filter((c) => c.status === "published").length;
   };
 
   const getTotalRevenue = () => {
@@ -554,7 +554,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   </div>
                   <Badge
                     className={
-                      course.status === "active"
+                      course.status === "published"
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-700"
                     }
@@ -637,7 +637,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                     size="sm"
                     onClick={() => toggleStatus(course.id)}
                   >
-                    {course.status === "active" ? "Deactivate" : "Activate"}
+                    {course.status === "published" ? "Unpublish" : "Publish"}
                   </Button>
                   <Button
                     variant="outline"
