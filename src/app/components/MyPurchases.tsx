@@ -269,9 +269,8 @@ export function MyPurchases() {
                       </div>
                       <Button
                         className="bg-indigo-600 hover:bg-indigo-700"
-                        onClick={() =>
-                          window.open(`/course/${enrollment.courseId}`, "_blank")
-                        }
+                        disabled
+                        title="View in My Learning section"
                       >
                         Continue Learning
                       </Button>

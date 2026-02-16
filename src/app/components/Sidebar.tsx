@@ -38,7 +38,7 @@ const creatorMenuItems = [
 const customerMenuItems = [
   { id: "dashboard", label: "Browse Specialists", icon: Store },
   { id: "browse-courses", label: "Browse Courses", icon: GraduationCap },
-  { id: "purchases", label: "My Learning & Bookings", icon: ShoppingCart },
+  { id: "my-learning", label: "My Learning & Bookings", icon: ShoppingCart },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "settings", label: "Settings", icon: Settings },
 ];
