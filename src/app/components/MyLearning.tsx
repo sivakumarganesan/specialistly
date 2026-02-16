@@ -130,7 +130,14 @@ export function MyLearning() {
                   </div>
                 ) : (
                   selfPacedCourses.map((course) => (
-                    <Card key={course.enrollmentId} className="overflow-hidden">
+                    <Card 
+                      key={course.enrollmentId} 
+                      className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => {
+                        setViewingEnrollmentId(course.enrollmentId);
+                        setCurrentPage(`learn-course-${course.enrollmentId}`);
+                      }}
+                    >
                       <div className="flex gap-6 p-6">
                         {/* Thumbnail */}
                         <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -200,7 +207,14 @@ export function MyLearning() {
                   </div>
                 ) : (
                   cohortCourses.map((course) => (
-                    <Card key={course.enrollmentId} className="overflow-hidden">
+                    <Card 
+                      key={course.enrollmentId} 
+                      className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => {
+                        setViewingEnrollmentId(course.enrollmentId);
+                        setCurrentPage(`learn-cohort-${course.enrollmentId}`);
+                      }}
+                    >
                       <div className="flex gap-6 p-6">
                         {/* Icon */}
                         <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
