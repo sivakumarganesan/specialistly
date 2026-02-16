@@ -37,6 +37,7 @@ import {
   X,
   CheckCircle,
   PlayCircle,
+  Play,
   Award,
 } from "lucide-react";
 import { Checkbox } from "@/app/components/ui/checkbox";
@@ -159,6 +160,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   }
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -433,35 +435,60 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     
     url = url.trim();
     
-    // Already an embed URL
-    if (url.includes("youtube.com/embed/") || url.includes("youtube-nocookie.com/embed/")) {
-      return url;
+    // Already a modern embed URL - ensure https
+    if (url.includes("youtube.com/embed/")) {
+      return url.startsWith("https://") ? url : url.replace("http://", "https://");
+    }
+    if (url.includes("youtube-nocookie.com/embed/")) {
+      return url.startsWith("https://") ? url : url.replace("http://", "https://");
+    }
+    if (url.includes("player.vimeo.com/video/")) {
+      return url.startsWith("https://") ? url : url.replace("http://", "https://");
     }
     
-    // YouTube watch URL: youtube.com/watch?v=VIDEO_ID
-    if (url.includes("youtube.com/watch")) {
-      const videoId = new URL(url, "http://localhost").searchParams.get("v");
-      if (videoId) {
-        return `https://www.youtube.com/embed/${videoId}`;
+    // Extract video ID from various YouTube formats
+    let videoId = null;
+    
+    // YouTube watch URL: youtube.com/watch?v=VIDEO_ID or www.youtube.com/watch?v=VIDEO_ID
+    if (url.includes("youtube.com/watch") || url.includes("youtu.be/")) {
+      try {
+        const urlObj = new URL(url);
+        videoId = urlObj.searchParams.get("v");
+      } catch (e) {
+        // If URL fails to parse, try regex
+        const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+        videoId = match?.[1] || null;
       }
     }
     
     // YouTube short URL: youtu.be/VIDEO_ID
-    if (url.includes("youtu.be/")) {
-      const match = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
-      if (match?.[1]) {
-        return `https://www.youtube.com/embed/${match[1]}`;
-      }
+    if (!videoId && url.includes("youtu.be/")) {
+      const match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+      videoId = match?.[1] || null;
     }
     
-    // Vimeo URL
+    // Return converted YouTube URL
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}`;
+    }
+    
+    // Vimeo extraction
+    let vimeoId = null;
     if (url.includes("vimeo.com")) {
       const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-      if (match?.[1]) {
-        return `https://player.vimeo.com/video/${match[1]}`;
-      }
+      vimeoId = match?.[1] || null;
     }
     
+    if (vimeoId) {
+      return `https://player.vimeo.com/video/${vimeoId}`;
+    }
+    
+    // If it looks like an embed URL already, ensure https
+    if (url.includes("embed") || url.includes("player")) {
+      return url.startsWith("https://") ? url : url.replace("http://", "https://");
+    }
+    
+    // Return original if we can't convert it
     return url;
   };
 
@@ -484,19 +511,36 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const handleSaveLessons = async () => {
     if (!selectedCourse) return;
 
+    // Validate all lessons have title and videoUrl
+    const invalidLessons = lessons.filter(l => !l.title || !l.videoUrl);
+    if (invalidLessons.length > 0) {
+      alert("Please fill in all lesson titles and video URLs before saving.");
+      return;
+    }
+
     try {
       // Add new lessons that don't have _id
       for (const lesson of lessons) {
         if (!lesson._id) {
+          // Ensure URL is properly converted before saving
+          const finalUrl = convertToEmbedUrl(lesson.videoUrl);
+          
+          if (!finalUrl.includes("youtube.com/embed/") && 
+              !finalUrl.includes("player.vimeo.com/") &&
+              !finalUrl.includes("/embed/")) {
+            console.warn(`Video URL may not be valid: ${finalUrl}`);
+          }
+          
           await courseAPI.addLesson(selectedCourse.id, {
             title: lesson.title,
-            videoUrl: lesson.videoUrl,
+            videoUrl: finalUrl,
             order: lesson.order,
           });
         }
       }
       
       setManageLessonsDialogOpen(false);
+      setVideoPreviewUrl(null);
       alert("✓ Lessons saved successfully!");
       
       // Refresh courses
@@ -532,6 +576,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       console.error("Failed to save lessons:", error);
       alert(`Failed to save lessons: ${error instanceof Error ? error.message : "Please try again."}`);
     }
+  };
+
+  const testVideoUrl = (url: string) => {
+    setVideoPreviewUrl(convertToEmbedUrl(url));
   };
 
   const getTypeIcon = (type: string) => {
@@ -1576,13 +1624,25 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                           onChange={(e) => updateLesson(index, "videoUrl", e.target.value)}
                         />
                         {lesson.videoUrl && (
-                          <div className="mt-2 p-2 bg-gray-50 rounded border border-gray-200">
-                            <p className="text-xs text-gray-600">
-                              <strong>Will be converted to:</strong>
-                              <div className="font-mono text-xs bg-white p-1 rounded mt-1 break-all text-green-700">
+                          <div className="mt-2 space-y-2">
+                            <div className="p-2 bg-gray-50 rounded border border-gray-200">
+                              <p className="text-xs text-gray-600 mb-2">
+                                <strong>Will be converted to:</strong>
+                              </p>
+                              <div className="font-mono text-xs bg-white p-1 rounded break-all text-green-700 mb-2">
                                 {convertToEmbedUrl(lesson.videoUrl)}
                               </div>
-                            </p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => testVideoUrl(lesson.videoUrl)}
+                                className="w-full text-xs"
+                              >
+                                <Play className="h-3 w-3 mr-1" />
+                                Test Video
+                              </Button>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -1591,6 +1651,39 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                 ))
               )}
             </div>
+
+            {videoPreviewUrl && (
+              <Card className="mt-4 p-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">Video Preview</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setVideoPreviewUrl(null)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="bg-black rounded aspect-video flex items-center justify-center overflow-hidden">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={videoPreviewUrl}
+                      title="Video Preview"
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    ></iframe>
+                  </div>
+                  {videoPreviewUrl && (
+                    <p className="text-xs text-gray-600">
+                      <strong>Playing:</strong> <span className="break-all">{videoPreviewUrl}</span>
+                    </p>
+                  )}
+                </div>
+              </Card>
+            )}
 
             <Button
               type="button"
