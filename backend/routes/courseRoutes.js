@@ -37,33 +37,12 @@ import {
 
 const router = express.Router();
 
-// ===== COURSE MANAGEMENT (Specialist) =====
-// Create course
-router.post('/', createCourse);
-
+// ===== SPECIAL ROUTES (Most Specific - Before Wildcards) =====
 // Get my courses (specialist's courses)
 router.get('/my-courses', getAllCourses);
 
 // Get all published courses (students can browse)
 router.get('/browse', browseCourses);
-
-// Get course by ID
-router.get('/:id', getCourseById);
-
-// Update course
-router.put('/:id', updateCourse);
-
-// Add lesson to course
-router.post('/:id/lessons', addLesson);
-
-// Publish course (make available)
-router.post('/:id/publish', publishCourse);
-
-// Archive course (remove from store)
-router.post('/:id/archive', archiveCourse);
-
-// Delete course
-router.delete('/:id', deleteCourse);
 
 // ===== SELF-PACED ENROLLMENT =====
 // Enroll in self-paced course
@@ -84,22 +63,6 @@ router.post(
 // Check certificate eligibility
 router.get('/enrollments/self-paced/:enrollmentId/check-certificate', checkCertificateEligibility);
 
-// ===== COHORT MANAGEMENT (Specialist) =====
-// Create cohort batch
-router.post('/cohorts', createCohort);
-
-// Publish cohort
-router.post('/cohorts/:cohortId/publish', publishCohort);
-
-// Add session to cohort
-router.post('/cohorts/:cohortId/sessions', addSession);
-
-// Get cohorts by course (published only)
-router.get('/:courseId/cohorts', getCohortsByCourse);
-
-// Get cohort sessions
-router.get('/cohorts/:cohortId/sessions', getCohortSessions);
-
 // ===== COHORT ENROLLMENT (Student) =====
 // Enroll in cohort
 router.post('/enrollments/cohort', enrollCohort);
@@ -116,7 +79,23 @@ router.post(
 // Get join link for session (zoom)
 router.get('/enrollments/cohort/:cohortId/sessions/:sessionId/join', getSessionJoinLink);
 
+// ===== COHORT MANAGEMENT (Specialist) =====
+// Create cohort batch
+router.post('/cohorts', createCohort);
+
+// Publish cohort
+router.post('/cohorts/:cohortId/publish', publishCohort);
+
+// Add session to cohort
+router.post('/cohorts/:cohortId/sessions', addSession);
+
+// Get cohort sessions
+router.get('/cohorts/:cohortId/sessions', getCohortSessions);
+
 // ===== CERTIFICATES =====
+// Get my certificates
+router.get('/certificates/my-certificates', getMyCertificates);
+
 // Download certificate
 router.get('/certificates/:certificateId/download', downloadCertificate);
 
@@ -126,7 +105,29 @@ router.get('/certificates/:certificateId', getCertificate);
 // Verify certificate (public)
 router.get('/verify/:certificateId', verifyCertificate);
 
-// Get my certificates
-router.get('/certificates/my-certificates', getMyCertificates);
+// ===== COURSE MANAGEMENT (Specialist) - WildCard Routes (Least Specific) =====
+// Create course
+router.post('/', createCourse);
+
+// Get course by ID
+router.get('/:id', getCourseById);
+
+// Update course
+router.put('/:id', updateCourse);
+
+// Add lesson to course
+router.post('/:id/lessons', addLesson);
+
+// Publish course (make available)
+router.post('/:id/publish', publishCourse);
+
+// Archive course (remove from store)
+router.post('/:id/archive', archiveCourse);
+
+// Delete course
+router.delete('/:id', deleteCourse);
+
+// Get cohorts by course (published only)
+router.get('/:courseId/cohorts', getCohortsByCourse);
 
 export default router;
