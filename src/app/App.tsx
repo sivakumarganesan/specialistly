@@ -17,6 +17,8 @@ import { MyPurchases } from "@/app/components/MyPurchases";
 import { PageBuilder } from "@/app/components/PageBuilder";
 import { ServiceDetail } from "@/app/components/ServiceDetail";
 import { Messages } from "@/app/components/Messages";
+import { CoursesBrowse } from "@/app/components/CoursesBrowse";
+import { MyLearning } from "@/app/components/MyLearning";
 
 type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
 type UserType = "specialist" | "customer";
@@ -196,6 +198,8 @@ export function AppContent() {
         {currentPage === "page-builder" && <PageBuilder />}
         {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} />}
         {currentPage === "courses" && userType === "specialist" && <Courses onUpdateSearchableItems={updateCourseItems} />}
+        {currentPage === "browse-courses" && userType === "customer" && <CoursesBrowse />}
+        {currentPage === "my-learning" && userType === "customer" && <MyLearning />}
         {currentPage === "customers" && <Customers />}
         {currentPage === "messages" && <Messages />}
         {currentPage === "settings" && <Settings initialTab={settingsTab} />}

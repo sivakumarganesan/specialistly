@@ -1,76 +1,69 @@
 import mongoose from 'mongoose';
 
-const moduleSchema = new mongoose.Schema({
+const lessonSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId(),
+  },
   title: {
     type: String,
     required: true,
   },
-  duration: {
+  videoUrl: {
     type: String,
     required: true,
   },
-  lessonsCount: {
+  order: {
     type: Number,
     required: true,
   },
 });
 
 const courseSchema = new mongoose.Schema({
-  title: {
+  // Basic Info
+  specialistId: {
     type: String,
     required: true,
   },
-  type: {
+  specialistEmail: {
     type: String,
-    enum: ['self-paced', 'cohort-based'],
+    required: true,
+  },
+  
+  title: {
+    type: String,
     required: true,
   },
   description: {
     type: String,
     required: true,
   },
+  thumbnail: String,
+  
+  // Course Type
+  courseType: {
+    type: String,
+    enum: ['self-paced', 'cohort'],
+    required: true,
+  },
+  
+  // Pricing
   price: {
-    type: String,
-    required: true,
-  },
-  duration: {
-    type: String,
-    required: true,
-  },
-  studentsEnrolled: {
     type: Number,
     default: 0,
   },
+  
+  // Lessons (for both types)
+  lessons: [lessonSchema],
+  
+  // Status
   status: {
     type: String,
-    enum: ['active', 'draft'],
+    enum: ['draft', 'published', 'archived'],
     default: 'draft',
   },
-  level: {
-    type: String,
-    required: true,
-  },
-  category: {
-    type: String,
-    required: true,
-  },
-  thumbnail: String,
-  creator: {
-    type: String,
-    required: false,
-  },
-  // Self-paced specific
-  modules: [moduleSchema],
-  totalLessons: Number,
-  certificateIncluded: Boolean,
-  accessDuration: String,
-  // Cohort-based specific
-  cohortSize: String,
-  startDate: Date,
-  endDate: Date,
-  schedule: String,
-  meetingPlatform: String,
-  liveSessions: Number,
+  publishedAt: Date,
+  
   createdAt: {
     type: Date,
     default: Date.now,

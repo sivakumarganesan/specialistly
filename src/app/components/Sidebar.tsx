@@ -29,7 +29,7 @@ const creatorMenuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "services", label: "Create / Edit Offerings", icon: Briefcase },
   { id: "page-builder", label: "Branded Page Builder", icon: Globe },
-  { id: "courses", label: "Courses", icon: GraduationCap },
+  { id: "courses", label: "Manage Courses", icon: GraduationCap },
   { id: "customers", label: "Customers", icon: Users },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "settings", label: "Settings", icon: Settings },
@@ -37,6 +37,7 @@ const creatorMenuItems = [
 
 const customerMenuItems = [
   { id: "dashboard", label: "Browse Specialists", icon: Store },
+  { id: "browse-courses", label: "Browse Courses", icon: GraduationCap },
   { id: "purchases", label: "My Learning & Bookings", icon: ShoppingCart },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "settings", label: "Settings", icon: Settings },

@@ -55,16 +55,68 @@ const apiCall = async (
 
 // Course API calls
 export const courseAPI = {
+  // Course Management
   getAll: (filters?: { creator?: string }) => {
     const params = new URLSearchParams();
     if (filters?.creator) params.append("creator", filters.creator);
     const queryString = params.toString();
-    return apiCall(`/courses${queryString ? `?${queryString}` : ""}`);
+    return apiCall(`/courses/my-courses${queryString ? `?${queryString}` : ""}`);
   },
   getById: (id: string) => apiCall(`/courses/${id}`),
+  browseCourses: () => apiCall("/courses/browse"),
   create: (data: any) => apiCall("/courses", "POST", data),
   update: (id: string, data: any) => apiCall(`/courses/${id}`, "PUT", data),
+  addLesson: (courseId: string, lessonData: any) => 
+    apiCall(`/courses/${courseId}/lessons`, "POST", lessonData),
+  publishCourse: (courseId: string) => 
+    apiCall(`/courses/${courseId}/publish`, "POST"),
+  archiveCourse: (courseId: string) => 
+    apiCall(`/courses/${courseId}/archive`, "POST"),
   delete: (id: string) => apiCall(`/courses/${id}`, "DELETE"),
+  
+  // Self-Paced Enrollment
+  enrollSelfPaced: (courseId: string) => 
+    apiCall("/courses/enrollments/self-paced", "POST", { courseId }),
+  getMySelfPacedCourses: () => 
+    apiCall("/courses/enrollments/self-paced/my-courses"),
+  getSelfPacedEnrollmentDetails: (enrollmentId: string) => 
+    apiCall(`/courses/enrollments/self-paced/${enrollmentId}`),
+  markLessonComplete: (enrollmentId: string, lessonId: string) => 
+    apiCall(`/courses/enrollments/self-paced/${enrollmentId}/lessons/${lessonId}/complete`, "POST"),
+  checkCertificateEligibility: (enrollmentId: string) => 
+    apiCall(`/courses/enrollments/self-paced/${enrollmentId}/check-certificate`),
+  
+  // Cohort Management
+  createCohort: (cohortData: any) => 
+    apiCall("/courses/cohorts", "POST", cohortData),
+  publishCohort: (cohortId: string) => 
+    apiCall(`/courses/cohorts/${cohortId}/publish`, "POST"),
+  addSession: (cohortId: string, sessionData: any) => 
+    apiCall(`/courses/cohorts/${cohortId}/sessions`, "POST", sessionData),
+  getCohortsByCourse: (courseId: string) => 
+    apiCall(`/courses/${courseId}/cohorts`),
+  getCohortSessions: (cohortId: string) => 
+    apiCall(`/courses/cohorts/${cohortId}/sessions`),
+  
+  // Cohort Enrollment
+  enrollCohort: (cohortId: string) => 
+    apiCall("/courses/enrollments/cohort", "POST", { cohortId }),
+  getMyCohorts: () => 
+    apiCall("/courses/enrollments/cohort/my-courses"),
+  markSessionAttended: (enrollmentId: string, sessionId: string) => 
+    apiCall(`/courses/enrollments/cohort/${enrollmentId}/sessions/${sessionId}/attend`, "POST"),
+  getSessionJoinLink: (cohortId: string, sessionId: string) => 
+    apiCall(`/courses/enrollments/cohort/${cohortId}/sessions/${sessionId}/join`),
+  
+  // Certificates
+  downloadCertificate: (certificateId: string) => 
+    apiCall(`/courses/certificates/${certificateId}/download`),
+  getCertificate: (certificateId: string) => 
+    apiCall(`/courses/certificates/${certificateId}`),
+  verifyCertificate: (certificateId: string) => 
+    apiCall(`/courses/verify/${certificateId}`),
+  getMyCertificates: () => 
+    apiCall("/courses/certificates/my-certificates"),
 };
 
 // Service API calls
