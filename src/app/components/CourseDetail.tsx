@@ -4,7 +4,7 @@ import { courseAPI } from "@/app/api/apiClient";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
-import { ChevronLeft, Play, CheckCircle, Award } from "lucide-react";
+import { ChevronLeft, Play, CheckCircle, Award, AlertCircle } from "lucide-react";
 
 interface Lesson {
   _id: string;
@@ -38,10 +38,16 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEnrollmentDetails();
   }, [enrollmentId]);
+
+  useEffect(() => {
+    // Reset video error when changing lessons
+    setVideoError(null);
+  }, [currentLessonId]);
 
   const fetchEnrollmentDetails = async () => {
     try {
@@ -198,16 +204,32 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
           <div className="lg:col-span-2">
             {currentLesson ? (
               <Card>
-                <div className="bg-black rounded-t-lg aspect-video flex items-center justify-center">
+                <div className="bg-black rounded-t-lg aspect-video flex items-center justify-center relative">
                   {currentLesson.videoUrl ? (
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      src={currentLesson.videoUrl}
-                      title={currentLesson.title}
-                      allowFullScreen
-                      className="rounded-t-lg"
-                    ></iframe>
+                    <>
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={currentLesson.videoUrl}
+                        title={currentLesson.title}
+                        allowFullScreen
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        className="rounded-t-lg"
+                        onError={() => {
+                          setVideoError("Unable to load video. The video provider may not allow embedding from this site.");
+                        }}
+                      ></iframe>
+                      {videoError && (
+                        <div className="absolute inset-0 bg-black bg-opacity-95 rounded-t-lg flex flex-col items-center justify-center text-white p-6">
+                          <AlertCircle className="w-12 h-12 text-yellow-500 mb-4" />
+                          <p className="text-center mb-4 font-semibold">{videoError}</p>
+                          <p className="text-sm text-gray-300 max-w-sm text-center">
+                            Videos typically fail to load when the URL isn't in the proper embed format. 
+                            For YouTube, use: https://www.youtube.com/embed/VIDEO_ID
+                          </p>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className="flex flex-col items-center justify-center text-white">
                       <Play className="w-16 h-16 opacity-50 mb-4" />

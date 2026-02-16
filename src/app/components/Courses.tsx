@@ -1458,11 +1458,30 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="bg-blue-50 border border-blue-200 p-3 rounded-md">
-              <p className="text-sm text-blue-800">
-                💡 <strong>Tip:</strong> Use embed URLs from YouTube, Vimeo, or similar platforms.
-                For YouTube: https://www.youtube.com/embed/VIDEO_ID
-              </p>
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-md space-y-3">
+              <p className="text-sm font-semibold text-blue-900">📺 How to Add Video Lessons</p>
+              <div className="text-sm text-blue-800 space-y-2">
+                <div>
+                  <strong>YouTube:</strong> Use embed URLs only
+                  <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
+                    https://www.youtube.com/embed/VIDEO_ID
+                  </div>
+                </div>
+                <div>
+                  <strong>Vimeo:</strong> Use embed format
+                  <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
+                    https://player.vimeo.com/video/VIDEO_ID
+                  </div>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 p-2 rounded">
+                  <strong className="text-yellow-900">⚠️ Don't use:</strong>
+                  <ul className="text-xs text-yellow-800 ml-4 mt-1 list-disc">
+                    <li>Watch/regular URLs (youtube.com/watch?v=...)</li>
+                    <li>Short links or redirects</li>
+                    <li>URLs that don't support embedding</li>
+                  </ul>
+                </div>
+              </div>
             </div>
 
             <div className="space-y-3">
