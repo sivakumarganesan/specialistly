@@ -4,6 +4,7 @@ import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
 
 export function Login() {
   const { login, setCurrentPage } = useAuth();
@@ -43,6 +44,13 @@ export function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
+        <button
+          onClick={() => setCurrentPage('homepage')}
+          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-4 font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </button>
         <Card className="shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl">Welcome Back</CardTitle>

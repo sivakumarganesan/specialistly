@@ -6,7 +6,7 @@ import { Label } from '@/app/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Checkbox } from '@/app/components/ui/checkbox';
 import { Badge } from '@/app/components/ui/badge';
-import { CheckCircle, Zap } from 'lucide-react';
+import { CheckCircle, Zap, ArrowLeft } from 'lucide-react';
 
 export function Signup() {
   const { signup, setCurrentPage } = useAuth();
@@ -103,6 +103,13 @@ export function Signup() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 py-12 px-4">
       <div className="max-w-6xl mx-auto">
+        <button
+          onClick={() => setCurrentPage('homepage')}
+          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-6 font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </button>
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">Join Specialistly</h1>
           <p className="text-lg text-gray-600">Share your expertise and reach millions of learners worldwide</p>

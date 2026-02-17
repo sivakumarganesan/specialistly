@@ -10,7 +10,8 @@ import {
   Download,
   GraduationCap,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  ArrowLeft
 } from "lucide-react";
 import { Card } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
@@ -42,7 +43,7 @@ export function Dashboard({
   onNavigateToServices?: () => void;
   onViewServiceDetail?: (serviceId: string) => void;
 }) {
-  const { user, updateSubscription } = useAuth();
+  const { user, updateSubscription, setCurrentPage } = useAuth();
   const [filterTab, setFilterTab] = useState("all");
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [isUpgrading, setIsUpgrading] = useState(false);
@@ -176,6 +177,13 @@ export function Dashboard({
 
       {/* Welcome Section */}
       <div>
+        <button
+          onClick={() => setCurrentPage('homepage')}
+          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-4 font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </button>
         <h1 className="text-3xl font-bold mb-1">Welcome back, {fullName}!</h1>
         <p className="text-gray-600">Here's what's happening with your creator business today.</p>
       </div>
