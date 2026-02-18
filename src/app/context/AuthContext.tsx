@@ -51,7 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
-      setUserType(savedUserType || "customer");
+      const userTypeValue = savedUserType || "customer";
+      setUserType(userTypeValue);
+      // Set default page based on user type on page refresh
+      setCurrentPage('dashboard');
     }
     setIsLoading(false);
   }, []);

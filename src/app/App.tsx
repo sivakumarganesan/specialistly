@@ -31,7 +31,7 @@ interface SearchableItem {
 }
 
 export function AppContent() {
-  const { isAuthenticated, currentPage, setCurrentPage, userType, user } = useAuth();
+  const { isAuthenticated, currentPage, setCurrentPage, userType, user, isLoading } = useAuth();
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [offeringItems, setOfferingItems] = useState<SearchableItem[]>([]);
@@ -107,6 +107,18 @@ export function AppContent() {
   const updateCourseItems = (items: SearchableItem[]) => {
     setCourseItems(items);
   };
+
+  // Show loading state while auth is being restored
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Combine both offering and course items
   const allSearchableItems = [...offeringItems, ...courseItems];
