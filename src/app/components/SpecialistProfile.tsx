@@ -6,6 +6,7 @@ import { Button } from "@/app/components/ui/button";
 import { Star, Users, ArrowLeft, BookOpen, Briefcase, Calendar, Clock } from "lucide-react";
 import { MonthCalendarSlots } from "@/app/components/MonthCalendarSlots";
 import { WebinarCalendarSlots } from "@/app/components/WebinarCalendarSlots";
+import { WebinarBookingModal } from "@/app/components/WebinarBookingModal";
 
 interface SpecialistProfileProps {
   specialistId: string;
@@ -62,6 +63,8 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
   const [showZoomReAuthModal, setShowZoomReAuthModal] = useState(false);
   const [zoomReAuthMessage, setZoomReAuthMessage] = useState("");
   const [selectedWebinarDate, setSelectedWebinarDate] = useState<{ date: string; time: string } | null>(null);
+  const [webinarModalOpen, setWebinarModalOpen] = useState(false);
+  const [selectedWebinarService, setSelectedWebinarService] = useState<Service | null>(null);
 
   useEffect(() => {
     fetchSpecialistData();
@@ -528,7 +531,10 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
 
                       {service.type === "webinar" && service.sessionFrequency === "selected" && service.webinarDates && service.webinarDates.length > 0 ? (
                         <Button
-                          onClick={() => handleBookService(service._id, service)}
+                          onClick={() => {
+                            setSelectedWebinarService(service);
+                            setWebinarModalOpen(true);
+                          }}
                           className="w-full bg-indigo-600 hover:bg-indigo-700"
                         >
                           Join Webinar
@@ -551,14 +557,14 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
             </Card>
           )}
 
-          {/* Service Booking Modal - For both consulting appointments and webinars */}
-          {serviceBookingId && (
+          {/* Service Booking Modal - For 1:1 consulting appointments only */}
+          {serviceBookingId && !selectedWebinarService && (
             (() => {
               const bookingService = services.find((s) => s._id === serviceBookingId);
               const isWebinar = bookingService?.type === "webinar" && bookingService?.sessionFrequency === "selected" && bookingService?.webinarDates?.length > 0;
               const hasAppointmentSlots = !isWebinar && appointmentSlots.length > 0;
 
-              return (isWebinar || hasAppointmentSlots) ? (
+              return hasAppointmentSlots ? (
             <Card className="border-2 border-purple-300 bg-indigo-50 shadow-lg">
               <CardHeader className="bg-indigo-100 rounded-t-lg">
                 <CardTitle className="text-purple-800 text-lg">
@@ -566,23 +572,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
-                {isWebinar ? (
-                  <>
-                    <p className="text-sm text-gray-700 font-medium">
-                      🎥 Select a webinar session to join. A confirmation email will be sent to you.
-                    </p>
-                    <WebinarCalendarSlots
-                      webinarDates={bookingService?.webinarDates || []}
-                      serviceName={bookingService?.title || "Webinar"}
-                      onSelectDate={(wd) => {
-                        setSelectedWebinarDate(wd);
-                        setSelectedServiceDate(wd.date);
-                        handleConfirmServiceBooking();
-                      }}
-                      isLoading={isBooking}
-                    />
-                  </>
-                ) : (
+                {!isWebinar && (
                   <>
                     <p className="text-sm text-gray-700 font-medium">
                       📍 Select a date and time to book this service. A Zoom meeting link will be sent to your email.
@@ -761,6 +751,19 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
           </Card>
         </div>
       )}
+
+      {/* Webinar Booking Modal */}
+      <WebinarBookingModal
+        isOpen={webinarModalOpen}
+        onClose={() => setWebinarModalOpen(false)}
+        service={selectedWebinarService}
+        onConfirm={(webinarDate) => {
+          setSelectedWebinarDate(webinarDate);
+          setSelectedServiceDate(webinarDate.date);
+          handleConfirmServiceBooking();
+        }}
+        isLoading={isBooking}
+      />
     </div>
   );
 }
