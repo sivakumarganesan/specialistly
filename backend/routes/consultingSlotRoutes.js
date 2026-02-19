@@ -9,6 +9,10 @@ const router = express.Router();
 // GET /api/consulting-slots/available?specialistEmail=john@example.com&startDate=2026-02-19&endDate=2026-03-19
 router.get('/available', consultingSlotController.getAvailableSlots);
 
+// Get single slot by ID (must come before :specialistEmail to avoid pattern conflict)
+// GET /api/consulting-slots/slot/:slotId
+router.get('/slot/:slotId', consultingSlotController.getSlotById);
+
 // Get specialist's slots stats
 // GET /api/consulting-slots/:specialistEmail/stats
 router.get('/:specialistEmail/stats', consultingSlotController.getSpecialistStats);
@@ -16,10 +20,6 @@ router.get('/:specialistEmail/stats', consultingSlotController.getSpecialistStat
 // Get all slots for a specialist (Specialist view)
 // GET /api/consulting-slots/:specialistEmail?status=active
 router.get('/:specialistEmail', consultingSlotController.getSpecialistSlots);
-
-// Get single slot by ID
-// GET /api/consulting-slots/slot/:slotId
-router.get('/slot/:slotId', consultingSlotController.getSlotById);
 
 // ===== POST ROUTES =====
 
