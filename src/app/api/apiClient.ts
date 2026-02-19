@@ -194,6 +194,19 @@ export const appointmentAPI = {
   delete: (id: string) => apiCall(`/appointments/${id}`, "DELETE"),
 };
 
+// Consulting Slot API calls (Phase 1 Backend)
+export const consultingSlotAPI = {
+  getSlots: (email: string) => apiCall(`/consulting-slots/${email}`),
+  getStats: (email: string) => apiCall(`/consulting-slots/${email}/stats`),
+  getById: (id: string) => apiCall(`/consulting-slots/${id}`),
+  create: (data: any) => apiCall("/consulting-slots", "POST", data),
+  update: (id: string, data: any) => apiCall(`/consulting-slots/${id}`, "PUT", data),
+  delete: (id: string) => apiCall(`/consulting-slots/${id}`, "DELETE"),
+  book: (id: string, data: any) => apiCall(`/consulting-slots/${id}/book`, "POST", data),
+  cancelBooking: (id: string, customerId: string) => 
+    apiCall(`/consulting-slots/${id}/book/${customerId}`, "DELETE"),
+};
+
 // Creator API calls
 export const creatorAPI = {
   getAll: () => apiCall("/creator"),

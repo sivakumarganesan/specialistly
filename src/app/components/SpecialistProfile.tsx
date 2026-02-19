@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { creatorAPI, courseAPI, serviceAPI, customerAPI, appointmentAPI } from "@/app/api/apiClient";
+import { creatorAPI, courseAPI, serviceAPI, customerAPI, appointmentAPI, consultingSlotAPI } from "@/app/api/apiClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Star, Users, ArrowLeft, BookOpen, Briefcase, Calendar, Clock } from "lucide-react";
@@ -90,10 +90,6 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
 
       // Fetch specialist's services
       const servicesResponse = await serviceAPI.getAll({ creator: specialistEmail });
-      console.log('🔍 Services response:', servicesResponse);
-      const activeServices = Array.isArray(servicesResponse?.data)
-        ? servicesResponse.data.filter((s: any) => s.status === "active")
-        : [];
       console.log(`📊 Services for ${specialistEmail}:`, activeServices.length);
       activeServices.forEach((s: any) => {
         console.log(`  - Service: ${s.title}, Type: ${s.type}, Status: ${s.status}, ID: ${s._id}`);
@@ -101,19 +97,28 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
       setServicesCount(activeServices.length);  // Store total count
       setServices(activeServices.slice(0, 6));  // Display only first 6
 
-      // Fetch available appointment slots for this specialist
-      const appointmentsResponse = await appointmentAPI.getAvailable(specialistEmail);
-      console.log('📅 Appointments API response:', appointmentsResponse?.data);
-      const now = new Date();
-      const availableSlots = Array.isArray(appointmentsResponse?.data)
-        ? appointmentsResponse.data.filter((slot: any) => {
-            // Only show slots with status "available" and dates in the future
-            if (slot.status !== "available") {
-              console.log('  ❌ Slot filtered out (wrong status):', slot.status, slot.serviceTitle);
+      // Fetch available consulting slots for this specialist (Phase 1 Backend Integration)
+      try {
+        const slotsResponse = await consultingSlotAPI.getSlots(specialistEmail);
+        console.log('📅 Consulting Slots API response:', slotsResponse?.data);
+        
+        const now = new Date();
+        // Convert ConsultingSlot format to AppointmentSlot format and filter future/available
+        const consultingSlots = Array.isArray(slotsResponse?.data) ? slotsResponse.data : [];
+        const availableSlots = consultingSlots
+          .filter((slot: any) => {
+            // Only show active slots with available capacity
+            if (slot.status !== "active") {
+              console.log('  ❌ Slot filtered out (not active):', slot.status);
+              return false;
+            }
+            const bookedCount = slot.bookedSlots?.length || 0;
+            const isFull = bookedCount >= slot.capacity;
+            if (isFull) {
+              console.log('  ❌ Slot filtered out (at capacity):', slot.date);
               return false;
             }
             const slotDate = new Date(slot.date);
-            // Set time to start of day for comparison
             slotDate.setHours(0, 0, 0, 0);
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -122,12 +127,26 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
               console.log('  ❌ Slot filtered out (past date):', slot.date);
               return false;
             }
-            console.log('  ✅ Slot included:', slot.date, slot.startTime, slot.serviceTitle);
+            console.log('  ✅ Slot included:', slot.date, slot.startTime);
             return true;
           })
-        : [];
-      console.log(`📊 Final available slots: ${availableSlots.length}`, availableSlots);
-      setAppointmentSlots(availableSlots);
+          .map((slot: any) => ({
+            // Map ConsultingSlot to AppointmentSlot interface
+            _id: slot._id,
+            date: slot.date,
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            status: "available" as const,
+            serviceTitle: "Consulting Session", // Generic title for all consulting slots
+          }));
+        
+        console.log(`📊 Final available consulting slots: ${availableSlots.length}`, availableSlots);
+        setAppointmentSlots(availableSlots);
+      } catch (error) {
+        console.error("Failed to fetch consulting slots:", error);
+        // Fall back to empty array if new API fails
+        setAppointmentSlots([]);
+      }
     } catch (error) {
       console.error("Failed to fetch specialist data:", error);
     } finally {
@@ -140,39 +159,22 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
     try {
       setIsBooking(true);
       const bookingData = {
-        bookedBy: user.id,
         customerEmail: user.email,
         customerName: user.name || user.email,
-        specialistEmail: specialistEmail,
-        specialistName: specialist.name,
-        specialistId: specialistId,
-        serviceTitle: "Consulting Session",
+        customerId: user.id,
       };
-      const response = await appointmentAPI.book(slotId, bookingData);
-      if (response?.success) {
-        alert("✓ Appointment booked successfully! Check your email for Zoom meeting link.");
+      const response = await consultingSlotAPI.book(slotId, bookingData);
+      if (response?.success || response?.data) {
+        alert("✓ Consulting slot booked successfully! Check your email for meeting details.");
         // Refresh appointment slots
         fetchSpecialistData();
         setBookingSlotId(null);
       } else {
-        // Check if it's a Zoom re-auth error
-        if (response?.requiresReAuth) {
-          setZoomReAuthMessage(response?.message || "The specialist needs to re-authorize their Zoom account.");
-          setShowZoomReAuthModal(true);
-        } else {
-          alert("Failed to book appointment. Please try again.");
-        }
+        alert("Failed to book slot. Please try again.");
       }
     } catch (error: any) {
-      console.error("Failed to book appointment:", error);
-      
-      // Check if it's a Zoom-related error
-      if (error.response?.data?.requiresReAuth || error.message?.includes("Zoom") || error.message?.includes("reconnect")) {
-        setZoomReAuthMessage(error.response?.data?.message || "The specialist needs to re-authorize their Zoom account to enable bookings.");
-        setShowZoomReAuthModal(true);
-      } else {
-        alert("Error booking appointment. Please try again or contact the specialist.");
-      }
+      console.error("Failed to book slot:", error);
+      alert("Error booking slot. Please try again or contact the specialist.");
     } finally {
       setIsBooking(false);
     }
@@ -262,46 +264,29 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
           alert("Failed to book webinar: " + (response?.message || "Unknown error"));
         }
       } else if (slotId) {
-        // Book using the appointment API (which creates Zoom meetings for consulting services)
+        // Book consulting slot using Phase 1 Backend API
         const bookingData = {
-          bookedBy: user.id,
           customerEmail: user.email,
           customerName: user.name || user.email,
-          specialistEmail: specialistEmail,
-          specialistName: specialist.name,
-          specialistId: specialistId,
-          serviceTitle: service?.title || "Service Booking",
+          customerId: user.id,
         };
         
-        const response = await appointmentAPI.book(slotId, bookingData);
+        const response = await consultingSlotAPI.book(slotId, bookingData);
         
-        if (response?.success) {
-          alert("✓ Service booked successfully! Check your email for the Zoom meeting link.");
+        if (response?.success || response?.data) {
+          alert("✓ Consulting slot booked successfully! Check your email for meeting details.");
           // Refresh data
           fetchSpecialistData();
           setServiceBookingId(null);
           setSelectedServiceDate("");
           setFutureSlots([]);
         } else {
-          // Check if it's a Zoom re-auth error
-          if (response?.requiresReAuth) {
-            setZoomReAuthMessage(response?.message || "The specialist needs to re-authorize their Zoom account.");
-            setShowZoomReAuthModal(true);
-          } else {
-            alert("Failed to book service. Please try again.");
-          }
+          alert("Failed to book consulting slot. Please try again.");
         }
       }
     } catch (error: any) {
       console.error("Failed to book service:", error);
-      
-      // Check if it's a Zoom-related error
-      if (error.response?.data?.requiresReAuth || error.message?.includes("Zoom") || error.message?.includes("reconnect")) {
-        setZoomReAuthMessage(error.response?.data?.message || "The specialist needs to re-authorize their Zoom account to enable bookings.");
-        setShowZoomReAuthModal(true);
-      } else {
-        alert("Error booking service. Please try again or contact the specialist.");
-      }
+      alert("Error booking service. Please try again or contact the specialist.");
     } finally {
       setIsBooking(false);
     }
