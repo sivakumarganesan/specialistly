@@ -375,7 +375,7 @@ export const updateService = async (req, res) => {
 
         console.log(`   ✓ Created ${slots.length} new slots\n`);
 
-        res.status(200).json({
+        return res.status(200).json({
           success: true,
           message: 'Service updated and booking slots regenerated',
           data: service,
@@ -384,7 +384,7 @@ export const updateService = async (req, res) => {
       } catch (slotError) {
         console.error('❌ Slot regeneration error:', slotError);
         // Still return success for service update, but note the slots issue
-        res.status(200).json({
+        return res.status(200).json({
           success: true,
           message: 'Service updated but slot regeneration failed',
           data: service,
@@ -396,14 +396,14 @@ export const updateService = async (req, res) => {
       console.log(`   ℹ️  Webinar is in draft - updating without publishing slots\n`);
       await AppointmentSlot.deleteMany({ serviceTitle: service.title });
       
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Service updated successfully (not published yet)',
         data: service,
       });
     } else {
       console.log(`   ℹ️  Not a webinar or no eventType - standard service update\n`);
-      res.status(200).json({
+      return res.status(200).json({
         success: true,
         message: 'Service updated successfully',
         data: service,
