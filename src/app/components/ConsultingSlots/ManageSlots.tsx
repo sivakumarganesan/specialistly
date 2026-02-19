@@ -47,10 +47,8 @@ export function ManageSlots({
   };
 
   const handleCreateSlot = async (data: any) => {
-    return createSlot({
-      ...data,
-      specialistId: specialistId || specialistEmail,
-    });
+    // Don't send specialistId - backend will look it up using specialistEmail
+    return createSlot(data);
   };
 
   const handleEditSlot = (slot: ConsultingSlot) => {
