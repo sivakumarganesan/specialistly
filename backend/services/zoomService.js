@@ -9,6 +9,11 @@ dotenv.config();
 // Zoom API base URL
 const ZOOM_API_BASE = 'https://api.zoom.us/v2';
 
+// ⚠️ CRITICAL: Use USER_MANAGED credentials for token refresh
+// These must match the credentials used to authorize the user-managed OAuth
+const ZOOM_USER_MANAGED_CLIENT_ID = process.env.ZOOM_USER_MANAGED_CLIENT_ID;
+const ZOOM_USER_MANAGED_CLIENT_SECRET = process.env.ZOOM_USER_MANAGED_CLIENT_SECRET;
+
 /**
  * Refresh Zoom access token using refresh token
  * @param {string} specialistId - Specialist user ID
@@ -22,8 +27,17 @@ const refreshZoomAccessToken = async (specialistId) => {
       throw new Error('No refresh token available');
     }
 
+    // ⚠️ CRITICAL: Must use USER_MANAGED credentials (same ones used during authorization)
+    if (!ZOOM_USER_MANAGED_CLIENT_ID || !ZOOM_USER_MANAGED_CLIENT_SECRET) {
+      throw new Error(
+        'ZOOM_USER_MANAGED_CLIENT_ID or ZOOM_USER_MANAGED_CLIENT_SECRET not configured in environment variables'
+      );
+    }
+
+    console.log('🔄 Refreshing Zoom token with USER_MANAGED credentials...');
+    
     const auth = Buffer.from(
-      `${process.env.ZOOM_CLIENT_ID}:${process.env.ZOOM_CLIENT_SECRET}`
+      `${ZOOM_USER_MANAGED_CLIENT_ID}:${ZOOM_USER_MANAGED_CLIENT_SECRET}`
     ).toString('base64');
 
     const response = await axios.post('https://zoom.us/oauth/token', null, {
@@ -46,20 +60,33 @@ const refreshZoomAccessToken = async (specialistId) => {
     if (response.data.refresh_token) {
       tokenRecord.zoomRefreshToken = response.data.refresh_token;
     }
+    tokenRecord.lastRefreshAttempt = new Date();
+    tokenRecord.refreshErrorCount = 0; // Reset error count on success
     await tokenRecord.save();
 
-    console.log('✓ Zoom access token refreshed successfully');
+    console.log('✅ Zoom access token refreshed successfully');
+    console.log(`   New expiry: ${expiryTime.toISOString()}`);
     return newAccessToken;
   } catch (error) {
     console.error('❌ Failed to refresh Zoom token:', error.message);
-    throw new Error('Failed to refresh Zoom access token. Please reconnect your Zoom account.');
+    
+    // Track refresh errors
+    const tokenRecord = await UserOAuthToken.findOne({ userId: specialistId });
+    if (tokenRecord) {
+      tokenRecord.refreshErrorCount = (tokenRecord.refreshErrorCount || 0) + 1;
+      tokenRecord.lastRefreshAttempt = new Date();
+      await tokenRecord.save();
+    }
+    
+    throw new Error(`Failed to refresh Zoom access token: ${error.message}. Please reconnect your Zoom account.`);
   }
 };
 
 /**
  * Get specialist's Zoom access token from OAuth
+ * Automatically refreshes if token expired
  * @param {string} specialistId - Specialist user ID
- * @returns {string} - Access token
+ * @returns {string} - Valid access token
  */
 export const getSpecialistZoomToken = async (specialistId) => {
   try {
@@ -70,19 +97,38 @@ export const getSpecialistZoomToken = async (specialistId) => {
     const tokenRecord = await UserOAuthToken.findOne({ userId: specialistId });
     
     if (!tokenRecord) {
-      throw new Error(`No Zoom token found for specialist ${specialistId}. User must authorize Zoom access first.`);
+      throw new Error(
+        `❌ No Zoom OAuth token found for specialist ${specialistId}. User must authorize Zoom access first via "Connect Zoom" button.`
+      );
     }
 
     if (!tokenRecord.zoomAccessToken || tokenRecord.zoomAccessToken === 'pending') {
-      throw new Error('Zoom access token not available');
+      throw new Error(
+        `❌ Zoom access token not available for specialist ${specialistId}. Authorization may be incomplete.`
+      );
     }
 
     // Check if token is expired and refresh if needed
     if (tokenRecord.zoomAccessTokenExpiry && new Date() > tokenRecord.zoomAccessTokenExpiry) {
-      console.log('🔄 Zoom token expired, attempting refresh...');
-      return await refreshZoomAccessToken(specialistId);
+      console.log('🔄 Zoom token expired, attempting automatic refresh...');
+      console.log(`   Token expired at: ${tokenRecord.zoomAccessTokenExpiry.toISOString()}`);
+      console.log(`   Current time: ${new Date().toISOString()}`);
+      
+      try {
+        const newToken = await refreshZoomAccessToken(specialistId);
+        console.log(`✅ Token refresh successful, using new token`);
+        return newToken;
+      } catch (refreshError) {
+        console.error(`❌ Token refresh failed:`, refreshError.message);
+        throw refreshError;
+      }
     }
 
+    // Token is still valid, check if we should proactively refresh
+    const timeUntilExpiry = tokenRecord.zoomAccessTokenExpiry - new Date();
+    const minutesUntilExpiry = Math.floor(timeUntilExpiry / (1000 * 60));
+    
+    console.log(`✅ Using valid Zoom token (expires in ${minutesUntilExpiry} minutes)`);
     return tokenRecord.zoomAccessToken;
   } catch (error) {
     console.error('❌ Error getting specialist Zoom token:', error.message);
