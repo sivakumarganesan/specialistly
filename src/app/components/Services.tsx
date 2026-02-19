@@ -44,8 +44,7 @@ interface Service {
   type: "webinar" | "consulting";
   description: string;
   price: string;
-  duration: string;
-  capacity: string;
+  duration: string;  // Required for all services (in minutes for consulting, string format for webinar)
   schedule: string;
   status: "active" | "draft";
   // Webinar specific fields
@@ -235,7 +234,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
     description: "",
     price: "",
     duration: "",
-    capacity: "",
     schedule: "Flexible",
     // Webinar specific fields
     eventType: "single" as "single" | "multiple",
@@ -289,9 +287,9 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       alert("Please fill in all required fields (Title and Description)");
       return;
     }
-    // For webinary services, require capacity
-    if (serviceType === "webinar" && !formData.capacity) {
-      alert("Please fill in capacity for webinar services");
+    // Require duration for all service types
+    if (!formData.duration) {
+      alert("Please enter the duration for your service");
       return;
     }
     if (serviceType) {
@@ -300,12 +298,11 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         type: serviceType,
         description: formData.description,
         price: formData.price,
+        duration: formData.duration,
         schedule: formData.schedule,
         status: "draft",
         creator: user?.email,
         ...(serviceType === "webinar" && {
-          duration: formData.duration,
-          capacity: formData.capacity,
           eventType: formData.eventType,
           location: formData.location,
           sessionFrequency: formData.sessionFrequency,
@@ -318,7 +315,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         }),
         ...(serviceType === "consulting" && {
           sessionLocation: formData.sessionLocation,
-          // Don't include duration and capacity for consulting
         }),
       };
       
@@ -346,11 +342,10 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         title: formData.title,
         description: formData.description,
         price: formData.price,
+        duration: formData.duration,
         schedule: formData.schedule,
         creator: user?.email,
         ...(selectedService.type === "webinar" && {
-          duration: formData.duration,
-          capacity: formData.capacity,
           eventType: formData.eventType,
           location: formData.location,
           sessionFrequency: formData.sessionFrequency,
@@ -363,7 +358,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         }),
         ...(selectedService.type === "consulting" && {
           sessionLocation: formData.sessionLocation,
-          // Don't include duration and capacity for consulting
         }),
       };
       
@@ -469,7 +463,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       description: service.description,
       price: service.price,
       duration: service.duration,
-      capacity: service.capacity,
       schedule: service.schedule,
       eventType: service.eventType || "single",
       location: service.location || "zoom",
@@ -503,7 +496,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       description: "",
       price: "",
       duration: "",
-      capacity: "",
       schedule: "Flexible",
       eventType: "single",
       location: "zoom",
@@ -1042,10 +1034,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                     <span className="text-gray-600">Duration:</span>
                     <span className="font-semibold">{service.duration}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Capacity:</span>
-                    <span className="font-semibold">{service.capacity}</span>
-                  </div>
                   <div className="flex items-center gap-1">
                     <CalendarClock className="h-4 w-4 text-gray-600" />
                     <span className="text-gray-600">{service.schedule}</span>
@@ -1341,48 +1329,32 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   }
                 />
               </div>
-              {serviceType === "webinar" && (
-                <div>
-                  <Label htmlFor="duration">Duration</Label>
-                  <Input
-                    id="duration"
-                    placeholder="2 hours"
-                    value={formData.duration}
-                    onChange={(e) =>
-                      setFormData({ ...formData, duration: e.target.value })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="capacity">Capacity {serviceType === "webinar" ? "*" : ""}</Label>
+                <Label htmlFor="duration">Duration {serviceType === "consulting" ? "(minutes) *" : ""}</Label>
                 <Input
-                  id="capacity"
-                  placeholder="50"
-                  disabled={serviceType === "consulting"}
-                  value={formData.capacity}
+                  id="duration"
+                  placeholder={serviceType === "consulting" ? "30" : "2 hours"}
+                  value={formData.duration}
                   onChange={(e) =>
-                    setFormData({ ...formData, capacity: e.target.value })
+                    setFormData({ ...formData, duration: e.target.value })
                   }
                 />
               </div>
-              {serviceType === "webinar" && (
-                <div>
-                  <Label htmlFor="schedule">Schedule</Label>
-                  <Input
-                    id="schedule"
-                    placeholder="Weekly"
-                    value={formData.schedule}
-                    onChange={(e) =>
-                      setFormData({ ...formData, schedule: e.target.value })
-                    }
-                  />
-                </div>
-              )}
             </div>
+
+            {serviceType === "webinar" && (
+              <div>
+                <Label htmlFor="schedule">Schedule</Label>
+                <Input
+                  id="schedule"
+                  placeholder="Weekly"
+                  value={formData.schedule}
+                  onChange={(e) =>
+                    setFormData({ ...formData, schedule: e.target.value })
+                  }
+                />
+              </div>
+            )}
             </div>
 
           <DialogFooter>
@@ -1647,48 +1619,32 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   }
                 />
               </div>
-              {selectedService?.type === "webinar" && (
-                <div>
-                  <Label htmlFor="edit-duration">Duration</Label>
-                  <Input
-                    id="edit-duration"
-                    placeholder="2 hours"
-                    value={formData.duration}
-                    onChange={(e) =>
-                      setFormData({ ...formData, duration: e.target.value })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-capacity">Capacity</Label>
+                <Label htmlFor="edit-duration">Duration {selectedService?.type === "consulting" ? "(minutes) *" : ""}</Label>
                 <Input
-                  id="edit-capacity"
-                  placeholder="50"
-                  disabled={selectedService?.type === "consulting"}
-                  value={formData.capacity}
+                  id="edit-duration"
+                  placeholder={selectedService?.type === "consulting" ? "30" : "2 hours"}
+                  value={formData.duration}
                   onChange={(e) =>
-                    setFormData({ ...formData, capacity: e.target.value })
+                    setFormData({ ...formData, duration: e.target.value })
                   }
                 />
               </div>
-              {selectedService?.type === "webinar" && (
-                <div>
-                  <Label htmlFor="edit-schedule">Schedule</Label>
-                  <Input
-                    id="edit-schedule"
-                    placeholder="Weekly"
-                    value={formData.schedule}
-                    onChange={(e) =>
-                      setFormData({ ...formData, schedule: e.target.value })
-                    }
-                  />
-                </div>
-              )}
             </div>
+
+            {selectedService?.type === "webinar" && (
+              <div>
+                <Label htmlFor="edit-schedule">Schedule</Label>
+                <Input
+                  id="edit-schedule"
+                  placeholder="Weekly"
+                  value={formData.schedule}
+                  onChange={(e) =>
+                    setFormData({ ...formData, schedule: e.target.value })
+                  }
+                />
+              </div>
+            )}
           </div>
 
           <DialogFooter>

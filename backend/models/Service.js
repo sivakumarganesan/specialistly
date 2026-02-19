@@ -31,11 +31,7 @@ const serviceSchema = new mongoose.Schema({
   },
   duration: {
     type: String,
-    required: false,
-  },
-  capacity: {
-    type: String,
-    required: false,
+    required: false,  // Required for consulting, optional for webinar
   },
   schedule: {
     type: String,

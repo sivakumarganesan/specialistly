@@ -90,6 +90,9 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
 
       // Fetch specialist's services
       const servicesResponse = await serviceAPI.getAll({ creator: specialistEmail });
+      const activeServices = Array.isArray(servicesResponse?.data)
+        ? servicesResponse.data.filter((s: any) => s.status === "active")
+        : [];
       console.log(`📊 Services for ${specialistEmail}:`, activeServices.length);
       activeServices.forEach((s: any) => {
         console.log(`  - Service: ${s.title}, Type: ${s.type}, Status: ${s.status}, ID: ${s._id}`);
