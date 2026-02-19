@@ -14,6 +14,7 @@ import zoomRoutes from './routes/zoomRoutes.js';
 import brandingRoutes from './routes/brandingRoutes.js';
 import healthRoutes from './routes/healthRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
+import consultingSlotRoutes from './routes/consultingSlotRoutes.js';
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ app.use('/api/branding', brandingRoutes);
 app.use('/api/zoom', zoomRoutes);
 app.use('/api/health', healthRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/consulting-slots', consultingSlotRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
