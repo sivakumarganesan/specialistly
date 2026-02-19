@@ -11,11 +11,13 @@ import {
   GraduationCap,
   TrendingUp,
   DollarSign,
-  ArrowLeft
+  ArrowLeft,
+  Calendar
 } from "lucide-react";
 import { Card } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
 import { customerAPI, serviceAPI, creatorAPI } from "@/app/api/apiClient";
+import { ManageSlots } from "@/app/components/ConsultingSlots";
 
 interface Offering {
   _id?: string;
@@ -44,6 +46,7 @@ export function Dashboard({
   onViewServiceDetail?: (serviceId: string) => void;
 }) {
   const { user, updateSubscription, setCurrentPage } = useAuth();
+  const [activeSection, setActiveSection] = useState<"overview" | "manage-slots">("overview");
   const [filterTab, setFilterTab] = useState("all");
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [isUpgrading, setIsUpgrading] = useState(false);
@@ -136,6 +139,25 @@ export function Dashboard({
     ? offerings 
     : offerings.filter(o => o.type === filterTab);
 
+  // Show ManageSlots if that section is active
+  if (activeSection === "manage-slots") {
+    return (
+      <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
+        <button
+          onClick={() => setActiveSection("overview")}
+          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Overview
+        </button>
+        <ManageSlots 
+          specialistEmail={user?.email || ""}
+          specialistId={user?._id || ""}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
       {/* Membership Banner */}
@@ -174,6 +196,25 @@ export function Dashboard({
           </div>
         </div>
       )}
+
+      {/* Dashboard Navigation Tabs */}
+      <div className="flex gap-2 border-b border-gray-200 pb-4">
+        <Button 
+          variant={activeSection === "overview" ? "default" : "outline"}
+          onClick={() => setActiveSection("overview")}
+          className={activeSection === "overview" ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+        >
+          Overview
+        </Button>
+        <Button 
+          variant={activeSection === "manage-slots" ? "default" : "outline"}
+          onClick={() => setActiveSection("manage-slots")}
+          className={activeSection === "manage-slots" ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+        >
+          <Calendar className="h-4 w-4 mr-2" />
+          Manage Consulting Slots
+        </Button>
+      </div>
 
       {/* Welcome Section */}
       <div>
