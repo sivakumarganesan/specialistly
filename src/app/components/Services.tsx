@@ -1381,8 +1381,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                 </div>
               )}
             </div>
-            </div>
-          </div>
 
           <DialogFooter>
             <Button
