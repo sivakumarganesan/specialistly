@@ -300,12 +300,12 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         type: serviceType,
         description: formData.description,
         price: formData.price,
-        duration: serviceType === "consulting" ? formData.sessionDuration : formData.duration,
-        capacity: formData.capacity,
         schedule: formData.schedule,
         status: "draft",
         creator: user?.email,
         ...(serviceType === "webinar" && {
+          duration: formData.duration,
+          capacity: formData.capacity,
           eventType: formData.eventType,
           location: formData.location,
           sessionFrequency: formData.sessionFrequency,
@@ -318,6 +318,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         }),
         ...(serviceType === "consulting" && {
           sessionLocation: formData.sessionLocation,
+          // Don't include duration and capacity for consulting
         }),
       };
       
@@ -345,11 +346,11 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         title: formData.title,
         description: formData.description,
         price: formData.price,
-        duration: selectedService.type === "consulting" ? formData.sessionDuration : formData.duration,
-        capacity: formData.capacity,
         schedule: formData.schedule,
         creator: user?.email,
         ...(selectedService.type === "webinar" && {
+          duration: formData.duration,
+          capacity: formData.capacity,
           eventType: formData.eventType,
           location: formData.location,
           sessionFrequency: formData.sessionFrequency,
@@ -362,6 +363,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         }),
         ...(selectedService.type === "consulting" && {
           sessionLocation: formData.sessionLocation,
+          // Don't include duration and capacity for consulting
         }),
       };
       
