@@ -3,25 +3,7 @@ import * as consultingSlotController from '../controllers/consultingSlotControll
 
 const router = express.Router();
 
-// ===== GET ROUTES =====
-
-// Get available slots for a specialist (Customer view)
-// GET /api/consulting-slots/available?specialistEmail=john@example.com&startDate=2026-02-19&endDate=2026-03-19
-router.get('/available', consultingSlotController.getAvailableSlots);
-
-// Get single slot by ID (must be 24-char MongoDB ObjectId)
-// Format: GET /api/consulting-slots/slot/65a7b8c9d0e1f2g3h4i5j6k7
-router.get(/^slot\/([a-f0-9]{24})$/, consultingSlotController.getSlotById);
-
-// Get specialist's slots stats
-// GET /api/consulting-slots/:specialistEmail/stats
-router.get('/:specialistEmail/stats', consultingSlotController.getSpecialistStats);
-
-// Get all slots for a specialist (Specialist view)
-// GET /api/consulting-slots/:specialistEmail?status=active
-router.get('/:specialistEmail', consultingSlotController.getSpecialistSlots);
-
-// ===== POST ROUTES =====
+// ===== POST ROUTES (must come FIRST for priority) =====
 
 // Create a new slot
 // POST /api/consulting-slots
@@ -34,6 +16,24 @@ router.post('/:slotId/book', consultingSlotController.bookSlot);
 // Bulk create slots
 // POST /api/consulting-slots/bulk/create
 router.post('/bulk/create', consultingSlotController.bulkCreateSlots);
+
+// ===== GET ROUTES (more specific routes first) =====
+
+// Get available slots for a specialist (Customer view)
+// GET /api/consulting-slots/available?specialistEmail=john@example.com&startDate=2026-02-19&endDate=2026-03-19
+router.get('/available', consultingSlotController.getAvailableSlots);
+
+// Get single slot by ID
+// GET /api/consulting-slots/slot/:slotId
+router.get('/slot/:slotId', consultingSlotController.getSlotById);
+
+// Get specialist's slots stats (must come before /:specialistEmail)
+// GET /api/consulting-slots/:specialistEmail/stats
+router.get('/:specialistEmail/stats', consultingSlotController.getSpecialistStats);
+
+// Get all slots for a specialist (Specialist view - generic catch-all)
+// GET /api/consulting-slots/:specialistEmail?status=active
+router.get('/:specialistEmail', consultingSlotController.getSpecialistSlots);
 
 // ===== PUT ROUTES =====
 

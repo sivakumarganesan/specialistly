@@ -98,8 +98,7 @@ export const getSpecialistSlots = async (req, res) => {
 // Get single slot by ID
 export const getSlotById = async (req, res) => {
   try {
-    // Extract slotId from regex route parameter
-    const slotId = req.params[0] || req.params.slotId;
+    const { slotId } = req.params;
 
     if (!slotId) {
       return res.status(400).json({
