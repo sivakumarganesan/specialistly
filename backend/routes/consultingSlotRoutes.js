@@ -9,9 +9,9 @@ const router = express.Router();
 // GET /api/consulting-slots/available?specialistEmail=john@example.com&startDate=2026-02-19&endDate=2026-03-19
 router.get('/available', consultingSlotController.getAvailableSlots);
 
-// Get single slot by ID (must come before :specialistEmail to avoid pattern conflict)
+// Get single slot by ID (must match MongoDB ObjectId: 24-character hex string)
 // GET /api/consulting-slots/slot/:slotId
-router.get('/slot/:slotId', consultingSlotController.getSlotById);
+router.get('/slot/:slotId([a-f0-9]{24})', consultingSlotController.getSlotById);
 
 // Get specialist's slots stats
 // GET /api/consulting-slots/:specialistEmail/stats
