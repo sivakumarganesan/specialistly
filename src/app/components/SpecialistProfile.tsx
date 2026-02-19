@@ -4,6 +4,7 @@ import { creatorAPI, courseAPI, serviceAPI, customerAPI, appointmentAPI } from "
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Star, Users, ArrowLeft, BookOpen, Briefcase, Calendar, Clock } from "lucide-react";
+import { MonthCalendarSlots } from "@/app/components/MonthCalendarSlots";
 
 interface SpecialistProfileProps {
   specialistId: string;
@@ -465,11 +466,6 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
           {services.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {services.map((service) => {
-                // Get available slots for this SPECIFIC service only
-                const serviceSlots = appointmentSlots
-                  .filter((slot) => slot.serviceTitle === service.title && slot.status === "available")
-                  .slice(0, 3); // Show first 3 available slots for this service
-                
                 return (
                   <Card key={service._id}>
                     <CardHeader>
@@ -515,59 +511,32 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                             )}
                           </div>
                         </div>
-                      ) : /* Available Slots Preview - Only for this service */
-                      serviceSlots.length > 0 ? (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <p className="text-xs font-semibold text-green-700 mb-2">
-                            📅 Available Slots ({serviceSlots.length})
-                          </p>
-                          <div className="space-y-1.5">
-                            {serviceSlots.map((slot) => (
-                              <div key={slot._id} className="text-xs text-green-800 bg-white rounded px-2 py-1">
-                                <span className="font-semibold">
-                                  {new Date(slot.date).toLocaleDateString("en-US", {
-                                    month: "short",
-                                    day: "numeric",
-                                    year: "numeric",
-                                  })}
-                                </span>
-                                <span className="text-green-600 mx-1">•</span>
-                                <span className="font-medium">{slot.startTime} - {slot.endTime}</span>
-                              </div>
-                            ))}
-                            {appointmentSlots.filter((slot) => slot.serviceTitle === service.title && slot.status === "available").length > 3 && (
-                              <p className="text-xs text-green-700 italic mt-2 font-medium">
-                                ➕ +{appointmentSlots.filter((slot) => slot.serviceTitle === service.title && slot.status === "available").length - 3} more slots available
-                              </p>
-                            )}
-                          </div>
-                        </div>
                       ) : (
-                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                          <p className="text-xs font-semibold text-yellow-700">
-                            ⏳ No available slots at the moment
-                          </p>
-                          <p className="text-xs text-yellow-600 mt-1">
-                            Check back soon for upcoming availability
-                          </p>
-                        </div>
+                        /* Calendar View for 1:1 Consulting */
+                        <MonthCalendarSlots
+                          slots={appointmentSlots.filter(
+                            (slot) => slot.serviceTitle === service.title
+                          )}
+                          serviceName={service.title}
+                          onSelectSlot={(slot) => {
+                            setBookingSlotId(slot._id);
+                            setServiceBookingId(service._id);
+                          }}
+                        />
                       )}
 
-                      <Button
-                        onClick={() => handleBookService(service._id, service)}
-                        disabled={
-                          service.type === "webinar" && service.sessionFrequency === "selected" 
-                            ? !service.webinarDates || service.webinarDates.length === 0
-                            : serviceSlots.length === 0
-                        }
-                        className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {(service.type === "webinar" && service.sessionFrequency === "selected" && service.webinarDates && service.webinarDates.length > 0)
-                          ? "Join Webinar"
-                          : serviceSlots.length > 0
-                          ? "Book Service"
-                          : "No Availability"}
-                      </Button>
+                      {service.type === "webinar" && service.sessionFrequency === "selected" && service.webinarDates && service.webinarDates.length > 0 ? (
+                        <Button
+                          onClick={() => handleBookService(service._id, service)}
+                          className="w-full bg-indigo-600 hover:bg-indigo-700"
+                        >
+                          Join Webinar
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-gray-600 text-center py-2">
+                          ℹ️ Select a date and time above to book your consultation
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                 );
