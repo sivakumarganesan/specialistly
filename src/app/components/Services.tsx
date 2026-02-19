@@ -243,14 +243,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
     sessionFrequency: "onetime" as "onetime" | "selected" | "repeat",
     // Consulting specific fields
     sessionLocation: "zoom",
-    availabilityType: "single_day",
-    sessionDuration: "60",
-    selectedDate: new Date().toISOString().split('T')[0],
-    startTime: "09",
-    startAmPm: "AM" as "AM" | "PM",
-    endTime: "10",
-    endAmPm: "AM" as "AM" | "PM",
-    assignedCustomerEmail: "",
   })
 
   const [webinarDates, setWebinarDates] = useState<{ date: string; time: string }[]>([
@@ -293,8 +285,13 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
   });
 
   const handleCreateService = async () => {
-    if (!formData.title || !formData.description || !formData.capacity) {
-      alert("Please fill in all required fields (Title, Description, and Capacity)");
+    if (!formData.title || !formData.description) {
+      alert("Please fill in all required fields (Title and Description)");
+      return;
+    }
+    // For webinary services, require capacity
+    if (serviceType === "webinar" && !formData.capacity) {
+      alert("Please fill in capacity for webinar services");
       return;
     }
     if (serviceType) {
@@ -321,14 +318,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         }),
         ...(serviceType === "consulting" && {
           sessionLocation: formData.sessionLocation,
-          availabilityType: formData.availabilityType,
-          sessionDuration: formData.sessionDuration,
-          selectedDate: formData.selectedDate,
-          startTime: formData.startTime,
-          startAmPm: formData.startAmPm,
-          endTime: formData.endTime,
-          endAmPm: formData.endAmPm,
-          assignedCustomerEmail: formData.assignedCustomerEmail,
         }),
       };
       
@@ -351,7 +340,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
   };
 
   const handleEditService = async () => {
-    if (selectedService && formData.title && formData.capacity) {
+    if (selectedService && formData.title) {
       const updatedData = {
         title: formData.title,
         description: formData.description,
@@ -373,14 +362,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         }),
         ...(selectedService.type === "consulting" && {
           sessionLocation: formData.sessionLocation,
-          availabilityType: formData.availabilityType,
-          sessionDuration: formData.sessionDuration,
-          selectedDate: formData.selectedDate,
-          startTime: formData.startTime,
-          startAmPm: formData.startAmPm,
-          endTime: formData.endTime,
-          endAmPm: formData.endAmPm,
-          assignedCustomerEmail: formData.assignedCustomerEmail,
         }),
       };
       
@@ -457,46 +438,9 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
           }
         }
         
-        // If activating a consulting service, create appointment slots from consulting schedule
+        // For consulting services, inform user to create slots in ManageSlots
         if (newStatus === "active" && service.type === "consulting") {
-          try {
-            // Create appointment slot for the consulting session
-            const selectedDate = service.selectedDate || new Date().toISOString().split('T')[0];
-            
-            // Format start time: if startTime is "09", convert to "09:00"
-            let startTime = service.startTime;
-            if (!startTime.includes(':')) {
-              startTime = `${String(startTime).padStart(2, '0')}:00`;
-            }
-            
-            // Format end time: if endTime is "10", convert to "10:00"
-            let endTime = service.endTime;
-            if (!endTime.includes(':')) {
-              endTime = `${String(endTime).padStart(2, '0')}:00`;
-            }
-            
-            console.log('📅 Creating consulting appointment slot:', {
-              date: selectedDate,
-              startTime: startTime,
-              endTime: endTime,
-              serviceTitle: service.title,
-              specialistEmail: user?.email
-            });
-            
-            await appointmentAPI.create({
-              date: selectedDate,
-              startTime: startTime,
-              endTime: endTime,
-              status: "available",
-              specialistEmail: user?.email,
-              specialistName: user?.name,
-              serviceTitle: service.title,
-            });
-            alert(`✓ Consulting service activated! 1 appointment slot created for ${selectedDate} ${startTime}-${endTime}.`);
-          } catch (error) {
-            console.error("Failed to create consulting appointment slot:", error);
-            alert("✓ Service activated, but failed to create appointment slot. You can create it manually in Appointments.");
-          }
+          alert(`✓ Consulting service activated! Now go to "Manage Consulting Slots" to set up your availability for customers to book.`);
         }
         
         setServices(
@@ -529,14 +473,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       location: service.location || "zoom",
       sessionFrequency: service.sessionFrequency || "onetime",
       sessionLocation: service.sessionLocation || "zoom",
-      availabilityType: service.availabilityType || "single_day",
-      sessionDuration: service.sessionDuration || "60",
-      selectedDate: service.selectedDate || new Date().toISOString().split('T')[0],
-      startTime: service.startTime || "09",
-      startAmPm: service.startAmPm || "AM",
-      endTime: service.endTime || "10",
-      endAmPm: service.endAmPm || "AM",
-      assignedCustomerEmail: service.assignedCustomerEmail || "",
     });
     if (service.type === "webinar" && service.webinarDates && service.webinarDates.length > 0) {
       setWebinarDates(service.webinarDates);
@@ -568,9 +504,9 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       capacity: "",
       schedule: "Flexible",
       eventType: "single",
-      assignedCustomerEmail: "",
       location: "zoom",
       sessionFrequency: "onetime",
+      sessionLocation: "zoom",
     });
     setWebinarDates([{ date: new Date().toISOString().split('T')[0], time: "10:00" }]);
     setWeeklySchedule([
@@ -1386,162 +1322,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                       <SelectItem value="whatsapp">WhatsApp</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="availabilityType">Availability Type *</Label>
-                  <Select
-                    value={formData.availabilityType}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, availabilityType: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select availability type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="single_day">Single Day</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                      <SelectItem value="not_sure">Not Sure</SelectItem>
-                      <SelectItem value="set_after_booking">Set after Booking</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="sessionDuration">Set Duration of Each Session *</Label>
-                  <Select
-                    value={formData.sessionDuration}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, sessionDuration: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="45">45 minutes</SelectItem>
-                      <SelectItem value="60">60 minutes</SelectItem>
-                      <SelectItem value="120">120 minutes</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="selectedDate">Select Date *</Label>
-                  <Input
-                    id="selectedDate"
-                    type="date"
-                    value={formData.selectedDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, selectedDate: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startTime">Start Time *</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.startTime}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, startTime: value })
-                        }
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Hour" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => {
-                            const hour = String(i + 1).padStart(2, '0');
-                            return (
-                              <SelectItem key={hour} value={hour}>
-                                {hour}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={formData.startAmPm}
-                        onValueChange={(value: "AM" | "PM") =>
-                          setFormData({ ...formData, startAmPm: value })
-                        }
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue placeholder="AM/PM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AM">AM</SelectItem>
-                          <SelectItem value="PM">PM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="endTime">End Time *</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.endTime}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, endTime: value })
-                        }
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Hour" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => {
-                            const hour = String(i + 1).padStart(2, '0');
-                            return (
-                              <SelectItem key={hour} value={hour}>
-                                {hour}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={formData.endAmPm}
-                        onValueChange={(value: "AM" | "PM") =>
-                          setFormData({ ...formData, endAmPm: value })
-                        }
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue placeholder="AM/PM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AM">AM</SelectItem>
-                          <SelectItem value="PM">PM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="assignedCustomer">Assign Customer *</Label>
-                  <Select
-                    value={formData.assignedCustomerEmail}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, assignedCustomerEmail: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer._id || customer.id} value={customer.email}>
-                          {customer.name} ({customer.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <p className="text-xs text-gray-500 mt-2 italic">📝 Note: Set specific dates and times in "Manage Consulting Slots" after activating this service.</p>
                 </div>
               </>
             )}
@@ -1575,10 +1356,11 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="capacity">Capacity</Label>
+                <Label htmlFor="capacity">Capacity {serviceType === "webinar" ? "*" : ""}</Label>
                 <Input
                   id="capacity"
                   placeholder="50"
+                  disabled={serviceType === "consulting"}
                   value={formData.capacity}
                   onChange={(e) =>
                     setFormData({ ...formData, capacity: e.target.value })
@@ -1598,6 +1380,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   />
                 </div>
               )}
+            </div>
             </div>
           </div>
 
@@ -1846,162 +1629,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                       <SelectItem value="whatsapp">WhatsApp</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-availabilityType">Availability Type *</Label>
-                  <Select
-                    value={formData.availabilityType || "single_day"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, availabilityType: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select availability type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="single_day">Single Day</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                      <SelectItem value="not_sure">Not Sure</SelectItem>
-                      <SelectItem value="set_after_booking">Set after Booking</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-sessionDuration">Set Duration of Each Session *</Label>
-                  <Select
-                    value={formData.sessionDuration || "60"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, sessionDuration: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="45">45 minutes</SelectItem>
-                      <SelectItem value="60">60 minutes</SelectItem>
-                      <SelectItem value="120">120 minutes</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-selectedDate">Select Date *</Label>
-                  <Input
-                    id="edit-selectedDate"
-                    type="date"
-                    value={formData.selectedDate || new Date().toISOString().split('T')[0]}
-                    onChange={(e) =>
-                      setFormData({ ...formData, selectedDate: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-startTime">Start Time *</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.startTime || "09"}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, startTime: value })
-                        }
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Hour" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => {
-                            const hour = String(i + 1).padStart(2, '0');
-                            return (
-                              <SelectItem key={hour} value={hour}>
-                                {hour}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={formData.startAmPm || "AM"}
-                        onValueChange={(value: "AM" | "PM") =>
-                          setFormData({ ...formData, startAmPm: value })
-                        }
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue placeholder="AM/PM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AM">AM</SelectItem>
-                          <SelectItem value="PM">PM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="edit-endTime">End Time *</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.endTime || "10"}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, endTime: value })
-                        }
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Hour" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => {
-                            const hour = String(i + 1).padStart(2, '0');
-                            return (
-                              <SelectItem key={hour} value={hour}>
-                                {hour}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={formData.endAmPm || "AM"}
-                        onValueChange={(value: "AM" | "PM") =>
-                          setFormData({ ...formData, endAmPm: value })
-                        }
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue placeholder="AM/PM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AM">AM</SelectItem>
-                          <SelectItem value="PM">PM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-assignedCustomer">Assign Customer *</Label>
-                  <Select
-                    value={formData.assignedCustomerEmail}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, assignedCustomerEmail: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer._id || customer.id} value={customer.email}>
-                          {customer.name} ({customer.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <p className="text-xs text-gray-500 mt-2 italic">📝 Note: Set specific dates and times in "Manage Consulting Slots" after activating this service.</p>
                 </div>
               </>
             )}
@@ -2018,7 +1646,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   }
                 />
               </div>
-              {selectedService?.type !== "webinar" && (
+              {selectedService?.type === "webinar" && (
                 <div>
                   <Label htmlFor="edit-duration">Duration</Label>
                   <Input
@@ -2039,13 +1667,14 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                 <Input
                   id="edit-capacity"
                   placeholder="50"
+                  disabled={selectedService?.type === "consulting"}
                   value={formData.capacity}
                   onChange={(e) =>
                     setFormData({ ...formData, capacity: e.target.value })
                   }
                 />
               </div>
-              {selectedService?.type !== "webinar" && (
+              {selectedService?.type === "webinar" && (
                 <div>
                   <Label htmlFor="edit-schedule">Schedule</Label>
                   <Input
