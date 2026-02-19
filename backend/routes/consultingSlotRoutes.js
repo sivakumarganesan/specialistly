@@ -9,13 +9,13 @@ const router = express.Router();
 // POST /api/consulting-slots
 router.post('/', consultingSlotController.createSlot);
 
+// Bulk create slots (must come BEFORE /:slotId pattern to avoid conflicts)
+// POST /api/consulting-slots/bulk/create
+router.post('/bulk/create', consultingSlotController.bulkCreateSlots);
+
 // Book a slot
 // POST /api/consulting-slots/:slotId/book
 router.post('/:slotId/book', consultingSlotController.bookSlot);
-
-// Bulk create slots
-// POST /api/consulting-slots/bulk/create
-router.post('/bulk/create', consultingSlotController.bulkCreateSlots);
 
 // ===== GET ROUTES (more specific routes first) =====
 
