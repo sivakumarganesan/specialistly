@@ -40,7 +40,8 @@ export const getAvailableSlots = async (req, res) => {
 // Get all slots for a specialist (Specialist view - includes inactive/booked)
 export const getSpecialistSlots = async (req, res) => {
   try {
-    const { specialistEmail, status } = req.query;
+    const { specialistEmail } = req.params;
+    const { status } = req.query;
 
     if (!specialistEmail) {
       return res.status(400).json({
