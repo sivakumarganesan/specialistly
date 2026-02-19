@@ -1,6 +1,25 @@
 import ConsultingSlot from '../models/ConsultingSlot.js';
 import User from '../models/User.js';
 
+// Helper function to calculate duration in minutes from time strings
+const calculateDuration = (startTime, endTime) => {
+  // Format: "14:00" or "2:30 PM"
+  const parseTime = (timeStr) => {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    return hours * 60 + minutes;
+  };
+  
+  const startMinutes = parseTime(startTime);
+  const endMinutes = parseTime(endTime);
+  
+  // Handle overnight slots (e.g., 23:00 to 01:00)
+  if (endMinutes < startMinutes) {
+    return (24 * 60) - startMinutes + endMinutes;
+  }
+  
+  return endMinutes - startMinutes;
+};
+
 // ===== GET ROUTES =====
 
 // Get all available slots for a specialist (Customer view)
@@ -180,6 +199,8 @@ export const createSlot = async (req, res) => {
       totalCapacity: totalCapacity || 1,
       timezone: timezone || 'UTC',
       notes,
+      // Calculate duration in minutes
+      duration: calculateDuration(startTime, endTime),
     });
 
     await newSlot.save();
@@ -451,6 +472,8 @@ export const bulkCreateSlots = async (req, res) => {
           serviceId: slotData.serviceId,
           timezone: slotData.timezone || 'UTC',
           notes: slotData.notes,
+          // Calculate duration in minutes
+          duration: calculateDuration(slotData.startTime, slotData.endTime),
         });
 
         await newSlot.save();

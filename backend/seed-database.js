@@ -83,6 +83,7 @@ async function seedDatabase() {
         date: slotDate,
         startTime: '10:00',
         endTime: '11:00',
+        duration: 60, // 60 minutes
         totalCapacity: 1,
         bookedCount: 0,
         status: 'active',
