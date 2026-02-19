@@ -31,11 +31,11 @@ const serviceSchema = new mongoose.Schema({
   },
   duration: {
     type: String,
-    required: true,
+    required: false,
   },
   capacity: {
     type: String,
-    required: true,
+    required: false,
   },
   schedule: {
     type: String,

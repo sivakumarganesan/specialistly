@@ -207,6 +207,27 @@ export const createWebinarWithSlots = async (req, res) => {
 // Create a new service
 export const createService = async (req, res) => {
   try {
+    // Validate required fields based on service type
+    const { type, duration, capacity } = req.body;
+    
+    if (type === 'webinar') {
+      if (!duration) {
+        return res.status(400).json({
+          success: false,
+          message: 'Duration is required for webinar services',
+          error: 'Duration field is mandatory for webinars'
+        });
+      }
+      if (!capacity) {
+        return res.status(400).json({
+          success: false,
+          message: 'Capacity is required for webinar services',
+          error: 'Capacity field is mandatory for webinars'
+        });
+      }
+    }
+    // For consulting services, duration and capacity are optional
+    
     const service = new Service(req.body);
     await service.save();
     res.status(201).json({
@@ -290,6 +311,36 @@ export const getServiceById = async (req, res) => {
 export const updateService = async (req, res) => {
   try {
     const { specialistId, specialistEmail, specialistName, ...updateData } = req.body;
+    
+    // Get the service first to check its type
+    const existingService = await Service.findById(req.params.id);
+    if (!existingService) {
+      return res.status(404).json({
+        success: false,
+        message: 'Service not found',
+      });
+    }
+    
+    // Determine which type to use: updated type or existing type
+    const serviceType = updateData.type || existingService.type;
+    
+    // Validate required fields based on service type
+    if (serviceType === 'webinar') {
+      if (updateData.duration !== undefined && !updateData.duration) {
+        return res.status(400).json({
+          success: false,
+          message: 'Duration is required for webinar services',
+          error: 'Duration field cannot be empty for webinars'
+        });
+      }
+      if (updateData.capacity !== undefined && !updateData.capacity) {
+        return res.status(400).json({
+          success: false,
+          message: 'Capacity is required for webinar services',
+          error: 'Capacity field cannot be empty for webinars'
+        });
+      }
+    }
     
     const service = await Service.findByIdAndUpdate(
       req.params.id,
