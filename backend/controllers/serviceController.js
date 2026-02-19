@@ -208,7 +208,7 @@ export const createWebinarWithSlots = async (req, res) => {
 export const createService = async (req, res) => {
   try {
     // Validate required fields based on service type
-    const { type, duration } = req.body;
+    const { type, duration, capacity } = req.body;
     
     // All service types require duration
     if (!duration) {
@@ -216,6 +216,15 @@ export const createService = async (req, res) => {
         success: false,
         message: 'Duration is required for all services',
         error: 'Duration field is mandatory'
+      });
+    }
+    
+    // Webinars require capacity
+    if (type === 'webinar' && !capacity) {
+      return res.status(400).json({
+        success: false,
+        message: 'Capacity is required for webinar services',
+        error: 'Capacity field is mandatory for webinars'
       });
     }
     
@@ -316,15 +325,15 @@ export const updateService = async (req, res) => {
     const serviceType = updateData.type || existingService.type;
     
     // Validate required fields based on service type
-    if (serviceType === 'consulting') {
-      if (updateData.duration !== undefined && !updateData.duration) {
+    if (serviceType === 'webinar') {
+      if (updateData.capacity !== undefined && !updateData.capacity) {
         return res.status(400).json({
           success: false,
-          message: 'Duration is required for consulting services',
-          error: 'Duration field cannot be empty for consulting'
+          message: 'Capacity is required for webinar services',
+          error: 'Capacity field cannot be empty for webinars'
         });
       }
-    }}
+    }
     
     const service = await Service.findByIdAndUpdate(
       req.params.id,

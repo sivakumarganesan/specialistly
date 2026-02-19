@@ -33,6 +33,10 @@ const serviceSchema = new mongoose.Schema({
     type: String,
     required: false,  // Required for consulting, optional for webinar
   },
+  capacity: {
+    type: String,
+    required: false,  // Required only for webinars
+  },
   schedule: {
     type: String,
     default: 'Flexible',

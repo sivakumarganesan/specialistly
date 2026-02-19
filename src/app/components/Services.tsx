@@ -45,6 +45,7 @@ interface Service {
   description: string;
   price: string;
   duration: string;  // Required for all services (in minutes for consulting, string format for webinar)
+  capacity?: string; // Required for webinars, not for consulting
   schedule: string;
   status: "active" | "draft";
   // Webinar specific fields
@@ -234,6 +235,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
     description: "",
     price: "",
     duration: "",
+    capacity: "",
     schedule: "Flexible",
     // Webinar specific fields
     eventType: "single" as "single" | "multiple",
@@ -292,6 +294,11 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       alert("Please enter the duration for your service");
       return;
     }
+    // Require capacity for webinars
+    if (serviceType === "webinar" && !formData.capacity) {
+      alert("Please enter the capacity for your webinar");
+      return;
+    }
     if (serviceType) {
       const serviceData = {
         title: formData.title,
@@ -303,6 +310,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         status: "draft",
         creator: user?.email,
         ...(serviceType === "webinar" && {
+          capacity: formData.capacity,
           eventType: formData.eventType,
           location: formData.location,
           sessionFrequency: formData.sessionFrequency,
@@ -346,6 +354,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         schedule: formData.schedule,
         creator: user?.email,
         ...(selectedService.type === "webinar" && {
+          capacity: formData.capacity,
           eventType: formData.eventType,
           location: formData.location,
           sessionFrequency: formData.sessionFrequency,
@@ -463,6 +472,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       description: service.description,
       price: service.price,
       duration: service.duration,
+      capacity: service.capacity || "",
       schedule: service.schedule,
       eventType: service.eventType || "single",
       location: service.location || "zoom",
@@ -496,6 +506,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       description: "",
       price: "",
       duration: "",
+      capacity: "",
       schedule: "Flexible",
       eventType: "single",
       location: "zoom",
@@ -1034,6 +1045,12 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                     <span className="text-gray-600">Duration:</span>
                     <span className="font-semibold">{service.duration}</span>
                   </div>
+                  {service.type === "webinar" && service.capacity && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Capacity:</span>
+                      <span className="font-semibold">{service.capacity}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1">
                     <CalendarClock className="h-4 w-4 text-gray-600" />
                     <span className="text-gray-600">{service.schedule}</span>
@@ -1343,16 +1360,29 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
             </div>
 
             {serviceType === "webinar" && (
-              <div>
-                <Label htmlFor="schedule">Schedule</Label>
-                <Input
-                  id="schedule"
-                  placeholder="Weekly"
-                  value={formData.schedule}
-                  onChange={(e) =>
-                    setFormData({ ...formData, schedule: e.target.value })
-                  }
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="capacity">Capacity *</Label>
+                  <Input
+                    id="capacity"
+                    placeholder="50"
+                    value={formData.capacity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, capacity: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="schedule">Schedule</Label>
+                  <Input
+                    id="schedule"
+                    placeholder="Weekly"
+                    value={formData.schedule}
+                    onChange={(e) =>
+                      setFormData({ ...formData, schedule: e.target.value })
+                    }
+                  />
+                </div>
               </div>
             )}
             </div>
@@ -1633,16 +1663,29 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
             </div>
 
             {selectedService?.type === "webinar" && (
-              <div>
-                <Label htmlFor="edit-schedule">Schedule</Label>
-                <Input
-                  id="edit-schedule"
-                  placeholder="Weekly"
-                  value={formData.schedule}
-                  onChange={(e) =>
-                    setFormData({ ...formData, schedule: e.target.value })
-                  }
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-capacity">Capacity *</Label>
+                  <Input
+                    id="edit-capacity"
+                    placeholder="50"
+                    value={formData.capacity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, capacity: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-schedule">Schedule</Label>
+                  <Input
+                    id="edit-schedule"
+                    placeholder="Weekly"
+                    value={formData.schedule}
+                    onChange={(e) =>
+                      setFormData({ ...formData, schedule: e.target.value })
+                    }
+                  />
+                </div>
               </div>
             )}
           </div>
