@@ -98,7 +98,15 @@ export const getSpecialistSlots = async (req, res) => {
 // Get single slot by ID
 export const getSlotById = async (req, res) => {
   try {
-    const { slotId } = req.params;
+    // Extract slotId from regex route parameter
+    const slotId = req.params[0] || req.params.slotId;
+
+    if (!slotId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Slot ID is required',
+      });
+    }
 
     const slot = await ConsultingSlot.findById(slotId)
       .populate('customerId', 'name email')
