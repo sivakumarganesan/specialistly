@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app
 import { Button } from "@/app/components/ui/button";
 import { Star, Users, ArrowLeft, BookOpen, Briefcase, Calendar, Clock } from "lucide-react";
 import { MonthCalendarSlots } from "@/app/components/MonthCalendarSlots";
+import { WebinarCalendarSlots } from "@/app/components/WebinarCalendarSlots";
 
 interface SpecialistProfileProps {
   specialistId: string;
@@ -570,37 +571,16 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                     <p className="text-sm text-gray-700 font-medium">
                       🎥 Select a webinar session to join. A confirmation email will be sent to you.
                     </p>
-                    <div className="space-y-3 max-h-96 overflow-y-auto">
-                      <p className="text-sm font-semibold text-gray-800">Available Webinar Sessions:</p>
-                      <div className="space-y-2">
-                        {bookingService?.webinarDates?.map((wd: any, idx: number) => (
-                          <Button
-                            key={idx}
-                            onClick={() => {
-                              setSelectedWebinarDate(wd);
-                              setSelectedServiceDate(wd.date);
-                              handleConfirmServiceBooking();
-                            }}
-                            disabled={isBooking}
-                            className="w-full bg-cyan-600 hover:bg-cyan-700 text-white h-auto py-4 justify-start font-medium text-left flex flex-col items-start"
-                          >
-                            <div className="flex items-center gap-2 w-full">
-                              <Calendar className="w-4 h-4 flex-shrink-0" />
-                              <span>
-                                {new Date(wd.date + "T00:00:00").toLocaleDateString("en-US", {
-                                  weekday: "short",
-                                  year: "numeric",
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                              </span>
-                              <Clock className="w-4 h-4 ml-auto flex-shrink-0" />
-                              <span>{wd.time}</span>
-                            </div>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
+                    <WebinarCalendarSlots
+                      webinarDates={bookingService?.webinarDates || []}
+                      serviceName={bookingService?.title || "Webinar"}
+                      onSelectDate={(wd) => {
+                        setSelectedWebinarDate(wd);
+                        setSelectedServiceDate(wd.date);
+                        handleConfirmServiceBooking();
+                      }}
+                      isLoading={isBooking}
+                    />
                   </>
                 ) : (
                   <>
