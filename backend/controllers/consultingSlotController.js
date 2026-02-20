@@ -1,5 +1,8 @@
 import ConsultingSlot from '../models/ConsultingSlot.js';
 import User from '../models/User.js';
+import AvailabilitySchedule from '../models/AvailabilitySchedule.js';
+import CreatorProfile from '../models/CreatorProfile.js';
+import { generateSlotsForDateRange } from '../utils/slotGenerationUtils.js';
 
 // Helper function to calculate duration in minutes from time strings
 const calculateDuration = (startTime, endTime) => {
@@ -560,6 +563,187 @@ export const getSpecialistStats = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error getting specialist stats',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Auto-generate consulting slots from availability schedule
+ * This creates individual slot records based on the specialist's availability pattern
+ */
+export const generateSlotsFromAvailability = async (req, res) => {
+  try {
+    const { specialistEmail, startDate, numDays = 90, serviceId } = req.body;
+
+    if (!specialistEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Specialist email is required',
+      });
+    }
+
+    // Get specialist
+    const specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    if (!specialist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist not found',
+      });
+    }
+
+    // Get active availability schedule
+    const schedule = await AvailabilitySchedule.findOne({
+      specialistId: specialist._id,
+      isActive: true,
+    });
+
+    if (!schedule) {
+      return res.status(404).json({
+        success: false,
+        message: 'No active availability schedule found. Please set up your availability first.',
+      });
+    }
+
+    // Generate slots using utility function
+    const generateStartDate = startDate ? new Date(startDate) : new Date();
+    const generatedSlots = generateSlotsForDateRange(
+      schedule,
+      generateStartDate,
+      numDays,
+      { duration: schedule.slotConfig.defaultDuration }
+    );
+
+    if (generatedSlots.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No slots could be generated. Check your availability settings.',
+      });
+    }
+
+    // Add specialist info and service reference to slots
+    const slotsToCreate = generatedSlots.map((slot) => ({
+      ...slot,
+      specialistId: specialist._id,
+      specialistEmail,
+      serviceId: serviceId || null,
+      duration: slot.duration,
+    }));
+
+    // Create slots in batch
+    const createdSlots = await ConsultingSlot.insertMany(slotsToCreate);
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully generated ${createdSlots.length} consulting slots`,
+      data: {
+        count: createdSlots.length,
+        startDate: generateStartDate,
+        endDate: new Date(new Date(generateStartDate).setDate(generateStartDate.getDate() + numDays)),
+        slots: createdSlots,
+      },
+    });
+  } catch (error) {
+    console.error('Error generating slots from availability:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating slots from availability',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Get available slots filtered by availability schedule
+ * Returns only slots that match specialist's availability and are not fully booked
+ */
+export const getAvailableSlotsForCustomer = async (req, res) => {
+  try {
+    const { specialistEmail, startDate, endDate } = req.query;
+
+    if (!specialistEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Specialist email is required',
+      });
+    }
+
+    // Get specialist
+    const specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    if (!specialist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist not found',
+      });
+    }
+
+    // Build query for available slots
+    const query = {
+      specialistEmail,
+      status: 'active',
+      isFullyBooked: false,
+    };
+
+    // Add date range filter
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) {
+        query.date.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        query.date.$lte = new Date(endDate);
+      }
+    }
+
+    // Get active availability schedule to apply booking rules
+    const schedule = await AvailabilitySchedule.findOne({
+      specialistId: specialist._id,
+      isActive: true,
+    });
+
+    const slots = await ConsultingSlot.find(query)
+      .sort({ date: 1, startTime: 1 })
+      .exec();
+
+    // Filter slots based on booking rules
+    const now = new Date();
+    const filteredSlots = slots.filter((slot) => {
+      if (!schedule) return true; // No schedule = no restrictions
+
+      // Check minimum booking notice
+      const minNoticeMs = schedule.bookingRules.minBookingNotice * 60 * 60 * 1000;
+      const earliestBookTime = new Date(now.getTime() + minNoticeMs);
+      if (new Date(slot.date) < earliestBookTime) {
+        return false;
+      }
+
+      // Check max advance booking
+      const maxAdvanceDays = schedule.bookingRules.maxAdvanceBooking;
+      const latestBookTime = new Date(now.getTime() + maxAdvanceDays * 24 * 60 * 60 * 1000);
+      if (new Date(slot.date) > latestBookTime) {
+        return false;
+      }
+
+      return true;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: filteredSlots,
+      count: filteredSlots.length,
+      total: slots.length,
+      appliedRules: schedule
+        ? {
+            minBookingNotice: schedule.bookingRules.minBookingNotice,
+            maxAdvanceBooking: schedule.bookingRules.maxAdvanceBooking,
+          }
+        : null,
+    });
+  } catch (error) {
+    console.error('Error fetching available slots for customer:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching available slots',
       error: error.message,
     });
   }

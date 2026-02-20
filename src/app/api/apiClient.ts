@@ -199,7 +199,22 @@ export const consultingSlotAPI = {
   getSlots: (email: string) => apiCall(`/consulting-slots/${email}`),
   getStats: (email: string) => apiCall(`/consulting-slots/${email}/stats`),
   getById: (id: string) => apiCall(`/consulting-slots/${id}`),
+  getAvailable: (email: string, startDate?: string, endDate?: string) => {
+    let query = `/consulting-slots/available?specialistEmail=${email}`;
+    if (startDate) query += `&startDate=${startDate}`;
+    if (endDate) query += `&endDate=${endDate}`;
+    return apiCall(query);
+  },
+  getAvailableForCustomer: (email: string, startDate?: string, endDate?: string) => {
+    let query = `/consulting-slots/customer/available?specialistEmail=${email}`;
+    if (startDate) query += `&startDate=${startDate}`;
+    if (endDate) query += `&endDate=${endDate}`;
+    return apiCall(query);
+  },
   create: (data: any) => apiCall("/consulting-slots", "POST", data),
+  bulkCreate: (data: any) => apiCall("/consulting-slots/bulk/create", "POST", data),
+  generateFromAvailability: (data: { specialistEmail: string; startDate?: string; numDays?: number; serviceId?: string }) =>
+    apiCall("/consulting-slots/generate/from-availability", "POST", data),
   update: (id: string, data: any) => apiCall(`/consulting-slots/${id}`, "PUT", data),
   delete: (id: string) => apiCall(`/consulting-slots/${id}`, "DELETE"),
   book: (id: string, data: any) => apiCall(`/consulting-slots/${id}/book`, "POST", data),
@@ -272,6 +287,16 @@ export const authAPI = {
   login: (data: any) => apiCall("/auth/login", "POST", data),
   getProfile: (token: string) => apiCall("/auth/profile", "GET", undefined, token),
   updateSubscription: (token: string, data: any) => apiCall("/auth/subscription", "PUT", data, token),
+};
+
+// Availability Schedule API calls
+export const availabilityScheduleAPI = {
+  getSchedule: (email: string) => apiCall(`/availability-schedule/specialist/${email}`),
+  getAvailableSlots: (email: string, date: string) => 
+    apiCall(`/availability-schedule/slots/${email}/${date}`),
+  create: (data: any) => apiCall("/availability-schedule", "POST", data),
+  update: (id: string, data: any) => apiCall(`/availability-schedule/${id}`, "PUT", data),
+  delete: (id: string) => apiCall(`/availability-schedule/${id}`, "DELETE"),
 };
 
 // Messages API calls

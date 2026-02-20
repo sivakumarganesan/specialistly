@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useConsultingSlots, ConsultingSlot } from '@/app/hooks/useConsultingSlots';
+import { consultingSlotAPI } from '@/app/api/apiClient';
 import { Button } from '@/app/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/app/components/ui/tabs';
-import { AlertCircle, Plus, Calendar } from 'lucide-react';
+import { AlertCircle, Plus, Calendar, Zap } from 'lucide-react';
 import { Skeleton } from '@/app/components/ui/skeleton';
 import { CreateSlotModal } from './CreateSlotModal';
 import { EditSlotModal } from './EditSlotModal';
@@ -39,6 +40,8 @@ export function ManageSlots({
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'past' | 'available' | 'booked'>('all');
   const [deleting, setDeleting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   // Show success message for 3 seconds
   const handleSuccess = (message: string) => {
@@ -73,6 +76,37 @@ export function ManageSlots({
       }
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleGenerateFromAvailability = async () => {
+    setGenerating(true);
+    setGenerateError(null);
+    try {
+      const result = await consultingSlotAPI.generateFromAvailability({
+        specialistEmail,
+        numDays: 90, // Generate for next 90 days
+      });
+
+      if (result.success) {
+        handleSuccess(
+          `✓ Generated ${result.data.count} consulting slots from your availability!`
+        );
+        // Refetch slots to update the list
+        refetch();
+        setModalState('none');
+      }
+    } catch (error) {
+      const errorMsg =
+        error instanceof Error ? error.message : 'Failed to generate slots';
+      setGenerateError(errorMsg);
+      handleSuccess(
+        errorMsg.includes('No active availability schedule')
+          ? 'Please set up your availability first in Settings → Manage Availability'
+          : errorMsg
+      );
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -122,13 +156,24 @@ export function ManageSlots({
             Create and manage your available consulting time
           </p>
         </div>
-        <Button
-          onClick={() => setModalState('create')}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Slot
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={handleGenerateFromAvailability}
+            disabled={generating || loading}
+            variant="outline"
+            className="border-indigo-600 text-indigo-600 hover:bg-indigo-50"
+          >
+            <Zap className="h-4 w-4 mr-2" />
+            {generating ? 'Generating...' : 'Auto-Generate from Availability'}
+          </Button>
+          <Button
+            onClick={() => setModalState('create')}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Slot
+          </Button>
+        </div>
       </div>
 
       {/* Error Alert */}

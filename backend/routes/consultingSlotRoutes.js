@@ -13,13 +13,21 @@ router.post('/', consultingSlotController.createSlot);
 // POST /api/consulting-slots/bulk/create
 router.post('/bulk/create', consultingSlotController.bulkCreateSlots);
 
+// Auto-generate slots from availability schedule
+// POST /api/consulting-slots/generate/from-availability
+router.post('/generate/from-availability', consultingSlotController.generateSlotsFromAvailability);
+
 // Book a slot
 // POST /api/consulting-slots/:slotId/book
 router.post('/:slotId/book', consultingSlotController.bookSlot);
 
 // ===== GET ROUTES (more specific routes first) =====
 
-// Get available slots for a specialist (Customer view)
+// Get available slots for a specialist with booking rules applied (Customer view)
+// GET /api/consulting-slots/customer/available?specialistEmail=john@example.com&startDate=2026-02-19
+router.get('/customer/available', consultingSlotController.getAvailableSlotsForCustomer);
+
+// Get available slots for a specialist (legacy)
 // GET /api/consulting-slots/available?specialistEmail=john@example.com&startDate=2026-02-19&endDate=2026-03-19
 router.get('/available', consultingSlotController.getAvailableSlots);
 
