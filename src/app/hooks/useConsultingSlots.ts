@@ -224,6 +224,35 @@ export const useConsultingSlots = (specialistEmail: string) => {
     }
   }, [specialistEmail, fetchSlots, fetchStats]);
 
+  // Customer-facing methods for viewing available slots
+  const getSlotsByDate = useCallback((dateString: string) => {
+    return slots.filter((slot) => slot.date.startsWith(dateString));
+  }, [slots]);
+
+  const getSlotsByDateRange = useCallback(
+    (startDate: string, endDate: string) => {
+      const start = new Date(startDate).getTime();
+      const end = new Date(endDate).getTime();
+      return slots.filter((slot) => {
+        const slotDate = new Date(slot.date).getTime();
+        return slotDate >= start && slotDate <= end;
+      });
+    },
+    [slots]
+  );
+
+  const getNextAvailableSlot = useCallback(() => {
+    const now = new Date();
+    return slots.find((slot) => new Date(slot.date) >= now && !slot.isFullyBooked) || null;
+  }, [slots]);
+
+  const hasAvailableSlotsInRange = useCallback(
+    (startDate: string, endDate: string) => {
+      return getSlotsByDateRange(startDate, endDate).filter((s) => !s.isFullyBooked).length > 0;
+    },
+    [getSlotsByDateRange]
+  );
+
   return {
     slots,
     stats,
@@ -235,5 +264,10 @@ export const useConsultingSlots = (specialistEmail: string) => {
     bookSlot,
     cancelBooking,
     refetch: fetchSlots,
+    // Customer-facing methods
+    getSlotsByDate,
+    getSlotsByDateRange,
+    getNextAvailableSlot,
+    hasAvailableSlotsInRange,
   };
 };

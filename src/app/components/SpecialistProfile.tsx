@@ -7,6 +7,7 @@ import { Star, Users, ArrowLeft, BookOpen, Briefcase, Calendar, Clock } from "lu
 import { MonthCalendarSlots } from "@/app/components/MonthCalendarSlots";
 import { WebinarCalendarSlots } from "@/app/components/WebinarCalendarSlots";
 import { WebinarBookingModal } from "@/app/components/WebinarBookingModal";
+import { ConsultingSlotCalendar } from "@/app/components/ConsultingSlotCalendar";
 
 interface SpecialistProfileProps {
   specialistId: string;
@@ -654,48 +655,14 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                 <p>Please switch to customer mode to book appointments.</p>
               </CardContent>
             </Card>
-          ) : appointmentSlots.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {appointmentSlots.map((slot) => (
-                <Card key={slot._id} className="hover:shadow-lg transition-shadow">
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="flex items-start gap-3">
-                      <Calendar className="w-5 h-5 text-indigo-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {new Date(slot.date).toLocaleDateString("en-US", {
-                            weekday: "short",
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
-                          <Clock className="w-4 h-4" />
-                          {slot.startTime} - {slot.endTime}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="bg-green-50 border border-green-200 rounded p-3">
-                      <p className="text-sm text-green-800 font-medium">Available</p>
-                    </div>
-                    <Button
-                      onClick={() => handleBookAppointment(slot._id)}
-                      disabled={isBooking || bookingSlotId === slot._id}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700"
-                    >
-                      {isBooking && bookingSlotId === slot._id ? "Booking..." : "Book Slot"}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           ) : (
-            <Card>
-              <CardContent className="pt-6 text-center text-gray-600">
-                <p>No available appointment slots at the moment. Please check back later.</p>
-              </CardContent>
-            </Card>
+            <ConsultingSlotCalendar
+              specialistEmail={specialistEmail}
+              onSelectSlot={(slot) => {
+                setBookingSlotId(slot._id);
+                console.log('Selected slot:', slot);
+              }}
+            />
           )}
         </div>
       )}
