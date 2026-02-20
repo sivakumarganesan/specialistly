@@ -542,11 +542,14 @@ export const getSpecialistStats = async (req, res) => {
         specialistEmail,
         date: { $lt: now },
       }),
-      totalBookings: await ConsultingSlot.aggregate([
-        { $match: { specialistEmail } },
-        { $group: { _id: null, totalBookings: { $sum: '$bookedCount' } } },
-      ]),
     };
+
+    // Get total bookings from aggregation
+    const bookingsResult = await ConsultingSlot.aggregate([
+      { $match: { specialistEmail } },
+      { $group: { _id: null, totalBookings: { $sum: '$bookedCount' } } },
+    ]);
+    stats.totalBookings = bookingsResult[0]?.totalBookings || 0;
 
     res.status(200).json({
       success: true,
