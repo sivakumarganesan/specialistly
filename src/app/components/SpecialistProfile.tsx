@@ -3,11 +3,12 @@ import { useAuth } from "@/app/context/AuthContext";
 import { creatorAPI, courseAPI, serviceAPI, customerAPI, appointmentAPI, consultingSlotAPI } from "@/app/api/apiClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import { Star, Users, ArrowLeft, BookOpen, Briefcase, Calendar, Clock } from "lucide-react";
+import { Star, Users, ArrowLeft, BookOpen, Briefcase, Calendar, Clock, Video } from "lucide-react";
 import { MonthCalendarSlots } from "@/app/components/MonthCalendarSlots";
 import { WebinarCalendarSlots } from "@/app/components/WebinarCalendarSlots";
 import { WebinarBookingModal } from "@/app/components/WebinarBookingModal";
 import { ConsultingSlotCalendar } from "@/app/components/ConsultingSlotCalendar";
+import { SpecialistMeetingManager } from "@/app/components/SpecialistMeetingManager";
 
 interface SpecialistProfileProps {
   specialistId: string;
@@ -55,7 +56,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
   const [servicesCount, setServicesCount] = useState(0);
   const [appointmentSlots, setAppointmentSlots] = useState<AppointmentSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"about" | "courses" | "services" | "appointments">("about");
+  const [activeTab, setActiveTab] = useState<"about" | "courses" | "services" | "appointments" | "meetings">("about");
   const [bookingSlotId, setBookingSlotId] = useState<string | null>(null);
   const [isBooking, setIsBooking] = useState(false);
   const [serviceBookingId, setServiceBookingId] = useState<string | null>(null);
@@ -363,7 +364,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
 
       {/* Tabs */}
       <div className="flex gap-4 mb-6 border-b overflow-x-auto">
-        {["about", "courses", "services", "appointments"].map((tab) => (
+        {["about", "courses", "services", "appointments", ...(user?.email === specialistEmail ? ["meetings"] : [])].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab as any)}
@@ -377,6 +378,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
             {tab === "courses" && `Courses (${coursesCount})`}
             {tab === "services" && `Services (${servicesCount})`}
             {tab === "appointments" && `Book Appointment (${appointmentSlots.length})`}
+            {tab === "meetings" && "Your Zoom Meetings"}
           </button>
         ))}
       </div>
@@ -664,6 +666,12 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
               }}
             />
           )}
+        </div>
+      )}
+
+      {activeTab === "meetings" && user?.email === specialistEmail && (
+        <div>
+          <SpecialistMeetingManager />
         </div>
       )}
 

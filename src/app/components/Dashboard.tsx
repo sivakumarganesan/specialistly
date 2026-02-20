@@ -12,12 +12,14 @@ import {
   TrendingUp,
   DollarSign,
   ArrowLeft,
-  Calendar
+  Calendar,
+  Video
 } from "lucide-react";
 import { Card } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
 import { customerAPI, serviceAPI, creatorAPI } from "@/app/api/apiClient";
 import { ManageSlots } from "@/app/components/ConsultingSlots";
+import { SpecialistMeetingManager } from "@/app/components/SpecialistMeetingManager";
 
 interface Offering {
   _id?: string;
@@ -46,7 +48,7 @@ export function Dashboard({
   onViewServiceDetail?: (serviceId: string) => void;
 }) {
   const { user, updateSubscription, setCurrentPage } = useAuth();
-  const [activeSection, setActiveSection] = useState<"overview" | "manage-slots">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "manage-slots" | "manage-meetings">("overview");
   const [filterTab, setFilterTab] = useState("all");
   const [offerings, setOfferings] = useState<Offering[]>([]);
   const [isUpgrading, setIsUpgrading] = useState(false);
@@ -158,6 +160,22 @@ export function Dashboard({
     );
   }
 
+  // Show Specialist Meeting Manager if that section is active
+  if (activeSection === "manage-meetings") {
+    return (
+      <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
+        <button
+          onClick={() => setActiveSection("overview")}
+          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Overview
+        </button>
+        <SpecialistMeetingManager />
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
       {/* Membership Banner */}
@@ -198,7 +216,7 @@ export function Dashboard({
       )}
 
       {/* Dashboard Navigation Tabs */}
-      <div className="flex gap-2 border-b border-gray-200 pb-4">
+      <div className="flex gap-2 border-b border-gray-200 pb-4 flex-wrap">
         <Button 
           variant={activeSection === "overview" ? "default" : "outline"}
           onClick={() => setActiveSection("overview")}
@@ -207,12 +225,20 @@ export function Dashboard({
           Overview
         </Button>
         <Button 
+          variant={activeSection === "manage-meetings" ? "default" : "outline"}
+          onClick={() => setActiveSection("manage-meetings")}
+          className={activeSection === "manage-meetings" ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+        >
+          <Video className="h-4 w-4 mr-2" />
+          Zoom Meetings
+        </Button>
+        <Button 
           variant={activeSection === "manage-slots" ? "default" : "outline"}
           onClick={() => setActiveSection("manage-slots")}
           className={activeSection === "manage-slots" ? "bg-indigo-600 hover:bg-indigo-700" : ""}
         >
           <Calendar className="h-4 w-4 mr-2" />
-          Manage Consulting Slots
+          Manage Slots
         </Button>
       </div>
 

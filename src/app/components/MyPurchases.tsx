@@ -3,7 +3,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { customerAPI, courseAPI, serviceAPI, appointmentAPI } from "@/app/api/apiClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import { BookOpen, Briefcase, Clock, CheckCircle, AlertCircle, Calendar } from "lucide-react";
+import { BookOpen, Briefcase, Clock, CheckCircle, AlertCircle, Calendar, X, Video } from "lucide-react";
 
 interface Enrollment {
   _id: string;
@@ -45,6 +45,7 @@ export function MyPurchases() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"courses" | "services" | "appointments">("courses");
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   useEffect(() => {
     fetchPurchasesAndBookings();
@@ -495,16 +496,25 @@ export function MyPurchases() {
                           <CheckCircle className="w-4 h-4" />
                           <span>{isUpcoming ? "Upcoming" : "Completed"}</span>
                         </div>
-                        {isUpcoming && appointment.zoomJoinUrl && (
+                        <div className="flex flex-col gap-2 w-full">
                           <Button
-                            className="bg-indigo-600 hover:bg-indigo-700"
-                            onClick={() =>
-                              window.open(appointment.zoomJoinUrl, "_blank")
-                            }
+                            variant="outline"
+                            className="text-indigo-600 border-indigo-600 hover:bg-indigo-50"
+                            onClick={() => setSelectedAppointment(appointment)}
                           >
-                            Join Meeting
+                            View Details
                           </Button>
-                        )}
+                          {isUpcoming && appointment.zoomJoinUrl && (
+                            <Button
+                              className="bg-indigo-600 hover:bg-indigo-700"
+                              onClick={() =>
+                                window.open(appointment.zoomJoinUrl, "_blank")
+                              }
+                            >
+                              Join Meeting
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -522,6 +532,112 @@ export function MyPurchases() {
               </CardContent>
             </Card>
           )}
+        </div>
+      )}
+
+      {/* Appointment Details Modal */}
+      {selectedAppointment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <CardHeader className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-white">Appointment Details</CardTitle>
+                <button
+                  onClick={() => setSelectedAppointment(null)}
+                  className="p-2 hover:bg-white hover:bg-opacity-20 rounded transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-6">
+              {/* Service Info */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Service</h3>
+                <p className="text-lg font-semibold text-gray-900">{selectedAppointment.serviceTitle}</p>
+              </div>
+
+              {/* Specialist Info */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Specialist</h3>
+                <p className="text-lg font-semibold text-gray-900">{selectedAppointment.specialistName}</p>
+                <p className="text-sm text-gray-600">{selectedAppointment.specialistEmail}</p>
+              </div>
+
+              {/* Date & Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Date</h3>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {new Date(selectedAppointment.date).toLocaleDateString("en-US", {
+                      weekday: "short",
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Time</h3>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {selectedAppointment.startTime} - {selectedAppointment.endTime}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase mb-2">Status</h3>
+                <div
+                  className={`inline-flex items-center gap-2 px-4 py-2 rounded-full font-medium ${
+                    new Date(selectedAppointment.date) > new Date()
+                      ? "bg-blue-100 text-blue-800"
+                      : "bg-green-100 text-green-800"
+                  }`}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  <span>{new Date(selectedAppointment.date) > new Date() ? "Upcoming" : "Completed"}</span>
+                </div>
+              </div>
+
+              {/* Zoom Meeting Info */}
+              {selectedAppointment.zoomJoinUrl ? (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Video className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-blue-900 mb-3">Zoom Meeting Ready</h3>
+                      <Button
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => window.open(selectedAppointment.zoomJoinUrl, "_blank")}
+                      >
+                        Join Meeting
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-1" />
+                    <div>
+                      <h3 className="font-semibold text-amber-900">Zoom Meeting Pending</h3>
+                      <p className="text-sm text-amber-800 mt-1">
+                        The specialist will create the Zoom meeting link shortly before your appointment time.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Booked At */}
+              <div className="border-t border-gray-200 pt-4">
+                <p className="text-xs text-gray-500">
+                  Booked on {new Date(selectedAppointment.bookedAt).toLocaleDateString()}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
