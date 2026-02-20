@@ -3,6 +3,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { creatorAPI, subscriptionAPI } from "@/app/api/apiClient";
+import { ManageAvailability } from "@/app/components/ManageAvailability";
 import {
   Card,
   CardContent,
@@ -11,7 +12,7 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 
-type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
+type SettingsTab = "profile" | "payment" | "slots" | "availability" | "subscriptions";
 
 interface SettingsProps {
   initialTab?: SettingsTab;
@@ -23,6 +24,7 @@ export function Settings({ initialTab = "profile" }: SettingsProps) {
   const tabs = [
     { id: "profile" as SettingsTab, label: "User Profile", icon: User },
     { id: "payment" as SettingsTab, label: "Payment Settings", icon: CreditCard },
+    { id: "availability" as SettingsTab, label: "Manage Availability", icon: Clock },
     { id: "slots" as SettingsTab, label: "Allotment Slots", icon: Clock },
     { id: "subscriptions" as SettingsTab, label: "My Subscriptions", icon: Package },
   ];
@@ -59,6 +61,7 @@ export function Settings({ initialTab = "profile" }: SettingsProps) {
       <div>
         {activeTab === "profile" && <UserProfile />}
         {activeTab === "payment" && <PaymentSettings />}
+        {activeTab === "availability" && <ManageAvailability />}
         {activeTab === "slots" && <AllotmentSlots />}
         {activeTab === "subscriptions" && <MySubscriptions />}
       </div>

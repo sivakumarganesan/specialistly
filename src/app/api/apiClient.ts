@@ -207,6 +207,17 @@ export const consultingSlotAPI = {
     apiCall(`/consulting-slots/${id}/book/${customerId}`, "DELETE"),
 };
 
+// Availability Schedule API calls
+export const availabilityScheduleAPI = {
+  getSchedule: (specialistEmail: string) => 
+    apiCall(`/availability-schedule/specialist/${specialistEmail}`),
+  getAvailableSlots: (specialistEmail: string, date: string) =>
+    apiCall(`/availability-schedule/slots/${specialistEmail}/${date}`),
+  create: (data: any) => apiCall("/availability-schedule", "POST", data),
+  update: (scheduleId: string, data: any) => apiCall(`/availability-schedule/${scheduleId}`, "PUT", data),
+  delete: (scheduleId: string) => apiCall(`/availability-schedule/${scheduleId}`, "DELETE"),
+};
+
 // Creator API calls
 export const creatorAPI = {
   getAll: () => apiCall("/creator"),
