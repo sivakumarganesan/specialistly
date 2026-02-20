@@ -85,6 +85,7 @@ export function ManageSlots({
     try {
       const result = await consultingSlotAPI.generateFromAvailability({
         specialistEmail,
+        specialistId,
         numDays: 90, // Generate for next 90 days
       });
 

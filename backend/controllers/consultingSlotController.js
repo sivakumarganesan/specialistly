@@ -574,21 +574,36 @@ export const getSpecialistStats = async (req, res) => {
  */
 export const generateSlotsFromAvailability = async (req, res) => {
   try {
-    const { specialistEmail, startDate, numDays = 90, serviceId } = req.body;
+    const { specialistEmail, specialistId, startDate, numDays = 90, serviceId } = req.body;
 
-    if (!specialistEmail) {
+    if (!specialistEmail && !specialistId) {
       return res.status(400).json({
         success: false,
-        message: 'Specialist email is required',
+        message: 'Specialist email or ID is required',
       });
     }
 
-    // Get specialist
-    const specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    // Get specialist by email or ID
+    let specialist;
+    if (specialistId) {
+      specialist = await CreatorProfile.findById(specialistId);
+    } else {
+      // Try exact match first
+      specialist = await CreatorProfile.findOne({ email: specialistEmail });
+      // If not found, try case-insensitive
+      if (!specialist) {
+        specialist = await CreatorProfile.findOne({ email: new RegExp(`^${specialistEmail}$`, 'i') });
+      }
+    }
+
     if (!specialist) {
       return res.status(404).json({
         success: false,
-        message: 'Specialist not found',
+        message: 'Specialist not found. Please ensure your profile is set up.',
+        debug: {
+          searchedEmail: specialistEmail,
+          searchedId: specialistId,
+        },
       });
     }
 
