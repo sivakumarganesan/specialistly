@@ -86,7 +86,7 @@ export const createAvailabilitySchedule = async (req, res) => {
     if (!specialist) {
       specialist = new CreatorProfile({
         email: specialistEmail,
-        displayName: specialistEmail.split('@')[0],
+        creatorName: specialistEmail.split('@')[0],
         bio: 'Specialist profile auto-created for scheduling',
       });
       await specialist.save();
