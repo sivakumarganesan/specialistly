@@ -14,10 +14,12 @@ export const getAvailabilitySchedule = async (req, res) => {
       specialist = await CreatorProfile.findOne({ email: new RegExp(`^${specialistEmail}$`, 'i') });
     }
     
+    // If specialist doesn't exist, return empty response (not an error)
     if (!specialist) {
-      return res.status(404).json({
-        success: false,
-        message: 'Specialist not found',
+      return res.status(200).json({
+        success: true,
+        message: 'No specialist profile found. Create an availability schedule to get started.',
+        data: null,
       });
     }
 
@@ -27,9 +29,10 @@ export const getAvailabilitySchedule = async (req, res) => {
     });
 
     if (!schedule) {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: 'No active availability schedule found',
+        data: null,
       });
     }
 
@@ -67,11 +70,14 @@ export const createAvailabilitySchedule = async (req, res) => {
       specialist = await CreatorProfile.findOne({ email: new RegExp(`^${specialistEmail}$`, 'i') });
     }
     
+    // If specialist doesn't exist, create one automatically
     if (!specialist) {
-      return res.status(404).json({
-        success: false,
-        message: 'Specialist not found',
+      specialist = new CreatorProfile({
+        email: specialistEmail,
+        displayName: specialistEmail.split('@')[0],
+        bio: 'Specialist profile auto-created for scheduling',
       });
+      await specialist.save();
     }
 
     // Deactivate previous schedule
