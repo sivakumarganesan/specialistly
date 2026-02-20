@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-import { consultingSlotAPI } from '@/app/api/apiClient';
+import { consultingSlotAPI, API_BASE_URL } from '@/app/api/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { AlertCircle, Calendar, Clock, Video, Copy, ExternalLink, Loader, CheckCircle, AlertTriangle } from 'lucide-react';
 
@@ -90,7 +90,7 @@ export function SpecialistMeetingManager() {
       setCreatingZoomFor(`${slotId}-${bookingIndex}`);
       setError(null);
 
-      const response = await fetch(`/api/consulting-slots/${slotId}/booking/${bookingIndex}/create-zoom`, {
+      const response = await fetch(`${API_BASE_URL}/consulting-slots/${slotId}/booking/${bookingIndex}/create-zoom`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

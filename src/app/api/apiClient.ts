@@ -1,6 +1,8 @@
 // API Base URL - use environment variable, fallback to localhost for development
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5001/api";
 
+export { API_BASE_URL };
+
 // Helper function to make API calls
 const apiCall = async (
   endpoint: string,
