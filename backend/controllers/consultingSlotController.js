@@ -268,203 +268,144 @@ export const bookSlot = async (req, res) => {
       });
     }
 
-    let zoomMeetingDetails = null;
-    try {
-      // Create Zoom meeting for this appointment
-      const appointmentDateTime = new Date(slot.date);
-      const [hours, minutes] = slot.startTime.split(':').map(Number);
-      appointmentDateTime.setHours(hours, minutes, 0);
-      
-      const endDateTime = new Date(appointmentDateTime);
-      endDateTime.setMinutes(endDateTime.getMinutes() + slot.duration);
-
-      console.log(`🎥 Creating Zoom meeting for ${customerName}...`);
-      zoomMeetingDetails = await zoomService.createZoomMeeting(
-        slot.specialistId,
-        slot.specialistEmail,
-        customerEmail,
-        customerName,
-        `Consulting Session - ${customerName}`,
-        appointmentDateTime,
-        endDateTime
-      );
-      console.log(`✅ Zoom meeting created: ${zoomMeetingDetails.zoomMeetingId}`);
-    } catch (zoomError) {
-      console.error('⚠️ Zoom meeting creation failed:', zoomError.message);
-      // Continue with booking even if Zoom fails - booking should not depend on Zoom
-      // The specialist can create meeting manually or retry later
-    }
-
-    // Add booking with Zoom meeting details
+    // Add booking WITHOUT creating Zoom meeting
+    // Specialist will create Zoom meeting on-demand before the meeting
     const booking = {
       customerId,
       customerEmail,
       customerName,
       bookedAt: new Date(),
+      // zoomMeeting field will be populated later when specialist generates it
     };
-
-    if (zoomMeetingDetails) {
-      booking.zoomMeeting = {
-        zoomMeetingId: zoomMeetingDetails.zoomMeetingId,
-        joinUrl: zoomMeetingDetails.joinUrl,
-        startUrl: zoomMeetingDetails.startUrl,
-        password: zoomMeetingDetails.eventDetails?.password || '',
-        createdAt: new Date(),
-      };
-    }
 
     slot.bookings.push(booking);
     slot.bookedCount += 1;
     slot.isFullyBooked = slot.bookedCount >= slot.totalCapacity;
     await slot.save();
 
-    // Get specialist details
+    // Get specialist details for email
     const specialist = await CreatorProfile.findById(slot.specialistId);
     const specialistName = specialist?.creatorName || 'Specialist';
+    const appointmentDate = new Date(slot.date);
+    const dateLabel = appointmentDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
 
-    // Send confirmation email to customer
-    if (zoomMeetingDetails) {
-      const appointmentDate = new Date(slot.date);
-      const dateLabel = appointmentDate.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+    // Send simple confirmation email to customer (no Zoom link yet)
+    const customerEmailHtml = `
+      <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #1a1a1a; margin-top: 0;">✅ Appointment Confirmed!</h2>
+            
+            <p style="color: #666; font-size: 14px;">Hi ${customerName},</p>
+            
+            <p style="color: #666; font-size: 14px;">
+              Your consulting session with <strong>${specialistName}</strong> has been confirmed!
+            </p>
+            
+            <div style="background-color: #e8f4f8; border-left: 4px solid #0284c7; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #0284c7; margin-top: 0;">📅 Appointment Details</h3>
+              <p style="color: #026aa2; margin: 5px 0;"><strong>Date:</strong> ${dateLabel}</p>
+              <p style="color: #026aa2; margin: 5px 0;"><strong>Time:</strong> ${slot.startTime} - ${slot.endTime}</p>
+              <p style="color: #026aa2; margin: 5px 0;"><strong>Duration:</strong> ${slot.duration} minutes</p>
+            </div>
+
+            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #856404; margin-top: 0;">🎥 Zoom Meeting Link</h3>
+              <p style="color: #856404; margin: 10px 0;">
+                Your specialist will create the Zoom meeting link shortly before your appointment. You'll receive the meeting link via email as soon as it's available.
+              </p>
+            </div>
+
+            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 4px; margin: 20px 0;">
+              <h3 style="color: #333; margin-top: 0;">✨ What to Expect</h3>
+              <ul style="color: #666; font-size: 13px;">
+                <li>You'll receive a Zoom meeting link 30 minutes before the session</li>
+                <li>Check your email (including spam folder) for the meeting details</li>
+                <li>Join 5 minutes early to test your audio and video</li>
+                <li>Make sure you have a stable internet connection</li>
+              </ul>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="color: #999; font-size: 12px;">
+              If you need to reschedule or cancel, please do so at least 24 hours before the appointment.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    try {
+      await gmailApiService.sendEmail({
+        to: customerEmail,
+        subject: `✅ Appointment Confirmed: Consulting Session on ${dateLabel}`,
+        html: customerEmailHtml,
       });
+      console.log(`📧 Confirmation email sent to customer: ${customerEmail}`);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send customer confirmation email:', emailError.message);
+    }
 
-      const customerEmailHtml = `
-        <html>
-          <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-              <h2 style="color: #1a1a1a; margin-top: 0;">✅ Appointment Confirmed!</h2>
-              
-              <p style="color: #666; font-size: 14px;">Hi ${customerName},</p>
-              
-              <p style="color: #666; font-size: 14px;">
-                Your consulting session with <strong>${specialistName}</strong> has been confirmed!
+    // Send notification to specialist about the booking
+    const specialistEmailHtml = `
+      <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #1a1a1a; margin-top: 0;">🎯 New Appointment Booked!</h2>
+            
+            <p style="color: #666; font-size: 14px;">Hi ${specialistName},</p>
+            
+            <p style="color: #666; font-size: 14px;">
+              A new consulting session has been booked with <strong>${customerName}</strong>.
+            </p>
+            
+            <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #1e40af; margin-top: 0;">📅 Session Details</h3>
+              <p style="color: #1e40af; margin: 5px 0;"><strong>Customer:</strong> ${customerName} (${customerEmail})</p>
+              <p style="color: #1e40af; margin: 5px 0;"><strong>Date:</strong> ${dateLabel}</p>
+              <p style="color: #1e40af; margin: 5px 0;"><strong>Time:</strong> ${slot.startTime} - ${slot.endTime}</p>
+              <p style="color: #1e40af; margin: 5px 0;"><strong>Duration:</strong> ${slot.duration} minutes</p>
+            </div>
+
+            <div style="background-color: #dcfce7; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #166534; margin-top: 0;">🎥 Next Step: Create Zoom Meeting</h3>
+              <p style="color: #166534; margin: 10px 0;">
+                Log in to Specialistly to create the Zoom meeting link shortly before the appointment. Once created, the customer will automatically receive the meeting details.
               </p>
-              
-              <div style="background-color: #e8f4f8; border-left: 4px solid #0284c7; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                <h3 style="color: #0284c7; margin-top: 0;">📅 Appointment Details</h3>
-                <p style="color: #026aa2; margin: 5px 0;"><strong>Date:</strong> ${dateLabel}</p>
-                <p style="color: #026aa2; margin: 5px 0;"><strong>Time:</strong> ${slot.startTime} - ${slot.endTime}</p>
-                <p style="color: #026aa2; margin: 5px 0;"><strong>Duration:</strong> ${slot.duration} minutes</p>
-              </div>
-
-              <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                <h3 style="color: #856404; margin-top: 0;">🎥 Join via Zoom</h3>
-                <p style="color: #856404; margin: 10px 0;">
-                  Your meeting will be held via Zoom. Click the button below to join:
-                </p>
-                <div style="text-align: center; margin: 20px 0;">
-                  <a href="${zoomMeetingDetails.joinUrl}" style="background-color: #4285F4; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                    Join Zoom Meeting
-                  </a>
-                </div>
-                <p style="color: #856404; font-size: 12px; margin: 10px 0;">
-                  <strong>Meeting ID:</strong> ${zoomMeetingDetails.zoomMeetingId}<br>
-                  <strong>Password:</strong> ${zoomMeetingDetails.eventDetails?.password || 'Check your invite'}
-                </p>
-              </div>
-
-              <div style="background-color: #f0f0f0; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                <h3 style="color: #333; margin-top: 0;">✨ Pro Tips</h3>
-                <ul style="color: #666; font-size: 13px;">
-                  <li>Join 5 minutes early to test your audio and video</li>
-                  <li>Make sure you have a stable internet connection</li>
-                  <li>Close unnecessary tabs and programs for best performance</li>
-                  <li>You'll receive a reminder 24 hours before the session</li>
-                </ul>
-              </div>
-
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-              <p style="color: #999; font-size: 12px;">
-                If you need to reschedule or cancel, please do so at least 24 hours before the appointment.
+              <p style="color: #166534; font-size: 12px; margin: 10px 0;">
+                <strong>Recommended:</strong> Create the meeting 30 minutes before the scheduled time.
               </p>
             </div>
-          </body>
-        </html>
-      `;
 
-      try {
-        await gmailApiService.sendEmail({
-          to: customerEmail,
-          subject: `✅ Appointment Confirmed: Consulting Session on ${dateLabel}`,
-          html: customerEmailHtml,
-        });
-        console.log(`📧 Confirmation email sent to customer: ${customerEmail}`);
-      } catch (emailError) {
-        console.error('⚠️ Failed to send customer confirmation email:', emailError.message);
-      }
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="color: #999; font-size: 12px;">
+              This is an automated message from Specialistly. Please do not reply to this email.
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
 
-      // Send confirmation email to specialist with start link
-      const specialistEmailHtml = `
-        <html>
-          <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-              <h2 style="color: #1a1a1a; margin-top: 0;">🎯 New Appointment Booked!</h2>
-              
-              <p style="color: #666; font-size: 14px;">Hi ${specialistName},</p>
-              
-              <p style="color: #666; font-size: 14px;">
-                A new consulting session has been booked with <strong>${customerName}</strong>.
-              </p>
-              
-              <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                <h3 style="color: #1e40af; margin-top: 0;">📅 Session Details</h3>
-                <p style="color: #1e40af; margin: 5px 0;"><strong>Customer:</strong> ${customerName} (${customerEmail})</p>
-                <p style="color: #1e40af; margin: 5px 0;"><strong>Date:</strong> ${dateLabel}</p>
-                <p style="color: #1e40af; margin: 5px 0;"><strong>Time:</strong> ${slot.startTime} - ${slot.endTime}</p>
-                <p style="color: #1e40af; margin: 5px 0;"><strong>Duration:</strong> ${slot.duration} minutes</p>
-              </div>
-
-              <div style="background-color: #dcfce7; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                <h3 style="color: #166534; margin-top: 0;">🎥 Start Your Zoom Meeting</h3>
-                <p style="color: #166534; margin: 10px 0;">
-                  Click the button below to start the meeting as the host:
-                </p>
-                <div style="text-align: center; margin: 20px 0;">
-                  <a href="${zoomMeetingDetails.startUrl}" style="background-color: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                    Start Zoom Meeting
-                  </a>
-                </div>
-                <p style="color: #166534; font-size: 12px; margin: 10px 0;">
-                  <strong>Meeting ID:</strong> ${zoomMeetingDetails.zoomMeetingId}
-                </p>
-              </div>
-
-              <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; border-radius: 4px; margin: 20px 0;">
-                <p style="color: #92400e; font-size: 13px; margin: 0;">
-                  <strong>💡 Tip:</strong> Join 2-3 minutes early to ensure everything is working correctly.
-                </p>
-              </div>
-
-              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-              <p style="color: #999; font-size: 12px;">
-                This is an automated message from Specialistly. Please do not reply to this email.
-              </p>
-            </div>
-          </body>
-        </html>
-      `;
-
-      try {
-        await gmailApiService.sendEmail({
-          to: slot.specialistEmail,
-          subject: `🎯 New Appointment: ${customerName} on ${dateLabel} at ${slot.startTime}`,
-          html: specialistEmailHtml,
-        });
-        console.log(`📧 Confirmation email sent to specialist: ${slot.specialistEmail}`);
-      } catch (emailError) {
-        console.error('⚠️ Failed to send specialist confirmation email:', emailError.message);
-      }
+    try {
+      await gmailApiService.sendEmail({
+        to: slot.specialistEmail,
+        subject: `🎯 New Appointment: ${customerName} on ${dateLabel} at ${slot.startTime}`,
+        html: specialistEmailHtml,
+      });
+      console.log(`📧 Notification email sent to specialist: ${slot.specialistEmail}`);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send specialist notification email:', emailError.message);
     }
 
     res.status(200).json({
       success: true,
       message: 'Slot booked successfully',
       data: slot,
-      zoomMeeting: zoomMeetingDetails || null,
     });
   } catch (error) {
     console.error('Error booking slot:', error);
@@ -960,6 +901,187 @@ export const getAvailableSlotsForCustomer = async (req, res) => {
       success: false,
       message: 'Error fetching available slots',
       error: error.message,
+    });
+  }
+};
+
+// Create Zoom meeting for a booking (specialist only)
+export const createZoomMeetingForBooking = async (req, res) => {
+  try {
+    const { slotId, bookingIndex } = req.params;
+    const specialistId = req.user?.id; // From auth middleware
+
+    if (!specialistId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized. Please login as a specialist.',
+      });
+    }
+
+    const slot = await ConsultingSlot.findById(slotId);
+
+    if (!slot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Slot not found',
+      });
+    }
+
+    // Verify the specialist owns this slot
+    if (slot.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden. You can only create Zoom meetings for your own slots.',
+      });
+    }
+
+    // Validate booking index
+    const bookingIdx = parseInt(bookingIndex);
+    if (isNaN(bookingIdx) || bookingIdx < 0 || bookingIdx >= slot.bookings.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking index',
+      });
+    }
+
+    const booking = slot.bookings[bookingIdx];
+
+    // Check if Zoom meeting already exists
+    if (booking.zoomMeeting && booking.zoomMeeting.zoomMeetingId) {
+      return res.status(409).json({
+        success: false,
+        message: 'Zoom meeting already created for this booking',
+        data: booking.zoomMeeting,
+      });
+    }
+
+    // Create Zoom meeting
+    const appointmentDateTime = new Date(slot.date);
+    const [hours, minutes] = slot.startTime.split(':').map(Number);
+    appointmentDateTime.setHours(hours, minutes, 0);
+    
+    const endDateTime = new Date(appointmentDateTime);
+    endDateTime.setMinutes(endDateTime.getMinutes() + slot.duration);
+
+    console.log(`🎥 Creating Zoom meeting for booking with ${booking.customerName}...`);
+    
+    const zoomMeetingDetails = await zoomService.createZoomMeeting(
+      slot.specialistId,
+      slot.specialistEmail,
+      booking.customerEmail,
+      booking.customerName,
+      `Consulting Session - ${booking.customerName}`,
+      appointmentDateTime,
+      endDateTime
+    );
+
+    console.log(`✅ Zoom meeting created: ${zoomMeetingDetails.zoomMeetingId}`);
+
+    // Store meeting details in booking record
+    booking.zoomMeeting = {
+      zoomMeetingId: zoomMeetingDetails.zoomMeetingId,
+      joinUrl: zoomMeetingDetails.joinUrl,
+      startUrl: zoomMeetingDetails.startUrl,
+      password: zoomMeetingDetails.eventDetails?.password || '',
+      createdAt: new Date(),
+    };
+
+    await slot.save();
+
+    // Send email to customer with Zoom meeting link
+    const appointmentDate = new Date(slot.date);
+    const dateLabel = appointmentDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const specialist = await CreatorProfile.findById(slot.specialistId);
+    const specialistName = specialist?.creatorName || 'Specialist';
+
+    const customerEmailHtml = `
+      <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="color: #1a1a1a; margin-top: 0;">🎥 Your Zoom Meeting Is Ready!</h2>
+            
+            <p style="color: #666; font-size: 14px;">Hi ${booking.customerName},</p>
+            
+            <p style="color: #666; font-size: 14px;">
+              Your Zoom meeting with <strong>${specialistName}</strong> has been created. Here are the details:
+            </p>
+            
+            <div style="background-color: #e8f4f8; border-left: 4px solid #0284c7; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #0284c7; margin-top: 0;">📅 Appointment Details</h3>
+              <p style="color: #026aa2; margin: 5px 0;"><strong>Date:</strong> ${dateLabel}</p>
+              <p style="color: #026aa2; margin: 5px 0;"><strong>Time:</strong> ${slot.startTime} - ${slot.endTime}</p>
+              <p style="color: #026aa2; margin: 5px 0;"><strong>Duration:</strong> ${slot.duration} minutes</p>
+            </div>
+
+            <div style="background-color: #dcfce7; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #166534; margin-top: 0;">🎥 Join via Zoom</h3>
+              <p style="color: #166534; margin: 10px 0;">
+                Click the button below to join your meeting:
+              </p>
+              <div style="text-align: center; margin: 20px 0;">
+                <a href="${zoomMeetingDetails.joinUrl}" style="background-color: #22c55e; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                  Join Zoom Meeting
+                </a>
+              </div>
+              <p style="color: #166534; font-size: 12px; margin: 10px 0;">
+                <strong>Meeting ID:</strong> ${zoomMeetingDetails.zoomMeetingId}<br>
+                <strong>Password:</strong> ${zoomMeetingDetails.eventDetails?.password || 'Not required'}
+              </p>
+            </div>
+
+            <div style="background-color: #f0f0f0; padding: 15px; border-radius: 4px; margin: 20px 0;">
+              <h3 style="color: #333; margin-top: 0;">✨ Pro Tips</h3>
+              <ul style="color: #666; font-size: 13px;">
+                <li>Join 5 minutes early to test your audio and video</li>
+                <li>Make sure you have a stable internet connection</li>
+                <li>Close unnecessary tabs and programs for best performance</li>
+              </ul>
+            </div>
+
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="color: #999; font-size: 12px;">
+              See you at the meeting!
+            </p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    try {
+      await gmailApiService.sendEmail({
+        to: booking.customerEmail,
+        subject: `🎥 Zoom Meeting Ready: ${specialistName} on ${dateLabel}`,
+        html: customerEmailHtml,
+      });
+      console.log(`📧 Zoom meeting email sent to customer: ${booking.customerEmail}`);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send Zoom meeting email to customer:', emailError.message);
+      // Don't fail the whole operation if email fails
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Zoom meeting created successfully',
+      data: {
+        zoomMeeting: booking.zoomMeeting,
+        bookingDetails: {
+          customerName: booking.customerName,
+          customerEmail: booking.customerEmail,
+          bookedAt: booking.bookedAt,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error creating Zoom meeting:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error creating Zoom meeting',
     });
   }
 };

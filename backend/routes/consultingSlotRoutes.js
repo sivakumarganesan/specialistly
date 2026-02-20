@@ -22,6 +22,10 @@ router.post('/generate/from-availability', authMiddleware, consultingSlotControl
 // POST /api/consulting-slots/:slotId/book
 router.post('/:slotId/book', consultingSlotController.bookSlot);
 
+// Create Zoom meeting for a booking (specialist only)
+// POST /api/consulting-slots/:slotId/booking/:bookingIndex/create-zoom
+router.post('/:slotId/booking/:bookingIndex/create-zoom', authMiddleware, consultingSlotController.createZoomMeetingForBooking);
+
 // ===== GET ROUTES (more specific routes first) =====
 
 // Get available slots for a specialist with booking rules applied (Customer view)

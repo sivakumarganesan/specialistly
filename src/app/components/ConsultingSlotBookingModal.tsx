@@ -3,7 +3,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { consultingSlotAPI } from '@/app/api/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
-import { AlertCircle, Calendar, Clock, CheckCircle, X, Video, ExternalLink } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, CheckCircle, X } from 'lucide-react';
 
 interface ConsultingSlot {
   _id: string;
@@ -38,7 +38,6 @@ export function ConsultingSlotBookingModal({
   const [bookingStatus, setBookingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [bookingMessage, setBookingMessage] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
-  const [zoomMeetingData, setZoomMeetingData] = useState<any>(null);
 
   if (!isOpen || !selectedSlot) {
     return null;
@@ -65,9 +64,7 @@ export function ConsultingSlotBookingModal({
 
       if (response?.success || response?.data) {
         setBookingStatus('success');
-        setBookingMessage('Your consulting slot has been booked successfully! Check your email for meeting details.');
-        setZoomMeetingData(response?.zoomMeeting || null);
-        setAdditionalNotes('');
+        setBookingMessage('Your consulting slot has been booked successfully! Check your email for confirmation details. The specialist will create your Zoom meeting link shortly.');
         
         // Call success callback after 3 seconds
         setTimeout(() => {
@@ -122,54 +119,14 @@ export function ConsultingSlotBookingModal({
         <CardContent className="pt-6 space-y-6">
           {/* Success Message */}
           {bookingStatus === 'success' && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <div className="flex justify-center mb-4">
-                  <CheckCircle className="w-16 h-16 text-green-500" />
-                </div>
-                <h3 className="text-lg font-semibold text-green-700">{bookingMessage}</h3>
-                <p className="text-sm text-gray-600 mt-2">
-                  Redirecting you back in a moment...
-                </p>
+            <div className="space-y-4 text-center">
+              <div className="flex justify-center">
+                <CheckCircle className="w-16 h-16 text-green-500" />
               </div>
-
-              {/* Zoom Meeting Details */}
-              {zoomMeetingData?.joinUrl && (
-                <div className="mt-6 p-4 rounded-lg bg-blue-50 border border-blue-200">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Video className="w-5 h-5 text-blue-600" />
-                    <h4 className="font-semibold text-blue-900">Zoom Meeting Details</h4>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <p className="text-sm text-blue-800">
-                      Your Zoom meeting has been created and is ready!
-                    </p>
-                    
-                    <a
-                      href={zoomMeetingData.joinUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 w-full px-4 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors justify-center"
-                    >
-                      <Video className="w-4 h-4" />
-                      Join Zoom Meeting
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                    
-                    {zoomMeetingData.zoomMeetingId && (
-                      <div className="mt-2 p-3 bg-white rounded text-sm">
-                        <p className="text-gray-600 font-medium">Meeting ID:</p>
-                        <p className="text-gray-900 font-mono mt-1">{zoomMeetingData.zoomMeetingId}</p>
-                      </div>
-                    )}
-                    
-                    <p className="text-xs text-blue-700 bg-white p-2 rounded">
-                      💡 Join 5 minutes early to test your audio and video
-                    </p>
-                  </div>
-                </div>
-              )}
+              <h3 className="text-lg font-semibold text-green-700">{bookingMessage}</h3>
+              <p className="text-sm text-gray-600">
+                Redirecting you back in a moment...
+              </p>
             </div>
           )}
 
