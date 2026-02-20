@@ -79,6 +79,14 @@ const consultingSlotSchema = new mongoose.Schema(
           type: Date,
           default: Date.now,
         },
+        // Zoom meeting details
+        zoomMeeting: {
+          zoomMeetingId: String,
+          joinUrl: String,
+          startUrl: String, // For host to start meeting
+          password: String,
+          createdAt: Date,
+        },
       },
     ],
 
