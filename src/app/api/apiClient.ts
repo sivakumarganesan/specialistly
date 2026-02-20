@@ -289,16 +289,6 @@ export const authAPI = {
   updateSubscription: (token: string, data: any) => apiCall("/auth/subscription", "PUT", data, token),
 };
 
-// Availability Schedule API calls
-export const availabilityScheduleAPI = {
-  getSchedule: (email: string) => apiCall(`/availability-schedule/specialist/${email}`),
-  getAvailableSlots: (email: string, date: string) => 
-    apiCall(`/availability-schedule/slots/${email}/${date}`),
-  create: (data: any) => apiCall("/availability-schedule", "POST", data),
-  update: (id: string, data: any) => apiCall(`/availability-schedule/${id}`, "PUT", data),
-  delete: (id: string) => apiCall(`/availability-schedule/${id}`, "DELETE"),
-};
-
 // Messages API calls
 export const messageAPI = {
   getConversations: () => apiCall("/messages/conversations"),
