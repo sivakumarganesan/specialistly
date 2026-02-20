@@ -53,7 +53,16 @@ export function useAvailabilitySchedule(specialistEmail: string) {
     setLoading(true);
     setError(null);
     try {
-      const data = await availabilityScheduleAPI.getSchedule(specialistEmail);
+      // Try authenticated endpoint first if available, fallback to public email-based endpoint
+      const authToken = localStorage.getItem('authToken');
+      let data;
+      if (authToken) {
+        // Use the authenticated endpoint for logged-in specialists
+        data = await availabilityScheduleAPI.getMySchedule();
+      } else {
+        // Use the public endpoint with email for customers
+        data = await availabilityScheduleAPI.getSchedule(specialistEmail);
+      }
       setSchedule(data.data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch schedule';
@@ -70,7 +79,8 @@ export function useAvailabilitySchedule(specialistEmail: string) {
       setError(null);
       try {
         const payload = {
-          specialistEmail,
+          // Only include specialistEmail if not authenticated (backward compatibility)
+          ...(localStorage.getItem('authToken') ? {} : { specialistEmail }),
           ...scheduleData,
         };
 

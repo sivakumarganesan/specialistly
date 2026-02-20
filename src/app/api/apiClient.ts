@@ -224,10 +224,17 @@ export const consultingSlotAPI = {
 
 // Availability Schedule API calls
 export const availabilityScheduleAPI = {
+  // Authenticated endpoints (for logged-in specialists)
+  getMySchedule: () => 
+    apiCall(`/availability-schedule/my/schedule`),
+  
+  // Public endpoints (for customer view or when email is available)
   getSchedule: (specialistEmail: string) => 
     apiCall(`/availability-schedule/specialist/${specialistEmail}`),
+  
   getAvailableSlots: (specialistEmail: string, date: string) =>
     apiCall(`/availability-schedule/slots/${specialistEmail}/${date}`),
+  
   create: (data: any) => apiCall("/availability-schedule", "POST", data),
   update: (scheduleId: string, data: any) => apiCall(`/availability-schedule/${scheduleId}`, "PUT", data),
   delete: (scheduleId: string) => apiCall(`/availability-schedule/${scheduleId}`, "DELETE"),

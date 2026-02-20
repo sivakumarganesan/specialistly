@@ -1,21 +1,22 @@
 import express from 'express';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 import * as consultingSlotController from '../controllers/consultingSlotController.js';
 
 const router = express.Router();
 
 // ===== POST ROUTES (must come FIRST for priority) =====
 
-// Create a new slot
+// Create a new slot (for authenticated specialist)
 // POST /api/consulting-slots
-router.post('/', consultingSlotController.createSlot);
+router.post('/', authMiddleware, consultingSlotController.createSlot);
 
 // Bulk create slots (must come BEFORE /:slotId pattern to avoid conflicts)
 // POST /api/consulting-slots/bulk/create
-router.post('/bulk/create', consultingSlotController.bulkCreateSlots);
+router.post('/bulk/create', authMiddleware, consultingSlotController.bulkCreateSlots);
 
-// Auto-generate slots from availability schedule
+// Auto-generate slots from availability schedule (for authenticated specialist)
 // POST /api/consulting-slots/generate/from-availability
-router.post('/generate/from-availability', consultingSlotController.generateSlotsFromAvailability);
+router.post('/generate/from-availability', authMiddleware, consultingSlotController.generateSlotsFromAvailability);
 
 // Book a slot
 // POST /api/consulting-slots/:slotId/book

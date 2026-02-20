@@ -141,8 +141,9 @@ export const getSlotById = async (req, res) => {
 // Create a new slot
 export const createSlot = async (req, res) => {
   try {
+    // Use email from authenticated user OR from body parameter
+    const specialistEmail = req.user?.email || req.body?.specialistEmail;
     const {
-      specialistEmail,
       specialistId,
       serviceId,
       date,
@@ -428,7 +429,9 @@ export const cancelBooking = async (req, res) => {
 // Bulk create slots (for specialist to create multiple slots at once)
 export const bulkCreateSlots = async (req, res) => {
   try {
-    const { specialistEmail, specialistId, slots } = req.body;
+    // Use email from authenticated user OR from body parameter
+    const specialistEmail = req.user?.email || req.body?.specialistEmail;
+    const { specialistId, slots } = req.body;
 
     if (!specialistEmail || !Array.isArray(slots) || slots.length === 0) {
       return res.status(400).json({
@@ -574,7 +577,9 @@ export const getSpecialistStats = async (req, res) => {
  */
 export const generateSlotsFromAvailability = async (req, res) => {
   try {
-    const { specialistEmail, specialistId, startDate, numDays = 90, serviceId } = req.body;
+    // Use email from authenticated user OR from body parameters
+    const specialistEmail = req.user?.email || req.body?.specialistEmail;
+    const { specialistId, startDate, numDays = 90, serviceId } = req.body;
 
     if (!specialistEmail && !specialistId) {
       return res.status(400).json({
@@ -640,7 +645,7 @@ export const generateSlotsFromAvailability = async (req, res) => {
     const slotsToCreate = generatedSlots.map((slot) => ({
       ...slot,
       specialistId: specialist._id,
-      specialistEmail,
+      specialistEmail: specialist.email,
       serviceId: serviceId || null,
       duration: slot.duration,
     }));

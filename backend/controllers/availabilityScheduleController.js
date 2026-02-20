@@ -3,10 +3,19 @@ import CreatorProfile from '../models/CreatorProfile.js';
 
 /**
  * Get specialist's availability schedule
+ * Can be called with authenticated user (uses req.user.email) or with email parameter (for public access)
  */
 export const getAvailabilitySchedule = async (req, res) => {
   try {
-    const { specialistEmail } = req.params;
+    // Use email from authenticated user OR from request parameter
+    const specialistEmail = req.user?.email || req.params.specialistEmail;
+
+    if (!specialistEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Specialist email is required',
+      });
+    }
 
     // Try exact match first, then case-insensitive
     let specialist = await CreatorProfile.findOne({ email: specialistEmail });
@@ -52,10 +61,13 @@ export const getAvailabilitySchedule = async (req, res) => {
 
 /**
  * Create new availability schedule
+ * Uses authenticated user's email if available, otherwise uses specialistEmail from body
  */
 export const createAvailabilitySchedule = async (req, res) => {
   try {
-    const { specialistEmail, weeklyPattern, slotConfig, bookingRules, timezone } = req.body;
+    // Use email from authenticated user OR from body parameter
+    const specialistEmail = req.user?.email || req.body?.specialistEmail;
+    const { weeklyPattern, slotConfig, bookingRules, timezone } = req.body;
 
     if (!specialistEmail) {
       return res.status(400).json({
