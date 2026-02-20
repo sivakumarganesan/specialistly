@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { consultingSlotAPI } from '@/app/api/apiClient';
 
 export interface Booking {
   customerId: string;
@@ -73,13 +74,7 @@ export const useConsultingSlots = (specialistEmail: string) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-        `/api/consulting-slots/${specialistEmail}`
-      );
-      if (!response.ok) {
-        throw new Error(`Failed to fetch slots: ${response.statusText}`);
-      }
-      const data = await response.json();
+      const data = await consultingSlotAPI.getSlots(specialistEmail);
       if (data.success) {
         setSlots(data.data || []);
       } else {
@@ -97,13 +92,7 @@ export const useConsultingSlots = (specialistEmail: string) => {
   // Fetch specialist's stats
   const fetchStats = useCallback(async () => {
     try {
-      const response = await fetch(
-        `/api/consulting-slots/${specialistEmail}/stats`
-      );
-      if (!response.ok) {
-        throw new Error(`Failed to fetch stats: ${response.statusText}`);
-      }
-      const data = await response.json();
+      const data = await consultingSlotAPI.getStats(specialistEmail);
       if (data.success) {
         setStats(data.data);
       } else {
@@ -118,12 +107,7 @@ export const useConsultingSlots = (specialistEmail: string) => {
   const createSlot = useCallback(
     async (slotData: CreateSlotData) => {
       try {
-        const response = await fetch('/api/consulting-slots', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(slotData),
-        });
-        const data = await response.json();
+        const data = await consultingSlotAPI.create(slotData);
         
         if (data.success) {
           await fetchSlots();
@@ -148,12 +132,7 @@ export const useConsultingSlots = (specialistEmail: string) => {
   const updateSlot = useCallback(
     async (slotId: string, updates: UpdateSlotData) => {
       try {
-        const response = await fetch(`/api/consulting-slots/${slotId}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updates),
-        });
-        const data = await response.json();
+        const data = await consultingSlotAPI.update(slotId, updates);
         
         if (data.success) {
           await fetchSlots();
@@ -174,10 +153,7 @@ export const useConsultingSlots = (specialistEmail: string) => {
   const deleteSlot = useCallback(
     async (slotId: string) => {
       try {
-        const response = await fetch(`/api/consulting-slots/${slotId}`, {
-          method: 'DELETE',
-        });
-        const data = await response.json();
+        const data = await consultingSlotAPI.delete(slotId);
         
         if (data.success) {
           await fetchSlots();
@@ -202,15 +178,7 @@ export const useConsultingSlots = (specialistEmail: string) => {
   const bookSlot = useCallback(
     async (slotId: string, bookingData: BookSlotData) => {
       try {
-        const response = await fetch(
-          `/api/consulting-slots/${slotId}/book`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(bookingData),
-          }
-        );
-        const data = await response.json();
+        const data = await consultingSlotAPI.book(slotId, bookingData);
         
         if (data.success) {
           await fetchSlots();
@@ -231,11 +199,7 @@ export const useConsultingSlots = (specialistEmail: string) => {
   const cancelBooking = useCallback(
     async (slotId: string, customerId: string) => {
       try {
-        const response = await fetch(
-          `/api/consulting-slots/${slotId}/book/${customerId}`,
-          { method: 'DELETE' }
-        );
-        const data = await response.json();
+        const data = await consultingSlotAPI.cancelBooking(slotId, customerId);
         
         if (data.success) {
           await fetchSlots();
