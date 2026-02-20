@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { consultingSlotAPI } from '@/app/api/apiClient';
+import { ConsultingSlotBookingModal } from '@/app/components/ConsultingSlotBookingModal';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { ChevronLeft, ChevronRight, Clock, AlertCircle } from 'lucide-react';
@@ -32,6 +33,7 @@ export function ConsultingSlotCalendar({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<ConsultingSlot | null>(null);
+  const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Fetch available slots for the current month
   useEffect(() => {
@@ -92,6 +94,7 @@ export function ConsultingSlotCalendar({
 
   const handleSelectSlot = (slot: ConsultingSlot) => {
     setSelectedSlot(slot);
+    setShowBookingModal(true);
     if (onSelectSlot) {
       onSelectSlot(slot);
     }
@@ -241,8 +244,8 @@ export function ConsultingSlotCalendar({
               {selectedSlot && (
                 <Card className="mt-4 border-indigo-200 bg-indigo-50">
                   <CardContent className="pt-6">
-                    <h3 className="font-semibold text-gray-900 mb-2">Selected Slot:</h3>
-                    <div className="space-y-1 text-sm">
+                    <h3 className="font-semibold text-gray-900 mb-4">Selected Slot:</h3>
+                    <div className="space-y-1 text-sm mb-4">
                       <p>
                         <span className="text-gray-600">Date:</span>{' '}
                         <span className="font-medium">
@@ -271,6 +274,12 @@ export function ConsultingSlotCalendar({
                         </span>
                       </p>
                     </div>
+                    <Button
+                      onClick={() => setShowBookingModal(true)}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                    >
+                      Proceed to Book
+                    </Button>
                   </CardContent>
                 </Card>
               )}
@@ -278,6 +287,21 @@ export function ConsultingSlotCalendar({
           )}
         </CardContent>
       </Card>
+
+      {/* Booking Modal */}
+      <ConsultingSlotBookingModal
+        isOpen={showBookingModal}
+        selectedSlot={selectedSlot}
+        specialistEmail={specialistEmail}
+        onClose={() => {
+          setShowBookingModal(false);
+          setSelectedSlot(null);
+        }}
+        onSuccess={() => {
+          // Refresh slots after successful booking
+          fetchAvailableSlots();
+        }}
+      />
     </div>
   );
 }
