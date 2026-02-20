@@ -8,7 +8,12 @@ export const getAvailabilitySchedule = async (req, res) => {
   try {
     const { specialistEmail } = req.params;
 
-    const specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    // Try exact match first, then case-insensitive
+    let specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    if (!specialist) {
+      specialist = await CreatorProfile.findOne({ email: new RegExp(`^${specialistEmail}$`, 'i') });
+    }
+    
     if (!specialist) {
       return res.status(404).json({
         success: false,
@@ -56,7 +61,12 @@ export const createAvailabilitySchedule = async (req, res) => {
       });
     }
 
-    const specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    // Try exact match first, then case-insensitive
+    let specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    if (!specialist) {
+      specialist = await CreatorProfile.findOne({ email: new RegExp(`^${specialistEmail}$`, 'i') });
+    }
+    
     if (!specialist) {
       return res.status(404).json({
         success: false,
@@ -200,7 +210,12 @@ export const getAvailableTimeSlotsForDate = async (req, res) => {
   try {
     const { specialistEmail, date } = req.params;
 
-    const specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    // Try exact match first, then case-insensitive
+    let specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    if (!specialist) {
+      specialist = await CreatorProfile.findOne({ email: new RegExp(`^${specialistEmail}$`, 'i') });
+    }
+    
     if (!specialist) {
       return res.status(404).json({
         success: false,

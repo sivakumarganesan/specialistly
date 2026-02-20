@@ -683,8 +683,12 @@ export const getAvailableSlotsForCustomer = async (req, res) => {
       });
     }
 
-    // Get specialist
-    const specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    // Get specialist - try exact match first, then case-insensitive
+    let specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    if (!specialist) {
+      specialist = await CreatorProfile.findOne({ email: new RegExp(`^${specialistEmail}$`, 'i') });
+    }
+    
     if (!specialist) {
       return res.status(404).json({
         success: false,
