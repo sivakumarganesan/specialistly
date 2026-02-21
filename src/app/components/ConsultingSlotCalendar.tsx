@@ -33,13 +33,32 @@ export function ConsultingSlotCalendar({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<ConsultingSlot | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  
+  // Initialize selectedDate to today
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const [selectedDate, setSelectedDate] = useState<string | null>(todayStr);
+  
   const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Fetch available slots for the current month
   useEffect(() => {
     fetchAvailableSlots();
   }, [currentDate, specialistEmail]);
+
+  // Reset selected date if it's no longer in the current month
+  useEffect(() => {
+    if (selectedDate) {
+      const selectedDateObj = new Date(selectedDate);
+      const isInCurrentMonth = 
+        selectedDateObj.getFullYear() === currentDate.getFullYear() &&
+        selectedDateObj.getMonth() === currentDate.getMonth();
+      
+      if (!isInCurrentMonth) {
+        setSelectedDate(null);
+      }
+    }
+  }, [currentDate, selectedDate]);
 
   const fetchAvailableSlots = async () => {
     try {
