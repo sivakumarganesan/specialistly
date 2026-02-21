@@ -111,6 +111,11 @@ router.get('/verify/:certificateId', verifyCertificate);
 // Create course
 router.post('/', createCourse);
 
+// TEST ENDPOINT - for debugging
+router.get('/test-file-endpoint', (req, res) => {
+  res.json({ success: true, message: 'File endpoint route is registered!' });
+});
+
 // Add file to lesson (Google Drive integration) - MUST be before /:id routes
 router.post('/:courseId/lessons/:lessonId/files', addFileToLesson);
 
