@@ -26,6 +26,10 @@ router.post('/:slotId/book', consultingSlotController.bookSlot);
 // POST /api/consulting-slots/:slotId/booking/:bookingIndex/create-zoom
 router.post('/:slotId/booking/:bookingIndex/create-zoom', authMiddleware, consultingSlotController.createZoomMeetingForBooking);
 
+// Cancel a booking (specialist only)
+// POST /api/consulting-slots/:slotId/booking/:bookingIndex/cancel
+router.post('/:slotId/booking/:bookingIndex/cancel', authMiddleware, consultingSlotController.cancelBooking);
+
 // ===== GET ROUTES (more specific routes first) =====
 
 // Get available slots for a specialist with booking rules applied (Customer view)

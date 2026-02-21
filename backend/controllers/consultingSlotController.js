@@ -2,9 +2,11 @@ import ConsultingSlot from '../models/ConsultingSlot.js';
 import User from '../models/User.js';
 import AvailabilitySchedule from '../models/AvailabilitySchedule.js';
 import CreatorProfile from '../models/CreatorProfile.js';
+import mongoose from 'mongoose';
 import { generateSlotsForDateRange } from '../utils/slotGenerationUtils.js';
 import zoomService from '../services/zoomService.js';
 import gmailApiService from '../services/gmailApiService.js';
+import refundService from '../services/refundService.js';
 
 // Helper function to calculate duration in minutes from time strings
 const calculateDuration = (startTime, endTime) => {
@@ -1159,6 +1161,259 @@ export const createZoomMeetingForBooking = async (req, res) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Error creating Zoom meeting',
+      error: process.env.NODE_ENV === 'development' ? error.toString() : undefined,
+    });
+  }
+};
+
+/**
+ * Cancel a booking (specialist only)
+ * Requirements:
+ * - Only the specialist who owns the booking can cancel
+ * - Status must be "booked"
+ * - Session must start at least 1 hour in the future
+ * - Updated status to "cancelled_by_specialist"
+ * - Stores: cancelledBy, cancelledAt, cancellationReason, refundStatus="pending"
+ */
+export const cancelBooking = async (req, res) => {
+  try {
+    const { slotId, bookingIndex } = req.params;
+    const { cancellationReason } = req.body;
+    const specialistId = req.user?.userId;
+
+    console.log(`🚫 Cancelling booking...`);
+    console.log(`   slotId: ${slotId}`);
+    console.log(`   bookingIndex: ${bookingIndex}`);
+    console.log(`   specialistId: ${specialistId}`);
+
+    // Validation
+    if (!specialistId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized. Please login as a specialist.',
+      });
+    }
+
+    if (bookingIndex === undefined || bookingIndex === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'Booking index is required',
+      });
+    }
+
+    const slot = await ConsultingSlot.findById(slotId);
+
+    if (!slot) {
+      return res.status(404).json({
+        success: false,
+        message: 'Slot not found',
+      });
+    }
+
+    // Verify the specialist owns this slot
+    const slotSpecialistId = slot.specialistId.toString();
+    const requestingUserId = specialistId.toString();
+    const isAuthorized = (slotSpecialistId === requestingUserId) || 
+                         (slot.specialistEmail === req.user?.email);
+    
+    if (!isAuthorized) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden. You can only cancel bookings for your own slots.',
+      });
+    }
+
+    // Validate booking index
+    const bookingIdx = parseInt(bookingIndex);
+    if (isNaN(bookingIdx) || bookingIdx < 0 || bookingIdx >= slot.bookings.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid booking index',
+      });
+    }
+
+    const booking = slot.bookings[bookingIdx];
+
+    // Check current booking status
+    if (booking.status !== 'booked') {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot cancel booking. Current status: ${booking.status}. Only "booked" bookings can be cancelled.`,
+      });
+    }
+
+    // Check if booking already cancelled or completed
+    if (booking.cancellation?.cancelledAt || booking.status === 'completed') {
+      return res.status(409).json({
+        success: false,
+        message: 'This booking has already been cancelled or completed.',
+      });
+    }
+
+    // Calculate time until session start
+    const sessionDateTime = new Date(slot.date);
+    const [hours, minutes] = slot.startTime.split(':').map(Number);
+    sessionDateTime.setHours(hours, minutes, 0);
+
+    const now = new Date();
+    const timeUntilSessionMs = sessionDateTime.getTime() - now.getTime();
+    const timeUntilSessionHours = timeUntilSessionMs / (1000 * 60 * 60);
+
+    console.log(`   Session time: ${sessionDateTime.toISOString()}`);
+    console.log(`   Current time: ${now.toISOString()}`);
+    console.log(`   Hours until session: ${timeUntilSessionHours.toFixed(2)}`);
+
+    // Check if session is at least 1 hour in the future
+    if (timeUntilSessionHours < 1) {
+      return res.status(409).json({
+        success: false,
+        message: `Cannot cancel booking. Session must start at least 1 hour in the future. Current time to session: ${timeUntilSessionHours.toFixed(2)} hours.`,
+      });
+    }
+
+    // Update booking with cancellation details
+    booking.status = 'cancelled_by_specialist';
+    booking.cancellation = {
+      cancelledBy: new mongoose.Types.ObjectId(specialistId),
+      cancelledAt: new Date(),
+      cancellationReason: cancellationReason || 'No reason provided',
+      refundStatus: 'pending',
+      refundAmount: slot.bookings[bookingIdx].price || 0, // Calculate from booking if you have pricing
+    };
+
+    await slot.save();
+
+    console.log(`✅ Booking cancelled successfully`);
+    console.log(`   Booking status: ${booking.status}`);
+    console.log(`   Refund status: ${booking.cancellation.refundStatus}`);
+
+    // Send cancellation email to customer
+    try {
+      const appointmentDate = new Date(slot.date);
+      const dateLabel = appointmentDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+
+      // Get specialist name
+      const specialist = await CreatorProfile.findById(slot.specialistId);
+      const specialistName = specialist?.creatorName || 'Specialist';
+
+      const cancellationEmailHtml = `
+        <html>
+          <body style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <h2 style="color: #1a1a1a; margin-top: 0;">❌ Session Cancelled</h2>
+              
+              <p style="color: #666; font-size: 14px;">Hi ${booking.customerName},</p>
+              
+              <p style="color: #666; font-size: 14px;">
+                We regret to inform you that your consulting session with <strong>${specialistName}</strong> has been cancelled.
+              </p>
+              
+              <div style="background-color: #fee2e2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <h3 style="color: #991b1b; margin-top: 0;">📅 Session Details</h3>
+                <p style="color: #7f1d1d; margin: 5px 0;"><strong>Date:</strong> ${dateLabel}</p>
+                <p style="color: #7f1d1d; margin: 5px 0;"><strong>Time:</strong> ${slot.startTime}</p>
+                <p style="color: #7f1d1d; margin: 5px 0;"><strong>Duration:</strong> ${slot.duration} minutes</p>
+              </div>
+
+              <div style="background-color: #e0e7ff; border-left: 4px solid #4f46e5; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                <h3 style="color: #312e81; margin-top: 0;">💰 Refund Status</h3>
+                <p style="color: #3730a3; margin: 10px 0;">
+                  Your refund is being processed and will be returned to your original payment method within 3-5 business days.
+                </p>
+              </div>
+
+              ${booking.cancellation.cancellationReason ? `
+                <div style="background-color: #f3f4f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                  <h3 style="color: #374151; margin-top: 0;">📝 Cancellation Reason</h3>
+                  <p style="color: #4b5563; margin: 10px 0;">${booking.cancellation.cancellationReason}</p>
+                </div>
+              ` : ''}
+
+              <p style="color: #666; font-size: 14px;">
+                <strong>Need help?</strong> Contact us or reach out to ${specialistName} for more information.
+              </p>
+              
+              <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+              <p style="color: #999; font-size: 12px;">
+                This is an automated message from Specialistly. Please do not reply to this email.
+              </p>
+            </div>
+          </body>
+        </html>
+      `;
+
+      await gmailApiService.sendEmail({
+        to: booking.customerEmail,
+        subject: `❌ Your Session with ${specialistName} Has Been Cancelled`,
+        html: cancellationEmailHtml,
+      });
+
+      console.log(`📧 Cancellation email sent to customer: ${booking.customerEmail}`);
+    } catch (emailError) {
+      console.error('⚠️ Failed to send cancellation email:', emailError.message);
+      // Don't fail the whole operation if email fails
+    }
+
+    // Process refund asynchronously (don't block response)
+    // NOTE: This requires payment_intent_id to be stored with the booking
+    // In production, you would:
+    // 1. Retrieve the payment_intent_id from booking.paymentIntentId
+    // 2. Call Stripe API to process refund via refundService
+    // 3. Update refund status in booking.cancellation.refundStatus
+    
+    // For now, we'll queue the refund processing asynchronously
+    if (booking.paymentIntentId) {
+      setImmediate(async () => {
+        try {
+          console.log(`💰 Processing Stripe refund asynchronously...`);
+          const refundResult = await refundService.processRefund(
+            booking.paymentIntentId,
+            Math.round(booking.cancellation.refundAmount * 100), // Convert to cents
+            'requested_by_specialist'
+          );
+
+          if (refundResult.success) {
+            // Update cancellation with refund details
+            booking.cancellation.refundStatus = 'processed';
+            booking.cancellation.stripeRefundId = refundResult.refundId;
+            await slot.save();
+            console.log(`✅ Refund processed and booking updated`);
+          } else {
+            console.error(`❌ Refund failed: ${refundResult.error}`);
+            booking.cancellation.refundStatus = 'failed';
+            await slot.save();
+          }
+        } catch (refundError) {
+          console.error(`❌ Error processing refund:`, refundError.message);
+          booking.cancellation.refundStatus = 'failed';
+          await slot.save();
+        }
+      });
+    } else {
+      console.warn(`⚠️  No payment intent ID found for booking. Refund cannot be processed automatically.`);
+      console.log(`   Note: Implement payment_intent_id storage in booking data to enable automatic refunds`);
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Booking cancelled successfully. Customer has been notified.',
+      data: {
+        slotId,
+        bookingIndex,
+        bookingStatus: booking.status,
+        cancellation: booking.cancellation,
+      },
+    });
+  } catch (error) {
+    console.error('Error cancelling booking:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Error cancelling booking',
       error: process.env.NODE_ENV === 'development' ? error.toString() : undefined,
     });
   }

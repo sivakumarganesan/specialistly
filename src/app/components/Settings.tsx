@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
-import { creatorAPI, subscriptionAPI } from "@/app/api/apiClient";
+import { creatorAPI, subscriptionAPI, API_BASE_URL } from "@/app/api/apiClient";
 import { ManageAvailability } from "@/app/components/ManageAvailability";
 import {
   Card,
@@ -135,9 +135,7 @@ function UserProfile() {
       if (!user?.id) return;
 
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-        const API_BASE_URL = API_URL.replace('/api', '');
-        const response = await fetch(`${API_BASE_URL}/api/zoom/oauth/user/status?userId=${user.id}`);
+        const response = await fetch(`${API_BASE_URL}/zoom/oauth/user/status?userId=${user.id}`);
         const data = await response.json();
         
         if (data.success && data.authorized) {
@@ -252,9 +250,7 @@ function UserProfile() {
       return;
     }
     // Redirect to OAuth authorization URL with userId
-    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-    const API_BASE_URL = API_URL.replace('/api', '');
-    window.location.href = `${API_BASE_URL}/api/zoom/oauth/user/authorize?userId=${userId}`;
+    window.location.href = `${API_BASE_URL}/zoom/oauth/user/authorize?userId=${userId}`;
   };
 
   const handleDisconnectZoom = async () => {
@@ -269,10 +265,7 @@ function UserProfile() {
 
     try {
       setZoomConnecting(true);
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-      const API_BASE_URL = API_URL.replace('/api', '');
-      
-      const response = await fetch(`${API_BASE_URL}/api/zoom/oauth/user/revoke`, {
+      const response = await fetch(`${API_BASE_URL}/zoom/oauth/user/revoke`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

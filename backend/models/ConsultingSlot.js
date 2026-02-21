@@ -79,6 +79,12 @@ const consultingSlotSchema = new mongoose.Schema(
           type: Date,
           default: Date.now,
         },
+        // Booking status
+        status: {
+          type: String,
+          enum: ['booked', 'cancelled_by_specialist', 'cancelled_by_customer', 'completed'],
+          default: 'booked',
+        },
         // Zoom meeting details
         zoomMeeting: {
           zoomMeetingId: String,
@@ -86,6 +92,22 @@ const consultingSlotSchema = new mongoose.Schema(
           startUrl: String, // For host to start meeting
           password: String,
           createdAt: Date,
+        },
+        // Cancellation details
+        cancellation: {
+          cancelledBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+          },
+          cancelledAt: Date,
+          cancellationReason: String,
+          refundStatus: {
+            type: String,
+            enum: ['pending', 'processed', 'failed'],
+            default: null,
+          },
+          refundAmount: Number,
+          stripeRefundId: String,
         },
       },
     ],

@@ -4,6 +4,7 @@ import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { Calendar, Clock, Users, MapPin, ChevronRight, AlertCircle } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { API_BASE_URL } from '@/app/api/apiClient';
 
 interface WebinarSlot {
   _id: string;
@@ -63,7 +64,7 @@ export const WebinarBooking: React.FC<Props> = ({ specialistEmail, onBook }) => 
     try {
       setLoading(true);
       const query = specialistEmail ? `?creator=${specialistEmail}` : '';
-      const response = await fetch(`/api/services${query}`);
+      const response = await fetch(`${API_BASE_URL}/services${query}`);
       
       if (!response.ok) throw new Error('Failed to fetch webinars');
       
@@ -91,7 +92,7 @@ export const WebinarBooking: React.FC<Props> = ({ specialistEmail, onBook }) => 
         ? `?specialistEmail=${specialistEmail}`
         : '';
       
-      const response = await fetch(`/api/appointments/available${query}`);
+      const response = await fetch(`${API_BASE_URL}/appointments/available${query}`);
       if (!response.ok) throw new Error('Failed to fetch available slots');
       
       const data = await response.json();
