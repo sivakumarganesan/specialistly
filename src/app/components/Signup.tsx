@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { OnboardingWizard } from '@/app/components/OnboardingWizard';
+import { SPECIALITY_CATEGORIES } from '@/app/constants/specialityCategories';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Checkbox } from '@/app/components/ui/checkbox';
 import { Badge } from '@/app/components/ui/badge';
-import { CheckCircle, Zap, ArrowLeft } from 'lucide-react';
+import { CheckCircle, Zap, ArrowLeft, Check } from 'lucide-react';
 
 export function Signup() {
   const { signup, setCurrentPage } = useAuth();
@@ -27,6 +28,9 @@ export function Signup() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserRole, setNewUserRole] = useState<'specialist' | 'customer'>('customer');
+  // Option 2: Category selection in signup form
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showCategorySelection, setShowCategorySelection] = useState(false);
 
   const plans = [
     {
@@ -96,10 +100,28 @@ export function Signup() {
         membership: formData.isSpecialist ? selectedPlan : 'customer',
       });
 
-      // Success! Show onboarding wizard instead of alert
+      // Option 2: If categories were selected in the form, save them now
+      if (formData.isSpecialist && selectedCategories.length > 0) {
+        try {
+          const { creatorAPI } = await import('@/app/api/apiClient');
+          await creatorAPI.updateSpecialistCategories(formData.email, selectedCategories);
+        } catch (err) {
+          console.error('Failed to save categories:', err);
+          // Don't fail the signup, just warn
+        }
+      }
+
+      // Success! Show onboarding wizard (or skip it if categories were already set)
       setNewUserEmail(formData.email);
       setNewUserRole(formData.isSpecialist ? 'specialist' : 'customer');
-      setShowOnboarding(true);
+      // If categories were already selected, skip onboarding for specialists
+      if (formData.isSpecialist && selectedCategories.length > 0) {
+        // Skip directly to dashboard
+        setCurrentPage('dashboard');
+      } else {
+        // Show onboarding wizard for category selection
+        setShowOnboarding(true);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
@@ -413,11 +435,78 @@ export function Signup() {
                     </div>
                   </div>
 
+                  {/* Option 2: Category Selection (Optional) */}
+                  <div className="border-t pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowCategorySelection(!showCategorySelection)}
+                      className="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center gap-2 mb-3"
+                    >
+                      {showCategorySelection ? '▼' : '▶'} Add your speciality categories (Optional)
+                    </button>
+                    
+                    {showCategorySelection && (
+                      <div className="space-y-3 p-3 bg-indigo-50 rounded-lg">
+                        <div className="flex gap-2 mb-2">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedCategories(SPECIALITY_CATEGORIES)}
+                            className="text-xs"
+                          >
+                            Select All
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setSelectedCategories([])}
+                            className="text-xs"
+                          >
+                            Clear
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                          {SPECIALITY_CATEGORIES.map(category => (
+                            <label key={category} className="flex items-center gap-2 p-2 rounded hover:bg-white cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selectedCategories.includes(category)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedCategories([...selectedCategories, category]);
+                                  } else {
+                                    setSelectedCategories(selectedCategories.filter(c => c !== category));
+                                  }
+                                }}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-sm text-gray-700">{category}</span>
+                              {selectedCategories.includes(category) && (
+                                <Check className="w-3 h-3 text-indigo-600 ml-auto" />
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                        {selectedCategories.length > 0 && (
+                          <p className="text-xs text-indigo-600 mt-2">
+                            {selectedCategories.length} categor{selectedCategories.length === 1 ? 'y' : 'ies'} selected
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between gap-4 pt-4 border-t">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setFormData(prev => ({ ...prev, isSpecialist: false }))}
+                      onClick={() => {
+                        setFormData(prev => ({ ...prev, isSpecialist: false }));
+                        setSelectedCategories([]);
+                        setShowCategorySelection(false);
+                      }}
                     >
                       Back
                     </Button>
