@@ -94,17 +94,21 @@ export const getSpecialistZoomToken = async (specialistId) => {
       throw new Error('Specialist ID is required');
     }
 
+    console.log(`🔐 Fetching Zoom token for specialist: ${specialistId}`);
+    
     const tokenRecord = await UserOAuthToken.findOne({ userId: specialistId });
     
     if (!tokenRecord) {
+      console.error(`❌ No Zoom OAuth token found for specialist ${specialistId}`);
       throw new Error(
-        `❌ No Zoom OAuth token found for specialist ${specialistId}. User must authorize Zoom access first via "Connect Zoom" button.`
+        `No Zoom OAuth token found for specialist. User must authorize Zoom access first.`
       );
     }
 
     if (!tokenRecord.zoomAccessToken || tokenRecord.zoomAccessToken === 'pending') {
+      console.error(`❌ Zoom access token not available for specialist ${specialistId}`);
       throw new Error(
-        `❌ Zoom access token not available for specialist ${specialistId}. Authorization may be incomplete.`
+        `Zoom access token not available. Authorization may be incomplete or pending.`
       );
     }
 

@@ -1112,9 +1112,41 @@ export const createZoomMeetingForBooking = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating Zoom meeting:', error);
+
+    // Handle Zoom authorization issues specifically
+    if (error.message && error.message.includes('No Zoom OAuth token found')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Zoom account not authorized. Please connect your Zoom account to create meetings.',
+        requiresZoomAuth: true,
+        error: error.message,
+      });
+    }
+
+    if (error.message && error.message.includes('Zoom access token not available')) {
+      return res.status(403).json({
+        success: false,
+        message: 'Zoom authorization incomplete. Please re-authorize your Zoom account.',
+        requiresZoomAuth: true,
+        error: error.message,
+      });
+    }
+
+    // Handle other Zoom-specific errors
+    if (error.response?.status === 401) {
+      return res.status(403).json({
+        success: false,
+        message: 'Zoom account authorization expired. Please re-authorize your Zoom account.',
+        requiresZoomAuth: true,
+        error: 'Zoom API returned 401 Unauthorized',
+      });
+    }
+
+    // Generic error
     res.status(500).json({
       success: false,
       message: error.message || 'Error creating Zoom meeting',
+      error: process.env.NODE_ENV === 'development' ? error.toString() : undefined,
     });
   }
 };
