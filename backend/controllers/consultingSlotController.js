@@ -536,38 +536,6 @@ export const deleteSlot = async (req, res) => {
   }
 };
 
-// Cancel a booking
-export const cancelBooking = async (req, res) => {
-  try {
-    const { slotId, customerId } = req.params;
-
-    const slot = await ConsultingSlot.findById(slotId);
-
-    if (!slot) {
-      return res.status(404).json({
-        success: false,
-        message: 'Slot not found',
-      });
-    }
-
-    // Remove booking
-    slot.removeBooking(customerId);
-    await slot.save();
-
-    res.status(200).json({
-      success: true,
-      message: 'Booking cancelled successfully',
-      data: slot,
-    });
-  } catch (error) {
-    console.error('Error cancelling booking:', error);
-    res.status(400).json({
-      success: false,
-      message: error.message || 'Error cancelling booking',
-    });
-  }
-};
-
 // ===== UTILITY ROUTES =====
 
 // Bulk create slots (for specialist to create multiple slots at once)
