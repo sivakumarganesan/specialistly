@@ -69,6 +69,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
   const [selectedWebinarDate, setSelectedWebinarDate] = useState<{ date: string; time: string } | null>(null);
   const [webinarModalOpen, setWebinarModalOpen] = useState(false);
   const [selectedWebinarService, setSelectedWebinarService] = useState<Service | null>(null);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchSpecialistData();
@@ -82,6 +83,25 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
       const specialistResponse = await creatorAPI.getById(specialistId);
       if (specialistResponse?.data) {
         setSpecialist(specialistResponse.data);
+      }
+
+      // Fetch customer's enrolled courses
+      if (user?.id) {
+        try {
+          const myCoursesResponse = await courseAPI.getMyCourses(user.id);
+          const enrolledIds = new Set<string>();
+          if (Array.isArray(myCoursesResponse?.data)) {
+            myCoursesResponse.data.forEach((enrollment: any) => {
+              if (enrollment.courseId) {
+                enrolledIds.add(enrollment.courseId);
+              }
+            });
+          }
+          setEnrolledCourseIds(enrolledIds);
+        } catch (error) {
+          console.warn('Failed to fetch enrolled courses:', error);
+          // Continue even if enrollment fetch fails
+        }
       }
 
       // Fetch specialist's courses
@@ -452,32 +472,45 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
         <div className="space-y-4">
           {courses.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {courses.map((course) => (
-                <Card key={course._id}>
-                  <CardHeader>
-                    <CardTitle className="flex items-start gap-2">
-                      <BookOpen className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-1" />
-                      <span className="line-clamp-2">{course.title}</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <p className="text-gray-600 text-sm line-clamp-2">{course.description}</p>
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-2xl font-bold text-indigo-600">₹{course.price}</p>
-                        <p className="text-xs text-gray-600">{course.duration || "Self-paced"}</p>
+              {courses.map((course) => {
+                const isEnrolled = enrolledCourseIds.has(course._id);
+                return (
+                  <Card key={course._id} className={isEnrolled ? "border-green-300 bg-green-50" : ""}>
+                    <CardHeader>
+                      <CardTitle className="flex items-start gap-2 justify-between">
+                        <div className="flex items-start gap-2 flex-1">
+                          <BookOpen className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-1" />
+                          <span className="line-clamp-2">{course.title}</span>
+                        </div>
+                        {isEnrolled && (
+                          <div className="flex-shrink-0 ml-2">
+                            <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full whitespace-nowrap">
+                              ✓ Enrolled
+                            </div>
+                          </div>
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-gray-600 text-sm line-clamp-2">{course.description}</p>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-2xl font-bold text-indigo-600">₹{course.price}</p>
+                          <p className="text-xs text-gray-600">{course.duration || "Self-paced"}</p>
+                        </div>
+                        <p className="text-sm text-gray-600">{course.enrollments || 0} enrolled</p>
                       </div>
-                      <p className="text-sm text-gray-600">{course.enrollments || 0} enrolled</p>
-                    </div>
-                    <Button
-                      onClick={() => handleEnrollCourse(course._id, course)}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700"
-                    >
-                      Enroll Now
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                      <Button
+                        onClick={() => handleEnrollCourse(course._id, course)}
+                        disabled={isEnrolled}
+                        className={`w-full ${isEnrolled ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"}`}
+                      >
+                        {isEnrolled ? "Already Enrolled" : "Enroll Now"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           ) : (
             <Card>
