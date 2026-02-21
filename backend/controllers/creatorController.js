@@ -141,8 +141,8 @@ export const getAllSpecialists = async (req, res) => {
     // Enrich specialists with service and course counts
     const enrichedSpecialists = await Promise.all(
       specialists.map(async (specialist) => {
-        const servicesCount = await Service.countDocuments({ creator: specialist.email });
-        const coursesCount = await Course.countDocuments({ creator: specialist.email });
+        const servicesCount = await Service.countDocuments({ creator: specialist.email, status: 'active' });
+        const coursesCount = await Course.countDocuments({ specialistEmail: specialist.email, status: 'published' });
         
         return {
           ...specialist.toObject(),
