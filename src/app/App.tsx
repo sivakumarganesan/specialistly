@@ -9,6 +9,8 @@ import { Services } from "@/app/components/Services";
 import { Courses } from "@/app/components/Courses";
 import { Customers } from "@/app/components/Customers";
 import { Settings } from "@/app/components/Settings";
+import { SpecialistSettings } from "@/app/components/SpecialistSettings";
+import { CustomerSettings } from "@/app/components/CustomerSettings";
 import { Signup } from "@/app/components/Signup";
 import { Login } from "@/app/components/Login";
 import { Homepage } from "@/app/components/Homepage";
@@ -224,7 +226,13 @@ export function AppContent() {
         )}
         {currentPage === "customers" && <Customers />}
         {currentPage === "messages" && <Messages />}
-        {currentPage === "settings" && <Settings initialTab={settingsTab} />}
+        {currentPage === "settings" && <Settings initialTab={settingsTab} onNavigate={setCurrentPage} />}
+        {currentPage === "specialist-settings" && userType === "specialist" && (
+          <SpecialistSettings onBack={() => setCurrentPage("dashboard")} />
+        )}
+        {currentPage === "customer-settings" && userType === "customer" && (
+          <CustomerSettings onBack={() => setCurrentPage("dashboard")} />
+        )}
         {currentPage === "marketplace" && <Marketplace onViewSpecialist={(id, email) => {
           setViewingSpecialist({ id, email });
         }} />}

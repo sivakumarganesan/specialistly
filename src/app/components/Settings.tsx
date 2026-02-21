@@ -16,9 +16,11 @@ type SettingsTab = "profile" | "payment" | "slots" | "availability" | "subscript
 
 interface SettingsProps {
   initialTab?: SettingsTab;
+  onNavigate?: (page: string) => void;
 }
 
-export function Settings({ initialTab = "profile" }: SettingsProps) {
+export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) {
+  const { userType } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
 
   const tabs = [
@@ -31,9 +33,29 @@ export function Settings({ initialTab = "profile" }: SettingsProps) {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-gray-600">Manage your account settings and preferences</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Settings</h1>
+          <p className="text-gray-600">Manage your account settings and preferences</p>
+        </div>
+        {onNavigate && userType === "specialist" && (
+          <Button
+            onClick={() => onNavigate("specialist-settings")}
+            variant="outline"
+            className="gap-2"
+          >
+            Manage Specialities →
+          </Button>
+        )}
+        {onNavigate && userType === "customer" && (
+          <Button
+            onClick={() => onNavigate("customer-settings")}
+            variant="outline"
+            className="gap-2"
+          >
+            Manage Interests →
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
