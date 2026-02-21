@@ -298,6 +298,16 @@ export const addFileToLesson = async (req, res) => {
       });
     }
 
+    // Check if it's a Google Docs/Sheets URL (not supported directly)
+    if (googleDriveUrl.includes('docs.google.com/document') || 
+        googleDriveUrl.includes('docs.google.com/spreadsheets') ||
+        googleDriveUrl.includes('docs.google.com/presentation')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google Docs, Sheets, and Slides cannot be directly attached. Please export to PDF or Excel first, then upload the exported file.',
+      });
+    }
+
     const course = await Course.findById(courseId);
     if (!course) {
       return res.status(404).json({

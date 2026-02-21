@@ -12,10 +12,12 @@ dotenv.config();
  * Extract Google Drive file ID from various formats
  * Supports:
  * - https://drive.google.com/file/d/FILE_ID/view
+ * - https://docs.google.com/document/d/FILE_ID/edit (Google Docs)
+ * - https://docs.google.com/spreadsheets/d/FILE_ID/edit (Google Sheets)
  * - https://drive.google.com/open?id=FILE_ID
  * - Just the FILE_ID
  * @param {string} driveUrl - Google Drive URL or file ID
- * @returns {string} - Extracted file ID or error
+ * @returns {string} - Extracted file ID or null
  */
 export const extractFileId = (driveUrl) => {
   if (!driveUrl) return null;
@@ -26,6 +28,8 @@ export const extractFileId = (driveUrl) => {
   }
 
   // Format: https://drive.google.com/file/d/FILE_ID/view
+  // Format: https://docs.google.com/document/d/FILE_ID/edit
+  // Format: https://docs.google.com/spreadsheets/d/FILE_ID/edit
   const match1 = driveUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
   if (match1) return match1[1];
 
