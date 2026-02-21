@@ -190,6 +190,7 @@ export const getEnrollmentDetails = async (req, res) => {
         title: lesson.title || 'Untitled Lesson',
         order: lesson.order || 0,
         videoUrl: lesson.videoUrl || null,
+        files: lesson.files || [],
         completed: enrollment.completedLessons && enrollment.completedLessons.includes(lesson._id),
       };
     }).filter(l => l !== null);

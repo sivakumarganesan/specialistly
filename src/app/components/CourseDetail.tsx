@@ -19,6 +19,9 @@ interface Lesson {
     fileType: string;
     fileSize?: number;
     uploadedAt?: string;
+    googleDriveFileId?: string;
+    downloadLink?: string;
+    viewLink?: string;
   }>;
 }
 
