@@ -33,6 +33,7 @@ export function ConsultingSlotCalendar({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<ConsultingSlot | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
 
   // Fetch available slots for the current month
@@ -98,6 +99,11 @@ export function ConsultingSlotCalendar({
     if (onSelectSlot) {
       onSelectSlot(slot);
     }
+  };
+
+  const handleDateSelect = (dateStr: string) => {
+    setSelectedDate(selectedDate === dateStr ? null : dateStr);
+    setSelectedSlot(null);
   };
 
   // Group slots by date for easier display
@@ -188,11 +194,12 @@ export function ConsultingSlotCalendar({
                     return (
                       <div
                         key={idx}
+                        onClick={() => hasSlots && handleDateSelect(dateStr)}
                         className={`h-8 flex items-center justify-center text-sm rounded ${
                           day === null
                             ? ''
                             : hasSlots
-                            ? 'bg-indigo-100 text-indigo-900 font-semibold cursor-pointer hover:bg-indigo-200'
+                            ? `bg-indigo-100 text-indigo-900 font-semibold cursor-pointer hover:bg-indigo-200 ${selectedDate === dateStr ? 'ring-2 ring-indigo-600' : ''}`
                             : 'bg-gray-100 text-gray-600'
                         }`}
                       >
@@ -206,6 +213,7 @@ export function ConsultingSlotCalendar({
               {/* Slots grouped by date */}
               <div className="space-y-4">
                 {Object.entries(slotsByDate)
+                  .filter(([date]) => !selectedDate || date === selectedDate)
                   .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
                   .map(([date, dateSlots]) => {
                     const dateObj = new Date(date);
