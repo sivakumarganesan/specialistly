@@ -1,5 +1,5 @@
 import Payment from '../models/Payment.js';
-import Enrollment from '../models/Enrollment.js';
+import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import Course from '../models/Course.js';
 import CommissionConfig from '../models/CommissionConfig.js';
 import { stripeService } from '../services/stripeService.js';
@@ -84,7 +84,7 @@ export const createPaymentIntent = async (req, res) => {
     const amount = service.price || 0;
     if (amount === 0) {
       // Free course - create enrollment directly
-      const enrollment = await Enrollment.create({
+      const enrollment = await SelfPacedEnrollment.create({
         customerId,
         customerEmail,
         specialistId: specialist._id,
@@ -247,14 +247,14 @@ export const confirmPayment = async (req, res) => {
       await payment.save();
 
       // Check if enrollment exists
-      let enrollment = await Enrollment.findOne({
+      let enrollment = await SelfPacedEnrollment.findOne({
         customerId: payment.customerId,
         courseId: payment.serviceId,
       });
 
       if (!enrollment) {
         // Create enrollment
-        enrollment = await Enrollment.create({
+        enrollment = await SelfPacedEnrollment.create({
           customerId: payment.customerId,
           customerEmail: payment.customerEmail,
           specialistId: payment.specialistId,

@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import Payment from '../models/Payment.js';
-import Enrollment from '../models/Enrollment.js';
+import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import { sendEnrollmentConfirmation, sendSpecialistNotification } from '../services/emailService.js';
 import fs from 'fs';
 import path from 'path';
@@ -114,7 +114,7 @@ async function handlePaymentSucceeded(event) {
     console.log(`✓ Payment updated: ${payment._id}`);
 
     // Create or update enrollment
-    let enrollment = await Enrollment.findOne({
+    let enrollment = await SelfPacedEnrollment.findOne({
       customerId: payment.customerId,
       courseId: payment.serviceId,
     });
@@ -128,7 +128,7 @@ async function handlePaymentSucceeded(event) {
       enrollment.webhookVerified = true;
     } else {
       // Create new enrollment
-      enrollment = new Enrollment({
+      enrollment = new SelfPacedEnrollment({
         customerId: payment.customerId,
         customerEmail: payment.customerEmail,
         specialistId: payment.specialistId,
