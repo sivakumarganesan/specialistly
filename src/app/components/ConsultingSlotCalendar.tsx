@@ -28,19 +28,20 @@ export function ConsultingSlotCalendar({
   onSelectSlot,
   defaultDuration = 60,
 }: ConsultingSlotCalendarProps) {
-  // Get today's date as a string in YYYY-MM-DD format
-  const getTodayString = () => {
-    const today = new Date();
-    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  };
-
   const [currentDate, setCurrentDate] = useState(new Date());
   const [slots, setSlots] = useState<ConsultingSlot[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<ConsultingSlot | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string | null>(getTodayString());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+
+  // Initialize selectedDate to today on mount
+  useEffect(() => {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    setSelectedDate(todayStr);
+  }, []);
 
   // Fetch available slots for the current month
   useEffect(() => {
