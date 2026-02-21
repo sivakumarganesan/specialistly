@@ -203,10 +203,10 @@ export const createZoomMeeting = async (appointmentData) => {
     }
 
     // Create meeting payload
-    // Format date as YYYY-MM-DD HH:mm:ss for Zoom API
+    // Format date in ISO 8601 format for Zoom API (YYYY-MM-DDTHH:MM:SS)
     const startDate = new Date(startDateTime);
     const endDate = new Date(endDateTime);
-    const startTimeFormatted = startDate.toISOString().replace('T', ' ').split('.')[0];
+    const startTimeFormatted = startDate.toISOString().substring(0, 19);
     
     // Calculate duration in minutes
     const durationMs = endDate - startDate;
