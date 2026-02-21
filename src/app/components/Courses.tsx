@@ -167,6 +167,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     fileType: string;
     fileSize?: number;
     uploadedAt?: string;
+    googleDriveFileId?: string;
+    downloadLink?: string;
+    viewLink?: string;
   }
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
@@ -469,6 +472,85 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     }
     
     setLessons([...lessons]);
+  };
+
+  const addGoogleDriveFile = async (lessonIndex: number, googleDriveUrl: string, fileName?: string) => {
+    if (!selectedCourse || !googleDriveUrl.trim()) {
+      alert("Please provide a valid Google Drive URL or file ID");
+      return;
+    }
+
+    const lesson = lessons[lessonIndex];
+
+    try {
+      // If lesson doesn't have an ID yet, we can't attach files through the API
+      if (!lesson._id) {
+        // For new lessons, we'll add files locally and send them with the lesson creation
+        const displayName = fileName || googleDriveUrl.split('/').filter(Boolean).pop() || 'Google Drive File';
+        
+        if (!lesson.files) {
+          lesson.files = [];
+        }
+        
+        // Create a temporary file object
+        const tempFile: LessonFile = {
+          fileName: displayName,
+          fileUrl: googleDriveUrl.trim(),
+          fileType: getFileType(displayName),
+          googleDriveFileId: googleDriveUrl.includes('id=') 
+            ? new URL(googleDriveUrl).searchParams.get('id') || googleDriveUrl
+            : googleDriveUrl.split('/d/')[1]?.split('/')[0] || googleDriveUrl,
+          uploadedAt: new Date().toISOString(),
+        };
+        
+        if (!lesson.files.find(f => f.fileUrl === tempFile.fileUrl)) {
+          lesson.files.push(tempFile);
+          setLessons([...lessons]);
+          alert(`✓ File "${displayName}" added to lesson. It will be uploaded when you save the course.`);
+        }
+        return;
+      }
+
+      // For existing lessons, call the backend API
+      const displayName = fileName || googleDriveUrl.split('/').filter(Boolean).pop() || 'Google Drive File';
+
+      const response = await fetch(
+        `/api/courses/${selectedCourse.id}/lessons/${lesson._id}/files`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({
+            googleDriveUrl: googleDriveUrl.trim(),
+            fileName: displayName,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add file');
+      }
+
+      const data = await response.json();
+      
+      if (!lesson.files) {
+        lesson.files = [];
+      }
+      
+      if (!lesson.files.find(f => f.googleDriveFileId === data.file.googleDriveFileId)) {
+        lesson.files.push(data.file);
+        setLessons([...lessons]);
+        alert(`✓ File "${displayName}" added successfully from Google Drive!`);
+      } else {
+        alert("This file is already attached to the lesson");
+      }
+    } catch (error) {
+      console.error("Error adding Google Drive file:", error);
+      alert(`Failed to add file: ${error instanceof Error ? error.message : 'Please try again'}`);
+    }
   };
 
   const removeFileFromLesson = (lessonIndex: number, fileIndex: number) => {
@@ -1767,19 +1849,42 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                       {/* File Upload Section */}
                       <div className="border-t pt-3">
                         <Label htmlFor={`lesson-files-${index}`} className="text-xs">
-                          📎 Lesson Files (PDF, Word, Excel, etc.) - Optional
+                          📎 Lesson Files from Google Drive - Optional
                         </Label>
-                        <div className="mt-2 space-y-2">
-                          <input
-                            id={`lesson-files-${index}`}
-                            type="file"
-                            multiple
-                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
-                            onChange={(e) => handleFileSelect(index, e.target.files)}
-                            className="text-xs"
-                          />
+                        <div className="mt-2 space-y-3">
+                          <div className="flex gap-2">
+                            <input
+                              id={`lesson-files-${index}`}
+                              type="text"
+                              placeholder="Paste Google Drive file ID or shareable link"
+                              className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  const url = (e.target as HTMLInputElement).value;
+                                  if (url.trim()) {
+                                    addGoogleDriveFile(index, url);
+                                    (e.target as HTMLInputElement).value = '';
+                                  }
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                const input = document.getElementById(`lesson-files-${index}`) as HTMLInputElement;
+                                if (input && input.value.trim()) {
+                                  addGoogleDriveFile(index, input.value);
+                                  input.value = '';
+                                }
+                              }}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              Add File
+                            </Button>
+                          </div>
                           <p className="text-xs text-gray-500">
-                            Supported: PDF, Word, Excel, PowerPoint, Text, ZIP files
+                            Example: https://drive.google.com/file/d/FILE_ID/view or just FILE_ID
                           </p>
                         </div>
 

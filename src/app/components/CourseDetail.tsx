@@ -296,8 +296,8 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                         {currentLesson.files.map((file: any, index: number) => (
                           <a
                             key={index}
-                            href={file.fileUrl}
-                            download={file.fileName}
+                            href={file.downloadLink || file.fileUrl}
+                            download={file.downloadLink ? undefined : file.fileName}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center justify-between p-3 bg-white rounded border border-blue-100 hover:border-blue-300 hover:bg-blue-50 transition"

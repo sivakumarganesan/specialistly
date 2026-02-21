@@ -9,6 +9,8 @@ import {
   publishCourse,
   archiveCourse,
   browseCourses,
+  addFileToLesson,
+  removeFileFromLesson,
 } from '../controllers/courseController.js';
 import {
   enrollSelfPaced,
@@ -117,6 +119,12 @@ router.put('/:id', updateCourse);
 
 // Add lesson to course
 router.post('/:id/lessons', addLesson);
+
+// Add file to lesson (Google Drive integration)
+router.post('/:courseId/lessons/:lessonId/files', addFileToLesson);
+
+// Remove file from lesson
+router.delete('/:courseId/lessons/:lessonId/files/:fileId', removeFileFromLesson);
 
 // Publish course (make available)
 router.post('/:id/publish', publishCourse);

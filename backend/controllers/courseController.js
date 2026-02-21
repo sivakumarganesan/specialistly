@@ -1,4 +1,5 @@
 import Course from '../models/Course.js';
+import { extractFileId, generateDriveLinks, getFileTypeLabel } from '../services/googleDriveService.js';
 
 // Create a new course (specialist only)
 export const createCourse = async (req, res) => {
@@ -142,13 +143,13 @@ export const updateCourse = async (req, res) => {
 // Add lesson to course
 export const addLesson = async (req, res) => {
   try {
-    const { title, videoUrl, order } = req.body;
+    const { title, videoUrl, files, order } = req.body;
     const courseId = req.params.id;
 
-    if (!title || !videoUrl || order === undefined) {
+    if (!title || order === undefined) {
       return res.status(400).json({
         success: false,
-        message: 'Title, videoUrl, and order are required',
+        message: 'Title and order are required. VideoUrl is optional.',
       });
     }
 
@@ -162,8 +163,9 @@ export const addLesson = async (req, res) => {
 
     const lesson = {
       title,
-      videoUrl,
+      videoUrl: videoUrl || null,
       order,
+      files: files || [],
     };
 
     course.lessons.push(lesson);
@@ -277,6 +279,160 @@ export const deleteCourse = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Add file to lesson from Google Drive
+export const addFileToLesson = async (req, res) => {
+  try {
+    const { courseId, lessonId } = req.params;
+    const { googleDriveUrl, fileName } = req.body;
+
+    if (!googleDriveUrl || !fileName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google Drive URL and file name are required',
+      });
+    }
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    const lesson = course.lessons.id(lessonId);
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lesson not found',
+      });
+    }
+
+    // Extract file ID from Google Drive URL
+    const fileId = extractFileId(googleDriveUrl);
+    if (!fileId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Google Drive URL or file ID',
+      });
+    }
+
+    // Generate shareable links
+    const { downloadLink, viewLink } = generateDriveLinks(googleDriveUrl, fileName);
+
+    // Extract file type from filename
+    const extension = fileName.split('.').pop()?.toLowerCase() || 'other';
+    const typeMap = {
+      'pdf': 'pdf',
+      'doc': 'doc',
+      'docx': 'docx',
+      'xls': 'xls',
+      'xlsx': 'xlsx',
+      'ppt': 'ppt',
+      'pptx': 'pptx',
+      'txt': 'txt',
+      'zip': 'zip',
+    };
+    const fileType = typeMap[extension] || 'other';
+
+    // Create file object
+    const newFile = {
+      fileName,
+      fileUrl: googleDriveUrl,
+      fileType,
+      googleDriveFileId: fileId,
+      downloadLink,
+      viewLink,
+      uploadedAt: new Date(),
+    };
+
+    // Initialize files array if not exists
+    if (!lesson.files) {
+      lesson.files = [];
+    }
+
+    // Check if file already exists
+    const fileExists = lesson.files.some(
+      f => f.googleDriveFileId === fileId || f.fileName === fileName
+    );
+
+    if (fileExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'This file is already attached to the lesson',
+      });
+    }
+
+    lesson.files.push(newFile);
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'File added to lesson successfully',
+      file: newFile,
+      lesson,
+    });
+  } catch (error) {
+    console.error('Error adding file to lesson:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Failed to add file to lesson',
+    });
+  }
+};
+
+// Remove file from lesson
+export const removeFileFromLesson = async (req, res) => {
+  try {
+    const { courseId, lessonId, fileId } = req.params;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    const lesson = course.lessons.id(lessonId);
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lesson not found',
+      });
+    }
+
+    if (!lesson.files) {
+      return res.status(404).json({
+        success: false,
+        message: 'No files in this lesson',
+      });
+    }
+
+    const fileIndex = lesson.files.findIndex(f => f._id.toString() === fileId);
+    if (fileIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found',
+      });
+    }
+
+    lesson.files.splice(fileIndex, 1);
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'File removed from lesson successfully',
+      lesson,
+    });
+  } catch (error) {
+    res.status(400).json({
       success: false,
       message: error.message,
     });

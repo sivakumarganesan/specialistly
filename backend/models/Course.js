@@ -19,6 +19,19 @@ const fileSchema = new mongoose.Schema({
     default: 'other',
   },
   fileSize: Number, // in bytes
+  // Google Drive integration
+  googleDriveFileId: {
+    type: String,
+    default: null, // Will be set if file comes from Google Drive
+  },
+  downloadLink: {
+    type: String,
+    default: null, // Direct download link for Google Drive files
+  },
+  viewLink: {
+    type: String,
+    default: null, // Google Drive view link
+  },
   uploadedAt: {
     type: Date,
     default: () => new Date(),
