@@ -20,7 +20,7 @@ export const createCohort = async (req, res) => {
       maxStudents,
     } = req.body;
 
-    const specialistId = req.user?.id || req.body.specialistId;
+    const specialistId = req.user?.userId || req.body.specialistId;
     const specialistEmail = req.user?.email;
 
     // Validate course exists and is cohort type
@@ -340,7 +340,7 @@ export const getSessionJoinLink = async (req, res) => {
 // Get my cohorts (customer's enrolled cohorts)
 export const getMyCohorts = async (req, res) => {
   try {
-    const customerId = req.user?.id || req.query.customerId;
+    const customerId = req.user?.userId || req.query.customerId;
 
     if (!customerId) {
       return res.status(400).json({

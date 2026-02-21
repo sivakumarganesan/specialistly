@@ -909,7 +909,8 @@ export const getAvailableSlotsForCustomer = async (req, res) => {
 export const createZoomMeetingForBooking = async (req, res) => {
   try {
     const { slotId, bookingIndex } = req.params;
-    const specialistId = req.user?.id; // From auth middleware
+    // JWT payload contains userId (not id), from auth middleware
+    const specialistId = req.user?.userId;
 
     if (!specialistId) {
       return res.status(401).json({
@@ -965,15 +966,20 @@ export const createZoomMeetingForBooking = async (req, res) => {
 
     console.log(`🎥 Creating Zoom meeting for booking with ${booking.customerName}...`);
     
-    const zoomMeetingDetails = await zoomService.createZoomMeeting(
-      slot.specialistId,
-      slot.specialistEmail,
-      booking.customerEmail,
-      booking.customerName,
-      `Consulting Session - ${booking.customerName}`,
-      appointmentDateTime,
-      endDateTime
-    );
+    // Get specialist details for Zoom meeting
+    const specialist = await CreatorProfile.findById(slot.specialistId);
+    const specialistName = specialist?.creatorName || 'Specialist';
+    
+    const zoomMeetingDetails = await zoomService.createZoomMeeting({
+      specialistId: slot.specialistId,
+      specialistEmail: slot.specialistEmail,
+      specialistName: specialistName,
+      customerEmail: booking.customerEmail,
+      customerName: booking.customerName,
+      serviceTitle: `Consulting Session - ${booking.customerName}`,
+      startDateTime: appointmentDateTime,
+      endDateTime: endDateTime,
+    });
 
     console.log(`✅ Zoom meeting created: ${zoomMeetingDetails.zoomMeetingId}`);
 
@@ -996,9 +1002,6 @@ export const createZoomMeetingForBooking = async (req, res) => {
       month: 'long',
       day: 'numeric',
     });
-
-    const specialist = await CreatorProfile.findById(slot.specialistId);
-    const specialistName = specialist?.creatorName || 'Specialist';
 
     const customerEmailHtml = `
       <html>

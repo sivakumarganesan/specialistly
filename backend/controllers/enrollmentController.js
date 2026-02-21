@@ -13,7 +13,7 @@ export const enrollSelfPaced = async (req, res) => {
     const { courseId, customerId, customerEmail } = req.body;
     
     // Use values from body or from auth middleware if available
-    const finalCustomerId = customerId || req.user?.id;
+    const finalCustomerId = customerId || req.user?.userId;
     const finalCustomerEmail = customerEmail || req.user?.email;
 
     if (!courseId) {
@@ -82,7 +82,7 @@ export const enrollSelfPaced = async (req, res) => {
 // Get self-paced enrollments (my courses)
 export const getMyCourses = async (req, res) => {
   try {
-    const customerId = req.user?.id || req.query.customerId;
+    const customerId = req.user?.userId || req.query.customerId;
 
     if (!customerId) {
       return res.status(400).json({

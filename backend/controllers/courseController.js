@@ -13,7 +13,7 @@ export const createCourse = async (req, res) => {
     }
 
     const course = new Course({
-      specialistId: req.user?.id || req.body.specialistId,
+      specialistId: req.user?.userId || req.body.specialistId,
       specialistEmail: req.user?.email || req.body.specialistEmail,
       title,
       description,

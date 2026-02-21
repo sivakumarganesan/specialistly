@@ -6,7 +6,7 @@ import Cohort from '../models/Cohort.js';
 export const enrollCohort = async (req, res) => {
   try {
     const { cohortId } = req.body;
-    const customerId = req.user?.id || req.body.customerId;
+    const customerId = req.user?.userId || req.body.customerId;
     const customerEmail = req.user?.email || req.body.customerEmail;
 
     // Check if cohort exists
@@ -166,7 +166,7 @@ export const getCertificate = async (req, res) => {
 // List my certificates
 export const getMyCertificates = async (req, res) => {
   try {
-    const customerId = req.user?.id || req.query.customerId;
+    const customerId = req.user?.userId || req.query.customerId;
 
     const certificates = await Certificate.find({ customerId }).sort({
       issueDate: -1,
