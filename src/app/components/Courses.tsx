@@ -96,7 +96,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     const loadCourses = async () => {
       try {
         setIsLoading(true);
-        const response = await courseAPI.getAll({ creator: user?.email });
+        const response = await courseAPI.getAll({ specialistEmail: user?.email });
         const courseData = response.data || response;
         if (courseData) {
           // Transform MongoDB data to Course interface
@@ -783,7 +783,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       alert("✓ Lessons saved successfully!");
       
       // Refresh courses
-      const response = await courseAPI.getAll({ creator: user?.email });
+      const response = await courseAPI.getAll({ specialistEmail: user?.email });
       const courseData = response.data || response;
       if (courseData) {
         const transformedCourses: Course[] = (Array.isArray(courseData) ? courseData : []).map((course: any) => ({

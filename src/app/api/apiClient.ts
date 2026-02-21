@@ -58,9 +58,10 @@ const apiCall = async (
 // Course API calls
 export const courseAPI = {
   // Course Management
-  getAll: (filters?: { creator?: string }) => {
+  getAll: (filters?: { creator?: string; specialistEmail?: string }) => {
     const params = new URLSearchParams();
     if (filters?.creator) params.append("creator", filters.creator);
+    if (filters?.specialistEmail) params.append("specialistEmail", filters.specialistEmail);
     const queryString = params.toString();
     return apiCall(`/courses/my-courses${queryString ? `?${queryString}` : ""}`);
   },
