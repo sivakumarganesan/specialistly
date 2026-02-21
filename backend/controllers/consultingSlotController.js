@@ -1008,8 +1008,13 @@ export const createZoomMeetingForBooking = async (req, res) => {
     console.log(`   specialist found: ${specialist ? 'YES' : 'NO'}`);
     console.log(`   specialistName: ${specialistName}`);
     
+    // Use authenticated user's ID (JWT userId) as the source of truth for Zoom token lookup
+    // This ensures we find the token that was created when THIS authenticated user authorized Zoom
+    const zoomSpecialistId = req.user?.userId || slot.specialistId;
+    console.log(`   Using for Zoom lookup: ${zoomSpecialistId}`);
+    
     const zoomMeetingDetails = await zoomService.createZoomMeeting({
-      specialistId: slot.specialistId,
+      specialistId: zoomSpecialistId,
       specialistEmail: slot.specialistEmail,
       specialistName: specialistName,
       customerEmail: booking.customerEmail,
