@@ -156,6 +156,10 @@ export const createSlot = async (req, res) => {
       notes,
     } = req.body;
 
+    console.log(`📝 Creating consulting slot for specialist: ${specialistEmail}`);
+    console.log(`   auth user ID: ${req.user?.userId}`);
+    console.log(`   request specialistId: ${specialistId}`);
+
     // Validation
     if (!specialistEmail || !date || !startTime || !endTime) {
       return res.status(400).json({
@@ -180,6 +184,8 @@ export const createSlot = async (req, res) => {
       });
     }
 
+    console.log(`   specialist found in DB with ID: ${specialist._id}`);
+
     // Check for conflicts - prevent double booking
     const existingSlots = await ConsultingSlot.find({
       specialistEmail,
@@ -202,8 +208,12 @@ export const createSlot = async (req, res) => {
     }
 
     // Create slot
+    // Use the specialist's ID from database, prefer authenticated user's ID if available
+    const finalSpecialistId = req.user?.userId || specialistId || specialist._id;
+    console.log(`   final specialistId to store: ${finalSpecialistId}`);
+    
     const newSlot = new ConsultingSlot({
-      specialistId: specialistId || specialist._id,
+      specialistId: finalSpecialistId,
       specialistEmail,
       serviceId,
       date: new Date(date),
@@ -928,11 +938,20 @@ export const createZoomMeetingForBooking = async (req, res) => {
       });
     }
 
-    // Verify the specialist owns this slot
-    if (slot.specialistId.toString() !== specialistId) {
+    // Verify the specialist owns this slot - use ObjectId equals for safe comparison
+    const slotSpecialistId = slot.specialistId.toString();
+    const requestingUserId = specialistId.toString();
+    
+    console.log(`🔒 Authorization check: slot.specialistId=${slotSpecialistId}, req.user.userId=${requestingUserId}`);
+    
+    if (slotSpecialistId !== requestingUserId) {
       return res.status(403).json({
         success: false,
         message: 'Forbidden. You can only create Zoom meetings for your own slots.',
+        debug: {
+          slotSpecialistId,
+          requestingUserId,
+        },
       });
     }
 
