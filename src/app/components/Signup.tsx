@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
+import { OnboardingWizard } from '@/app/components/OnboardingWizard';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -22,6 +23,10 @@ export function Signup() {
   const [selectedPlan, setSelectedPlan] = useState<'free' | 'pro'>('free');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  // New state for onboarding flow
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'specialist' | 'customer'>('customer');
 
   const plans = [
     {
@@ -91,8 +96,10 @@ export function Signup() {
         membership: formData.isSpecialist ? selectedPlan : 'customer',
       });
 
-      alert('✓ Signup successful! Welcome to Specialistly!');
-      setCurrentPage('dashboard');
+      // Success! Show onboarding wizard instead of alert
+      setNewUserEmail(formData.email);
+      setNewUserRole(formData.isSpecialist ? 'specialist' : 'customer');
+      setShowOnboarding(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
@@ -100,7 +107,25 @@ export function Signup() {
     }
   };
 
+  const handleOnboardingComplete = () => {
+    // Onboarding wizard completed, redirect to dashboard
+    setShowOnboarding(false);
+    setCurrentPage('dashboard');
+  };
+
   return (
+    <>
+      {/* Show Onboarding Wizard after successful signup */}
+      {showOnboarding && (
+        <OnboardingWizard
+          userEmail={newUserEmail}
+          userRole={newUserRole}
+          onComplete={handleOnboardingComplete}
+        />
+      )}
+
+      {/* Show signup form normally */}
+      {!showOnboarding && (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 py-12 px-4">
       <div className="max-w-6xl mx-auto">
         <button
@@ -416,5 +441,7 @@ export function Signup() {
         )}
       </div>
     </div>
+      )}
+    </>
   );
 }

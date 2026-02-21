@@ -95,6 +95,26 @@ const customerSchema = new mongoose.Schema({
     },
   ],
   avatar: String,
+  // Customer interests/preferences
+  interests: [{
+    type: String,
+    enum: [
+      'Healthcare',
+      'Sports',
+      'Dietitian',
+      'Entertainment',
+      'Astrology/Numerology',
+      'Coaching',
+      'Medical',
+      'Law & Legal Services',
+      'Technology & IT',
+      'Design & Arts',
+      'Digital Marketing',
+      'Fitness & Nutrition',
+      'Education & Career'
+    ]
+  }],
+  interestsUpdatedAt: Date,
   createdAt: {
     type: Date,
     default: Date.now,

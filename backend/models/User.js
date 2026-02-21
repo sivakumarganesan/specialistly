@@ -91,6 +91,31 @@ const userSchema = new mongoose.Schema({
       'Education & Career'
     ]
   }],
+  // Customer interests (same as speciality categories but for customers)
+  customerInterests: [{
+    type: String,
+    enum: [
+      'Healthcare',
+      'Sports',
+      'Dietitian',
+      'Entertainment',
+      'Astrology/Numerology',
+      'Coaching',
+      'Medical',
+      'Law & Legal Services',
+      'Technology & IT',
+      'Design & Arts',
+      'Digital Marketing',
+      'Fitness & Nutrition',
+      'Education & Career'
+    ]
+  }],
+  // Onboarding status
+  onboardingComplete: {
+    type: Boolean,
+    default: false,
+  },
+  categoriesSetAt: Date,
   weeklyAvailability: [
     {
       day: String,

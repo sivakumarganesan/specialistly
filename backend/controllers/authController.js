@@ -262,3 +262,39 @@ export const updateSubscription = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+/**
+ * Mark user onboarding as complete
+ * POST /api/user/onboarding-complete
+ */
+export const markOnboardingComplete = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    user.onboardingComplete = true;
+    user.categoriesSetAt = new Date();
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Onboarding marked as complete',
+      user: {
+        id: user._id,
+        email: user.email,
+        onboardingComplete: user.onboardingComplete,
+      },
+    });
+  } catch (error) {
+    console.error('Mark onboarding complete error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};

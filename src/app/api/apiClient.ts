@@ -172,6 +172,9 @@ export const customerAPI = {
   bookWebinar: (data: any) => apiCall("/customers/book-webinar", "POST", data),
   getEnrollments: (email: string) => apiCall(`/customers/${email}/enrollments`),
   getBookings: (email: string) => apiCall(`/customers/${email}/bookings`),
+  // Customer interests
+  updateInterests: (data: any) => apiCall("/customers/interests", "PUT", data),
+  getInterests: (email: string) => apiCall(`/customers/interests/${email}`),
 };
 
 // Appointment API calls
@@ -310,6 +313,7 @@ export const authAPI = {
   login: (data: any) => apiCall("/auth/login", "POST", data),
   getProfile: (token: string) => apiCall("/auth/profile", "GET", undefined, token),
   updateSubscription: (token: string, data: any) => apiCall("/auth/subscription", "PUT", data, token),
+  markOnboardingComplete: (data: any) => apiCall("/auth/onboarding-complete", "PUT", data),
 };
 
 // Messages API calls

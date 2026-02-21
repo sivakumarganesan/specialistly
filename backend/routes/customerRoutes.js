@@ -11,6 +11,8 @@ import {
   bookWebinar,
   getEnrollmentsByEmail,
   getBookingsByEmail,
+  updateCustomerInterests,
+  getCustomerInterests,
 } from '../controllers/customerController.js';
 
 const router = express.Router();
@@ -19,6 +21,10 @@ const router = express.Router();
 router.post('/enroll', enrollCourse);
 router.post('/book', bookService);
 router.post('/book-webinar', bookWebinar);
+
+// Customer interests routes
+router.put('/interests', updateCustomerInterests);
+router.get('/interests/:email', getCustomerInterests);
 
 // Email-based retrieval routes (before ID-based routes)
 router.get('/:email/enrollments', getEnrollmentsByEmail);

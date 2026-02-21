@@ -569,3 +569,129 @@ export const getBookingsByEmail = async (req, res) => {
   }
 };
 
+/**
+ * Update customer interests
+ * PUT /api/customer/interests
+ */
+export const updateCustomerInterests = async (req, res) => {
+  try {
+    const { email, interests } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    if (!Array.isArray(interests)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Interests must be an array',
+      });
+    }
+
+    // Validate interests against allowed categories
+    const ALLOWED_CATEGORIES = [
+      'Healthcare',
+      'Sports',
+      'Dietitian',
+      'Entertainment',
+      'Astrology/Numerology',
+      'Coaching',
+      'Medical',
+      'Law & Legal Services',
+      'Technology & IT',
+      'Design & Arts',
+      'Digital Marketing',
+      'Fitness & Nutrition',
+      'Education & Career',
+    ];
+
+    const invalidInterests = interests.filter(
+      interest => !ALLOWED_CATEGORIES.includes(interest)
+    );
+
+    if (invalidInterests.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid interests: ${invalidInterests.join(', ')}`,
+      });
+    }
+
+    // Update interests in the Customer document
+    const customer = await Customer.findOneAndUpdate(
+      { email },
+      { 
+        interests,
+        interestsUpdatedAt: new Date(),
+      },
+      { new: true }
+    );
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Interests updated successfully',
+      data: {
+        email: customer.email,
+        interests: customer.interests,
+        interestsUpdatedAt: customer.interestsUpdatedAt,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating customer interests:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
+ * Get customer interests
+ * GET /api/customer/interests/:email
+ */
+export const getCustomerInterests = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    const customer = await Customer.findOne({ email });
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        email: customer.email,
+        interests: customer.interests || [],
+        interestsUpdatedAt: customer.interestsUpdatedAt,
+      },
+    });
+  } catch (error) {
+    console.error('Error getting customer interests:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
