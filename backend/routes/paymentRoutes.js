@@ -12,7 +12,7 @@ import {
   webhookHealth,
   testWebhook,
 } from '../controllers/webhookController.js';
-import authMiddleware from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 

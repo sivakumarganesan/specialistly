@@ -7,7 +7,7 @@ import {
   getCommissionStatistics,
   getSpecialistEarnings,
 } from '../controllers/commissionController.js';
-import { authenticate } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -26,15 +26,15 @@ router.post('/calculate', calculateCommissionBreakdown);
  */
 
 // Update commission rate (admin only)
-router.post('/update', authenticate, updateCommissionRate);
+router.post('/update', authMiddleware, updateCommissionRate);
 
 // Get commission payments history (admin only)
-router.get('/payments', authenticate, getCommissionPayments);
+router.get('/payments', authMiddleware, getCommissionPayments);
 
 // Get commission statistics (admin only)
-router.get('/statistics', authenticate, getCommissionStatistics);
+router.get('/statistics', authMiddleware, getCommissionStatistics);
 
 // Get specialist earnings
-router.get('/specialist/:specialistId/earnings', authenticate, getSpecialistEarnings);
+router.get('/specialist/:specialistId/earnings', authMiddleware, getSpecialistEarnings);
 
 export default router;
