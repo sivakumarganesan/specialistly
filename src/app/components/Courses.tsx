@@ -733,6 +733,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         title: l.title,
         videoUrl: l.videoUrl,
         order: idx + 1,
+        files: l.files || [], // Include files from database
       })));
     } else {
       setLessons([]);
