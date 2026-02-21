@@ -107,7 +107,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
       // Fetch specialist's courses
       const coursesResponse = await courseAPI.getAll({ specialistEmail: specialistEmail });
       const activeCourses = Array.isArray(coursesResponse?.data)
-        ? coursesResponse.data.filter((c: any) => c.status === "published" || c.status === "active")
+        ? coursesResponse.data.filter((c: any) => c.status === "published")
         : [];
       setCoursesCount(activeCourses.length);  // Store total count
       setCourses(activeCourses.slice(0, 6));  // Display only first 6

@@ -80,6 +80,12 @@ export const courseAPI = {
   // Self-Paced Enrollment
   enrollSelfPaced: (courseId: string, customerId?: string, customerEmail?: string) => 
     apiCall("/courses/enrollments/self-paced", "POST", { courseId, customerId, customerEmail }),
+  getMyCourses: (customerId?: string) => {
+    const endpoint = customerId 
+      ? `/courses/enrollments/self-paced/my-courses?customerId=${customerId}`
+      : `/courses/enrollments/self-paced/my-courses`;
+    return apiCall(endpoint);
+  },
   getMySelfPacedCourses: (customerId?: string) => {
     const endpoint = customerId 
       ? `/courses/enrollments/self-paced/my-courses?customerId=${customerId}`
