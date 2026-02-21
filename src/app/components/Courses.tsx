@@ -474,6 +474,23 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     setLessons([...lessons]);
   };
 
+  const extractFileId = (url: string): string => {
+    if (!url) return '';
+    if (url.includes('/d/')) {
+      return url.split('/d/')[1]?.split('/')[0] || '';
+    } else if (url.includes('id=')) {
+      return new URL(url).searchParams.get('id') || '';
+    }
+    return url;
+  };
+
+  const generateDriveLinks = (fileId: string) => {
+    return {
+      downloadLink: `https://drive.google.com/uc?id=${fileId}&export=download`,
+      viewLink: `https://drive.google.com/file/d/${fileId}/view`,
+    };
+  };
+
   const extractFileName = (url: string, providedName?: string): string => {
     if (providedName) return providedName;
     
@@ -518,13 +535,18 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         }
         
         // Create a temporary file object
+        const fileId = googleDriveUrl.includes('id=') 
+          ? new URL(googleDriveUrl).searchParams.get('id') || googleDriveUrl
+          : googleDriveUrl.split('/d/')[1]?.split('/')[0] || googleDriveUrl;
+        const { downloadLink, viewLink } = generateDriveLinks(fileId);
+        
         const tempFile: LessonFile = {
           fileName: displayName,
           fileUrl: googleDriveUrl.trim(),
           fileType: getFileType(displayName),
-          googleDriveFileId: googleDriveUrl.includes('id=') 
-            ? new URL(googleDriveUrl).searchParams.get('id') || googleDriveUrl
-            : googleDriveUrl.split('/d/')[1]?.split('/')[0] || googleDriveUrl,
+          googleDriveFileId: fileId,
+          downloadLink,
+          viewLink,
           uploadedAt: new Date().toISOString(),
         };
         
