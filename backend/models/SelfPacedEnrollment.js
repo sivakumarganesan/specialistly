@@ -24,9 +24,46 @@ const selfPacedEnrollmentSchema = new mongoose.Schema({
     default: false,
   },
   
-  // Payment info
+  // Payment info (OLD)
   paidAt: Date,
   amount: Number,
+
+  // Payment info (NEW - Stripe Integration)
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'completed', 'failed', 'refunded'],
+    default: 'pending',
+    description: 'Payment status from Stripe',
+  },
+  paymentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Payment',
+    description: 'Reference to Payment document',
+  },
+  paymentDate: {
+    type: Date,
+    description: 'Date when payment was completed',
+  },
+  webhookVerified: {
+    type: Boolean,
+    default: false,
+    description: 'Whether payment was verified via Stripe webhook',
+  },
+
+  // Enrollment status
+  status: {
+    type: String,
+    enum: ['inactive', 'active', 'cancelled', 'refunded'],
+    default: 'inactive',
+    index: true,
+  },
+
+  // Tracking specialist info
+  specialistId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  specialistEmail: String,
   
   // Certificate
   certificate: {

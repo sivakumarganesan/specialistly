@@ -16,6 +16,8 @@ import healthRoutes from './routes/healthRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
 import consultingSlotRoutes from './routes/consultingSlotRoutes.js';
 import availabilityScheduleRoutes from './routes/availabilityScheduleRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import commissionRoutes from './routes/commissionRoutes.js';
 
 dotenv.config();
 
@@ -47,6 +49,20 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+
+// ⚠️ IMPORTANT: Stripe webhook middleware MUST be BEFORE express.json()
+// Webhook requires raw body, not JSON parsed
+app.post(
+  '/api/webhooks/stripe',
+  express.raw({ type: 'application/json' }),
+  (req, res, next) => {
+    // Import webhook handler without blocking
+    import('./controllers/webhookController.js').then(module => {
+      module.handleStripeWebhook(req, res).catch(next);
+    });
+  }
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -68,6 +84,8 @@ app.use('/api/health', healthRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/consulting-slots', consultingSlotRoutes);
 app.use('/api/availability-schedule', availabilityScheduleRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/commission', commissionRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

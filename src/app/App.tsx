@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
+import { usePaymentContext } from "@/app/context/PaymentContext";
 import { messageAPI } from "@/app/api/apiClient";
 import { Header } from "@/app/components/Header";
 import { Sidebar } from "@/app/components/Sidebar";
@@ -20,6 +21,7 @@ import { Messages } from "@/app/components/Messages";
 import { CoursesBrowse } from "@/app/components/CoursesBrowse";
 import { MyLearning } from "@/app/components/MyLearning";
 import { CourseDetail } from "@/app/components/CourseDetail";
+import PaymentModal from "@/app/components/PaymentModal";
 
 type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
 type UserType = "specialist" | "customer";
@@ -32,6 +34,7 @@ interface SearchableItem {
 
 export function AppContent() {
   const { isAuthenticated, currentPage, setCurrentPage, userType, user, isLoading } = useAuth();
+  const { isOpen: isPaymentOpen, closePayment } = usePaymentContext();
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [offeringItems, setOfferingItems] = useState<SearchableItem[]>([]);
@@ -194,6 +197,9 @@ export function AppContent() {
         userType={userType || "customer"}
         unreadMessageCount={unreadMessageCount}
       />
+      
+      {/* Payment Modal */}
+      <PaymentModal isOpen={isPaymentOpen} onClose={closePayment} />
       
       <main className="md:ml-64 pt-16">
         {currentPage === "dashboard" && userType === "specialist" && (

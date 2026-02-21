@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
+import { usePaymentContext } from "@/app/context/PaymentContext";
 import { creatorAPI, courseAPI, serviceAPI, customerAPI, appointmentAPI, consultingSlotAPI } from "@/app/api/apiClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
@@ -49,6 +50,7 @@ interface AppointmentSlot {
 
 export function SpecialistProfile({ specialistId, specialistEmail, onBack }: SpecialistProfileProps) {
   const { user } = useAuth();
+  const { openPayment } = usePaymentContext();
   const [specialist, setSpecialist] = useState<any>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesCount, setCoursesCount] = useState(0);
@@ -185,11 +187,42 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
     }
   };
 
-  const handleEnrollCourse = async (courseId: string) => {
+  const handleEnrollCourse = async (courseId: string, course?: Course) => {
     if (!user?.id || !user?.email) return;
+    
+    const courseData = course || courses.find(c => c._id === courseId);
+    
     try {
-      await courseAPI.enrollSelfPaced(courseId, user.id, user.email);
-      alert("✓ Successfully enrolled in course! View it in My Learning & Bookings.");
+      // Check if course is FREE or PAID
+      if (courseData?.price && courseData.price > 0) {
+        // Paid course - open payment modal
+        openPayment({
+          serviceId: courseId,
+          serviceType: 'course',
+          serviceName: courseData.title,
+          amount: courseData.price * 100, // Convert to cents
+          currency: 'usd',
+          specialistId: specialistId,
+          specialistName: specialist?.name || 'Specialist',
+          onSuccess: async () => {
+            try {
+              // Enroll after payment succeeds
+              await courseAPI.enrollSelfPaced(courseId, user.id, user.email);
+              alert("✓ Payment successful! Successfully enrolled in course! View it in My Learning & Bookings.");
+            } catch (error) {
+              console.error("Failed to enroll:", error);
+              alert(`Failed to complete enrollment after payment.`);
+            }
+          },
+          onError: (error) => {
+            alert(`Payment failed: ${error}`);
+          },
+        });
+      } else {
+        // Free course - enroll directly
+        await courseAPI.enrollSelfPaced(courseId, user.id, user.email);
+        alert("✓ Successfully enrolled in course! View it in My Learning & Bookings.");
+      }
     } catch (error) {
       console.error("Failed to enroll:", error);
       alert(`Failed to enroll. Please try again.`);
@@ -437,7 +470,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                       <p className="text-sm text-gray-600">{course.enrollments || 0} enrolled</p>
                     </div>
                     <Button
-                      onClick={() => handleEnrollCourse(course._id)}
+                      onClick={() => handleEnrollCourse(course._id, course)}
                       className="w-full bg-indigo-600 hover:bg-indigo-700"
                     >
                       Enroll Now

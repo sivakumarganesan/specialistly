@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { courseAPI } from "@/app/api/apiClient";
 import { useAuth } from "@/app/context/AuthContext";
+import { usePaymentContext } from "@/app/context/PaymentContext";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -21,6 +22,7 @@ interface Course {
 
 export function CoursesBrowse() {
   const { user } = useAuth();
+  const { openPayment } = usePaymentContext();
   const [courses, setCourses] = useState<Course[]>([]);
   const [filteredCourses, setFilteredCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,12 +66,41 @@ export function CoursesBrowse() {
     setFilteredCourses(filtered);
   }, [searchTerm, courseTypeFilter, courses]);
 
-  const handleEnroll = async (courseId: string, courseType: string) => {
+  const handleEnroll = async (courseId: string, courseType: string, course?: Course) => {
     try {
       setEnrolling(courseId);
       if (courseType === "self-paced") {
-        await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
-        alert("Enrolled successfully! Check My Learning to start.");
+        // Check if course is FREE or PAID
+        const courseData = course || courses.find(c => c._id === courseId);
+        
+        if (courseData?.price && courseData.price > 0) {
+          // Paid course - open payment modal
+          openPayment({
+            serviceId: courseId,
+            serviceType: 'course',
+            serviceName: courseData.title,
+            amount: courseData.price * 100, // Convert to cents
+            currency: 'usd',
+            specialistId: '', // Would need to get from course data
+            specialistName: courseData.specialistName || 'Specialist',
+            onSuccess: async () => {
+              try {
+                // Enroll after payment succeeds
+                await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
+                alert("Payment successful! Enrolled successfully. Check My Learning to start.");
+              } catch (error: any) {
+                alert(error.message || "Enrollment failed after payment");
+              }
+            },
+            onError: (error) => {
+              alert(`Payment failed: ${error}`);
+            },
+          });
+        } else {
+          // Free course - enroll directly
+          await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
+          alert("Enrolled successfully! Check My Learning to start.");
+        }
       } else {
         alert("Please select a cohort to enroll");
       }
@@ -171,7 +202,7 @@ export function CoursesBrowse() {
                       </span>
                     </div>
                     <Button
-                      onClick={() => handleEnroll(course._id, course.courseType)}
+                      onClick={() => handleEnroll(course._id, course.courseType, course)}
                       disabled={enrolling === course._id}
                       className="w-full"
                     >

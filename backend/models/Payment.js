@@ -49,13 +49,19 @@ const paymentSchema = new mongoose.Schema({
     default: 'USD',
   },
   
-  // Split
-  platformFee: Number, // e.g., amount * 0.2
+  // Commission & Split (Updated)
+  commissionPercentage: {
+    type: Number,
+    default: 15,
+  },
+  commissionAmount: Number, // amount * commissionPercentage / 100
+  specialistEarnings: Number, // amount - commissionAmount
+  platformFee: Number, // Deprecated: use commissionAmount
   platformFeePercentage: {
     type: Number,
-    default: 20,
+    default: 15,
   },
-  specialistPayout: Number, // amount - platformFee
+  specialistPayout: Number, // Deprecated: use specialistEarnings
   
   // Stripe Integration
   stripePaymentIntentId: {
