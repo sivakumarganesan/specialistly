@@ -1,5 +1,30 @@
 import mongoose from 'mongoose';
 
+const fileSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId(),
+  },
+  fileName: {
+    type: String,
+    required: true,
+  },
+  fileUrl: {
+    type: String,
+    required: true,
+  },
+  fileType: {
+    type: String,
+    enum: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'other'],
+    default: 'other',
+  },
+  fileSize: Number, // in bytes
+  uploadedAt: {
+    type: Date,
+    default: () => new Date(),
+  },
+});
+
 const lessonSchema = new mongoose.Schema({
   _id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -11,8 +36,9 @@ const lessonSchema = new mongoose.Schema({
   },
   videoUrl: {
     type: String,
-    required: true,
+    default: null, // Optional - lessons can have videos or just files
   },
+  files: [fileSchema], // Array of downloadable files (PDF, Word docs, etc)
   order: {
     type: Number,
     required: true,

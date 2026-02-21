@@ -155,12 +155,24 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   interface Lesson {
     _id?: string;
     title: string;
-    videoUrl: string;
+    videoUrl?: string; // Optional - can have just files
     order: number;
+    files?: LessonFile[];
+  }
+
+  interface LessonFile {
+    _id?: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    fileSize?: number;
+    uploadedAt?: string;
   }
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
+  const [uploadingFileFor, setUploadingFileFor] = useState<number | null>(null);
+  const [selectedFilesByLesson, setSelectedFilesByLesson] = useState<{ [key: number]: File[] }>({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -430,6 +442,75 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     );
   };
 
+  const handleFileSelect = (lessonIndex: number, files: FileList | null) => {
+    if (!files) return;
+    
+    const fileArray = Array.from(files);
+    const lesson = lessons[lessonIndex];
+    
+    if (!lesson.files) {
+      lesson.files = [];
+    }
+    
+    // Add selected files to the lesson
+    for (const file of fileArray) {
+      const fileType = getFileType(file.name);
+      const newFile: LessonFile = {
+        fileName: file.name,
+        fileUrl: URL.createObjectURL(file), // Temporary URL for preview
+        fileType: fileType,
+        fileSize: file.size,
+        uploadedAt: new Date().toISOString(),
+      };
+      
+      if (!lesson.files.find(f => f.fileName === file.name)) {
+        lesson.files.push(newFile);
+      }
+    }
+    
+    setLessons([...lessons]);
+  };
+
+  const removeFileFromLesson = (lessonIndex: number, fileIndex: number) => {
+    const lesson = lessons[lessonIndex];
+    if (lesson.files) {
+      lesson.files.splice(fileIndex, 1);
+      setLessons([...lessons]);
+    }
+  };
+
+  const getFileType = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toLowerCase() || 'other';
+    const typeMap: { [key: string]: string } = {
+      'pdf': 'pdf',
+      'doc': 'doc',
+      'docx': 'docx',
+      'xls': 'xls',
+      'xlsx': 'xlsx',
+      'ppt': 'ppt',
+      'pptx': 'pptx',
+      'txt': 'txt',
+      'zip': 'zip',
+    };
+    return typeMap[extension] || 'other';
+  };
+
+  const getFileIcon = (fileType: string) => {
+    const icons: { [key: string]: string } = {
+      'pdf': '📄',
+      'doc': '📝',
+      'docx': '📝',
+      'xls': '📊',
+      'xlsx': '📊',
+      'ppt': '🎯',
+      'pptx': '🎯',
+      'txt': '📄',
+      'zip': '📦',
+      'other': '📎',
+    };
+    return icons[fileType] || '📎';
+  };
+
   const convertToEmbedUrl = (url: string): string => {
     if (!url.trim()) return "";
     
@@ -533,10 +614,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const handleSaveLessons = async () => {
     if (!selectedCourse) return;
 
-    // Validate all lessons have title and videoUrl
-    const invalidLessons = lessons.filter(l => !l.title || !l.videoUrl);
+    // Validate all lessons have title (videoUrl is now optional)
+    const invalidLessons = lessons.filter(l => !l.title);
     if (invalidLessons.length > 0) {
-      alert("Please fill in all lesson titles and video URLs before saving.");
+      alert("Please fill in all lesson titles. You can add videos and files optionally.");
       return;
     }
 
@@ -544,19 +625,23 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       // Add new lessons that don't have _id
       for (const lesson of lessons) {
         if (!lesson._id) {
-          // Ensure URL is properly converted before saving
-          const finalUrl = convertToEmbedUrl(lesson.videoUrl);
-          
-          if (!finalUrl.includes("youtube.com/embed/") && 
-              !finalUrl.includes("player.vimeo.com/") &&
-              !finalUrl.includes("drive.google.com/file/") &&
-              !finalUrl.includes("/embed/")) {
-            console.warn(`Video URL may not be valid: ${finalUrl}`);
+          // Prepare video URL if provided
+          let finalUrl = null;
+          if (lesson.videoUrl) {
+            finalUrl = convertToEmbedUrl(lesson.videoUrl);
+            
+            if (!finalUrl.includes("youtube.com/embed/") && 
+                !finalUrl.includes("player.vimeo.com/") &&
+                !finalUrl.includes("drive.google.com/file/") &&
+                !finalUrl.includes("/embed/")) {
+              console.warn(`Video URL may not be valid: ${finalUrl}`);
+            }
           }
           
           await courseAPI.addLesson(selectedCourse.id, {
             title: lesson.title,
             videoUrl: finalUrl,
+            files: lesson.files || [],
             order: lesson.order,
           });
         }
@@ -564,6 +649,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       
       setManageLessonsDialogOpen(false);
       setVideoPreviewUrl(null);
+      setSelectedFilesByLesson({});
       alert("✓ Lessons saved successfully!");
       
       // Refresh courses
@@ -1568,24 +1654,25 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           <DialogHeader>
             <DialogTitle>Manage Course Lessons</DialogTitle>
             <DialogDescription>
-              Add video lessons to your course. Students will see these lessons after enrolling.
+              Add lessons with videos, files (PDF, Word, Excel), or both. Students will see these lessons after enrolling.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div className="bg-blue-50 border border-blue-200 p-4 rounded-md space-y-3">
-              <p className="text-sm font-semibold text-blue-900">📺 Add Video Lessons (Auto-Conversion)</p>
+              <p className="text-sm font-semibold text-blue-900">📚 Add Course Lessons (Videos & Files)</p>
               <div className="text-sm text-blue-800 space-y-2">
                 <div className="bg-white p-3 rounded border border-green-300 border-dashed">
                   <strong className="text-green-700">✓ Easy method:</strong>
                   <p className="text-xs text-green-700 mt-1">
-                    Just paste any YouTube, Vimeo, or Google Drive URL below, and we'll automatically convert it to the correct embed format!
+                    Add lesson title (required) + video URL (optional) + files (optional). You can have lesson with video only, files only, or both!
                   </p>
                   <ul className="text-xs text-green-700 ml-4 mt-2 list-disc space-y-1">
                     <li>Regular YouTube: <code className="bg-green-100 px-1 rounded">youtube.com/watch?v=VIDEO_ID</code></li>
                     <li>YouTube short: <code className="bg-green-100 px-1 rounded">youtu.be/VIDEO_ID</code></li>
                     <li>Vimeo: <code className="bg-green-100 px-1 rounded">vimeo.com/VIDEO_ID</code></li>
                     <li>Google Drive: <code className="bg-green-100 px-1 rounded">drive.google.com/file/d/FILE_ID/view</code></li>
+                    <li>Files: <code className="bg-green-100 px-1 rounded">PDF, Word, Excel, PowerPoint, ZIP</code></li>
                   </ul>
                 </div>
                 
@@ -1645,12 +1732,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                       </div>
                       <div>
                         <Label htmlFor={`lesson-url-${index}`} className="text-xs">
-                          Video URL *
+                          Video URL (Optional)
                         </Label>
                         <Input
                           id={`lesson-url-${index}`}
                           placeholder="Paste any YouTube/Vimeo URL - we'll auto-convert it!"
-                          value={lesson.videoUrl}
+                          value={lesson.videoUrl || ""}
                           onChange={(e) => updateLesson(index, "videoUrl", e.target.value)}
                         />
                         {lesson.videoUrl && (
@@ -1673,6 +1760,62 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                                 Test Video
                               </Button>
                             </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* File Upload Section */}
+                      <div className="border-t pt-3">
+                        <Label htmlFor={`lesson-files-${index}`} className="text-xs">
+                          📎 Lesson Files (PDF, Word, Excel, etc.) - Optional
+                        </Label>
+                        <div className="mt-2 space-y-2">
+                          <input
+                            id={`lesson-files-${index}`}
+                            type="file"
+                            multiple
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+                            onChange={(e) => handleFileSelect(index, e.target.files)}
+                            className="text-xs"
+                          />
+                          <p className="text-xs text-gray-500">
+                            Supported: PDF, Word, Excel, PowerPoint, Text, ZIP files
+                          </p>
+                        </div>
+
+                        {/* Display files attached to this lesson */}
+                        {lesson.files && lesson.files.length > 0 && (
+                          <div className="mt-3 space-y-2 p-2 bg-blue-50 rounded border border-blue-200">
+                            <p className="text-xs font-semibold text-blue-900">Attached Files:</p>
+                            {lesson.files.map((file, fileIndex) => (
+                              <div
+                                key={fileIndex}
+                                className="flex items-center justify-between p-2 bg-white rounded border border-blue-100"
+                              >
+                                <div className="flex items-center gap-2 flex-1">
+                                  <span className="text-lg">{getFileIcon(file.fileType)}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium text-gray-900 truncate">
+                                      {file.fileName}
+                                    </p>
+                                    {file.fileSize && (
+                                      <p className="text-xs text-gray-500">
+                                        {(file.fileSize / 1024).toFixed(1)} KB
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeFileFromLesson(index, fileIndex)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  ✕
+                                </Button>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>

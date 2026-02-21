@@ -12,6 +12,14 @@ interface Lesson {
   videoUrl?: string;
   order: number;
   completed: boolean;
+  files?: Array<{
+    _id?: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    fileSize?: number;
+    uploadedAt?: string;
+  }>;
 }
 
 interface EnrollmentDetails {
@@ -48,6 +56,22 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
     // Reset video error when changing lessons
     setVideoError(null);
   }, [currentLessonId]);
+
+  const getFileIcon = (fileType: string) => {
+    const icons: { [key: string]: string } = {
+      'pdf': '📄',
+      'doc': '📝',
+      'docx': '📝',
+      'xls': '📊',
+      'xlsx': '📊',
+      'ppt': '🎯',
+      'pptx': '🎯',
+      'txt': '📄',
+      'zip': '📦',
+      'other': '📎',
+    };
+    return icons[fileType] || '📎';
+  };
 
   const fetchEnrollmentDetails = async () => {
     try {
@@ -243,7 +267,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                   <h2 className="text-2xl font-bold text-gray-900 mb-4">
                     {currentLesson.title}
                   </h2>
-                  <div className="flex gap-3">
+                  <div className="flex gap-3 mb-6">
                     {!currentLesson.completed && (
                       <Button
                         onClick={() => handleMarkComplete(currentLesson._id)}
@@ -261,6 +285,44 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                       </Badge>
                     )}
                   </div>
+
+                  {/* Display Lesson Files if any */}
+                  {currentLesson.files && currentLesson.files.length > 0 && (
+                    <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <h3 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
+                        📎 Lesson Materials
+                      </h3>
+                      <div className="space-y-2">
+                        {currentLesson.files.map((file: any, index: number) => (
+                          <a
+                            key={index}
+                            href={file.fileUrl}
+                            download={file.fileName}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-between p-3 bg-white rounded border border-blue-100 hover:border-blue-300 hover:bg-blue-50 transition"
+                          >
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <span className="text-lg flex-shrink-0">
+                                {getFileIcon(file.fileType)}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {file.fileName}
+                                </p>
+                                {file.fileSize && (
+                                  <p className="text-xs text-gray-500">
+                                    {(file.fileSize / 1024).toFixed(1)} KB
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-blue-600 ml-2 flex-shrink-0">↓</div>
+                          </a>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </Card>
             ) : (
