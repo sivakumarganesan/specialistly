@@ -36,6 +36,7 @@ export function SpecialistMeetingManager() {
   const [slots, setSlots] = useState<ConsultingSlot[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [zoomAuthError, setZoomAuthError] = useState(false);
   const [creatingZoomFor, setCreatingZoomFor] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [copiedMeetingId, setCopiedMeetingId] = useState<string | null>(null);
@@ -89,6 +90,7 @@ export function SpecialistMeetingManager() {
     try {
       setCreatingZoomFor(`${slotId}-${bookingIndex}`);
       setError(null);
+      setZoomAuthError(false);
 
       const response = await fetch(`${API_BASE_URL}/consulting-slots/${slotId}/booking/${bookingIndex}/create-zoom`, {
         method: 'POST',
@@ -103,6 +105,9 @@ export function SpecialistMeetingManager() {
       if (!response.ok) {
         if (response.status === 409) {
           setError('Zoom meeting already created for this booking');
+        } else if (response.status === 403 && data?.requiresZoomAuth) {
+          setZoomAuthError(true);
+          setError('Your Zoom account is not authorized. Please go to Settings to authorize Zoom access.');
         } else {
           setError(data?.message || 'Failed to create Zoom meeting');
         }
@@ -170,9 +175,19 @@ export function SpecialistMeetingManager() {
 
       {/* Error Message */}
       {error && (
-        <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-red-700">{error}</p>
+        <div className="p-4 rounded-lg bg-red-50 border border-red-200 flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+          {zoomAuthError && (
+            <a 
+              href="/settings" 
+              className="text-sm font-medium text-red-600 hover:text-red-700 underline whitespace-nowrap"
+            >
+              Go to Settings
+            </a>
+          )}
         </div>
       )}
 
