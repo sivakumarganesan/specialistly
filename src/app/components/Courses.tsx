@@ -474,6 +474,31 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     setLessons([...lessons]);
   };
 
+  const extractFileName = (url: string, providedName?: string): string => {
+    if (providedName) return providedName;
+    
+    // Extract file ID from URL
+    let fileId = '';
+    if (url.includes('/d/')) {
+      fileId = url.split('/d/')[1]?.split('/')[0] || '';
+    } else if (url.includes('id=')) {
+      fileId = new URL(url).searchParams.get('id') || '';
+    } else {
+      fileId = url;
+    }
+    
+    // Determine file type from URL
+    if (url.includes('docs.google.com/document')) {
+      return `Google_Document_${fileId.substring(0, 8)}`;
+    } else if (url.includes('docs.google.com/spreadsheets')) {
+      return `Google_Sheet_${fileId.substring(0, 8)}`;
+    } else if (url.includes('docs.google.com/presentation')) {
+      return `Google_Slides_${fileId.substring(0, 8)}`;
+    } else {
+      return `Google_File_${fileId.substring(0, 8)}`;
+    }
+  };
+
   const addGoogleDriveFile = async (lessonIndex: number, googleDriveUrl: string, fileName?: string) => {
     if (!selectedCourse || !googleDriveUrl.trim()) {
       alert("Please provide a valid Google Drive URL or file ID");
@@ -486,7 +511,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       // If lesson doesn't have an ID yet, we can't attach files through the API
       if (!lesson._id) {
         // For new lessons, we'll add files locally and send them with the lesson creation
-        const displayName = fileName || googleDriveUrl.split('/').filter(Boolean).pop() || 'Google Drive File';
+        const displayName = extractFileName(googleDriveUrl, fileName);
         
         if (!lesson.files) {
           lesson.files = [];
@@ -512,7 +537,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       }
 
       // For existing lessons, call the backend API
-      const displayName = fileName || googleDriveUrl.split('/').filter(Boolean).pop() || 'Google Drive File';
+      const displayName = extractFileName(googleDriveUrl, fileName);
 
       const response = await fetch(
         `${API_BASE_URL}/courses/${selectedCourse.id}/lessons/${lesson._id}/files`,
