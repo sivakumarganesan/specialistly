@@ -10,6 +10,7 @@ import { WebinarCalendarSlots } from "@/app/components/WebinarCalendarSlots";
 import { WebinarBookingModal } from "@/app/components/WebinarBookingModal";
 import { ConsultingSlotCalendar } from "@/app/components/ConsultingSlotCalendar";
 import { SpecialistMeetingManager } from "@/app/components/SpecialistMeetingManager";
+import { CATEGORY_COLORS } from "@/app/constants/specialityCategories";
 
 interface SpecialistProfileProps {
   specialistId: string;
@@ -397,6 +398,23 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
             <div className="flex-1">
               <h1 className="text-4xl font-bold mb-2">{specialist.name}</h1>
               <p className="text-lg text-indigo-600 font-semibold mb-3">{specialist.specialization}</p>
+              
+              {/* Speciality Categories */}
+              {specialist.specialityCategories && specialist.specialityCategories.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {specialist.specialityCategories.map((category: string) => (
+                    <span
+                      key={category}
+                      className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                        CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]
+                      }`}
+                    >
+                      {category}
+                    </span>
+                  ))}
+                </div>
+              )}
+              
               <div className="flex flex-wrap gap-4 mb-4">
                 <div className="flex items-center gap-2">
                   <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />

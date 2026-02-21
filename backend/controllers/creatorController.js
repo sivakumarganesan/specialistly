@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import Course from '../models/Course.js';
 import Service from '../models/Service.js';
+import { SPECIALITY_CATEGORIES, isValidCategory } from '../constants/specialityCategories.js';
 
 // Create or update specialist profile (unified Creator/Specialist)
 export const saveCreatorProfile = async (req, res) => {
@@ -218,6 +219,173 @@ export const deleteCreatorProfile = async (req, res) => {
       message: 'Specialist profile deleted successfully',
     });
   } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get all predefined speciality categories
+export const getAllCategories = async (req, res) => {
+  try {
+    res.status(200).json({
+      success: true,
+      data: SPECIALITY_CATEGORIES,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Update specialist's speciality categories
+export const updateSpecialityCategories = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { categories } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    // Validate categories
+    if (!Array.isArray(categories)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Categories must be an array',
+      });
+    }
+
+    // Check if all categories are valid
+    const invalidCategories = categories.filter(cat => !isValidCategory(cat));
+    if (invalidCategories.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid categories: ${invalidCategories.join(', ')}`,
+      });
+    }
+
+    // Update user with new categories
+    const specialist = await User.findOneAndUpdate(
+      { email, isSpecialist: true },
+      { 
+        specialityCategories: categories,
+        updatedAt: Date.now() 
+      },
+      { new: true }
+    );
+
+    if (!specialist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Speciality categories updated successfully',
+      data: specialist.specialityCategories,
+    });
+  } catch (error) {
+    console.error('Error updating speciality categories:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get specialist's speciality categories
+export const getSpecialistCategories = async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required',
+      });
+    }
+
+    const specialist = await User.findOne(
+      { email, isSpecialist: true },
+      'specialityCategories'
+    );
+
+    if (!specialist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: specialist.specialityCategories || [],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get specialists filtered by category
+export const getSpecialistsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+
+    if (!category) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category is required',
+      });
+    }
+
+    if (!isValidCategory(category)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid category: ${category}`,
+      });
+    }
+
+    // Find specialists with this category
+    const specialists = await User.find(
+      { 
+        isSpecialist: true,
+        specialityCategories: category
+      },
+      'name email bio specialization profilePicture rating totalStudents specialityCategories'
+    ).sort({ createdAt: -1 });
+
+    // Enrich with service and course counts
+    const enriched = await Promise.all(
+      specialists.map(async (specialist) => {
+        const servicesCount = await Service.countDocuments({ creator: specialist.email, status: 'active' });
+        const coursesCount = await Course.countDocuments({ specialistEmail: specialist.email, status: 'published' });
+        
+        return {
+          ...specialist.toObject(),
+          servicesCount,
+          coursesCount,
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      data: enriched,
+    });
+  } catch (error) {
+    console.error('Error fetching specialists by category:', error);
     res.status(500).json({
       success: false,
       message: error.message,

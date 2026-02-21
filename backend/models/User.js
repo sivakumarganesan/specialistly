@@ -72,6 +72,25 @@ const userSchema = new mongoose.Schema({
   company: String,
   website: String,
   creatorName: String,
+  // Speciality categories from predefined list
+  specialityCategories: [{
+    type: String,
+    enum: [
+      'Healthcare',
+      'Sports',
+      'Dietitian',
+      'Entertainment',
+      'Astrology/Numerology',
+      'Coaching',
+      'Medical',
+      'Law & Legal Services',
+      'Technology & IT',
+      'Design & Arts',
+      'Digital Marketing',
+      'Fitness & Nutrition',
+      'Education & Career'
+    ]
+  }],
   weeklyAvailability: [
     {
       day: String,

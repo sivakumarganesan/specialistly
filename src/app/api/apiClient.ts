@@ -259,6 +259,13 @@ export const creatorAPI = {
   updateAvailability: (email: string, data: any) =>
     apiCall(`/creator/${email}/availability`, "PUT", data),
   delete: (id: string) => apiCall(`/creator/${id}`, "DELETE"),
+  
+  // Speciality categories
+  getAllCategories: () => apiCall("/creator/categories/all"),
+  getSpecialistCategories: (email: string) => apiCall(`/creator/categories/specialist/${email}`),
+  updateSpecialistCategories: (email: string, categories: string[]) => 
+    apiCall(`/creator/categories/specialist/${email}`, "PUT", { categories }),
+  getSpecialistsByCategory: (category: string) => apiCall(`/creator/categories/filter/${category}`),
 };
 
 // Subscription API calls
