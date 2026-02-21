@@ -6,7 +6,6 @@ import mongoose from 'mongoose';
 import { generateSlotsForDateRange } from '../utils/slotGenerationUtils.js';
 import zoomService from '../services/zoomService.js';
 import gmailApiService from '../services/gmailApiService.js';
-import refundService from '../services/refundService.js';
 
 // Helper function to calculate duration in minutes from time strings
 const calculateDuration = (startTime, endTime) => {
@@ -1325,46 +1324,6 @@ export const cancelBooking = async (req, res) => {
     } catch (emailError) {
       console.error('⚠️ Failed to send cancellation email:', emailError.message);
       // Don't fail the whole operation if email fails
-    }
-
-    // Process refund asynchronously (don't block response)
-    // NOTE: This requires payment_intent_id to be stored with the booking
-    // In production, you would:
-    // 1. Retrieve the payment_intent_id from booking.paymentIntentId
-    // 2. Call Stripe API to process refund via refundService
-    // 3. Update refund status in booking.cancellation.refundStatus
-    
-    // For now, we'll queue the refund processing asynchronously
-    if (booking.paymentIntentId) {
-      setImmediate(async () => {
-        try {
-          console.log(`💰 Processing Stripe refund asynchronously...`);
-          const refundResult = await refundService.processRefund(
-            booking.paymentIntentId,
-            Math.round(booking.cancellation.refundAmount * 100), // Convert to cents
-            'requested_by_specialist'
-          );
-
-          if (refundResult.success) {
-            // Update cancellation with refund details
-            booking.cancellation.refundStatus = 'processed';
-            booking.cancellation.stripeRefundId = refundResult.refundId;
-            await slot.save();
-            console.log(`✅ Refund processed and booking updated`);
-          } else {
-            console.error(`❌ Refund failed: ${refundResult.error}`);
-            booking.cancellation.refundStatus = 'failed';
-            await slot.save();
-          }
-        } catch (refundError) {
-          console.error(`❌ Error processing refund:`, refundError.message);
-          booking.cancellation.refundStatus = 'failed';
-          await slot.save();
-        }
-      });
-    } else {
-      console.warn(`⚠️  No payment intent ID found for booking. Refund cannot be processed automatically.`);
-      console.log(`   Note: Implement payment_intent_id storage in booking data to enable automatic refunds`);
     }
 
     res.status(200).json({

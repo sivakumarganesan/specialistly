@@ -101,13 +101,6 @@ const consultingSlotSchema = new mongoose.Schema(
           },
           cancelledAt: Date,
           cancellationReason: String,
-          refundStatus: {
-            type: String,
-            enum: ['pending', 'processed', 'failed'],
-            default: null,
-          },
-          refundAmount: Number,
-          stripeRefundId: String,
         },
       },
     ],
