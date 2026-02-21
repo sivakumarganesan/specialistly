@@ -4,7 +4,7 @@ import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { Plus, Edit, Trash2, Eye, Lock, ChevronRight, Upload } from 'lucide-react';
 import WebinarManager from './WebinarManager';
-import { serviceAPI } from '@/app/api/apiClient';
+import { serviceAPI, API_BASE_URL } from '@/app/api/apiClient';
 
 interface Webinar {
   _id: string;
@@ -71,7 +71,7 @@ export const WebinarsSection: React.FC<Props> = ({ specialistEmail, specialistId
         setSuccessMessage('Webinar updated successfully');
       } else {
         // Create new
-        await fetch(`${process.env.VITE_API_URL}/services/webinar/create`, {
+        await fetch(`${API_BASE_URL}/services/webinar/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -115,7 +115,7 @@ export const WebinarsSection: React.FC<Props> = ({ specialistEmail, specialistId
   const handlePublishWebinar = async (id: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`${process.env.VITE_API_URL}/services/${id}/publish`, {
+      const response = await fetch(`${API_BASE_URL}/services/${id}/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
