@@ -107,24 +107,18 @@ router.get('/certificates/:certificateId', getCertificate);
 // Verify certificate (public)
 router.get('/verify/:certificateId', verifyCertificate);
 
-// ===== COURSE MANAGEMENT (Specialist) - WildCard Routes (Least Specific) =====
+// ===== COURSE MANAGEMENT (Specialist) - More Specific Routes First =====
 // Create course
 router.post('/', createCourse);
 
-// Get course by ID
-router.get('/:id', getCourseById);
+// Add file to lesson (Google Drive integration) - MUST be before /:id routes
+router.post('/:courseId/lessons/:lessonId/files', addFileToLesson);
 
-// Update course
-router.put('/:id', updateCourse);
+// Remove file from lesson - MUST be before /:id routes
+router.delete('/:courseId/lessons/:lessonId/files/:fileId', removeFileFromLesson);
 
 // Add lesson to course
 router.post('/:id/lessons', addLesson);
-
-// Add file to lesson (Google Drive integration)
-router.post('/:courseId/lessons/:lessonId/files', addFileToLesson);
-
-// Remove file from lesson
-router.delete('/:courseId/lessons/:lessonId/files/:fileId', removeFileFromLesson);
 
 // Publish course (make available)
 router.post('/:id/publish', publishCourse);
@@ -132,10 +126,16 @@ router.post('/:id/publish', publishCourse);
 // Archive course (remove from store)
 router.post('/:id/archive', archiveCourse);
 
+// Get cohorts by course (published only)
+router.get('/:courseId/cohorts', getCohortsByCourse);
+
+// Update course
+router.put('/:id', updateCourse);
+
 // Delete course
 router.delete('/:id', deleteCourse);
 
-// Get cohorts by course (published only)
-router.get('/:courseId/cohorts', getCohortsByCourse);
+// Get course by ID - MUST be last (most generic)
+router.get('/:id', getCourseById);
 
 export default router;
