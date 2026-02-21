@@ -226,6 +226,8 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                           <p className="text-sm text-gray-300 max-w-sm text-center">
                             Videos typically fail to load when the URL isn't in the proper embed format. 
                             For YouTube, use: https://www.youtube.com/embed/VIDEO_ID
+                            <br/>
+                            For Google Drive, use: https://drive.google.com/file/d/FILE_ID/preview
                           </p>
                         </div>
                       )}

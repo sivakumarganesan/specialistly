@@ -435,6 +435,28 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     
     url = url.trim();
     
+    // Google Drive embed URL - already in preview format
+    if (url.includes("drive.google.com/file/") && url.includes("/preview")) {
+      return url.startsWith("https://") ? url : url.replace("http://", "https://");
+    }
+    
+    // Google Drive view URL - convert to preview format
+    if (url.includes("drive.google.com/file/")) {
+      // Extract file ID: https://drive.google.com/file/d/FILE_ID/view
+      const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (match?.[1]) {
+        return `https://drive.google.com/file/d/${match[1]}/preview`;
+      }
+    }
+    
+    // Google Drive open URL - convert to preview format
+    if (url.includes("drive.google.com/open?id=")) {
+      const match = url.match(/id=([a-zA-Z0-9-_]+)/);
+      if (match?.[1]) {
+        return `https://drive.google.com/file/d/${match[1]}/preview`;
+      }
+    }
+    
     // Already a modern embed URL - ensure https
     if (url.includes("youtube.com/embed/")) {
       return url.startsWith("https://") ? url : url.replace("http://", "https://");
@@ -527,6 +549,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           
           if (!finalUrl.includes("youtube.com/embed/") && 
               !finalUrl.includes("player.vimeo.com/") &&
+              !finalUrl.includes("drive.google.com/file/") &&
               !finalUrl.includes("/embed/")) {
             console.warn(`Video URL may not be valid: ${finalUrl}`);
           }
@@ -1556,12 +1579,13 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                 <div className="bg-white p-3 rounded border border-green-300 border-dashed">
                   <strong className="text-green-700">✓ Easy method:</strong>
                   <p className="text-xs text-green-700 mt-1">
-                    Just paste any YouTube or Vimeo URL below, and we'll automatically convert it to the correct embed format!
+                    Just paste any YouTube, Vimeo, or Google Drive URL below, and we'll automatically convert it to the correct embed format!
                   </p>
                   <ul className="text-xs text-green-700 ml-4 mt-2 list-disc space-y-1">
                     <li>Regular YouTube: <code className="bg-green-100 px-1 rounded">youtube.com/watch?v=VIDEO_ID</code></li>
                     <li>YouTube short: <code className="bg-green-100 px-1 rounded">youtu.be/VIDEO_ID</code></li>
                     <li>Vimeo: <code className="bg-green-100 px-1 rounded">vimeo.com/VIDEO_ID</code></li>
+                    <li>Google Drive: <code className="bg-green-100 px-1 rounded">drive.google.com/file/d/FILE_ID/view</code></li>
                   </ul>
                 </div>
                 
@@ -1577,6 +1601,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                     <strong className="text-blue-900">Vimeo:</strong>
                     <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
                       https://player.vimeo.com/video/VIDEO_ID
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <strong className="text-blue-900">Google Drive:</strong>
+                    <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
+                      https://drive.google.com/file/d/FILE_ID/preview
                     </div>
                   </div>
                 </div>
