@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { CustomerInterestsSetup } from '@/app/components/CustomerInterestsSetup';
+import { customerAPI } from '@/app/api/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -16,6 +17,27 @@ interface CustomerSettingsProps {
 export function CustomerSettings({ onBack }: CustomerSettingsProps) {
   const { user } = useAuth();
   const [showInterestEdit, setShowInterestEdit] = useState(false);
+  const [customerInterests, setCustomerInterests] = useState<string[]>([]);
+  const [loadingInterests, setLoadingInterests] = useState(true);
+
+  // Load customer interests when component mounts
+  useEffect(() => {
+    const loadInterests = async () => {
+      if (!user?.email) return;
+      try {
+        const response = await customerAPI.getInterests(user.email);
+        if (response?.interests && Array.isArray(response.interests)) {
+          setCustomerInterests(response.interests);
+        }
+      } catch (err) {
+        console.error('Failed to load interests:', err);
+      } finally {
+        setLoadingInterests(false);
+      }
+    };
+
+    loadInterests();
+  }, [user?.email]);
 
   if (!user || !user.email) {
     return (
@@ -27,7 +49,18 @@ export function CustomerSettings({ onBack }: CustomerSettingsProps) {
 
   const handleInterestUpdate = () => {
     setShowInterestEdit(false);
-    // Optionally refresh user data here
+    // Reload interests after update
+    const loadInterests = async () => {
+      try {
+        const response = await customerAPI.getInterests(user.email);
+        if (response?.interests && Array.isArray(response.interests)) {
+          setCustomerInterests(response.interests);
+        }
+      } catch (err) {
+        console.error('Failed to reload interests:', err);
+      }
+    };
+    loadInterests();
   };
 
   return (
@@ -65,13 +98,15 @@ export function CustomerSettings({ onBack }: CustomerSettingsProps) {
               <div className="space-y-4">
                 {/* View Mode */}
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  {user.customerInterests && user.customerInterests.length > 0 ? (
+                  {loadingInterests ? (
+                    <p className="text-blue-700 text-sm">Loading your interests...</p>
+                  ) : customerInterests && customerInterests.length > 0 ? (
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-blue-900 mb-3">
-                        You are interested in {user.customerInterests.length} categor{user.customerInterests.length === 1 ? 'y' : 'ies'}:
+                        You are interested in {customerInterests.length} categor{customerInterests.length === 1 ? 'y' : 'ies'}:
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {user.customerInterests.map(interest => (
+                        {customerInterests.map(interest => (
                           <span
                             key={interest}
                             className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium"

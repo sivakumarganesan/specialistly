@@ -31,6 +31,25 @@ export function CustomerInterestsSetup({
   const [success, setSuccess] = useState(false);
   const [skipped, setSkipped] = useState(false);
 
+  // Load existing interests when component mounts
+  useEffect(() => {
+    const loadExistingInterests = async () => {
+      try {
+        const response = await customerAPI.getInterests(customerEmail);
+        if (response?.interests && Array.isArray(response.interests)) {
+          setSelectedInterests(response.interests);
+        }
+      } catch (err) {
+        console.error('Failed to load existing interests:', err);
+        // Don't show error to user during initial load - just start with empty
+      }
+    };
+
+    if (customerEmail && !isOnboarding) {
+      loadExistingInterests();
+    }
+  }, [customerEmail, isOnboarding]);
+
   const handleInterestToggle = (interest: string) => {
     setSelectedInterests(prev =>
       prev.includes(interest)

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { SpecialistCategorySetup } from '@/app/components/SpecialistCategorySetup';
+import { creatorAPI } from '@/app/api/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -16,6 +17,27 @@ interface SpecialistSettingsProps {
 export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
   const { user } = useAuth();
   const [showCategoryEdit, setShowCategoryEdit] = useState(false);
+  const [specialityCategories, setSpecialityCategories] = useState<string[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // Load specialist categories when component mounts
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!user?.email) return;
+      try {
+        const response = await creatorAPI.getSpecialistCategories(user.email);
+        if (response?.categories && Array.isArray(response.categories)) {
+          setSpecialityCategories(response.categories);
+        }
+      } catch (err) {
+        console.error('Failed to load categories:', err);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    loadCategories();
+  }, [user?.email]);
 
   if (!user || !user.email) {
     return (
@@ -27,7 +49,19 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
 
   const handleCategoryUpdate = () => {
     setShowCategoryEdit(false);
-    // Optionally refresh user data here
+    // Reload categories after update
+    const loadCategories = async () => {
+      if (!user?.email) return;
+      try {
+        const response = await creatorAPI.getSpecialistCategories(user.email);
+        if (response?.categories && Array.isArray(response.categories)) {
+          setSpecialityCategories(response.categories);
+        }
+      } catch (err) {
+        console.error('Failed to reload categories:', err);
+      }
+    };
+    loadCategories();
   };
 
   return (
@@ -65,13 +99,15 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
               <div className="space-y-4">
                 {/* View Mode */}
                 <div className="bg-gray-50 p-4 rounded-lg">
-                  {user.specialityCategories && user.specialityCategories.length > 0 ? (
+                  {loadingCategories ? (
+                    <p className="text-gray-600 text-sm">Loading your specialities...</p>
+                  ) : specialityCategories && specialityCategories.length > 0 ? (
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-gray-700 mb-3">
-                        You have selected {user.specialityCategories.length} specialit{user.specialityCategories.length === 1 ? 'y' : 'ies'}:
+                        You have selected {specialityCategories.length} specialit{specialityCategories.length === 1 ? 'y' : 'ies'}:
                       </p>
                       <div className="flex flex-wrap gap-2">
-                        {user.specialityCategories.map(category => (
+                        {specialityCategories.map(category => (
                           <span
                             key={category}
                             className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"

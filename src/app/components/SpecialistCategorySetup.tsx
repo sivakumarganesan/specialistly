@@ -33,6 +33,25 @@ export function SpecialistCategorySetup({
   const [success, setSuccess] = useState(false);
   const [skipped, setSkipped] = useState(false);
 
+  // Load existing categories when component mounts
+  useEffect(() => {
+    const loadExistingCategories = async () => {
+      try {
+        const response = await creatorAPI.getSpecialistCategories(specialistEmail);
+        if (response?.categories && Array.isArray(response.categories)) {
+          setSelectedCategories(response.categories);
+        }
+      } catch (err) {
+        console.error('Failed to load existing categories:', err);
+        // Don't show error to user during initial load - just start with empty
+      }
+    };
+
+    if (specialistEmail && !isOnboarding) {
+      loadExistingCategories();
+    }
+  }, [specialistEmail, isOnboarding]);
+
   const handleCategoryToggle = (category: string) => {
     setSelectedCategories(prev =>
       prev.includes(category)
