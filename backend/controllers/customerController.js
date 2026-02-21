@@ -680,11 +680,7 @@ export const getCustomerInterests = async (req, res) => {
 
     res.json({
       success: true,
-      data: {
-        email: customer.email,
-        interests: customer.interests || [],
-        interestsUpdatedAt: customer.interestsUpdatedAt,
-      },
+      interests: customer.interests || [],
     });
   } catch (error) {
     console.error('Error getting customer interests:', error);

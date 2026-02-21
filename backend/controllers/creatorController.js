@@ -328,7 +328,7 @@ export const getSpecialistCategories = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      data: specialist.specialityCategories || [],
+      categories: specialist.specialityCategories || [],
     });
   } catch (error) {
     res.status(500).json({
