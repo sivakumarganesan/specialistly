@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { consultingSlotAPI, API_BASE_URL } from '@/app/api/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
-import { AlertCircle, Calendar, Clock, Video, Copy, ExternalLink, Loader, CheckCircle, AlertTriangle } from 'lucide-react';
+import { AlertCircle, Calendar, Clock, Video, Copy, ExternalLink, Loader, CheckCircle, AlertTriangle, Trash2, X } from 'lucide-react';
 
 interface ZoomMeeting {
   zoomMeetingId: string;
@@ -40,6 +40,11 @@ export function SpecialistMeetingManager() {
   const [creatingZoomFor, setCreatingZoomFor] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [copiedMeetingId, setCopiedMeetingId] = useState<string | null>(null);
+  
+  // Cancellation state
+  const [cancellationModal, setCancellationModal] = useState<{ slotId: string; bookingIndex: number } | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     fetchSpecialistSlots();
@@ -144,6 +149,69 @@ export function SpecialistMeetingManager() {
     navigator.clipboard.writeText(text);
     setCopiedMeetingId(meetingId);
     setTimeout(() => setCopiedMeetingId(null), 2000);
+  };
+
+  const handleCancelBooking = async () => {
+    if (!cancellationModal) return;
+
+    try {
+      setIsCancelling(true);
+      setError(null);
+
+      const response = await fetch(
+        `${API_BASE_URL}/consulting-slots/${cancellationModal.slotId}/booking/${cancellationModal.bookingIndex}/cancel`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+          },
+          body: JSON.stringify({
+            cancellationReason: cancellationReason || 'No reason provided',
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        // Handle specific error statuses
+        if (response.status === 409) {
+          // Time validation or already cancelled
+          setError(data?.message || 'Cannot cancel this booking');
+        } else if (response.status === 403) {
+          setError('You can only cancel your own bookings');
+        } else {
+          setError(data?.message || 'Failed to cancel booking');
+        }
+        return;
+      }
+
+      // Remove the cancelled booking from slots
+      setSlots((prevSlots) =>
+        prevSlots
+          .map((slot) =>
+            slot._id === cancellationModal.slotId
+              ? {
+                  ...slot,
+                  bookings: slot.bookings.filter((_, index) => index !== cancellationModal.bookingIndex),
+                  bookedCount: Math.max(0, slot.bookedCount - 1),
+                }
+              : slot
+          )
+          .filter((slot) => slot.bookings.length > 0) // Remove slots with no bookings
+      );
+
+      setSuccessMessage('Booking cancelled successfully. Customer has been notified.');
+      setCancellationModal(null);
+      setCancellationReason('');
+      setTimeout(() => setSuccessMessage(null), 5000);
+    } catch (err: any) {
+      console.error('Error cancelling booking:', err);
+      setError(err?.message || 'Error cancelling booking');
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   if (isLoading) {
@@ -361,6 +429,17 @@ export function SpecialistMeetingManager() {
                             </button>
                           </div>
                         )}
+
+                        {/* Cancel Booking Button */}
+                        <div className="mt-4 pt-4 border-t">
+                          <button
+                            onClick={() => setCancellationModal({ slotId: slot._id, bookingIndex })}
+                            className="w-full px-4 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg font-medium hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Cancel Booking
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -368,6 +447,80 @@ export function SpecialistMeetingManager() {
               </Card>
             );
           })}
+        </div>
+      )}
+
+      {/* Cancellation Confirmation Modal */}
+      {cancellationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="flex flex-row items-center justify-between pb-4">
+              <CardTitle className="text-red-600">Cancel Booking</CardTitle>
+              <button
+                onClick={() => {
+                  setCancellationModal(null);
+                  setCancellationReason('');
+                }}
+                className="p-1 hover:bg-gray-100 rounded transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+                <p className="text-sm text-red-700">
+                  <strong>Important:</strong> The customer will be notified via email about this cancellation.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Cancellation Reason (Optional)
+                </label>
+                <textarea
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  placeholder="e.g., Emergency conflict, rescheduling available"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                  rows={3}
+                  maxLength={200}
+                />
+                <p className="text-xs text-gray-500 mt-1">{cancellationReason.length}/200 characters</p>
+              </div>
+
+              <div className="space-y-2 pt-4">
+                <button
+                  onClick={handleCancelBooking}
+                  disabled={isCancelling}
+                  className="w-full px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isCancelling ? (
+                    <>
+                      <Loader className="w-4 h-4 animate-spin" />
+                      Cancelling...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Confirm Cancellation
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCancellationModal(null);
+                    setCancellationReason('');
+                  }}
+                  disabled={isCancelling}
+                  className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Keep Booking
+                </button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
     </div>
