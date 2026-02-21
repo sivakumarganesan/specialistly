@@ -938,19 +938,30 @@ export const createZoomMeetingForBooking = async (req, res) => {
       });
     }
 
-    // Verify the specialist owns this slot - use ObjectId equals for safe comparison
+    // Verify the specialist owns this slot
+    // Check both by ID and by email for flexibility with legacy data
     const slotSpecialistId = slot.specialistId.toString();
     const requestingUserId = specialistId.toString();
+    const requestingUserEmail = req.user?.email;
     
-    console.log(`🔒 Authorization check: slot.specialistId=${slotSpecialistId}, req.user.userId=${requestingUserId}`);
+    console.log(`🔒 Authorization check:`);
+    console.log(`   slot.specialistId=${slotSpecialistId}`);
+    console.log(`   slot.specialistEmail=${slot.specialistEmail}`);
+    console.log(`   req.user.userId=${requestingUserId}`);
+    console.log(`   req.user.email=${requestingUserEmail}`);
     
-    if (slotSpecialistId !== requestingUserId) {
+    const isAuthorized = (slotSpecialistId === requestingUserId) || 
+                         (slot.specialistEmail === requestingUserEmail);
+    
+    if (!isAuthorized) {
       return res.status(403).json({
         success: false,
         message: 'Forbidden. You can only create Zoom meetings for your own slots.',
         debug: {
           slotSpecialistId,
+          slotSpecialistEmail: slot.specialistEmail,
           requestingUserId,
+          requestingUserEmail,
         },
       });
     }
