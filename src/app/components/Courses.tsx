@@ -2027,7 +2027,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </Button>
             <Button 
               onClick={handleSaveLessons}
-              disabled={lessons.some(l => !l.title || !l.videoUrl)}
+              disabled={lessons.some(l => !l.title)}
             >
               Save Lessons
             </Button>
