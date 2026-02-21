@@ -94,9 +94,32 @@ export const getSpecialistZoomToken = async (specialistId) => {
       throw new Error('Specialist ID is required');
     }
 
-    console.log(`🔐 Fetching Zoom token for specialist: ${specialistId}`);
+    console.log(`🔐 Fetching Zoom token for specialist ID: ${specialistId}`);
+    console.log(`   Type: ${typeof specialistId}`);
+    console.log(`   Value: "${specialistId}"`);
     
-    const tokenRecord = await UserOAuthToken.findOne({ userId: specialistId });
+    // Try to find by userId first
+    let tokenRecord = await UserOAuthToken.findOne({ userId: specialistId });
+    console.log(`   Looking up by userId (direct): ${tokenRecord ? 'FOUND' : 'NOT FOUND'}`);
+
+    // If not found and specialistId looks like a MongoDB ObjectId, try searching all tokens
+    if (!tokenRecord) {
+      console.log('   Attempting fallback searches...');
+      const allTokens = await UserOAuthToken.find({}).lean();
+      console.log(`   Total tokens in database: ${allTokens.length}`);
+      
+      if (allTokens.length > 0) {
+        allTokens.forEach((token, idx) => {
+          console.log(`   Token ${idx}: userId=${token.userId}, zoomEmail=${token.zoomEmail}, active=${token.isActive}`);
+        });
+        
+        // Try to match by comparing as strings
+        tokenRecord = await UserOAuthToken.findOne({ 
+          userId: specialistId.toString ? specialistId.toString() : specialistId 
+        });
+        console.log(`   After toString fallback: ${tokenRecord ? 'FOUND' : 'NOT FOUND'}`);
+      }
+    }
     
     if (!tokenRecord) {
       console.error(`❌ No Zoom OAuth token found for specialist ${specialistId}`);
@@ -104,6 +127,11 @@ export const getSpecialistZoomToken = async (specialistId) => {
         `No Zoom OAuth token found for specialist. User must authorize Zoom access first.`
       );
     }
+
+    console.log(`✅ Found token record for specialist`);
+    console.log(`   zoomUserId: ${tokenRecord.zoomUserId}`);
+    console.log(`   zoomEmail: ${tokenRecord.zoomEmail}`);
+    console.log(`   isActive: ${tokenRecord.isActive}`);
 
     if (!tokenRecord.zoomAccessToken || tokenRecord.zoomAccessToken === 'pending') {
       console.error(`❌ Zoom access token not available for specialist ${specialistId}`);
@@ -180,6 +208,7 @@ export const createZoomMeeting = async (appointmentData) => {
   let meetingPayload; // Initialize early to avoid reference errors in catch block
   try {
     console.log('🎥 Creating Zoom meeting...');
+    console.log(`   Received appointmentData keys: ${Object.keys(appointmentData).join(', ')}`);
 
     const {
       specialistEmail,
@@ -191,6 +220,10 @@ export const createZoomMeeting = async (appointmentData) => {
       endDateTime,
       specialistId,
     } = appointmentData;
+
+    console.log(`   specialistId: ${specialistId} (type: ${typeof specialistId})`);
+    console.log(`   specialistEmail: ${specialistEmail}`);
+    console.log(`   specialistName: ${specialistName}`);
 
     // Get specialist's Zoom access token (user-managed OAuth)
     let accessToken;

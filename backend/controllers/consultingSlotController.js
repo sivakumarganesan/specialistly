@@ -995,10 +995,18 @@ export const createZoomMeetingForBooking = async (req, res) => {
     endDateTime.setMinutes(endDateTime.getMinutes() + slot.duration);
 
     console.log(`🎥 Creating Zoom meeting for booking with ${booking.customerName}...`);
+    console.log(`   slotId: ${slotId}`);
+    console.log(`   slot.specialistId: ${slot.specialistId} (type: ${typeof slot.specialistId})`);
+    console.log(`   slot.specialistEmail: ${slot.specialistEmail}`);
+    console.log(`   req.user.userId: ${req.user?.userId} (type: ${typeof req.user?.userId})`);
+    console.log(`   req.user.email: ${req.user?.email}`);
     
     // Get specialist details for Zoom meeting
     const specialist = await CreatorProfile.findById(slot.specialistId);
     const specialistName = specialist?.creatorName || 'Specialist';
+    
+    console.log(`   specialist found: ${specialist ? 'YES' : 'NO'}`);
+    console.log(`   specialistName: ${specialistName}`);
     
     const zoomMeetingDetails = await zoomService.createZoomMeeting({
       specialistId: slot.specialistId,
