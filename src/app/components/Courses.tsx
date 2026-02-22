@@ -443,17 +443,32 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
   const uploadVideoToCloudflare = async (lessonIndex: number, file: File) => {
     try {
+      if (!selectedCourse) {
+        throw new Error("No course selected");
+      }
+
+      const lesson = lessons[lessonIndex];
+      if (!lesson || !lesson.title) {
+        throw new Error("Lesson title is required before uploading video");
+      }
+
       setUploadingVideoFor(lessonIndex);
       setVideoUploadProgress({ ...videoUploadProgress, [lessonIndex]: 0 });
 
-      // Step 1: Get upload token from backend
+      // Ensure lesson has an ID (use MongoDB _id if exists, otherwise use index as temporary ID)
+      const lessonId = lesson._id || `temp-${lessonIndex}-${Date.now()}`;
+
+      // Step 1: Get upload token from backend with required metadata
       const tokenResponse = await videoAPI.getUploadToken({
+        courseId: selectedCourse.id,
+        lessonId: lessonId,
+        title: lesson.title,
         fileName: file.name,
         fileSize: file.size,
       });
 
       if (!tokenResponse.success || !tokenResponse.uploadUrl || !tokenResponse.streamId) {
-        throw new Error("Failed to get upload token from Cloudflare");
+        throw new Error(tokenResponse.message || "Failed to get upload token from Cloudflare");
       }
 
       const { uploadUrl, streamId } = tokenResponse;

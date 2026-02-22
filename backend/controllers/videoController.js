@@ -14,10 +14,19 @@ export const getVideoUploadToken = async (req, res) => {
   try {
     const { title, courseId, lessonId } = req.body;
 
-    if (!title || !courseId || !lessonId) {
+    // Only title is required for Cloudflare token generation
+    // courseId and lessonId are for reference/logging purposes
+    if (!title) {
       return res.status(400).json({
         success: false,
-        message: 'Title, course ID, and lesson ID are required',
+        message: 'Video title is required',
+      });
+    }
+
+    if (!courseId || !lessonId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID and lesson ID are required',
       });
     }
 
@@ -26,7 +35,7 @@ export const getVideoUploadToken = async (req, res) => {
     res.json({
       success: true,
       uploadUrl: token.uploadUrl,
-      videoId: token.videoId,
+      streamId: token.videoId,
       expiresIn: token.expiresIn,
     });
   } catch (error) {
