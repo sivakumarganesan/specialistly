@@ -157,6 +157,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     title: string;
     order: number;
     files?: LessonFile[];
+    hlsUrl?: string;
+    cloudflareStreamId?: string;
+    cloudflareStatus?: string;
+    videoThumbnail?: string;
   }
 
   interface LessonFile {
@@ -174,6 +178,8 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [uploadingFileFor, setUploadingFileFor] = useState<number | null>(null);
   const [selectedFilesByLesson, setSelectedFilesByLesson] = useState<{ [key: number]: File[] }>({});
+  const [uploadingVideoFor, setUploadingVideoFor] = useState<number | null>(null);
+  const [videoUploadProgress, setVideoUploadProgress] = useState<{ [key: number]: number }>({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -435,6 +441,59 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     );
   };
 
+  const uploadVideoToCloudflare = async (lessonIndex: number, file: File) => {
+    try {
+      setUploadingVideoFor(lessonIndex);
+      setVideoUploadProgress({ ...videoUploadProgress, [lessonIndex]: 0 });
+
+      // Step 1: Get upload token from backend
+      const tokenResponse = await videoAPI.getUploadToken({
+        fileName: file.name,
+        fileSize: file.size,
+      });
+
+      if (!tokenResponse.success || !tokenResponse.uploadUrl || !tokenResponse.streamId) {
+        throw new Error("Failed to get upload token from Cloudflare");
+      }
+
+      const { uploadUrl, streamId } = tokenResponse;
+
+      // Step 2: Upload video to Cloudflare
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
+
+      setVideoUploadProgress({ ...videoUploadProgress, [lessonIndex]: 100 });
+
+      // Step 3: Update lesson with video metadata
+      const updatedLessons = [...lessons];
+      updatedLessons[lessonIndex] = {
+        ...updatedLessons[lessonIndex],
+        cloudflareStreamId: streamId,
+        cloudflareStatus: "processing",
+      };
+      setLessons(updatedLessons);
+
+      alert("✓ Video uploaded! Cloudflare is processing it. Check back in a few minutes.");
+    } catch (error) {
+      console.error("Video upload error:", error);
+      alert(
+        `Video upload failed: ${error instanceof Error ? error.message : "Please try again."}`
+      );
+    } finally {
+      setUploadingVideoFor(null);
+      setVideoUploadProgress({});
+    }
+  };
+
   const handleFileSelect = (lessonIndex: number, files: FileList | null) => {
     if (!files) return;
     
@@ -638,7 +697,11 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         _id: l._id,
         title: l.title,
         order: idx + 1,
-        files: l.files || [], // Include files from database
+        files: l.files || [],
+        cloudflareStreamId: l.cloudflareStreamId,
+        cloudflareStatus: l.cloudflareStatus,
+        hlsUrl: l.hlsUrl,
+        videoThumbnail: l.videoThumbnail,
       })));
     } else {
       setLessons([]);
@@ -660,11 +723,19 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       // Add new lessons that don't have _id
       for (const lesson of lessons) {
         if (!lesson._id) {
-          await courseAPI.addLesson(selectedCourse.id, {
+          const lessonData: any = {
             title: lesson.title,
             files: lesson.files || [],
             order: lesson.order,
-          });
+          };
+
+          // Include Cloudflare video metadata if available
+          if (lesson.cloudflareStreamId) {
+            lessonData.cloudflareStreamId = lesson.cloudflareStreamId;
+            lessonData.cloudflareStatus = lesson.cloudflareStatus || "processing";
+          }
+
+          await courseAPI.addLesson(selectedCourse.id, lessonData);
         }
       }
       
@@ -1748,6 +1819,86 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                           onChange={(e) => updateLesson(index, "title", e.target.value)}
                         />
                       </div>
+
+                      {/* Cloudflare Video Upload Section */}
+                      <div className="border-t pt-3">
+                        <Label className="text-xs">
+                          🎬 Lesson Video (Cloudflare Stream) - Optional
+                        </Label>
+                        <div className="mt-2 space-y-3">
+                          {lesson.cloudflareStreamId ? (
+                            <div className="p-3 bg-green-50 border border-green-300 rounded">
+                              <p className="text-xs font-semibold text-green-800">✓ Video Uploaded</p>
+                              <p className="text-xs text-green-700 mt-1">
+                                Stream ID: <code className="bg-green-100 px-1 rounded text-xs">{lesson.cloudflareStreamId}</code>
+                              </p>
+                              <p className="text-xs text-green-700 mt-1">
+                                Status: <span className="font-semibold">{lesson.cloudflareStatus || 'ready'}</span>
+                              </p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const updatedLessons = [...lessons];
+                                  updatedLessons[index] = {
+                                    ...updatedLessons[index],
+                                    cloudflareStreamId: undefined,
+                                    cloudflareStatus: undefined,
+                                  };
+                                  setLessons(updatedLessons);
+                                }}
+                                className="w-full mt-2 text-xs"
+                              >
+                                Remove Video
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="relative">
+                              <input
+                                id={`video-upload-${index}`}
+                                type="file"
+                                accept=".mp4,.webm,.mov"
+                                disabled={uploadingVideoFor === index}
+                                onChange={(e) => {
+                                  const file = e.currentTarget.files?.[0];
+                                  if (file) {
+                                    if (file.size > 5 * 1024 * 1024 * 1024) {
+                                      alert("File size must be under 5GB");
+                                      return;
+                                    }
+                                    uploadVideoToCloudflare(index, file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => document.getElementById(`video-upload-${index}`)?.click()}
+                                disabled={uploadingVideoFor === index}
+                                className="w-full"
+                              >
+                                {uploadingVideoFor === index ? (
+                                  <span className="flex items-center gap-2">
+                                    <span className="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                                    Uploading... {videoUploadProgress[index] || 0}%
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-2">
+                                    📤 Choose Video File
+                                  </span>
+                                )}
+                              </Button>
+                              <p className="text-xs text-gray-500 mt-2">
+                                MP4, WebM, or MOV • Max 5GB • Supports adaptive bitrate streaming
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
                       {/* File Upload Section */}
                       <div className="border-t pt-3">
                         <Label htmlFor={`lesson-files-${index}`} className="text-xs">
