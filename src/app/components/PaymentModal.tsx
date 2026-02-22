@@ -6,7 +6,7 @@ import { PaymentBreakdown } from './PaymentBreakdown';
 import { usePaymentContext } from '../context/PaymentContext';
 
 const stripePromise = loadStripe(
-  process.env.REACT_APP_STRIPE_PUBLIC_KEY || ''
+  import.meta.env.VITE_STRIPE_PUBLIC_KEY || ''
 );
 
 interface PaymentModalProps {
