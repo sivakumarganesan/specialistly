@@ -155,7 +155,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   interface Lesson {
     _id?: string;
     title: string;
-    videoUrl?: string; // Optional - can have just files
     order: number;
     files?: LessonFile[];
   }
@@ -173,7 +172,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   }
 
   const [lessons, setLessons] = useState<Lesson[]>([]);
-  const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [uploadingFileFor, setUploadingFileFor] = useState<number | null>(null);
   const [selectedFilesByLesson, setSelectedFilesByLesson] = useState<{ [key: number]: File[] }>({});
 
@@ -420,7 +418,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const addLesson = () => {
     const newLesson: Lesson = {
       title: "",
-      videoUrl: "",
       order: lessons.length + 1,
     };
     setLessons([...lessons, newLesson]);
@@ -431,16 +428,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   };
 
   const updateLesson = (index: number, field: keyof Lesson, value: string | number) => {
-    let finalValue = value;
-    
-    // Auto-convert YouTube URLs to embed format
-    if (field === "videoUrl" && typeof value === "string") {
-      finalValue = convertToEmbedUrl(value);
-    }
-    
     setLessons(
       lessons.map((lesson, i) =>
-        i === index ? { ...lesson, [field]: finalValue } : lesson
+        i === index ? { ...lesson, [field]: value } : lesson
       )
     );
   };
@@ -640,90 +630,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     return icons[fileType] || '📎';
   };
 
-  const convertToEmbedUrl = (url: string): string => {
-    if (!url.trim()) return "";
-    
-    url = url.trim();
-    
-    // Google Drive embed URL - already in preview format
-    if (url.includes("drive.google.com/file/") && url.includes("/preview")) {
-      return url.startsWith("https://") ? url : url.replace("http://", "https://");
-    }
-    
-    // Google Drive view URL - convert to preview format
-    if (url.includes("drive.google.com/file/")) {
-      // Extract file ID: https://drive.google.com/file/d/FILE_ID/view
-      const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-      if (match?.[1]) {
-        return `https://drive.google.com/file/d/${match[1]}/preview`;
-      }
-    }
-    
-    // Google Drive open URL - convert to preview format
-    if (url.includes("drive.google.com/open?id=")) {
-      const match = url.match(/id=([a-zA-Z0-9-_]+)/);
-      if (match?.[1]) {
-        return `https://drive.google.com/file/d/${match[1]}/preview`;
-      }
-    }
-    
-    // Already a modern embed URL - ensure https
-    if (url.includes("youtube.com/embed/")) {
-      return url.startsWith("https://") ? url : url.replace("http://", "https://");
-    }
-    if (url.includes("youtube-nocookie.com/embed/")) {
-      return url.startsWith("https://") ? url : url.replace("http://", "https://");
-    }
-    if (url.includes("player.vimeo.com/video/")) {
-      return url.startsWith("https://") ? url : url.replace("http://", "https://");
-    }
-    
-    // Extract video ID from various YouTube formats
-    let videoId = null;
-    
-    // YouTube watch URL: youtube.com/watch?v=VIDEO_ID or www.youtube.com/watch?v=VIDEO_ID
-    if (url.includes("youtube.com/watch") || url.includes("youtu.be/")) {
-      try {
-        const urlObj = new URL(url);
-        videoId = urlObj.searchParams.get("v");
-      } catch (e) {
-        // If URL fails to parse, try regex
-        const match = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-        videoId = match?.[1] || null;
-      }
-    }
-    
-    // YouTube short URL: youtu.be/VIDEO_ID
-    if (!videoId && url.includes("youtu.be/")) {
-      const match = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
-      videoId = match?.[1] || null;
-    }
-    
-    // Return converted YouTube URL
-    if (videoId) {
-      return `https://www.youtube.com/embed/${videoId}`;
-    }
-    
-    // Vimeo extraction
-    let vimeoId = null;
-    if (url.includes("vimeo.com")) {
-      const match = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-      vimeoId = match?.[1] || null;
-    }
-    
-    if (vimeoId) {
-      return `https://player.vimeo.com/video/${vimeoId}`;
-    }
-    
-    // If it looks like an embed URL already, ensure https
-    if (url.includes("embed") || url.includes("player")) {
-      return url.startsWith("https://") ? url : url.replace("http://", "https://");
-    }
-    
-    // Return original if we can't convert it
-    return url;
-  };
-
   const openManageLessonsDialog = (course: Course) => {
     setSelectedCourse(course);
     // Initialize lessons from course if they exist
@@ -731,7 +637,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       setLessons(course.lessons.map((l: any, idx) => ({
         _id: l._id,
         title: l.title,
-        videoUrl: l.videoUrl,
         order: idx + 1,
         files: l.files || [], // Include files from database
       })));
@@ -744,10 +649,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const handleSaveLessons = async () => {
     if (!selectedCourse) return;
 
-    // Validate all lessons have title (videoUrl is now optional)
+    // Validate all lessons have title
     const invalidLessons = lessons.filter(l => !l.title);
     if (invalidLessons.length > 0) {
-      alert("Please fill in all lesson titles. You can add videos and files optionally.");
+      alert("Please fill in all lesson titles. You can add files optionally. Videos are managed via Cloudflare Stream.");
       return;
     }
 
@@ -755,22 +660,8 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       // Add new lessons that don't have _id
       for (const lesson of lessons) {
         if (!lesson._id) {
-          // Prepare video URL if provided
-          let finalUrl = null;
-          if (lesson.videoUrl) {
-            finalUrl = convertToEmbedUrl(lesson.videoUrl);
-            
-            if (!finalUrl.includes("youtube.com/embed/") && 
-                !finalUrl.includes("player.vimeo.com/") &&
-                !finalUrl.includes("drive.google.com/file/") &&
-                !finalUrl.includes("/embed/")) {
-              console.warn(`Video URL may not be valid: ${finalUrl}`);
-            }
-          }
-          
           await courseAPI.addLesson(selectedCourse.id, {
             title: lesson.title,
-            videoUrl: finalUrl,
             files: lesson.files || [],
             order: lesson.order,
           });
@@ -778,7 +669,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       }
       
       setManageLessonsDialogOpen(false);
-      setVideoPreviewUrl(null);
       setSelectedFilesByLesson({});
       alert("✓ Lessons saved successfully!");
       
@@ -817,9 +707,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     }
   };
 
-  const testVideoUrl = (url: string) => {
-    setVideoPreviewUrl(convertToEmbedUrl(url));
-  };
+
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -1860,40 +1748,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                           onChange={(e) => updateLesson(index, "title", e.target.value)}
                         />
                       </div>
-                      <div>
-                        <Label htmlFor={`lesson-url-${index}`} className="text-xs">
-                          Video URL (Optional)
-                        </Label>
-                        <Input
-                          id={`lesson-url-${index}`}
-                          placeholder="Paste any YouTube/Vimeo URL - we'll auto-convert it!"
-                          value={lesson.videoUrl || ""}
-                          onChange={(e) => updateLesson(index, "videoUrl", e.target.value)}
-                        />
-                        {lesson.videoUrl && (
-                          <div className="mt-2 space-y-2">
-                            <div className="p-2 bg-gray-50 rounded border border-gray-200">
-                              <p className="text-xs text-gray-600 mb-2">
-                                <strong>Will be converted to:</strong>
-                              </p>
-                              <div className="font-mono text-xs bg-white p-1 rounded break-all text-green-700 mb-2">
-                                {convertToEmbedUrl(lesson.videoUrl)}
-                              </div>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => testVideoUrl(lesson.videoUrl)}
-                                className="w-full text-xs"
-                              >
-                                <Play className="h-3 w-3 mr-1" />
-                                Test Video
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
                       {/* File Upload Section */}
                       <div className="border-t pt-3">
                         <Label htmlFor={`lesson-files-${index}`} className="text-xs">
