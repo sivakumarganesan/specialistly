@@ -467,8 +467,22 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         fileSize: file.size,
       });
 
-      if (!tokenResponse.success || !tokenResponse.uploadUrl || !tokenResponse.streamId) {
+      if (!tokenResponse.success) {
+        // Check for configuration errors
+        if (tokenResponse.error === 'CLOUDFLARE_NOT_CONFIGURED') {
+          throw new Error(
+            "⚠️ Cloudflare Stream is not configured on this server.\n\n" +
+            "The administrator needs to add these environment variables to the backend:\n" +
+            "• CLOUDFLARE_ACCOUNT_ID\n" +
+            "• CLOUDFLARE_API_TOKEN\n\n" +
+            "Once configured, video uploads will work."
+          );
+        }
         throw new Error(tokenResponse.message || "Failed to get upload token from Cloudflare");
+      }
+
+      if (!tokenResponse.uploadUrl || !tokenResponse.streamId) {
+        throw new Error("Invalid upload token response from server");
       }
 
       const { uploadUrl, streamId } = tokenResponse;

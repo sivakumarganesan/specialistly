@@ -4,6 +4,7 @@
  */
 
 import cloudflareStreamService from '../services/cloudflareStreamService.js';
+import cloudflareConfig from '../config/cloudflareConfig.js';
 import Course from '../models/Course.js';
 
 /**
@@ -12,6 +13,15 @@ import Course from '../models/Course.js';
  */
 export const getVideoUploadToken = async (req, res) => {
   try {
+    // Check if Cloudflare is configured
+    if (!cloudflareConfig.isConfigured()) {
+      return res.status(503).json({
+        success: false,
+        message: 'Video upload service is not configured. Please contact administrator. Missing Cloudflare credentials in .env file.',
+        error: 'CLOUDFLARE_NOT_CONFIGURED',
+      });
+    }
+
     const { title, courseId, lessonId } = req.body;
 
     // Only title is required for Cloudflare token generation

@@ -10,6 +10,20 @@
  *    - CLOUDFLARE_ZONE_ID=your-zone-id
  */
 
+// Validate required environment variables
+const requiredEnvVars = ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_TOKEN'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+  console.error(`⚠️  WARNING: Missing Cloudflare configuration!`);
+  console.error(`   Missing environment variables: ${missingEnvVars.join(', ')}`);
+  console.error(`   Video upload features will not work until these are set.`);
+  console.error(`   Add to your .env file:`);
+  missingEnvVars.forEach(envVar => {
+    console.error(`     ${envVar}=your_value`);
+  });
+}
+
 export const cloudflareConfig = {
   accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
   apiToken: process.env.CLOUDFLARE_API_TOKEN,
@@ -17,6 +31,11 @@ export const cloudflareConfig = {
   
   // Cloudflare Stream API endpoints
   baseUrl: `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/stream`,
+  
+  // Check if configuration is complete
+  isConfigured: () => {
+    return !!(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN);
+  },
   
   // Video configuration
   videoConfig: {
