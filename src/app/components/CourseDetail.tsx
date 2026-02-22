@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { courseAPI } from "@/app/api/apiClient";
+import { courseAPI, videoAPI } from "@/app/api/apiClient";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
 import { ChevronLeft, Play, CheckCircle, Award, AlertCircle } from "lucide-react";
+import { HLSVideoPlayer } from "@/app/components/HLSVideoPlayer";
 
 interface Lesson {
   _id: string;
@@ -50,6 +51,9 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
   const [completing, setCompleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [videoError, setVideoError] = useState<string | null>(null);
+  const [hlsVideoUrl, setHlsVideoUrl] = useState<string | null>(null);
+  const [videoThumbnail, setVideoThumbnail] = useState<string | null>(null);
+  const [loadingVideo, setLoadingVideo] = useState(false);
 
   useEffect(() => {
     fetchEnrollmentDetails();
@@ -58,7 +62,17 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
   useEffect(() => {
     // Reset video error when changing lessons
     setVideoError(null);
-  }, [currentLessonId]);
+    setHlsVideoUrl(null);
+    setVideoThumbnail(null);
+
+    // Load Cloudflare Stream video if available
+    if (enrollment && currentLessonId) {
+      const lesson = enrollment.lessons.find(l => l._id === currentLessonId);
+      if (lesson) {
+        loadCloudflareVideo(enrollment.courseTitle, currentLessonId);
+      }
+    }
+  }, [currentLessonId, enrollment]);
 
   const getFileIcon = (fileType: string) => {
     const icons: { [key: string]: string } = {
@@ -93,6 +107,28 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
       setError("Failed to load course details. Please try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCloudflareVideo = async (courseId: string, lessonId: string) => {
+    try {
+      setLoadingVideo(true);
+      setVideoError(null);
+      
+      const response = await videoAPI.getLessonVideo(courseId, lessonId);
+      if (response?.success && response.video?.hlsUrl) {
+        setHlsVideoUrl(response.video.hlsUrl);
+        setVideoThumbnail(response.video.thumbnail || null);
+      } else {
+        // No Cloudflare video found, that's okay - will use old videoUrl
+        setHlsVideoUrl(null);
+      }
+    } catch (err) {
+      console.error("Error loading Cloudflare video:", err);
+      // Don't show error - fallback to regular video URL
+      setHlsVideoUrl(null);
+    } finally {
+      setLoadingVideo(false);
     }
   };
 
@@ -232,7 +268,15 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
             {currentLesson ? (
               <Card>
                 <div className="bg-black rounded-t-lg aspect-video flex items-center justify-center relative">
-                  {currentLesson.videoUrl ? (
+                  {hlsVideoUrl ? (
+                    <HLSVideoPlayer
+                      hlsUrl={hlsVideoUrl}
+                      posterUrl={videoThumbnail || undefined}
+                      title={currentLesson.title}
+                      onError={(err) => setVideoError(`Video error: ${err}`)}
+                      className="w-full h-full"
+                    />
+                  ) : currentLesson.videoUrl ? (
                     <>
                       <iframe
                         width="100%"

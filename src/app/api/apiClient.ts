@@ -329,5 +329,28 @@ export const messageAPI = {
   archiveConversation: (conversationId: string) => apiCall(`/messages/${conversationId}/archive`, "PUT"),
 };
 
+// Video/Cloudflare Stream API
+export const videoAPI = {
+  // Get upload token for client-side upload
+  getUploadToken: (data: any) => apiCall("/videos/upload-token", "POST", data),
+  
+  // Save video reference after upload
+  saveLessonVideo: (data: any) => apiCall("/videos/save-lesson-video", "POST", data),
+  
+  // Get video details
+  getVideoDetails: (videoId: string) => apiCall(`/videos/${videoId}`),
+  
+  // Get lesson video playback URL
+  getLessonVideo: (courseId: string, lessonId: string) => 
+    apiCall(`/videos/lessons/${courseId}/${lessonId}`),
+  
+  // Update video metadata
+  updateVideoMetadata: (videoId: string, data: any) => 
+    apiCall(`/videos/${videoId}/metadata`, "PUT", data),
+  
+  // Delete video
+  deleteVideo: (videoId: string) => apiCall(`/videos/${videoId}`, "DELETE"),
+};
+
 // Health check
 export const healthCheck = () => apiCall("/health");

@@ -49,7 +49,29 @@ const lessonSchema = new mongoose.Schema({
   },
   videoUrl: {
     type: String,
-    default: null, // Optional - lessons can have videos or just files
+    default: null, // Legacy: embed URLs (YouTube, etc)
+  },
+  // Cloudflare Stream video fields
+  cloudflareStreamId: {
+    type: String,
+    default: null, // Cloudflare Stream video UID
+  },
+  cloudflarePlaybackUrl: {
+    type: String,
+    default: null, // HLS manifest URL
+  },
+  cloudflareStatus: {
+    type: String,
+    enum: ['ready', 'inprogress', 'error', 'pending'],
+    default: 'pending',
+  },
+  videoDuration: {
+    type: Number,
+    default: 0, // Duration in seconds
+  },
+  videoThumbnail: {
+    type: String,
+    default: null,
   },
   files: [fileSchema], // Array of downloadable files (PDF, Word docs, etc)
   order: {

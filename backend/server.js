@@ -18,6 +18,7 @@ import consultingSlotRoutes from './routes/consultingSlotRoutes.js';
 import availabilityScheduleRoutes from './routes/availabilityScheduleRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import commissionRoutes from './routes/commissionRoutes.js';
+import videoRoutes from './routes/videoRoutes.js';
 
 dotenv.config();
 
@@ -86,6 +87,7 @@ app.use('/api/consulting-slots', consultingSlotRoutes);
 app.use('/api/availability-schedule', availabilityScheduleRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/commission', commissionRoutes);
+app.use('/api/videos', videoRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
