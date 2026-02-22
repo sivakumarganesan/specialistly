@@ -5,7 +5,7 @@ import { Badge } from "@/app/components/ui/badge";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
-import { courseAPI, API_BASE_URL } from "@/app/api/apiClient";
+import { courseAPI, videoAPI, API_BASE_URL } from "@/app/api/apiClient";
 import { useAuth } from "@/app/context/AuthContext";
 import {
   Select,
