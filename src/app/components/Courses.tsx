@@ -1832,39 +1832,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               )}
             </div>
 
-            {videoPreviewUrl && (
-              <Card className="mt-4 p-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm">Video Preview</h4>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setVideoPreviewUrl(null)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="bg-black rounded aspect-video flex items-center justify-center overflow-hidden">
-                    <iframe
-                      width="100%"
-                      height="100%"
-                      src={videoPreviewUrl}
-                      title="Video Preview"
-                      allowFullScreen
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    ></iframe>
-                  </div>
-                  {videoPreviewUrl && (
-                    <p className="text-xs text-gray-600">
-                      <strong>Playing:</strong> <span className="break-all">{videoPreviewUrl}</span>
-                    </p>
-                  )}
-                </div>
-              </Card>
-            )}
-
             <Button
               type="button"
               variant="outline"
