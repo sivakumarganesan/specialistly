@@ -4,6 +4,7 @@
  */
 
 import express from 'express';
+import cloudflareConfig from '../config/cloudflareConfig.js';
 import {
   getVideoUploadToken,
   saveLessonVideo,
@@ -14,6 +15,24 @@ import {
 } from '../controllers/videoController.js';
 
 const router = express.Router();
+
+/**
+ * Diagnostic endpoint - check Cloudflare configuration
+ * GET /api/videos/health
+ */
+router.get('/health', (req, res) => {
+  const isConfigured = cloudflareConfig.isConfigured();
+  
+  res.json({
+    status: isConfigured ? 'healthy' : 'misconfigured',
+    cloudflareConfigured: isConfigured,
+    accountId: cloudflareConfig.accountId ? '✓ Set' : '✗ Missing',
+    apiToken: cloudflareConfig.apiToken ? '✓ Set' : '✗ Missing',
+    message: isConfigured 
+      ? 'Cloudflare Stream is properly configured'
+      : 'Cloudflare credentials are missing. Check environment variables on server.'
+  });
+});
 
 /**
  * Video Upload & Management Routes

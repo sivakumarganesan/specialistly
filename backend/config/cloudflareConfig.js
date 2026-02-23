@@ -11,31 +11,39 @@
  */
 
 // Validate required environment variables
-const requiredEnvVars = ['CLOUDFLARE_ACCOUNT_ID', 'CLOUDFLARE_API_TOKEN'];
-const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || '';
+const apiToken = process.env.CLOUDFLARE_API_TOKEN || '';
+const zoneId = process.env.CLOUDFLARE_ZONE_ID || '';
 
-if (missingEnvVars.length > 0) {
-  console.error(`⚠️  WARNING: Missing Cloudflare configuration!`);
-  console.error(`   Missing environment variables: ${missingEnvVars.join(', ')}`);
-  console.error(`   Video upload features will not work until these are set.`);
-  console.error(`   Add to your .env file:`);
-  missingEnvVars.forEach(envVar => {
-    console.error(`     ${envVar}=your_value`);
-  });
+// Debug logging
+console.log('[Cloudflare Config] Checking environment variables...');
+console.log('[Cloudflare Config] CLOUDFLARE_ACCOUNT_ID:', accountId ? '✓ Set' : '✗ Missing');
+console.log('[Cloudflare Config] CLOUDFLARE_API_TOKEN:', apiToken ? '✓ Set' : '✗ Missing');
+console.log('[Cloudflare Config] CLOUDFLARE_ZONE_ID:', zoneId ? '✓ Set' : '✗ Missing');
+
+const isConfigured = !!(accountId && apiToken);
+
+if (!isConfigured) {
+  console.warn('\n⚠️  WARNING: Cloudflare Stream is NOT properly configured!');
+  console.warn('   Video upload features will not work.');
+  console.warn('\n   To fix, add these to your environment variables:');
+  if (!accountId) console.warn('   → CLOUDFLARE_ACCOUNT_ID=your_account_id');
+  if (!apiToken) console.warn('   → CLOUDFLARE_API_TOKEN=your_api_token');
+  console.warn('\n   For Railway: Backend service → Variables tab → Add variables → Deploy\n');
+} else {
+  console.log('\n✓ Cloudflare Stream is configured and ready!\n');
 }
 
 export const cloudflareConfig = {
-  accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
-  apiToken: process.env.CLOUDFLARE_API_TOKEN,
-  zoneId: process.env.CLOUDFLARE_ZONE_ID,
+  accountId,
+  apiToken,
+  zoneId,
   
   // Cloudflare Stream API endpoints
-  baseUrl: `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/stream`,
+  baseUrl: `https://api.cloudflare.com/client/v4/accounts/${accountId}/stream`,
   
   // Check if configuration is complete
-  isConfigured: () => {
-    return !!(process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN);
-  },
+  isConfigured: () => isConfigured,
   
   // Video configuration
   videoConfig: {
