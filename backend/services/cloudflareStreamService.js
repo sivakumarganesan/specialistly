@@ -68,6 +68,10 @@ class CloudflareStreamService {
    */
   async getUploadToken(videoMetadata = {}) {
     try {
+      console.log('[Cloudflare] Requesting upload token...');
+      console.log('[Cloudflare] API Base URL:', this.baseUrl);
+      console.log('[Cloudflare] Authorization Header Present:', !!this.headers['Authorization']);
+      
       const response = await axios.post(
         `${this.baseUrl}/direct_upload`,
         {
@@ -78,6 +82,7 @@ class CloudflareStreamService {
         { headers: this.headers }
       );
 
+      console.log('[Cloudflare] Upload token received successfully');
       return {
         success: true,
         uploadUrl: response.data?.result?.uploadURL,
@@ -85,8 +90,12 @@ class CloudflareStreamService {
         expiresIn: 3600,
       };
     } catch (error) {
-      console.error('Error getting upload token:', error);
-      throw new Error(`Failed to get upload token: ${error.message}`);
+      console.error('[Cloudflare] ERROR getting upload token:');
+      console.error('  Status:', error.response?.status);
+      console.error('  Status Text:', error.response?.statusText);
+      console.error('  Error Message:', error.response?.data?.errors);
+      console.error('  Full Error:', error.message);
+      throw new Error(`Failed to get upload token: ${error.response?.data?.errors?.[0]?.message || error.message}`);
     }
   }
 

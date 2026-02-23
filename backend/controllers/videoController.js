@@ -13,8 +13,11 @@ import Course from '../models/Course.js';
  */
 export const getVideoUploadToken = async (req, res) => {
   try {
+    console.log('[Video Controller] Upload token request received');
+    
     // Check if Cloudflare is configured
     if (!cloudflareConfig.isConfigured()) {
+      console.warn('[Video Controller] Cloudflare NOT configured');
       return res.status(503).json({
         success: false,
         message: 'Video upload service is not configured. Please contact administrator. Missing Cloudflare credentials in .env file.',
@@ -22,6 +25,7 @@ export const getVideoUploadToken = async (req, res) => {
       });
     }
 
+    console.log('[Video Controller] Cloudflare IS configured, processing request');
     const { title, courseId, lessonId } = req.body;
 
     // Only title is required for Cloudflare token generation
@@ -40,8 +44,10 @@ export const getVideoUploadToken = async (req, res) => {
       });
     }
 
+    console.log('[Video Controller] Calling cloudflareStreamService.getUploadToken()');
     const token = await cloudflareStreamService.getUploadToken({ title });
 
+    console.log('[Video Controller] Successfully obtained upload token');
     res.json({
       success: true,
       uploadUrl: token.uploadUrl,
@@ -49,7 +55,7 @@ export const getVideoUploadToken = async (req, res) => {
       expiresIn: token.expiresIn,
     });
   } catch (error) {
-    console.error('Error getting upload token:', error);
+    console.error('[Video Controller] ERROR getting upload token:', error.message);
     res.status(500).json({
       success: false,
       message: error.message,
