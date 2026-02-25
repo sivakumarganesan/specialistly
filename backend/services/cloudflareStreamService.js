@@ -70,19 +70,28 @@ class CloudflareStreamService {
     try {
       console.log('[Cloudflare] Requesting upload token...');
       console.log('[Cloudflare] API Base URL:', this.baseUrl);
+      console.log('[Cloudflare] Account ID:', this.baseUrl.includes('accounts') ? 'Set' : 'Missing');
       console.log('[Cloudflare] Authorization Header Present:', !!this.headers['Authorization']);
+      
+      // Cloudflare Stream direct_upload API expects specific format
+      const requestBody = {
+        meta: videoMetadata.title ? { name: videoMetadata.title } : {},
+        max_duration_seconds: 3600,
+        expiry: 3600,
+      };
+      
+      console.log('[Cloudflare] Request Body:', JSON.stringify(requestBody));
+      console.log('[Cloudflare] Full URL:', `${this.baseUrl}/direct_upload`);
       
       const response = await axios.post(
         `${this.baseUrl}/direct_upload`,
-        {
-          meta: videoMetadata.title ? { name: videoMetadata.title } : {},
-          max_duration_seconds: 3600, // 1 hour
-          expiry: 3600, // Token expires in 1 hour
-        },
+        requestBody,
         { headers: this.headers }
       );
 
       console.log('[Cloudflare] Upload token received successfully');
+      console.log('[Cloudflare] Response:', response.data);
+      
       return {
         success: true,
         uploadUrl: response.data?.result?.uploadURL,
@@ -91,11 +100,18 @@ class CloudflareStreamService {
       };
     } catch (error) {
       console.error('[Cloudflare] ERROR getting upload token:');
-      console.error('  Status:', error.response?.status);
+      console.error('  Status Code:', error.response?.status);
       console.error('  Status Text:', error.response?.statusText);
-      console.error('  Error Message:', error.response?.data?.errors);
+      console.error('  URL:', error.config?.url);
+      console.error('  Request Body:', error.config?.data);
+      console.error('  Cloudflare Response:', error.response?.data);
+      console.error('  Errors:', error.response?.data?.errors);
       console.error('  Full Error:', error.message);
-      throw new Error(`Failed to get upload token: ${error.response?.data?.errors?.[0]?.message || error.message}`);
+      
+      const errorDetails = error.response?.data?.errors?.[0]?.message || error.message;
+      throw new Error(`Failed to get upload token: ${errorDetails}`);
+    }
+  }
     }
   }
 
