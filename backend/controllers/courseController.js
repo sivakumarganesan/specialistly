@@ -114,12 +114,8 @@ export const getCourseById = async (req, res) => {
 // Update a course
 export const updateCourse = async (req, res) => {
   try {
-    const course = await Course.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, updatedAt: new Date() },
-      { new: true }
-    );
-
+    const course = await Course.findById(req.params.id);
+    
     if (!course) {
       return res.status(404).json({
         success: false,
@@ -127,9 +123,22 @@ export const updateCourse = async (req, res) => {
       });
     }
 
+    // Update course fields
+    Object.assign(course, req.body);
+    course.updatedAt = new Date();
+    
+    // Auto-publish if course is draft and has title, description, and at least 1 lesson
+    if (course.status === 'draft' && course.title && course.description && course.lessons && course.lessons.length > 0) {
+      course.status = 'published';
+      course.publishedAt = new Date();
+    }
+
+    await course.save();
+
     res.status(200).json({
       success: true,
       message: 'Course updated successfully',
+      courseStatus: course.status,
       data: course,
     });
   } catch (error) {
@@ -169,12 +178,20 @@ export const addLesson = async (req, res) => {
     };
 
     course.lessons.push(lesson);
+    
+    // Auto-publish if course has title, description, and at least 1 lesson
+    if (course.status === 'draft' && course.title && course.description && course.lessons.length > 0) {
+      course.status = 'published';
+      course.publishedAt = new Date();
+    }
+    
     await course.save();
 
     res.status(200).json({
       success: true,
       message: 'Lesson added successfully',
       lesson: course.lessons[course.lessons.length - 1],
+      courseStatus: course.status,
       data: course,
     });
   } catch (error) {
