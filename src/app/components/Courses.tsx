@@ -580,119 +580,122 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     return url;
   };
 
-  const generateDriveLinks = (fileId: string) => {
-    return {
-      downloadLink: `https://drive.google.com/uc?id=${fileId}&export=download`,
-      viewLink: `https://drive.google.com/file/d/${fileId}/view`,
-    };
-  };
-
-  const extractFileName = (url: string, providedName?: string): string => {
-    if (providedName) return providedName;
-    
-    // Extract file ID from URL
-    let fileId = '';
-    if (url.includes('/d/')) {
-      fileId = url.split('/d/')[1]?.split('/')[0] || '';
-    } else if (url.includes('id=')) {
-      fileId = new URL(url).searchParams.get('id') || '';
-    } else {
-      fileId = url;
-    }
-    
-    // Determine file type from URL
-    if (url.includes('docs.google.com/document')) {
-      return `Google_Document_${fileId.substring(0, 8)}`;
-    } else if (url.includes('docs.google.com/spreadsheets')) {
-      return `Google_Sheet_${fileId.substring(0, 8)}`;
-    } else if (url.includes('docs.google.com/presentation')) {
-      return `Google_Slides_${fileId.substring(0, 8)}`;
-    } else {
-      return `Google_File_${fileId.substring(0, 8)}`;
-    }
-  };
-
-  const addGoogleDriveFile = async (lessonIndex: number, googleDriveUrl: string, fileName?: string) => {
-    if (!selectedCourse || !googleDriveUrl.trim()) {
-      alert("Please provide a valid Google Drive URL or file ID");
+  const uploadFileToLesson = async (lessonIndex: number, file: File) => {
+    if (!selectedCourse) {
+      alert("Please select a course first");
       return;
     }
 
     const lesson = lessons[lessonIndex];
 
     try {
-      // If lesson doesn't have an ID yet, we can't attach files through the API
-      if (!lesson._id) {
-        // For new lessons, we'll add files locally and send them with the lesson creation
-        const displayName = extractFileName(googleDriveUrl, fileName);
-        
-        if (!lesson.files) {
-          lesson.files = [];
-        }
-        
-        // Create a temporary file object
-        const fileId = googleDriveUrl.includes('id=') 
-          ? new URL(googleDriveUrl).searchParams.get('id') || googleDriveUrl
-          : googleDriveUrl.split('/d/')[1]?.split('/')[0] || googleDriveUrl;
-        const { downloadLink, viewLink } = generateDriveLinks(fileId);
-        
-        const tempFile: LessonFile = {
-          fileName: displayName,
-          fileUrl: googleDriveUrl.trim(),
-          fileType: getFileType(displayName),
-          googleDriveFileId: fileId,
-          downloadLink,
-          viewLink,
-          uploadedAt: new Date().toISOString(),
-        };
-        
-        if (!lesson.files.find(f => f.fileUrl === tempFile.fileUrl)) {
-          lesson.files.push(tempFile);
-          setLessons([...lessons]);
-          alert(`✓ File "${displayName}" added to lesson. It will be uploaded when you save the course.`);
-        }
+      // Max file size: 100MB
+      const maxFileSize = 100 * 1024 * 1024;
+      if (file.size > maxFileSize) {
+        alert("File size exceeds 100MB limit");
         return;
       }
 
-      // For existing lessons, call the backend API
-      const displayName = extractFileName(googleDriveUrl, fileName);
+      setUploadingFileFor(lessonIndex);
 
+      // If lesson doesn't have an ID yet, we can't upload through the API
+      if (!lesson._id) {
+        // For new lessons, we'll add files locally with a placeholder and get real URL after lesson is created
+        if (!lesson.files) {
+          lesson.files = [];
+        }
+
+        const newFile: LessonFile = {
+          fileName: file.name,
+          fileUrl: '', // Will be populated after lesson creation
+          fileType: getFileType(file.name),
+          fileSize: file.size,
+          mimeType: file.type,
+          uploadedAt: new Date().toISOString(),
+        };
+
+        lesson.files.push(newFile);
+        setLessons([...lessons]);
+        alert(`✓ File "${file.name}" added. It will be uploaded when you save the course.`);
+        return;
+      }
+
+      // For existing lessons, upload to R2
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('authToken');
       const response = await fetch(
         `${API_BASE_URL}/courses/${selectedCourse.id}/lessons/${lesson._id}/files`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            googleDriveUrl: googleDriveUrl.trim(),
-            fileName: displayName,
-          }),
+          body: formData,
         }
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to add file');
+        throw new Error(errorData.message || 'Failed to upload file');
       }
 
       const data = await response.json();
-      
+
       if (!lesson.files) {
         lesson.files = [];
       }
-      
-      if (!lesson.files.find(f => f.googleDriveFileId === data.file.googleDriveFileId)) {
-        lesson.files.push(data.file);
-        setLessons([...lessons]);
-        alert(`✓ File "${displayName}" added successfully from Google Drive!`);
-      } else {
-        alert("This file is already attached to the lesson");
-      }
+
+      lesson.files.push(data.file);
+      setLessons([...lessons]);
+      alert(`✓ File "${file.name}" uploaded successfully!`);
     } catch (error) {
-      console.error("Error adding Google Drive file:", error);
-      alert(`Failed to add file: ${error instanceof Error ? error.message : 'Please try again'}`);
+      console.error("Error uploading file:", error);
+      alert(`Failed to upload file: ${error instanceof Error ? error.message : 'Please try again'}`);
+    } finally {
+      setUploadingFileFor(null);
+    }
+  };
+
+  const deleteFileFromLesson = async (lessonIndex: number, fileIndex: number) => {
+    const lesson = lessons[lessonIndex];
+    if (!lesson.files) return;
+
+    const file = lesson.files[fileIndex];
+    
+    // If file hasn't been uploaded yet, just remove from local state
+    if (!file.fileKey) {
+      lesson.files.splice(fileIndex, 1);
+      setLessons([...lessons]);
+      return;
+    }
+
+    if (!selectedCourse) return;
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `${API_BASE_URL}/courses/${selectedCourse.id}/lessons/${lesson._id}/files/${encodeURIComponent(file.fileKey)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete file');
+      }
+
+      lesson.files.splice(fileIndex, 1);
+      setLessons([...lessons]);
+      alert('✓ File deleted successfully!');
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      alert(`Failed to delete file: ${error instanceof Error ? error.message : 'Please try again'}`);
     }
   };
 
@@ -1974,42 +1977,37 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                       {/* File Upload Section */}
                       <div className="border-t pt-3">
                         <Label htmlFor={`lesson-files-${index}`} className="text-xs">
-                          📎 Lesson Files from Google Drive - Optional
+                          📎 Course Materials - Upload PDF, Documents, etc. (Optional)
                         </Label>
                         <div className="mt-2 space-y-3">
                           <div className="flex gap-2">
                             <input
                               id={`lesson-files-${index}`}
-                              type="text"
-                              placeholder="Paste Google Drive file ID or shareable link"
-                              className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  const url = (e.target as HTMLInputElement).value;
-                                  if (url.trim()) {
-                                    addGoogleDriveFile(index, url);
-                                    (e.target as HTMLInputElement).value = '';
-                                  }
+                              type="file"
+                              multiple={false}
+                              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.jpg,.jpeg,.png,.gif"
+                              className="flex-1 text-xs"
+                              onChange={(e) => {
+                                const file = e.currentTarget.files?.[0];
+                                if (file) {
+                                  uploadFileToLesson(index, file);
+                                  e.currentTarget.value = ''; // Reset input
                                 }
                               }}
+                              disabled={uploadingFileFor === index}
                             />
                             <Button
                               type="button"
                               size="sm"
-                              onClick={() => {
-                                const input = document.getElementById(`lesson-files-${index}`) as HTMLInputElement;
-                                if (input && input.value.trim()) {
-                                  addGoogleDriveFile(index, input.value);
-                                  input.value = '';
-                                }
-                              }}
+                              onClick={() => document.getElementById(`lesson-files-${index}`)?.click()}
+                              disabled={uploadingFileFor === index}
                               className="bg-blue-600 hover:bg-blue-700"
                             >
-                              Add File
+                              {uploadingFileFor === index ? 'Uploading...' : 'Choose'}
                             </Button>
                           </div>
                           <p className="text-xs text-gray-500">
-                            Example: https://drive.google.com/file/d/FILE_ID/view or just FILE_ID
+                            Supported: PDF, Word, Excel, PowerPoint, Images, ZIP • Max 100MB
                           </p>
                         </div>
 
@@ -2039,7 +2037,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => removeFileFromLesson(index, fileIndex)}
+                                  onClick={() => deleteFileFromLesson(index, fileIndex)}
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                 >
                                   ✕

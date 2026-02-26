@@ -1,5 +1,5 @@
 import Course from '../models/Course.js';
-import { extractFileId, generateDriveLinks, getFileTypeLabel } from '../services/googleDriveService.js';
+import cloudflareR2Service from '../services/cloudflareR2Service.js';
 
 // Create a new course (specialist only)
 export const createCourse = async (req, res) => {
@@ -308,26 +308,25 @@ export const deleteCourse = async (req, res) => {
   }
 };
 
-// Add file to lesson from Google Drive
-export const addFileToLesson = async (req, res) => {
+// Upload file to lesson (R2 storage)
+export const uploadFileToLesson = async (req, res) => {
   try {
     const { courseId, lessonId } = req.params;
-    const { googleDriveUrl, fileName } = req.body;
+    const file = req.file;
 
-    if (!googleDriveUrl || !fileName) {
+    if (!file) {
       return res.status(400).json({
         success: false,
-        message: 'Google Drive URL and file name are required',
+        message: 'No file provided',
       });
     }
 
-    // Check if it's a Google Docs/Sheets URL (not supported directly)
-    if (googleDriveUrl.includes('docs.google.com/document') || 
-        googleDriveUrl.includes('docs.google.com/spreadsheets') ||
-        googleDriveUrl.includes('docs.google.com/presentation')) {
+    // Max file size: 100MB
+    const maxFileSize = 100 * 1024 * 1024;
+    if (file.size > maxFileSize) {
       return res.status(400).json({
         success: false,
-        message: 'Google Docs, Sheets, and Slides cannot be directly attached. Please export to PDF or Excel first, then upload the exported file.',
+        message: 'File size exceeds 100MB limit',
       });
     }
 
@@ -347,20 +346,17 @@ export const addFileToLesson = async (req, res) => {
       });
     }
 
-    // Extract file ID from Google Drive URL
-    const fileId = extractFileId(googleDriveUrl);
-    if (!fileId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid Google Drive URL or file ID',
-      });
-    }
-
-    // Generate shareable links
-    const { downloadLink, viewLink } = generateDriveLinks(googleDriveUrl, fileName);
+    // Upload to Cloudflare R2
+    const uploadResult = await cloudflareR2Service.uploadFile(
+      courseId,
+      lessonId,
+      file.originalname,
+      file.buffer,
+      file.mimetype
+    );
 
     // Extract file type from filename
-    const extension = fileName.split('.').pop()?.toLowerCase() || 'other';
+    const extension = file.originalname.split('.').pop()?.toLowerCase() || 'other';
     const typeMap = {
       'pdf': 'pdf',
       'doc': 'doc',
@@ -374,14 +370,14 @@ export const addFileToLesson = async (req, res) => {
     };
     const fileType = typeMap[extension] || 'other';
 
-    // Create file object
+    // Create file object with R2 details
     const newFile = {
-      fileName,
-      fileUrl: googleDriveUrl,
+      fileName: file.originalname,
+      fileUrl: uploadResult.downloadUrl,
+      fileKey: uploadResult.fileKey,
       fileType,
-      googleDriveFileId: fileId,
-      downloadLink,
-      viewLink,
+      fileSize: file.size,
+      mimeType: file.mimetype,
       uploadedAt: new Date(),
     };
 
@@ -392,7 +388,7 @@ export const addFileToLesson = async (req, res) => {
 
     // Check if file already exists
     const fileExists = lesson.files.some(
-      f => f.googleDriveFileId === fileId || f.fileName === fileName
+      f => f.fileKey === uploadResult.fileKey
     );
 
     if (fileExists) {
@@ -407,20 +403,81 @@ export const addFileToLesson = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'File added to lesson successfully',
+      message: 'File uploaded successfully',
       file: newFile,
-      lesson,
     });
   } catch (error) {
-    console.error('Error adding file to lesson:', error);
-    res.status(400).json({
+    console.error('Error uploading file:', error);
+    res.status(500).json({
       success: false,
-      message: error.message || 'Failed to add file to lesson',
+      message: error.message || 'Failed to upload file',
     });
   }
 };
 
-// Remove file from lesson
+// Delete file from lesson
+export const deleteFileFromLesson = async (req, res) => {
+  try {
+    const { courseId, lessonId, fileKey } = req.params;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    const lesson = course.lessons.id(lessonId);
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lesson not found',
+      });
+    }
+
+    if (!lesson.files) {
+      return res.status(404).json({
+        success: false,
+        message: 'No files in this lesson',
+      });
+    }
+
+    const fileIndex = lesson.files.findIndex(f => f.fileKey === decodeURIComponent(fileKey));
+    if (fileIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found',
+      });
+    }
+
+    const fileToDelete = lesson.files[fileIndex];
+
+    // Delete from R2
+    try {
+      await cloudflareR2Service.deleteFile(fileToDelete.fileKey);
+    } catch (r2Error) {
+      console.warn('Warning: File may not exist in R2:', r2Error.message);
+      // Continue anyway and remove from database
+    }
+
+    lesson.files.splice(fileIndex, 1);
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'File deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting file:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to delete file',
+    });
+  }
+};
+
+// Deprecated: Remove file from lesson (for backwards compatibility)
 export const removeFileFromLesson = async (req, res) => {
   try {
     const { courseId, lessonId, fileId } = req.params;

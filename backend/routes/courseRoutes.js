@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import {
   createCourse,
   getAllCourses,
@@ -9,8 +10,8 @@ import {
   publishCourse,
   archiveCourse,
   browseCourses,
-  addFileToLesson,
-  removeFileFromLesson,
+  uploadFileToLesson,
+  deleteFileFromLesson,
 } from '../controllers/courseController.js';
 import {
   enrollSelfPaced,
@@ -39,6 +40,37 @@ import {
 } from '../controllers/certificateController.js';
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(), // Store files in memory before uploading to R2
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allowed file types
+    const allowedMimes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'application/zip',
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+    ];
+
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type not allowed: ${file.mimetype}`));
+    }
+  },
+});
 
 // ===== SPECIAL ROUTES (Most Specific - Before Wildcards) =====
 // Get my courses (specialist's courses)
@@ -117,11 +149,11 @@ router.get('/test-file-endpoint', (req, res) => {
   res.json({ success: true, message: 'File endpoint route is registered!' });
 });
 
-// Add file to lesson (Google Drive integration) - MUST be before /:id routes
-router.post('/:courseId/lessons/:lessonId/files', addFileToLesson);
+// Upload file to lesson (Cloudflare R2) - MUST be before /:id routes
+router.post('/:courseId/lessons/:lessonId/files', upload.single('file'), uploadFileToLesson);
 
-// Remove file from lesson - MUST be before /:id routes
-router.delete('/:courseId/lessons/:lessonId/files/:fileId', removeFileFromLesson);
+// Delete file from lesson - MUST be before /:id routes
+router.delete('/:courseId/lessons/:lessonId/files/:fileKey', deleteFileFromLesson);
 
 // Add lesson to course
 router.post('/:id/lessons', addLesson);
