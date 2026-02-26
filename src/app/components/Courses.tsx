@@ -1824,42 +1824,25 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
           <div className="space-y-4 py-4">
             <div className="bg-blue-50 border border-blue-200 p-4 rounded-md space-y-3">
-              <p className="text-sm font-semibold text-blue-900">📚 Add Course Lessons (Videos & Files)</p>
+              <p className="text-sm font-semibold text-blue-900">📚 Add Course Lessons (Videos & Materials)</p>
               <div className="text-sm text-blue-800 space-y-2">
                 <div className="bg-white p-3 rounded border border-green-300 border-dashed">
-                  <strong className="text-green-700">✓ Easy method:</strong>
-                  <p className="text-xs text-green-700 mt-1">
-                    Add lesson title (required) + video URL (optional) + files (optional). You can have lesson with video only, files only, or both!
+                  <strong className="text-green-700">✓ How to add lessons:</strong>
+                  <p className="text-xs text-green-700 mt-2">
+                    1. <strong>Lesson Title</strong> (required) - Name your lesson<br/>
+                    2. <strong>Video URL</strong> (optional) - Video playback link<br/>
+                    3. <strong>Course Materials</strong> (optional) - Upload PDF, Word docs, Excel, PowerPoint, Images, ZIP files
                   </p>
-                  <ul className="text-xs text-green-700 ml-4 mt-2 list-disc space-y-1">
-                    <li>Regular YouTube: <code className="bg-green-100 px-1 rounded">youtube.com/watch?v=VIDEO_ID</code></li>
-                    <li>YouTube short: <code className="bg-green-100 px-1 rounded">youtu.be/VIDEO_ID</code></li>
-                    <li>Vimeo: <code className="bg-green-100 px-1 rounded">vimeo.com/VIDEO_ID</code></li>
-                    <li>Google Drive: <code className="bg-green-100 px-1 rounded">drive.google.com/file/d/FILE_ID/view</code></li>
-                    <li>Files: <code className="bg-green-100 px-1 rounded">PDF, Word, Excel, PowerPoint, ZIP</code></li>
-                  </ul>
+                  <p className="text-xs text-green-700 mt-2">
+                    You can have a lesson with video only, materials only, or both!
+                  </p>
                 </div>
                 
                 <div>
-                  <strong>If auto-conversion doesn't work, use these directly:</strong>
-                  <div>
-                    <strong className="text-blue-900">YouTube:</strong>
-                    <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
-                      https://www.youtube.com/embed/VIDEO_ID
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <strong className="text-blue-900">Vimeo:</strong>
-                    <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
-                      https://player.vimeo.com/video/VIDEO_ID
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <strong className="text-blue-900">Google Drive:</strong>
-                    <div className="font-mono text-xs bg-white p-2 rounded mt-1 break-all">
-                      https://drive.google.com/file/d/FILE_ID/preview
-                    </div>
-                  </div>
+                  <strong className="text-blue-900">📎 Course Materials - Upload Files</strong>
+                  <p className="text-xs text-blue-700 mt-1 mb-2">
+                    Click "Choose" to upload course materials directly. Supported formats: PDF, Word (.doc, .docx), Excel (.xls, .xlsx), PowerPoint (.ppt, .pptx), Images (JPG, PNG, GIF), ZIP archives. Maximum 100MB per file.
+                  </p>
                 </div>
               </div>
             </div>
