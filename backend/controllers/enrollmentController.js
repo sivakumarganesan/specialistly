@@ -192,6 +192,12 @@ export const getEnrollmentDetails = async (req, res) => {
         videoUrl: lesson.videoUrl || null,
         files: lesson.files || [],
         completed: enrollment.completedLessons && enrollment.completedLessons.includes(lesson._id),
+        // Include Cloudflare Stream video metadata
+        cloudflareStreamId: lesson.cloudflareStreamId || null,
+        cloudflarePlaybackUrl: lesson.cloudflarePlaybackUrl || null,
+        cloudflareStatus: lesson.cloudflareStatus || null,
+        videoDuration: lesson.videoDuration || null,
+        videoThumbnail: lesson.videoThumbnail || null,
       };
     }).filter(l => l !== null);
 

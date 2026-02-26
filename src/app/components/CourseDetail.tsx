@@ -13,6 +13,11 @@ interface Lesson {
   videoUrl?: string;
   order: number;
   completed: boolean;
+  cloudflareStreamId?: string;
+  cloudflarePlaybackUrl?: string;
+  cloudflareStatus?: string;
+  videoDuration?: number;
+  videoThumbnail?: string;
   files?: Array<{
     _id?: string;
     fileName: string;
