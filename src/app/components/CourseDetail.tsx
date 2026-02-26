@@ -97,6 +97,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
       setError(null);
       const response = await courseAPI.getSelfPacedEnrollmentDetails(enrollmentId);
       const data = response.data || response;
+      console.log("Enrollment API Response:", { response, data, courseId: data?.courseId });
       setEnrollment(data);
       
       // Set first uncompleted lesson as current, or first lesson if all complete
@@ -115,6 +116,14 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
     try {
       setLoadingVideo(true);
       setVideoError(null);
+      
+      // Validate courseId exists
+      if (!courseId || courseId === 'undefined') {
+        console.warn("Course ID not available yet, skipping Cloudflare video load");
+        setHlsVideoUrl(null);
+        setLoadingVideo(false);
+        return;
+      }
       
       const response = await videoAPI.getLessonVideo(courseId, lessonId);
       if (response?.success && response.video?.hlsUrl) {
