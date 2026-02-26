@@ -112,8 +112,6 @@ class CloudflareStreamService {
       throw new Error(`Failed to get upload token: ${errorDetails}`);
     }
   }
-    }
-  }
 
   /**
    * Get video details by ID
