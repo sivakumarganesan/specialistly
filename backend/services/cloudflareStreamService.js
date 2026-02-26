@@ -134,17 +134,25 @@ class CloudflareStreamService {
       );
 
       const video = response.data?.result;
+      console.log(`[CloudflareStream] getVideoDetails response for ${videoId}:`, JSON.stringify({
+        uid: video?.uid,
+        status: video?.status,
+        playback: video?.playback,
+        thumbnail: video?.thumbnail,
+        duration: video?.duration,
+      }, null, 2));
+
       return {
         success: true,
-        videoId: video.uid,
-        title: video.meta?.name || 'Untitled',
-        duration: video.duration,
-        status: video.status?.state, // ready, inprogress, error
-        hlsPlaybackUrl: video.playback?.hls?.href,
-        dashPlaybackUrl: video.playback?.dash?.href,
-        thumbnail: video.thumbnail,
-        uploaded: video.uploadedAt,
-        size: video.size,
+        videoId: video?.uid,
+        title: video?.meta?.name || 'Untitled',
+        duration: video?.duration,
+        status: video?.status?.state, // ready, inprogress, error
+        hlsPlaybackUrl: video?.playback?.hls?.href,
+        dashPlaybackUrl: video?.playback?.dash?.href,
+        thumbnail: video?.thumbnail,
+        uploaded: video?.uploadedAt,
+        size: video?.size,
       };
     } catch (error) {
       console.error('Error getting video details:', error);
