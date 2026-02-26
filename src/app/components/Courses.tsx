@@ -507,7 +507,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       updatedLessons[lessonIndex] = {
         ...updatedLessons[lessonIndex],
         cloudflareStreamId: streamId,
-        cloudflareStatus: "processing",
+        cloudflareStatus: "inprogress", // Valid enum: 'ready', 'inprogress', 'error', 'pending'
       };
       setLessons(updatedLessons);
 
@@ -762,7 +762,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           // Include Cloudflare video metadata if available
           if (lesson.cloudflareStreamId) {
             lessonData.cloudflareStreamId = lesson.cloudflareStreamId;
-            lessonData.cloudflareStatus = lesson.cloudflareStatus || "processing";
+            lessonData.cloudflareStatus = lesson.cloudflareStatus || "inprogress"; // Valid enum: 'ready', 'inprogress', 'error', 'pending'
           }
 
           await courseAPI.addLesson(selectedCourse.id, lessonData);

@@ -99,9 +99,17 @@ export const saveLessonVideo = async (req, res) => {
     }
 
     // Update lesson with video information
+    // Map Cloudflare status to our enum: 'ready', 'inprogress', 'error', 'pending'
+    let mappedStatus = videoDetails.status || 'pending';
+    if (mappedStatus === 'inprogress' || mappedStatus === 'processing') {
+      mappedStatus = 'inprogress';
+    } else if (mappedStatus !== 'ready' && mappedStatus !== 'error' && mappedStatus !== 'pending') {
+      mappedStatus = 'inprogress'; // Default to inprogress for unknown statuses
+    }
+
     lesson.cloudflareStreamId = videoId;
     lesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
-    lesson.cloudflareStatus = videoDetails.status;
+    lesson.cloudflareStatus = mappedStatus;
     lesson.videoDuration = videoDetails.duration || duration || 0;
     lesson.videoThumbnail = videoDetails.thumbnail || thumbnail;
 
