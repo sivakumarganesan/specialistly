@@ -73,11 +73,13 @@ class CloudflareStreamService {
       console.log('[Cloudflare] Account ID:', this.baseUrl.includes('accounts') ? 'Set' : 'Missing');
       console.log('[Cloudflare] Authorization Header Present:', !!this.headers['Authorization']);
       
-      // Cloudflare Stream direct_upload endpoint - try minimal body first
-      // According to Cloudflare API docs, direct_upload accepts POST with optional metadata
-      const requestBody = {};
+      // Cloudflare Stream direct_upload endpoint expects camelCase field names
+      // Required: maxDurationSeconds
+      const requestBody = {
+        maxDurationSeconds: 3600, // 1 hour max duration
+      };
       
-      // Only add metadata if title is provided
+      // Optional: add metadata if title is provided
       if (videoMetadata.title) {
         requestBody.meta = { name: videoMetadata.title };
       }
