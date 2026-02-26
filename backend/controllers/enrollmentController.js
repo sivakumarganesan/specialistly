@@ -1,6 +1,7 @@
-import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
-import Course from '../models/Course.js';
+import cloudflareStreamService from '../services/cloudflareStreamService.js';
 import Certificate from '../models/Certificate.js';
+import Course from '../models/Course.js';
+import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 
 const generateCertificateId = () => {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -200,6 +201,30 @@ export const getEnrollmentDetails = async (req, res) => {
         videoThumbnail: lesson.videoThumbnail || null,
       };
     }).filter(l => l !== null);
+
+    // Fetch missing HLS URLs for videos with streamId but no playback URL
+    const lessonsWithMissingURL = lessons.filter(l => l.cloudflareStreamId && !l.cloudflarePlaybackUrl);
+    if (lessonsWithMissingURL.length > 0) {
+      try {
+        for (const lesson of lessonsWithMissingURL) {
+          const videoDetails = await cloudflareStreamService.getVideoDetails(lesson.cloudflareStreamId);
+          lesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
+          // Also update the database for future requests
+          const dbLesson = course.lessons.find(l => l._id.toString() === lesson._id.toString());
+          if (dbLesson) {
+            dbLesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
+            dbLesson.cloudflareStatus = videoDetails.status || dbLesson.cloudflareStatus;
+            if (!dbLesson.videoDuration) dbLesson.videoDuration = videoDetails.duration;
+            if (!dbLesson.videoThumbnail) dbLesson.videoThumbnail = videoDetails.thumbnail;
+          }
+        }
+        // Save updated course with HLS URLs
+        await course.save().catch(err => console.warn('Could not save updated HLS URLs:', err.message));
+      } catch (cloudflareError) {
+        console.warn('Could not fetch Cloudflare video details:', cloudflareError.message);
+        // Continue anyway - return what we have
+      }
+    }
 
     res.status(200).json({
       success: true,
