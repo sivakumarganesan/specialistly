@@ -391,3 +391,68 @@ export const checkCertificateEligibility = async (req, res) => {
     });
   }
 };
+
+// Get all enrollments for a course (specialist view)
+export const getCourseEnrollments = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID is required',
+      });
+    }
+
+    // Get all enrollments for this course
+    const enrollments = await SelfPacedEnrollment.find({ courseId })
+      .select('customerId customerEmail completedLessons completed createdAt paidAt amount')
+      .sort({ createdAt: -1 });
+
+    // Get course details
+    const course = await Course.findById(courseId)
+      .select('title lessons specialistId specialistEmail');
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    // Enrich enrollment data with lesson completion percentages
+    const enrichedEnrollments = enrollments.map(enrollment => {
+      const totalLessons = course.lessons ? course.lessons.length : 0;
+      const completedCount = enrollment.completedLessons ? enrollment.completedLessons.length : 0;
+      const completionPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+      return {
+        _id: enrollment._id,
+        customerId: enrollment.customerId,
+        customerEmail: enrollment.customerEmail,
+        completedLessons: completedCount,
+        totalLessons: totalLessons,
+        completionPercentage: completionPercentage,
+        completed: enrollment.completed,
+        createdAt: enrollment.createdAt,
+        paidAt: enrollment.paidAt,
+        amount: enrollment.amount,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        courseTitle: course.title,
+        totalEnrollments: enrollments.length,
+        enrollments: enrichedEnrollments,
+      },
+    });
+  } catch (error) {
+    console.error("Error getting course enrollments:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

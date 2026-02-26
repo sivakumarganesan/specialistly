@@ -18,6 +18,7 @@ import {
   getEnrollmentDetails,
   markLessonComplete,
   checkCertificateEligibility,
+  getCourseEnrollments,
 } from '../controllers/enrollmentController.js';
 import {
   createCohort,
@@ -133,6 +134,9 @@ router.post('/:id/archive', archiveCourse);
 
 // Get cohorts by course (published only)
 router.get('/:courseId/cohorts', getCohortsByCourse);
+
+// Get course enrollments (specialist view)
+router.get('/:courseId/enrollments', getCourseEnrollments);
 
 // Update course
 router.put('/:id', updateCourse);

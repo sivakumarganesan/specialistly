@@ -111,6 +111,10 @@ export const courseAPI = {
   getCohortSessions: (cohortId: string) => 
     apiCall(`/courses/cohorts/${cohortId}/sessions`),
   
+  // View Course Enrollments (Specialist)
+  getCourseEnrollments: (courseId: string) => 
+    apiCall(`/courses/${courseId}/enrollments`),
+  
   // Cohort Enrollment
   enrollCohort: (cohortId: string) => 
     apiCall("/courses/enrollments/cohort", "POST", { cohortId }),

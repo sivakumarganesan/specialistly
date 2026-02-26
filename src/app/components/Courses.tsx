@@ -149,8 +149,11 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [manageLessonsDialogOpen, setManageLessonsDialogOpen] = useState(false);
+  const [enrollmentsDialogOpen, setEnrollmentsDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courseType, setCourseType] = useState<"self-paced" | "cohort-based" | null>(null);
+  const [courseEnrollments, setCourseEnrollments] = useState<any[]>([]);
+  const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
 
   interface Lesson {
     _id?: string;
@@ -340,6 +343,21 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         console.error("Failed to update course status:", error);
         alert(`Failed to update course status: ${error instanceof Error ? error.message : "Please try again."}`);
       }
+    }
+  };
+
+  const openEnrollmentsDialog = async (course: Course) => {
+    setSelectedCourse(course);
+    setEnrollmentsDialogOpen(true);
+    setEnrollmentsLoading(true);
+    try {
+      const response = await courseAPI.getCourseEnrollments(course.id);
+      setCourseEnrollments(response.data?.enrollments || []);
+    } catch (error) {
+      console.error("Failed to fetch enrollments:", error);
+      alert(`Failed to fetch enrollments: ${error instanceof Error ? error.message : "Please try again."}`);
+    } finally {
+      setEnrollmentsLoading(false);
     }
   };
 
@@ -1080,6 +1098,15 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                       Lessons
                     </Button>
                   )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEnrollmentsDialog(course)}
+                    title="View students enrolled in this course"
+                  >
+                    <Users className="h-4 w-4 mr-1" />
+                    Enrollments
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -2048,6 +2075,94 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               disabled={lessons.some(l => !l.title)}
             >
               Save Lessons
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Enrollments Dialog */}
+      <Dialog open={enrollmentsDialogOpen} onOpenChange={setEnrollmentsDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Course Enrollments - {selectedCourse?.title}</DialogTitle>
+            <DialogDescription>
+              {enrollmentsLoading ? (
+                <span>Loading enrollments...</span>
+              ) : courseEnrollments.length === 0 ? (
+                <span>No students enrolled yet</span>
+              ) : (
+                <span>{courseEnrollments.length} student{courseEnrollments.length !== 1 ? 's' : ''} enrolled</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {enrollmentsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading enrollments...</p>
+              </div>
+            </div>
+          ) : courseEnrollments.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600">No students have enrolled in this course yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-3 font-semibold">Email</th>
+                      <th className="text-left py-2 px-3 font-semibold">Enrolled</th>
+                      <th className="text-center py-2 px-3 font-semibold">Progress</th>
+                      <th className="text-center py-2 px-3 font-semibold">Completion</th>
+                      <th className="text-center py-2 px-3 font-semibold">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {courseEnrollments.map((enrollment) => (
+                      <tr key={enrollment._id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-3">{enrollment.customerEmail}</td>
+                        <td className="py-3 px-3 text-xs text-gray-600">
+                          {new Date(enrollment.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-xs">
+                              <div 
+                                className="bg-green-600 h-2 rounded-full" 
+                                style={{ width: `${enrollment.completionPercentage}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs font-semibold text-gray-700 min-w-[45px] text-right">
+                              {enrollment.completionPercentage}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="text-xs px-2 py-1 rounded-full" style={{
+                            backgroundColor: enrollment.completed ? '#d1fae5' : '#f3f4f6',
+                            color: enrollment.completed ? '#065f46' : '#6b7280'
+                          }}>
+                            {enrollment.completedLessons}/{enrollment.totalLessons}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center font-semibold">
+                          {enrollment.amount > 0 ? `$${enrollment.amount}` : 'Free'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEnrollmentsDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
