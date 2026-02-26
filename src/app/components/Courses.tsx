@@ -749,9 +749,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     }
 
     try {
-      // Add new lessons that don't have _id
+      // Handle both new and existing lessons
       for (const lesson of lessons) {
         if (!lesson._id) {
+          // Add NEW lessons
           const lessonData: any = {
             title: lesson.title,
             files: lesson.files || [],
@@ -765,6 +766,18 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           }
 
           await courseAPI.addLesson(selectedCourse.id, lessonData);
+        } else {
+          // UPDATE EXISTING lessons with video metadata if present
+          if (lesson.cloudflareStreamId) {
+            await videoAPI.saveLessonVideo({
+              courseId: selectedCourse.id,
+              lessonId: lesson._id,
+              videoId: lesson.cloudflareStreamId,
+              title: lesson.title,
+              duration: lesson.duration,
+              thumbnail: lesson.videoThumbnail,
+            });
+          }
         }
       }
       
