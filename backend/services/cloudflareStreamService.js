@@ -73,12 +73,14 @@ class CloudflareStreamService {
       console.log('[Cloudflare] Account ID:', this.baseUrl.includes('accounts') ? 'Set' : 'Missing');
       console.log('[Cloudflare] Authorization Header Present:', !!this.headers['Authorization']);
       
-      // Cloudflare Stream direct_upload API expects specific format
-      const requestBody = {
-        meta: videoMetadata.title ? { name: videoMetadata.title } : {},
-        max_duration_seconds: 3600,
-        expiry: 3600,
-      };
+      // Cloudflare Stream direct_upload endpoint - try minimal body first
+      // According to Cloudflare API docs, direct_upload accepts POST with optional metadata
+      const requestBody = {};
+      
+      // Only add metadata if title is provided
+      if (videoMetadata.title) {
+        requestBody.meta = { name: videoMetadata.title };
+      }
       
       console.log('[Cloudflare] Request Body:', JSON.stringify(requestBody));
       console.log('[Cloudflare] Full URL:', `${this.baseUrl}/direct_upload`);
@@ -86,12 +88,19 @@ class CloudflareStreamService {
       const response = await axios.post(
         `${this.baseUrl}/direct_upload`,
         requestBody,
-        { headers: this.headers }
+        { 
+          headers: this.headers,
+          validateStatus: () => true // Accept any status to see full response
+        }
       );
 
-      console.log('[Cloudflare] Upload token received successfully');
-      console.log('[Cloudflare] Response:', response.data);
+      console.log('[Cloudflare] Response Status:', response.status);
+      console.log('[Cloudflare] Response Data:', JSON.stringify(response.data, null, 2));
       
+      if (response.status !== 200) {
+        throw new Error(response.data?.errors?.[0]?.message || 'Upload token request failed');
+      }
+
       return {
         success: true,
         uploadUrl: response.data?.result?.uploadURL,
@@ -104,8 +113,7 @@ class CloudflareStreamService {
       console.error('  Status Text:', error.response?.statusText);
       console.error('  URL:', error.config?.url);
       console.error('  Request Body:', error.config?.data);
-      console.error('  Cloudflare Response:', error.response?.data);
-      console.error('  Errors:', error.response?.data?.errors);
+      console.error('  Cloudflare Response:', JSON.stringify(error.response?.data, null, 2));
       console.error('  Full Error:', error.message);
       
       const errorDetails = error.response?.data?.errors?.[0]?.message || error.message;
