@@ -92,7 +92,7 @@ export const getMyCourses = async (req, res) => {
     }
 
     const enrollments = await SelfPacedEnrollment.find({ customerId })
-      .populate('courseId', 'title thumbnail lessons')
+      .populate('courseId', 'title thumbnail lessons status')
       .sort({ createdAt: -1 });
 
     if (!enrollments || enrollments.length === 0) {
