@@ -28,6 +28,7 @@ interface Lesson {
 
 interface EnrollmentDetails {
   enrollmentId: string;
+  courseId: string;  // Add the course ID
   courseTitle: string;
   courseDescription?: string;
   lessons: Lesson[];
@@ -69,7 +70,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
     if (enrollment && currentLessonId) {
       const lesson = enrollment.lessons.find(l => l._id === currentLessonId);
       if (lesson) {
-        loadCloudflareVideo(enrollment.courseTitle, currentLessonId);
+        loadCloudflareVideo(enrollment.courseId, currentLessonId);
       }
     }
   }, [currentLessonId, enrollment]);
