@@ -205,23 +205,39 @@ export const getEnrollmentDetails = async (req, res) => {
     // Fetch missing HLS URLs for videos with streamId but no playback URL
     const lessonsWithMissingURL = lessons.filter(l => l.cloudflareStreamId && !l.cloudflarePlaybackUrl);
     if (lessonsWithMissingURL.length > 0) {
+      console.log(`[Enrollment] Fetching ${lessonsWithMissingURL.length} missing HLS URLs for enrollment ${enrollmentId}`);
       try {
         for (const lesson of lessonsWithMissingURL) {
-          const videoDetails = await cloudflareStreamService.getVideoDetails(lesson.cloudflareStreamId);
-          lesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
-          // Also update the database for future requests
-          const dbLesson = course.lessons.find(l => l._id.toString() === lesson._id.toString());
-          if (dbLesson) {
-            dbLesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
-            dbLesson.cloudflareStatus = videoDetails.status || dbLesson.cloudflareStatus;
-            if (!dbLesson.videoDuration) dbLesson.videoDuration = videoDetails.duration;
-            if (!dbLesson.videoThumbnail) dbLesson.videoThumbnail = videoDetails.thumbnail;
+          try {
+            console.log(`[Enrollment] Fetching HLS URL for video ${lesson.cloudflareStreamId}`);
+            const videoDetails = await cloudflareStreamService.getVideoDetails(lesson.cloudflareStreamId);
+            console.log(`[Enrollment] Got video details:`, { 
+              videoId: lesson.cloudflareStreamId, 
+              hlsUrl: videoDetails.hlsPlaybackUrl,
+              status: videoDetails.status 
+            });
+            
+            lesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
+            
+            // Also update the database for future requests
+            const dbLesson = course.lessons.find(l => l._id.toString() === lesson._id.toString());
+            if (dbLesson) {
+              console.log(`[Enrollment] Updating lesson ${lesson._id} in database with HLS URL`);
+              dbLesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
+              dbLesson.cloudflareStatus = videoDetails.status || dbLesson.cloudflareStatus;
+              if (!dbLesson.videoDuration && videoDetails.duration) dbLesson.videoDuration = videoDetails.duration;
+              if (!dbLesson.videoThumbnail && videoDetails.thumbnail) dbLesson.videoThumbnail = videoDetails.thumbnail;
+            }
+          } catch (singleError) {
+            console.warn(`[Enrollment] Error fetching HLS for video ${lesson.cloudflareStreamId}:`, singleError.message);
           }
         }
         // Save updated course with HLS URLs
-        await course.save().catch(err => console.warn('Could not save updated HLS URLs:', err.message));
+        if (lessonsWithMissingURL.length > 0) {
+          await course.save().catch(err => console.warn('[Enrollment] Could not save updated HLS URLs:', err.message));
+        }
       } catch (cloudflareError) {
-        console.warn('Could not fetch Cloudflare video details:', cloudflareError.message);
+        console.warn('[Enrollment] Could not fetch Cloudflare video details:', cloudflareError.message);
         // Continue anyway - return what we have
       }
     }
