@@ -92,7 +92,7 @@ export const getMyCourses = async (req, res) => {
     }
 
     const enrollments = await SelfPacedEnrollment.find({ customerId })
-      .populate('courseId', 'title thumbnail lessons status')
+      .populate('courseId')
       .sort({ createdAt: -1 });
 
     if (!enrollments || enrollments.length === 0) {
@@ -106,7 +106,7 @@ export const getMyCourses = async (req, res) => {
     const validEnrollments = enrollments.filter((e) => {
       // Check if courseId exists after populate
       if (!e.courseId) {
-        console.warn(`Enrollment ${e._id} has null courseId - course may have been deleted`);
+        // Silently filter out - course was deleted
         return false;
       }
       return true;
