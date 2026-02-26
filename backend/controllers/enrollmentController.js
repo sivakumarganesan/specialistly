@@ -199,6 +199,7 @@ export const getEnrollmentDetails = async (req, res) => {
       success: true,
       data: {
         enrollmentId: enrollment._id,
+        courseId: course._id,
         courseTitle: course.title,
         courseDescription: course.description,
         lessons,
