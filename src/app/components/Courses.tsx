@@ -766,9 +766,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           }
 
           await courseAPI.addLesson(selectedCourse.id, lessonData);
-        } else {
-          // UPDATE EXISTING lessons with video metadata if present
-          if (lesson.cloudflareStreamId) {
+        } else if (lesson.cloudflareStreamId && typeof lesson._id === 'string' && lesson._id.length === 24) {
+          // UPDATE EXISTING lessons with video metadata ONLY if _id is valid MongoDB ObjectId
+          try {
             await videoAPI.saveLessonVideo({
               courseId: selectedCourse.id,
               lessonId: lesson._id,
@@ -777,6 +777,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               duration: lesson.duration,
               thumbnail: lesson.videoThumbnail,
             });
+          } catch (videoError) {
+            console.error(`Video save error for lesson ${lesson.title}:`, videoError);
+            // Don't fail the whole save if video metadata save fails
           }
         }
       }
