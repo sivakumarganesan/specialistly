@@ -4,7 +4,14 @@
  * Replaces Google Drive integration for course materials
  */
 
-import S3 from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+  HeadObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import crypto from 'crypto';
 
@@ -16,7 +23,7 @@ class CloudflareR2Service {
     this.bucketName = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'specialistly-files';
     this.endpoint = `https://${this.accountId}.r2.cloudflarestorage.com`;
 
-    this.s3Client = new S3.S3Client({
+    this.s3Client = new S3Client({
       region: 'auto',
       endpoint: this.endpoint,
       credentials: {
@@ -69,7 +76,7 @@ class CloudflareR2Service {
     try {
       const fileKey = this.generateFileKey(courseId, lessonId, fileName);
 
-      const command = new S3.PutObjectCommand({
+      const command = new PutObjectCommand({
         Bucket: this.bucketName,
         Key: fileKey,
         Body: fileBuffer,
@@ -110,7 +117,7 @@ class CloudflareR2Service {
    */
   async getSignedDownloadUrl(fileKey, expirationSeconds = 604800) {
     try {
-      const command = new S3.GetObjectCommand({
+      const command = new GetObjectCommand({
         Bucket: this.bucketName,
         Key: fileKey,
       });
@@ -128,7 +135,7 @@ class CloudflareR2Service {
    */
   async deleteFile(fileKey) {
     try {
-      const command = new S3.DeleteObjectCommand({
+      const command = new DeleteObjectCommand({
         Bucket: this.bucketName,
         Key: fileKey,
       });
@@ -153,7 +160,7 @@ class CloudflareR2Service {
     try {
       const prefix = `courses/${courseId}/lessons/${lessonId}/`;
 
-      const command = new S3.ListObjectsV2Command({
+      const command = new ListObjectsV2Command({
         Bucket: this.bucketName,
         Prefix: prefix,
       });
@@ -181,7 +188,7 @@ class CloudflareR2Service {
    */
   async getFileMetadata(fileKey) {
     try {
-      const command = new S3.HeadObjectCommand({
+      const command = new HeadObjectCommand({
         Bucket: this.bucketName,
         Key: fileKey,
       });
