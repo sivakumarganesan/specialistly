@@ -51,8 +51,8 @@ class CloudflareStreamService {
       return {
         success: true,
         videoId: response.data?.result?.uid,
-        playbackUrl: response.data?.result?.playback?.hls?.href,
-        dashUrl: response.data?.result?.playback?.dash?.href,
+        playbackUrl: response.data?.result?.playback?.hls,
+        dashUrl: response.data?.result?.playback?.dash,
         thumbnail: response.data?.result?.thumbnail,
         duration: response.data?.result?.duration,
       };
@@ -148,8 +148,8 @@ class CloudflareStreamService {
         title: video?.meta?.name || 'Untitled',
         duration: video?.duration,
         status: video?.status?.state, // ready, inprogress, error
-        hlsPlaybackUrl: video?.playback?.hls?.href,
-        dashPlaybackUrl: video?.playback?.dash?.href,
+        hlsPlaybackUrl: video?.playback?.hls,
+        dashPlaybackUrl: video?.playback?.dash,
         thumbnail: video?.thumbnail,
         uploaded: video?.uploadedAt,
         size: video?.size,
@@ -186,7 +186,7 @@ class CloudflareStreamService {
           title: video.meta?.name || 'Untitled',
           duration: video.duration,
           status: video.status?.state,
-          hlsPlaybackUrl: video.playback?.hls?.href,
+          hlsPlaybackUrl: video.playback?.hls,
           thumbnail: video.thumbnail,
           uploaded: video.uploadedAt,
         })),
