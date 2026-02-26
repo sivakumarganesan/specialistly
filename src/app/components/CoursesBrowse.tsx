@@ -29,9 +29,11 @@ export function CoursesBrowse() {
   const [searchTerm, setSearchTerm] = useState("");
   const [courseTypeFilter, setCourseTypeFilter] = useState("all");
   const [enrolling, setEnrolling] = useState<string | null>(null);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchCourses();
+    fetchEnrolledCourses();
   }, []);
 
   const fetchCourses = async () => {
@@ -45,6 +47,24 @@ export function CoursesBrowse() {
       console.error("Error fetching courses:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchEnrolledCourses = async () => {
+    try {
+      if (!user?.id) return;
+      const myCoursesResponse = await courseAPI.getMyCourses(user.id);
+      const enrolledIds = new Set<string>();
+      if (Array.isArray(myCoursesResponse?.data)) {
+        myCoursesResponse.data.forEach((enrollment: any) => {
+          if (enrollment.courseId) {
+            enrolledIds.add(enrollment.courseId);
+          }
+        });
+      }
+      setEnrolledCourseIds(enrolledIds);
+    } catch (error) {
+      console.warn('Failed to fetch enrolled courses:', error);
     }
   };
 
@@ -87,6 +107,8 @@ export function CoursesBrowse() {
               try {
                 // Enroll after payment succeeds
                 await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
+                // Add to enrolled courses
+                setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
                 alert("Payment successful! Enrolled successfully. Check My Learning to start.");
               } catch (error: any) {
                 alert(error.message || "Enrollment failed after payment");
@@ -99,6 +121,8 @@ export function CoursesBrowse() {
         } else {
           // Free course - enroll directly
           await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
+          // Add to enrolled courses
+          setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
           alert("Enrolled successfully! Check My Learning to start.");
         }
       } else {
@@ -159,7 +183,9 @@ export function CoursesBrowse() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCourses.map((course) => (
+            {filteredCourses.map((course) => {
+              const isEnrolled = enrolledCourseIds.has(course._id);
+              return (
               <Card key={course._id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 {/* Thumbnail */}
                 <div className="relative h-48 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center overflow-hidden">
@@ -175,6 +201,11 @@ export function CoursesBrowse() {
                   <Badge className="absolute top-3 right-3 bg-white text-indigo-600">
                     {course.courseType === "self-paced" ? "Self-Paced" : "Cohort"}
                   </Badge>
+                  {isEnrolled && (
+                    <div className="absolute top-3 left-3 px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                      ✓ Enrolled
+                    </div>
+                  )}
                 </div>
 
                 {/* Content */}
@@ -203,16 +234,17 @@ export function CoursesBrowse() {
                     </div>
                     <Button
                       onClick={() => handleEnroll(course._id, course.courseType, course)}
-                      disabled={enrolling === course._id}
-                      className="w-full"
+                      disabled={enrolling === course._id || isEnrolled}
+                      className={`w-full ${isEnrolled ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed" : ""}`}
                     >
-                      {enrolling === course._id ? "Enrolling..." : "Enroll Now"}
-                      {enrolling !== course._id && <ArrowRight className="ml-2 h-4 w-4" />}
+                      {enrolling === course._id ? "Enrolling..." : isEnrolled ? "Already Enrolled" : "Enroll Now"}
+                      {enrolling !== course._id && !isEnrolled && <ArrowRight className="ml-2 h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
               </Card>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
