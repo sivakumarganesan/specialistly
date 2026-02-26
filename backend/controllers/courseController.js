@@ -152,7 +152,7 @@ export const updateCourse = async (req, res) => {
 // Add lesson to course
 export const addLesson = async (req, res) => {
   try {
-    const { title, videoUrl, files, order } = req.body;
+    const { title, videoUrl, files, order, cloudflareStreamId, cloudflareStatus } = req.body;
     const courseId = req.params.id;
 
     if (!title || order === undefined) {
@@ -176,6 +176,12 @@ export const addLesson = async (req, res) => {
       order,
       files: files || [],
     };
+
+    // Include Cloudflare video metadata if provided
+    if (cloudflareStreamId) {
+      lesson.cloudflareStreamId = cloudflareStreamId;
+      lesson.cloudflareStatus = cloudflareStatus || 'pending';
+    }
 
     course.lessons.push(lesson);
     
