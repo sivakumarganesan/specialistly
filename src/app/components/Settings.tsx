@@ -651,7 +651,7 @@ function PaymentSettings() {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}/api/marketplace/specialist/disconnect`,
+        `${API_BASE_URL}/marketplace/specialist/disconnect`,
         {
           method: "POST",
           headers: {
