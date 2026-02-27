@@ -346,6 +346,216 @@ export const stripeService = {
       };
     }
   },
+
+  /**
+   * Create a marketplace payment intent (specialist receives payout after commission)
+   * @param {Object} options
+   * @param {number} options.amount - Full amount in cents
+   * @param {string} options.specialistStripeAccountId - Specialist's Stripe Connect account ID
+   * @param {number} options.commissionPercentage - Commission percentage for Specialistly
+   * @param {string} options.customerId - Customer Stripe ID
+   * @param {string} options.currency - Currency code
+   * @param {string} options.description - Payment description
+   * @returns {Promise<Object>} Payment intent with commission details
+   */
+  createMarketplacePaymentIntent: async ({
+    amount,
+    specialistStripeAccountId,
+    commissionPercentage = 15,
+    customerId,
+    currency = 'usd',
+    description = 'Course/Service Payment',
+    metadata = {},
+  }) => {
+    try {
+      // Calculate commission
+      const commissionAmount = Math.round(amount * (commissionPercentage / 100));
+      const specialistPayout = amount - commissionAmount;
+
+      // Verify specialist account exists and is active
+      if (!specialistStripeAccountId) {
+        throw new Error('Specialist Stripe account not found. Please onboard specialist first.');
+      }
+
+      // Create payment intent on Specialistly's account
+      // Payment will be transferred to specialist after successful charge
+      const paymentIntent = await stripe.paymentIntents.create(
+        {
+          amount, // Full amount charged to customer
+          currency,
+          description,
+          customer: customerId,
+          automatic_payment_methods: {
+            enabled: true,
+          },
+          // Transfer funds to specialist after payment succeeds
+          // Using application_fee_amount to collect Specialistly's commission
+          application_fee_amount: commissionAmount,
+          // Destination account (specialist receives remainder)
+          transfer_data: {
+            destination: specialistStripeAccountId,
+          },
+          metadata: {
+            ...metadata,
+            specialistId: specialistStripeAccountId,
+            commissionAmount,
+            specialistPayout,
+          },
+        },
+        {
+          // Create on behalf of specialist (for reporting purposes)
+          stripeAccount: specialistStripeAccountId,
+        }
+      );
+
+      return {
+        success: true,
+        paymentIntentId: paymentIntent.id,
+        clientSecret: paymentIntent.client_secret,
+        status: paymentIntent.status,
+        amount,
+        commissionAmount,
+        specialistPayout,
+      };
+    } catch (error) {
+      console.error('Error creating marketplace payment intent:', error);
+      return {
+        success: false,
+        error: error.message,
+        code: error.code,
+      };
+    }
+  },
+
+  /**
+   * Create a login link for specialist to access their Stripe dashboard
+   * @param {string} specialistStripeAccountId - Specialist's Stripe Connect account ID
+   * @returns {Promise<Object>} Login link
+   */
+  createSpecialistLoginLink: async (specialistStripeAccountId) => {
+    try {
+      const loginLink = await stripe.accounts.createLoginLink(
+        specialistStripeAccountId
+      );
+
+      return {
+        success: true,
+        url: loginLink.url,
+        expiresAt: loginLink.created + 1800, // Expires in 30 minutes
+      };
+    } catch (error) {
+      console.error('Error creating login link:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+
+  /**
+   * Retrieve specialist account status
+   * @param {string} specialistStripeAccountId - Specialist's Stripe Connect account ID
+   * @returns {Promise<Object>} Account details
+   */
+  getSpecialistAccountStatus: async (specialistStripeAccountId) => {
+    try {
+      const account = await stripe.accounts.retrieve(specialistStripeAccountId);
+
+      const requirements = {
+        pending: [],
+        past_due: [],
+      };
+
+      if (account.requirements) {
+        requirements.pending = account.requirements.currently_due || [];
+        requirements.past_due = account.requirements.past_due || [];
+      }
+
+      return {
+        success: true,
+        accountId: account.id,
+        email: account.email,
+        type: account.type,
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        verified: account.verification?.status === 'verified',
+        requirements,
+        status: account.charges_enabled ? 'active' : 'pending_verification',
+      };
+    } catch (error) {
+      console.error('Error retrieving specialist account status:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
+
+  /**
+   * Transfer funds to specialist account (manual payout)
+   * @param {Object} options
+   * @param {string} options.specialistStripeAccountId - Destination Stripe account
+   * @param {number} options.amount - Amount in cents
+   * @param {string} options.currency - Currency code
+   * @param {string} options.description - Transfer description
+   * @returns {Promise<Object>} Transfer details
+   */
+  transferToSpecialist: async ({
+    specialistStripeAccountId,
+    amount,
+    currency = 'usd',
+    description = 'Payout',
+  }) => {
+    try {
+      const transfer = await stripe.transfers.create({
+        amount,
+        currency,
+        destination: specialistStripeAccountId,
+        description,
+      });
+
+      return {
+        success: true,
+        transferId: transfer.id,
+        status: transfer.status,
+        amount: transfer.amount,
+        created: transfer.created,
+      };
+    } catch (error) {
+      console.error('Error creating transfer:', error);
+      return {
+        success: false,
+        error: error.message,
+        code: error.code,
+      };
+    }
+  },
+
+  /**
+   * Get specialist balance information
+   * @param {string} specialistStripeAccountId - Specialist's Stripe Connect account ID
+   * @returns {Promise<Object>} Balance details
+   */
+  getSpecialistBalance: async (specialistStripeAccountId) => {
+    try {
+      const balance = await stripe.balance.retrieve({
+        stripeAccount: specialistStripeAccountId,
+      });
+
+      return {
+        success: true,
+        available: balance.available,
+        pending: balance.pending,
+        currency: balance.available?.[0]?.currency || 'usd',
+      };
+    } catch (error) {
+      console.error('Error retrieving specialist balance:', error);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  },
 };
 
 export default stripe;
