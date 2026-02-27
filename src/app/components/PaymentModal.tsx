@@ -47,9 +47,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
         const user = JSON.parse(userStr);
 
         // Determine which endpoint to use based on service type
+        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
         const endpoint = context.paymentConfig.serviceType === 'course'
-          ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api'}/marketplace/payments/create-intent`
-          : `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api'}/payments/create-intent`;
+          ? `${apiBaseUrl}/marketplace/payments/create-intent`
+          : `${apiBaseUrl}/payments/create-intent`;
 
         // This endpoint should return clientSecret
         const response = await fetch(
