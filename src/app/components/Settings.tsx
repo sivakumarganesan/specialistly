@@ -641,6 +641,41 @@ function PaymentSettings() {
     }
   };
 
+  const handleDisconnectStripe = async () => {
+    setMessage("");
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setMessage("Authentication error. Please log in again.");
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/marketplace/specialist/disconnect`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStripeConnected(false);
+        setMessage("✓ Stripe account disconnected successfully");
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        setMessage(`❌ Failed to disconnect: ${data.message || "Please try again."}`);
+      }
+    } catch (error) {
+      console.error("Failed to disconnect Stripe:", error);
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : "Please try again."}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -695,7 +730,11 @@ function PaymentSettings() {
                   <p className="font-semibold text-green-900">Stripe Connected</p>
                   <p className="text-sm text-green-700">acct_1234567890abcdef</p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleDisconnectStripe}
+                >
                   Disconnect
                 </Button>
               </div>
