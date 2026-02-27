@@ -64,14 +64,22 @@ export function CoursesBrowse() {
       }
       console.log('[CoursesBrowse] Fetching enrolled courses for user:', user.id);
       const myCoursesResponse = await courseAPI.getMyCourses(user.id);
+      console.log('[CoursesBrowse] Enrolled courses API response:', myCoursesResponse);
       const enrolledIds = new Set<string>();
       if (Array.isArray(myCoursesResponse?.data)) {
-        myCoursesResponse.data.forEach((enrollment: any) => {
+        console.log('[CoursesBrowse] Processing enrollments array with', myCoursesResponse.data.length, 'items');
+        myCoursesResponse.data.forEach((enrollment: any, index: number) => {
+          console.log(`[CoursesBrowse] Enrollment ${index}:`, enrollment);
           if (enrollment.courseId) {
+            console.log(`[CoursesBrowse] Adding courseId to set:`, enrollment.courseId);
             enrolledIds.add(enrollment.courseId);
+          } else {
+            console.log(`[CoursesBrowse] Enrollment ${index} missing courseId`, enrollment);
           }
         });
-        console.log('[CoursesBrowse] Enrolled courses:', Array.from(enrolledIds));
+        console.log('[CoursesBrowse] Final enrolled courses set:', Array.from(enrolledIds));
+      } else {
+        console.log('[CoursesBrowse] Response data is not an array:', myCoursesResponse?.data);
       }
       setEnrolledCourseIds(enrolledIds);
     } catch (error) {
@@ -229,6 +237,7 @@ export function CoursesBrowse() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course) => {
               const isEnrolled = enrolledCourseIds.has(course._id);
+              console.log(`[CoursesBrowse] Course "${course.title}" (${course._id}): isEnrolled=${isEnrolled}, enrolling=${enrolling === course._id}, enrolledSet=[${Array.from(enrolledCourseIds).join(', ')}]`);
               return (
               <Card key={course._id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 {/* Thumbnail */}
