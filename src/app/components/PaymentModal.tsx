@@ -5,9 +5,11 @@ import { StripePaymentForm } from './StripePaymentForm';
 import { PaymentBreakdown } from './PaymentBreakdown';
 import { usePaymentContext } from '../context/PaymentContext';
 
-const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLIC_KEY || ''
-);
+const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+
+const stripePromise = stripePublicKey 
+  ? loadStripe(stripePublicKey)
+  : Promise.reject(new Error('Stripe public key not found'));
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -18,6 +20,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
   const context = usePaymentContext();
   const [clientSecret, setClientSecret] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  const [stripeError, setStripeError] = useState<string>('');
+
+  // Check if Stripe key is available
+  useEffect(() => {
+    if (!stripePublicKey) {
+      setStripeError('Stripe is not configured. Please add VITE_STRIPE_PUBLIC_KEY environment variable.');
+    }
+  }, []);
 
   useEffect(() => {
     if (!isOpen || !context.paymentConfig) {
@@ -36,9 +46,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
 
         const user = JSON.parse(userStr);
 
+        // Determine which endpoint to use based on service type
+        const endpoint = context.paymentConfig.serviceType === 'course'
+          ? `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api'}/marketplace/payments/create-intent`
+          : `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api'}/payments/create-intent`;
+
         // This endpoint should return clientSecret
         const response = await fetch(
-          `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api'}/payments/create-intent`,
+          endpoint,
           {
             method: 'POST',
             headers: {
@@ -46,10 +61,10 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
               'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
             },
             body: JSON.stringify({
-              serviceId: context.paymentConfig.serviceId,
-              serviceType: context.paymentConfig.serviceType,
+              courseId: context.paymentConfig.serviceId, // Use courseId for marketplace
               customerId: user._id,
               customerEmail: user.email,
+              commissionPercentage: 15, // Default commission
             }),
           }
         );
@@ -73,6 +88,23 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
 
   if (!isOpen || !context.paymentConfig) {
     return null;
+  }
+
+  if (stripeError) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-lg max-w-md w-full mx-4 p-6">
+          <h2 className="text-xl font-bold text-red-600 mb-4">Payment Configuration Error</h2>
+          <p className="text-gray-700 mb-4">{stripeError}</p>
+          <button
+            onClick={onClose}
+            className="w-full bg-gray-200 text-gray-800 py-2 rounded hover:bg-gray-300"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (
