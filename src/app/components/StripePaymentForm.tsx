@@ -83,7 +83,7 @@ export function StripePaymentForm({
     setError(null);
 
     try {
-      // Confirm card payment with Stripe
+      // Confirm card payment with Stripe using modern Payment Intent API
       const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(
         clientSecret,
         {
@@ -93,7 +93,8 @@ export function StripePaymentForm({
               // Get user info from form if needed
             },
           },
-        }
+        },
+        { handleActions: false }
       );
 
       if (stripeError) {

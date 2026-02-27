@@ -45,7 +45,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
         }
 
         const user = JSON.parse(userStr);
-        console.log('[PaymentModal] User object:', { id: user._id, email: user.email, fullUser: user });
+        console.log('[PaymentModal] User object:', { id: user.id, email: user.email, fullUser: user });
 
         // Determine which endpoint to use based on service type
         const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
@@ -55,7 +55,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
 
         const requestBody = {
           courseId: context.paymentConfig.serviceId,
-          customerId: user._id,
+          customerId: user.id,
           customerEmail: user.email,
           commissionPercentage: 15,
         };

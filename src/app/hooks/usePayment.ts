@@ -29,7 +29,7 @@ export const usePayment = () => {
         const response = await paymentAPI.createPaymentIntent({
           serviceId: config.serviceId,
           serviceType: config.serviceType,
-          customerId: user._id,
+          customerId: user.id,
           customerEmail: user.email,
         });
 
