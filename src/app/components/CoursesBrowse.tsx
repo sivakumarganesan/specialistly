@@ -33,8 +33,14 @@ export function CoursesBrowse() {
 
   useEffect(() => {
     fetchCourses();
-    fetchEnrolledCourses();
   }, []);
+
+  useEffect(() => {
+    // Only fetch enrolled courses when user is available
+    if (user?.id) {
+      fetchEnrolledCourses();
+    }
+  }, [user?.id]);
 
   const fetchCourses = async () => {
     try {
@@ -52,7 +58,11 @@ export function CoursesBrowse() {
 
   const fetchEnrolledCourses = async () => {
     try {
-      if (!user?.id) return;
+      if (!user?.id) {
+        console.log('[CoursesBrowse] No user ID, skipping enrolled course fetch');
+        return;
+      }
+      console.log('[CoursesBrowse] Fetching enrolled courses for user:', user.id);
       const myCoursesResponse = await courseAPI.getMyCourses(user.id);
       const enrolledIds = new Set<string>();
       if (Array.isArray(myCoursesResponse?.data)) {
@@ -61,10 +71,12 @@ export function CoursesBrowse() {
             enrolledIds.add(enrollment.courseId);
           }
         });
+        console.log('[CoursesBrowse] Enrolled courses:', Array.from(enrolledIds));
       }
       setEnrolledCourseIds(enrolledIds);
     } catch (error) {
-      console.warn('Failed to fetch enrolled courses:', error);
+      console.warn('[CoursesBrowse] Failed to fetch enrolled courses:', error);
+      setEnrolledCourseIds(new Set()); // Set empty set on error
     }
   };
 
@@ -88,13 +100,28 @@ export function CoursesBrowse() {
 
   const handleEnroll = async (courseId: string, courseType: string, course?: Course) => {
     try {
+      console.log('[CoursesBrowse] handleEnroll called:', { courseId, courseType, courseName: course?.title });
+      
+      if (!user?.id) {
+        alert('Please log in to enroll in a course');
+        return;
+      }
+      
       setEnrolling(courseId);
       if (courseType === "self-paced") {
         // Check if course is FREE or PAID
         const courseData = course || courses.find(c => c._id === courseId);
         
+        if (!courseData) {
+          alert('Course not found');
+          return;
+        }
+
+        console.log('[CoursesBrowse] Course data:', { title: courseData.title, price: courseData.price });
+        
         if (courseData?.price && courseData.price > 0) {
           // Paid course - open payment modal
+          console.log('[CoursesBrowse] Opening payment modal for paid course');
           openPayment({
             serviceId: courseId,
             serviceType: 'course',
@@ -105,21 +132,25 @@ export function CoursesBrowse() {
             specialistName: courseData.specialistName || 'Specialist',
             onSuccess: async () => {
               try {
+                console.log('[CoursesBrowse] Payment successful, enrolling...');
                 // Enroll after payment succeeds
                 await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
                 // Add to enrolled courses
                 setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
                 alert("Payment successful! Enrolled successfully. Check My Learning to start.");
               } catch (error: any) {
+                console.error('[CoursesBrowse] Enrollment error:', error);
                 alert(error.message || "Enrollment failed after payment");
               }
             },
             onError: (error) => {
+              console.error('[CoursesBrowse] Payment error:', error);
               alert(`Payment failed: ${error}`);
             },
           });
         } else {
           // Free course - enroll directly
+          console.log('[CoursesBrowse] Enrolling in free course');
           await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
           // Add to enrolled courses
           setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
@@ -129,7 +160,7 @@ export function CoursesBrowse() {
         alert("Please select a cohort to enroll");
       }
     } catch (error: any) {
-      console.error("Enrollment error:", error);
+      console.error("[CoursesBrowse] Enrollment error:", error);
       alert(error.message || "Enrollment failed");
     } finally {
       setEnrolling(null);
