@@ -529,16 +529,16 @@ export const getSpecialistCommissions = async (req, res) => {
  */
 export const disconnectStripeAccount = async (req, res) => {
   try {
-    const specialistId = req.user?.userId;
+    const userEmail = req.user?.email;
 
-    if (!specialistId) {
+    if (!userEmail) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized',
       });
     }
 
-    const specialist = await CreatorProfile.findOne({ _id: specialistId });
+    const specialist = await CreatorProfile.findOne({ email: userEmail });
     if (!specialist) {
       return res.status(404).json({
         success: false,
