@@ -113,6 +113,8 @@ export function CoursesBrowse() {
         const courseData = course || courses.find(c => c._id === courseId);
         
         if (!courseData) {
+          console.log('[CoursesBrowse] Course not found');
+          setEnrolling(null);
           alert('Course not found');
           return;
         }
@@ -137,32 +139,43 @@ export function CoursesBrowse() {
                 await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
                 // Add to enrolled courses
                 setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
+                console.log('[CoursesBrowse] Enrollment complete after payment');
                 alert("Payment successful! Enrolled successfully. Check My Learning to start.");
               } catch (error: any) {
-                console.error('[CoursesBrowse] Enrollment error:', error);
+                console.error('[CoursesBrowse] Enrollment error after payment:', error);
                 alert(error.message || "Enrollment failed after payment");
+              } finally {
+                // Clear enrolling state after payment flow completes
+                setEnrolling(null);
               }
             },
             onError: (error) => {
               console.error('[CoursesBrowse] Payment error:', error);
               alert(`Payment failed: ${error}`);
+              // Clear enrolling state on payment error
+              setEnrolling(null);
             },
           });
+          // Don't return here - let the modal handle cleanup via callbacks
+          return;
         } else {
           // Free course - enroll directly
           console.log('[CoursesBrowse] Enrolling in free course');
           await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
           // Add to enrolled courses
           setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
+          console.log('[CoursesBrowse] Free course enrollment complete');
           alert("Enrolled successfully! Check My Learning to start.");
+          setEnrolling(null);
         }
       } else {
+        console.log('[CoursesBrowse] Non self-paced course type:', courseType);
+        setEnrolling(null);
         alert("Please select a cohort to enroll");
       }
     } catch (error: any) {
       console.error("[CoursesBrowse] Enrollment error:", error);
       alert(error.message || "Enrollment failed");
-    } finally {
       setEnrolling(null);
     }
   };
