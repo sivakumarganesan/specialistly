@@ -45,6 +45,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
         }
 
         const user = JSON.parse(userStr);
+        console.log('[PaymentModal] User object:', { id: user._id, email: user.email, fullUser: user });
 
         // Determine which endpoint to use based on service type
         const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
@@ -52,32 +53,37 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
           ? `${apiBaseUrl}/marketplace/payments/create-intent`
           : `${apiBaseUrl}/payments/create-intent`;
 
+        const requestBody = {
+          courseId: context.paymentConfig.serviceId,
+          customerId: user._id,
+          customerEmail: user.email,
+          commissionPercentage: 15,
+        };
+        console.log('[PaymentModal] Sending payment request:', { endpoint, body: requestBody });
+
         // This endpoint should return clientSecret
-        const response = await fetch(
-          endpoint,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-            },
-            body: JSON.stringify({
-              courseId: context.paymentConfig.serviceId, // Use courseId for marketplace
-              customerId: user._id,
-              customerEmail: user.email,
-              commissionPercentage: 15, // Default commission
-            }),
-          }
-        );
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          },
+          body: JSON.stringify(requestBody),
+        });
 
         const data = await response.json();
+        console.log('[PaymentModal] Payment response:', { status: response.status, data });
+        
         if (data.success && data.clientSecret) {
           setClientSecret(data.clientSecret);
         } else {
-          context.paymentConfig?.onError?.(data.message || 'Failed to initialize payment');
+          const errorMsg = data.message || 'Failed to initialize payment';
+          console.error('[PaymentModal] Payment initialization failed:', errorMsg);
+          context.paymentConfig?.onError?.(errorMsg);
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Payment initialization failed';
+        console.error('[PaymentModal] Payment error:', errorMessage);
         context.paymentConfig?.onError?.(errorMessage);
       } finally {
         setIsLoading(false);
