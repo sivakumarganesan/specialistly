@@ -522,3 +522,55 @@ export const getSpecialistCommissions = async (req, res) => {
     });
   }
 };
+
+/**
+ * Disconnect specialist Stripe account
+ * POST /api/marketplace/specialist/disconnect
+ */
+export const disconnectStripeAccount = async (req, res) => {
+  try {
+    const specialistId = req.user?.userId;
+
+    if (!specialistId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const specialist = await CreatorProfile.findOne({ _id: specialistId });
+    if (!specialist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist profile not found',
+      });
+    }
+
+    if (!specialist.stripeAccountId) {
+      return res.status(200).json({
+        success: true,
+        message: 'No Stripe account connected',
+      });
+    }
+
+    // Clear Stripe fields
+    specialist.stripeAccountId = null;
+    specialist.stripeConnectStatus = 'not_connected';
+    specialist.stripeConnectUrl = null;
+    specialist.stripeOnboardingExpires = null;
+    await specialist.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Stripe account disconnected successfully',
+      status: 'not_connected',
+    });
+  } catch (error) {
+    console.error('Error disconnecting Stripe account:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+};

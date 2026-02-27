@@ -7,6 +7,7 @@ import {
   getSpecialistEarnings,
   getSpecialistDashboardLink,
   getSpecialistCommissions,
+  disconnectStripeAccount,
 } from '../controllers/marketplaceController.js';
 
 const router = express.Router();
@@ -36,5 +37,8 @@ router.post('/specialist/dashboard-link', authMiddleware, getSpecialistDashboard
 
 // Get commission records
 router.get('/specialist/commissions', authMiddleware, getSpecialistCommissions);
+
+// Disconnect Stripe account
+router.post('/specialist/disconnect', authMiddleware, disconnectStripeAccount);
 
 export default router;
