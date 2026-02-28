@@ -379,34 +379,28 @@ export const stripeService = {
 
       // Create payment intent on Specialistly's account
       // Payment will be transferred to specialist after successful charge
-      const paymentIntent = await stripe.paymentIntents.create(
-        {
-          amount, // Full amount charged to customer
-          currency,
-          description,
-          customer: customerId,
-          automatic_payment_methods: {
-            enabled: true,
-          },
-          // Transfer funds to specialist after payment succeeds
-          // Using application_fee_amount to collect Specialistly's commission
-          application_fee_amount: commissionAmount,
-          // Destination account (specialist receives remainder)
-          transfer_data: {
-            destination: specialistStripeAccountId,
-          },
-          metadata: {
-            ...metadata,
-            specialistId: specialistStripeAccountId,
-            commissionAmount,
-            specialistPayout,
-          },
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount, // Full amount charged to customer
+        currency,
+        description,
+        customer: customerId,
+        automatic_payment_methods: {
+          enabled: true,
         },
-        {
-          // Create on behalf of specialist (for reporting purposes)
-          stripeAccount: specialistStripeAccountId,
-        }
-      );
+        // Transfer funds to specialist after payment succeeds
+        // Using application_fee_amount to collect Specialistly's commission
+        application_fee_amount: commissionAmount,
+        // Destination account (specialist receives remainder)
+        transfer_data: {
+          destination: specialistStripeAccountId,
+        },
+        metadata: {
+          ...metadata,
+          specialistId: specialistStripeAccountId,
+          commissionAmount,
+          specialistPayout,
+        },
+      });
 
       return {
         success: true,
