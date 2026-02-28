@@ -57,18 +57,27 @@ export function StripePaymentForm({
     setError(null);
 
     try {
-      // Confirm card payment with Stripe using modern Payment Intent API
+      // Get CardElement from elements wrapper
+      const cardElement = elements.getElement(CardElement);
+      
+      if (!cardElement) {
+        setError('Card element not found');
+        setPaymentStatus('error');
+        return;
+      }
+
+      // Confirm card payment with Stripe
+      // Using modern single-object parameter style instead of deprecated multi-parameter style
+      const confirmData = {
+        payment_method: {
+          card: cardElement,
+          billing_details: {},
+        },
+      };
+
       const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(
         clientSecret,
-        {
-          payment_method: {
-            card: elements.getElement(CardElement)!,
-            billing_details: {
-              // Get user info from form if needed
-            },
-          },
-        },
-        { handleActions: false }
+        confirmData
       );
 
       if (stripeError) {
