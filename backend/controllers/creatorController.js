@@ -121,9 +121,16 @@ export const getCreatorById = async (req, res) => {
       });
     }
 
+    const specialistObj = specialist.toObject();
+    
+    // Map profileImage to profilePicture for frontend compatibility
+    if (specialistObj.profileImage) {
+      specialistObj.profilePicture = specialistObj.profileImage;
+    }
+
     res.status(200).json({
       success: true,
-      data: specialist,
+      data: specialistObj,
     });
   } catch (error) {
     console.error('Error fetching specialist:', error);
