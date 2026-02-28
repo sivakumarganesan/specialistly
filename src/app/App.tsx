@@ -48,6 +48,20 @@ export function AppContent() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
 
+  // Handle query parameters for navigation (e.g., from Stripe redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    const tab = params.get('tab');
+
+    if (page) {
+      setCurrentPage(page as any);
+      if (tab && (tab === "profile" || tab === "payment" || tab === "slots" || tab === "subscriptions")) {
+        setSettingsTab(tab as SettingsTab);
+      }
+    }
+  }, []);
+
   // Fetch unread message count periodically
   useEffect(() => {
     if (!isAuthenticated || !user?.id || currentPage !== 'messages') return;

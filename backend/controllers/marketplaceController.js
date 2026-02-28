@@ -263,8 +263,8 @@ export const getSpecialistOnboardingLink = async (req, res) => {
       const onboardingLink = await stripe.accountLinks.create({
         account: accountId,
         type: 'account_onboarding',
-        return_url: `${process.env.FRONTEND_URL}/settings`,
-        refresh_url: `${process.env.FRONTEND_URL}/settings`,
+        return_url: `${process.env.FRONTEND_URL}/?page=settings&tab=payment`,
+        refresh_url: `${process.env.FRONTEND_URL}/?page=settings&tab=payment`,
         collection_options: {
           fields: 'eventually_due',
           future_requirements: 'include',
