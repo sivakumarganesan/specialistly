@@ -142,16 +142,16 @@ export function CoursesBrowse() {
             specialistName: courseData.specialistName || 'Specialist',
             onSuccess: async () => {
               try {
-                console.log('[CoursesBrowse] Payment successful, enrolling...');
-                // Enroll after payment succeeds
-                await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
-                // Add to enrolled courses
-                setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
-                console.log('[CoursesBrowse] Enrollment complete after payment');
+                console.log('[CoursesBrowse] Payment successful, refreshing enrolled courses...');
+                // Enrollment is already created by marketplace confirmation endpoint
+                // Just refresh the enrolled courses list from server
+                await fetchEnrolledCourses();
+                console.log('[CoursesBrowse] Enrollment confirmed and courses refreshed');
                 alert("Payment successful! Enrolled successfully. Check My Learning to start.");
               } catch (error: any) {
-                console.error('[CoursesBrowse] Enrollment error after payment:', error);
-                alert(error.message || "Enrollment failed after payment");
+                console.error('[CoursesBrowse] Error refreshing courses after payment:', error);
+                // Still show success even if refresh fails - enrollment is already confirmed
+                alert("Payment successful! Enrollment confirmed. Check My Learning to start.");
               } finally {
                 // Clear enrolling state after payment flow completes
                 setEnrolling(null);

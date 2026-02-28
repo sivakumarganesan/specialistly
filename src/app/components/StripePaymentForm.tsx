@@ -67,18 +67,14 @@ export function StripePaymentForm({
       }
 
       // Confirm card payment with Stripe
-      // Using modern single-object parameter style instead of deprecated multi-parameter style
-      const confirmData = {
-        payment_method: {
-          card: cardElement,
-          billing_details: {},
-        },
-      };
-
-      const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(
+      // Using modern single-object parameter style
+      const { paymentIntent, error: stripeError } = await stripe.confirmPayment({
+        elements,
         clientSecret,
-        confirmData
-      );
+        confirmParams: {
+          return_url: window.location.href,
+        },
+      });
 
       if (stripeError) {
         console.error('[StripePaymentForm] Stripe error:', stripeError);
