@@ -61,7 +61,7 @@ export const createMarketplacePaymentIntent = async (req, res) => {
 
     // Get specialist Stripe account
     const specialist = await CreatorProfile.findOne({
-      _id: course.specialistId,
+      email: course.specialistEmail,
     });
 
     if (!specialist?.stripeAccountId) {
