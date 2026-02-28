@@ -66,15 +66,17 @@ export function StripePaymentForm({
         return;
       }
 
-      // Confirm card payment with Stripe
-      // Using modern single-object parameter style
-      const { paymentIntent, error: stripeError } = await stripe.confirmPayment({
-        elements,
+      // Confirm card payment with Stripe using CardElement
+      // For CardElement, use confirmCardPayment with payment method data
+      const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(
         clientSecret,
-        confirmParams: {
-          return_url: window.location.href,
-        },
-      });
+        {
+          payment_method: {
+            card: cardElement,
+            billing_details: {},
+          },
+        }
+      );
 
       if (stripeError) {
         console.error('[StripePaymentForm] Stripe error:', stripeError);
