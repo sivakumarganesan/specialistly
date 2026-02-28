@@ -614,6 +614,36 @@ function PaymentSettings() {
   const [message, setMessage] = useState("");
   const { user } = useAuth();
 
+  // Check Stripe connection status on mount
+  useEffect(() => {
+    const checkStripeStatus = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) return;
+
+        const response = await fetch(
+          `${API_BASE_URL}/marketplace/specialist/status`,
+          {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const data = await response.json();
+        if (data.success && data.status === "active") {
+          setStripeConnected(true);
+        }
+      } catch (error) {
+        console.error("Error checking Stripe status:", error);
+      }
+    };
+
+    checkStripeStatus();
+  }, []);
+
   const handleSavePaymentSettings = async () => {
     setIsSaving(true);
     setMessage("");
@@ -676,6 +706,40 @@ function PaymentSettings() {
     }
   };
 
+  const handleConnectStripe = async () => {
+    setMessage("");
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setMessage("Authentication error. Please log in again.");
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/marketplace/specialist/onboarding-link`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success && data.onboardingUrl) {
+        // Redirect to Stripe onboarding
+        window.location.href = data.onboardingUrl;
+      } else {
+        setMessage(`❌ Failed to get onboarding link: ${data.message || "Please try again."}`);
+      }
+    } catch (error) {
+      console.error("Failed to connect Stripe:", error);
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : "Please try again."}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -714,7 +778,7 @@ function PaymentSettings() {
                 Connect your Stripe account to start accepting payments from customers
               </p>
               <Button
-                onClick={() => setStripeConnected(true)}
+                onClick={handleConnectStripe}
                 className="bg-indigo-600 hover:bg-indigo-700"
               >
                 Connect with Stripe
