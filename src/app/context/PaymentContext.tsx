@@ -28,8 +28,14 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
 
   const openPayment = useCallback((config: PaymentConfig) => {
+    console.log('[PaymentContext] openPayment called with config:', {
+      serviceId: config.serviceId,
+      serviceType: config.serviceType,
+      serviceName: config.serviceName,
+    });
     setPaymentConfig(config);
     setIsOpen(true);
+    console.log('[PaymentContext] State updated: isOpen = true, config set');
   }, []);
 
   const closePayment = useCallback(() => {

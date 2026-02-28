@@ -22,6 +22,16 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [stripeError, setStripeError] = useState<string>('');
 
+  // Debug: Log whenever isOpen or context.isOpen changes
+  useEffect(() => {
+    console.log('[PaymentModal] State changed:', {
+      propIsOpen: isOpen,
+      contextIsOpen: context.isOpen,
+      hasPaymentConfig: !!context.paymentConfig,
+      paymentConfig: context.paymentConfig,
+    });
+  }, [isOpen, context.isOpen, context.paymentConfig]);
+
   // Check if Stripe key is available
   useEffect(() => {
     if (!stripePublicKey) {
