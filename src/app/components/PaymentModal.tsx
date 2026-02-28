@@ -185,6 +185,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
               serviceName={context.paymentConfig.serviceName}
               amount={context.paymentConfig.amount}
               currency={context.paymentConfig.currency}
+              clientSecret={clientSecret}
               onSuccess={() => {
                 context.paymentConfig?.onSuccess?.({
                   serviceId: context.paymentConfig.serviceId,

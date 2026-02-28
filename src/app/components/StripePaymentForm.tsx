@@ -15,6 +15,7 @@ interface StripePaymentFormProps {
   serviceName: string;
   amount: number;
   currency?: string;
+  clientSecret: string;
   onSuccess: (enrollmentId: string) => void;
   onError: (error: string) => void;
   onClose: () => void;
@@ -25,6 +26,7 @@ export function StripePaymentForm({
   serviceType,
   serviceName,
   amount,
+  clientSecret: initialClientSecret,
   currency = 'INR',
   onSuccess,
   onError,
@@ -39,35 +41,7 @@ export function StripePaymentForm({
   );
   const [error, setError] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
-
-  // Step 1: Create Payment Intent when component mounts
-  useEffect(() => {
-    const createIntent = async () => {
-      try {
-        setLoading(true);
-        const response = await paymentAPI.createPaymentIntent({
-          serviceId,
-          serviceType,
-        });
-
-        if (response.success) {
-          setClientSecret(response.clientSecret);
-          setPaymentIntentId(response.paymentIntentId);
-        } else {
-          setError(response.message || 'Failed to create payment');
-          setPaymentStatus('error');
-        }
-      } catch (err: any) {
-        setError(err.message || 'Failed to initialize payment');
-        setPaymentStatus('error');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    createIntent();
-  }, [serviceId, serviceType]);
+  const [clientSecret] = useState<string | null>(initialClientSecret);
 
   // Step 2: Handle payment submission
   const handlePaymentSubmit = async (e: React.FormEvent) => {
