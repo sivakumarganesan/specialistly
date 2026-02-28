@@ -178,12 +178,20 @@ export const getSpecialistOnboardingLink = async (req, res) => {
       });
     }
 
-    const specialist = await CreatorProfile.findOne({ email: userEmail });
+    let specialist = await CreatorProfile.findOne({ email: userEmail });
+    
+    // If specialist profile doesn't exist, create one
     if (!specialist) {
-      return res.status(404).json({
-        success: false,
-        message: 'Specialist profile not found',
+      console.log('Creating new specialist profile for:', userEmail);
+      specialist = new CreatorProfile({
+        email: userEmail,
+        creatorName: req.user?.name || userEmail.split('@')[0],
+        stripeAccountId: null,
+        stripeConnectStatus: 'not_connected',
+        commissionPercentage: 15,
       });
+      await specialist.save();
+      console.log('Specialist profile created:', specialist._id);
     }
 
     // If already connected and active, return account status
