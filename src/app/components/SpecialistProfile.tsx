@@ -256,15 +256,31 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
           specialistName: specialist?.name || 'Specialist',
           onSuccess: async () => {
             try {
-              console.log('[SpecialistProfile] Payment successful, enrolling...');
-              // Enroll after payment succeeds
-              await courseAPI.enrollSelfPaced(courseId, user.id, user.email);
-              // Update enrolled courses set
-              setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
+              console.log('[SpecialistProfile] Payment successful - enrollment already done by backend');
+              // Backend's confirmMarketplacePayment already created the enrollment
+              // Refresh enrolled courses from server to sync UI state
+              if (user?.id) {
+                try {
+                  const myCoursesResponse = await courseAPI.getMyCourses(user.id);
+                  const enrolledIds = new Set<string>();
+                  if (Array.isArray(myCoursesResponse?.data)) {
+                    myCoursesResponse.data.forEach((enrollment: any) => {
+                      if (enrollment.courseId) {
+                        enrolledIds.add(enrollment.courseId);
+                      }
+                    });
+                  }
+                  setEnrolledCourseIds(enrolledIds);
+                } catch (error) {
+                  console.warn('[SpecialistProfile] Failed to refresh enrolled courses:', error);
+                  // Fallback: manually add to state
+                  setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
+                }
+              }
               alert("✓ Payment successful! Successfully enrolled in course! View it in My Learning & Bookings.");
             } catch (error) {
-              console.error("[SpecialistProfile] Failed to enroll after payment:", error);
-              alert(`Failed to complete enrollment after payment.`);
+              console.error("[SpecialistProfile] Failed to update enrollment state after payment:", error);
+              alert(`Error updating enrollment. Please try again or check your My Learning & Bookings.`);
             }
           },
           onError: (error) => {
