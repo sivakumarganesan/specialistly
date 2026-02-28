@@ -1,6 +1,14 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import Customer from '../models/Customer.js';
+import Course from '../models/Course.js';
+import Service from '../models/Service.js';
+import ConsultingSlot from '../models/ConsultingSlot.js';
+import AppointmentSlot from '../models/AppointmentSlot.js';
+import CreatorProfile from '../models/CreatorProfile.js';
+import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
+import MarketplaceCommission from '../models/MarketplaceCommission.js';
+import Booking from '../models/Booking.js';
 
 const generateToken = (userId, email) => {
   return jwt.sign({ userId, email }, process.env.JWT_SECRET || 'your-secret-key', {
@@ -324,52 +332,51 @@ export const deleteAccount = async (req, res) => {
     // Determine if specialist or customer based on user type
     const isSpecialist = user.isSpecialist;
 
-    // Import models dynamically to avoid circular dependencies
-    const CourseModule = await import('../models/Course.js');
-    const ServiceModule = await import('../models/Service.js');
-    const ConsultingSlotModule = await import('../models/ConsultingSlot.js');
-    const CreatorProfileModule = await import('../models/CreatorProfile.js');
-    const SelfPacedEnrollmentModule = await import('../models/SelfPacedEnrollment.js');
-    const AppointmentModule = await import('../models/Appointment.js');
-    const MarketplaceCommissionModule = await import('../models/MarketplaceCommission.js');
-
     // Delete specialist's courses, services, and consulting slots if specialist
     if (isSpecialist) {
       console.log('[AuthController] Deleting specialist data for:', userEmail);
 
       // Delete courses
-      const deletedCourses = await CourseModule.default.deleteMany({ specialistEmail: userEmail });
+      const deletedCourses = await Course.deleteMany({ specialistEmail: userEmail });
       console.log('[AuthController] Deleted courses:', deletedCourses.deletedCount);
 
       // Delete services
-      const deletedServices = await ServiceModule.default.deleteMany({ creator: userEmail });
+      const deletedServices = await Service.deleteMany({ creator: userEmail });
       console.log('[AuthController] Deleted services:', deletedServices.deletedCount);
 
       // Delete consulting slots
-      const deletedSlots = await ConsultingSlotModule.default.deleteMany({ specialistEmail: userEmail });
+      const deletedSlots = await ConsultingSlot.deleteMany({ specialistEmail: userEmail });
       console.log('[AuthController] Deleted consulting slots:', deletedSlots.deletedCount);
 
-      // Delete appointments
-      const deletedAppointments = await AppointmentModule.default.deleteMany({ specialistId: userId });
-      console.log('[AuthController] Deleted appointments:', deletedAppointments.deletedCount);
+      // Delete appointment slots
+      const deletedAppointmentSlots = await AppointmentSlot.deleteMany({ specialistId: userId });
+      console.log('[AuthController] Deleted appointment slots:', deletedAppointmentSlots.deletedCount);
+
+      // Delete bookings
+      const deletedBookings = await Booking.deleteMany({ specialistId: userId });
+      console.log('[AuthController] Deleted bookings:', deletedBookings.deletedCount);
 
       // Delete creator profile
-      const deletedProfile = await CreatorProfileModule.default.deleteOne({ _id: user.creatorProfileId });
+      const deletedProfile = await CreatorProfile.deleteOne({ _id: user.creatorProfileId });
       console.log('[AuthController] Deleted creator profile:', !!deletedProfile.deletedCount);
 
       // Delete marketplace commissions for this specialist
-      const deletedCommissions = await MarketplaceCommissionModule.default.deleteMany({ specialistId: userId });
+      const deletedCommissions = await MarketplaceCommission.deleteMany({ specialistId: userId });
       console.log('[AuthController] Deleted marketplace commissions:', deletedCommissions.deletedCount);
     } else {
       // Customer - delete enrollments and related data
       console.log('[AuthController] Deleting customer data for:', userEmail);
 
       // Delete self-paced enrollments
-      const deletedEnrollments = await SelfPacedEnrollmentModule.default.deleteMany({ customerId: userId });
+      const deletedEnrollments = await SelfPacedEnrollment.deleteMany({ customerId: userId });
       console.log('[AuthController] Deleted enrollments:', deletedEnrollments.deletedCount);
 
+      // Delete bookings for this customer
+      const deletedBookings = await Booking.deleteMany({ customerId: userId });
+      console.log('[AuthController] Deleted bookings:', deletedBookings.deletedCount);
+
       // Delete marketplace commissions for this customer
-      const deletedCommissions = await MarketplaceCommissionModule.default.deleteMany({ customerId: userId });
+      const deletedCommissions = await MarketplaceCommission.deleteMany({ customerId: userId });
       console.log('[AuthController] Deleted marketplace commissions:', deletedCommissions.deletedCount);
     }
 
