@@ -101,13 +101,34 @@ export const createMarketplacePaymentIntent = async (req, res) => {
       });
     }
 
+    // Create Stripe customer if not exists
+    const stripeCustomerResult = await stripeService.createCustomer({
+      email: customerEmail,
+      name: req.user?.name || customerEmail,
+      metadata: {
+        userId: customerId,
+      },
+    });
+
+    if (!stripeCustomerResult.success) {
+      console.error('[Marketplace Payment] Stripe customer creation failed:', {
+        error: stripeCustomerResult.error,
+        customerEmail,
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create payment customer',
+        error: stripeCustomerResult.error,
+      });
+    }
+
     // Create marketplace payment intent
     const amountInCents = Math.round(amount * 100);
     const paymentResult = await stripeService.createMarketplacePaymentIntent({
       amount: amountInCents,
       specialistStripeAccountId: specialist.stripeAccountId,
       commissionPercentage: specialist.commissionPercentage || commissionPercentage,
-      customerId,
+      stripeCustomerId: stripeCustomerResult.customerId,
       currency: 'usd',
       description: `${course.title} - Course enrollment`,
       metadata: {
@@ -122,8 +143,9 @@ export const createMarketplacePaymentIntent = async (req, res) => {
         error: paymentResult.error,
         code: paymentResult.code,
         specialistAccountId: specialist.stripeAccountId,
+        stripeCustomerId: stripeCustomerResult.customerId,
         amount: amountInCents,
-        customerId,
+        courseId,
       });
       return res.status(400).json({
         success: false,

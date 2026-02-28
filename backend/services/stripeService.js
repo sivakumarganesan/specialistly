@@ -362,7 +362,7 @@ export const stripeService = {
     amount,
     specialistStripeAccountId,
     commissionPercentage = 15,
-    customerId,
+    stripeCustomerId,
     currency = 'usd',
     description = 'Course/Service Payment',
     metadata = {},
@@ -377,13 +377,17 @@ export const stripeService = {
         throw new Error('Specialist Stripe account not found. Please onboard specialist first.');
       }
 
+      if (!stripeCustomerId) {
+        throw new Error('Stripe customer not found. Please create customer first.');
+      }
+
       // Create payment intent on Specialistly's account
       // Payment will be transferred to specialist after successful charge
       const paymentIntent = await stripe.paymentIntents.create({
         amount, // Full amount charged to customer
         currency,
         description,
-        customer: customerId,
+        customer: stripeCustomerId,
         automatic_payment_methods: {
           enabled: true,
         },
