@@ -188,6 +188,9 @@ export function AppContent() {
           searchableItems={allSearchableItems}
           onSearchItemClick={handleSearchItemClick}
         />
+        {/* Payment Modal - Must be rendered even in specialist profile view */}
+        <PaymentModal isOpen={isPaymentOpen} onClose={closePayment} />
+        
         <SpecialistProfile
           specialistId={viewingSpecialist.id}
           specialistEmail={viewingSpecialist.email}

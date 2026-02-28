@@ -429,10 +429,16 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
           console.log('[SpecialistProfile] Back button clicked');
           e.preventDefault();
           e.stopPropagation();
+          // Ensure onBack is called immediately
           onBack();
         }} 
+        onMouseDown={(e) => {
+          // Also prevent mousedown to be extra safe
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         variant="outline" 
-        className="mb-6"
+        className="mb-6 pointer-events-auto"
       >
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Marketplace
