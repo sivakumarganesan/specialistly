@@ -209,7 +209,10 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
   };
 
   const handleEnrollCourse = async (courseId: string, course?: Course) => {
-    if (!user?.id || !user?.email) return;
+    if (!user?.id || !user?.email) {
+      alert('Please log in to enroll in a course');
+      return;
+    }
     
     const courseData = course || courses.find(c => c._id === courseId);
     
@@ -229,23 +232,28 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
             try {
               // Enroll after payment succeeds
               await courseAPI.enrollSelfPaced(courseId, user.id, user.email);
+              // Update enrolled courses set
+              setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
               alert("✓ Payment successful! Successfully enrolled in course! View it in My Learning & Bookings.");
             } catch (error) {
-              console.error("Failed to enroll:", error);
+              console.error("[SpecialistProfile] Failed to enroll after payment:", error);
               alert(`Failed to complete enrollment after payment.`);
             }
           },
           onError: (error) => {
+            console.error("[SpecialistProfile] Payment error:", error);
             alert(`Payment failed: ${error}`);
           },
         });
       } else {
         // Free course - enroll directly
         await courseAPI.enrollSelfPaced(courseId, user.id, user.email);
+        // Update enrolled courses set
+        setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
         alert("✓ Successfully enrolled in course! View it in My Learning & Bookings.");
       }
     } catch (error) {
-      console.error("Failed to enroll:", error);
+      console.error("[SpecialistProfile] Failed to enroll:", error);
       alert(`Failed to enroll. Please try again.`);
     }
   };
@@ -519,9 +527,21 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                         <p className="text-sm text-gray-600">{course.enrollments || 0} enrolled</p>
                       </div>
                       <Button
-                        onClick={() => handleEnrollCourse(course._id, course)}
+                        type="button"
+                        onClick={(e) => {
+                          console.log('[SpecialistProfile] Enroll button clicked:', { course: course.title, courseId: course._id, isEnrolled });
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleEnrollCourse(course._id, course).catch((err) => {
+                            console.error('[SpecialistProfile] handleEnrollCourse error:', err);
+                          });
+                        }}
                         disabled={isEnrolled}
-                        className={`w-full ${isEnrolled ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed" : "bg-indigo-600 hover:bg-indigo-700"}`}
+                        className={`w-full transition-all ${
+                          isEnrolled
+                            ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed"
+                            : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+                        }`}
                       >
                         {isEnrolled ? "Already Enrolled" : "Enroll Now"}
                       </Button>
