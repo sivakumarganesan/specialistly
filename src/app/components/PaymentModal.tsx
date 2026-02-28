@@ -38,6 +38,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
     const initializePayment = async () => {
       try {
         setIsLoading(true);
+        
+        // Debug: Check if payment config exists
+        if (!context.paymentConfig) {
+          console.error('[PaymentModal] No payment config found!');
+          context.paymentConfig?.onError?.('Payment configuration missing');
+          return;
+        }
+
         const userStr = localStorage.getItem('user');
         if (!userStr) {
           context.paymentConfig?.onError?.('Please log in');
@@ -45,13 +53,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
         }
 
         const user = JSON.parse(userStr);
-        console.log('[PaymentModal] User object:', { id: user.id, email: user.email, fullUser: user });
+        console.log('[PaymentModal] User object:', { id: user.id, email: user.email });
+        console.log('[PaymentModal] Payment config:', {
+          serviceId: context.paymentConfig.serviceId,
+          serviceType: context.paymentConfig.serviceType,
+          serviceName: context.paymentConfig.serviceName,
+        });
 
         // Determine which endpoint to use based on service type
         const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
-        const endpoint = context.paymentConfig.serviceType === 'course'
+        const isCourse = context.paymentConfig.serviceType === 'course';
+        const endpoint = isCourse
           ? `${apiBaseUrl}/marketplace/payments/create-intent`
           : `${apiBaseUrl}/payments/create-intent`;
+
+        console.log('[PaymentModal] Endpoint selection:', { isCourse, endpoint, serviceType: context.paymentConfig.serviceType });
 
         const requestBody = {
           courseId: context.paymentConfig.serviceId,
