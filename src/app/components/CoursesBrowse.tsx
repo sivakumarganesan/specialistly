@@ -287,9 +287,17 @@ export function CoursesBrowse() {
                     </div>
                     {console.log(`[CoursesBrowse Button] Course: ${course.title}, enrolling=${enrolling === course._id}, isEnrolled=${isEnrolled}, disabled=${enrolling === course._id || isEnrolled}`)}
                     <Button
-                      onClick={() => handleEnroll(course._id, course.courseType, course)}
+                      type="button"
+                      onClick={(e) => {
+                        console.log('[CoursesBrowse] Button click event received:', { course: course.title, courseId: course._id });
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleEnroll(course._id, course.courseType, course).catch((err) => {
+                          console.error('[CoursesBrowse] handleEnroll error:', err);
+                        });
+                      }}
                       disabled={enrolling === course._id || isEnrolled}
-                      className={`w-full ${isEnrolled ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed" : ""}`}
+                      className={`w-full ${isEnrolled ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed" : "cursor-pointer"}`}
                     >
                       {enrolling === course._id ? "Enrolling..." : isEnrolled ? "Already Enrolled" : "Enroll Now"}
                       {enrolling !== course._id && !isEnrolled && <ArrowRight className="ml-2 h-4 w-4" />}
