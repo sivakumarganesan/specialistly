@@ -68,16 +68,22 @@ export const stripeService = {
   retrievePaymentIntent: async (paymentIntentId) => {
     try {
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      console.log('[StripeService] Retrieved payment intent:', {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+        hasCharges: !!paymentIntent.charges,
+      });
+      
       return {
         success: true,
         status: paymentIntent.status,
         amount: paymentIntent.amount,
         currency: paymentIntent.currency,
-        charges: paymentIntent.charges.data,
+        charges: paymentIntent.charges?.data || [],
         paymentMethod: paymentIntent.payment_method,
       };
     } catch (error) {
-      console.error('Error retrieving payment intent:', error);
+      console.error('[StripeService] Error retrieving payment intent:', error.message);
       return {
         success: false,
         error: error.message,

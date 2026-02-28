@@ -222,9 +222,19 @@ export const confirmMarketplacePayment = async (req, res) => {
     }
 
     // Find marketplace commission record
-    const commission = await MarketplaceCommission.findOne({
-      paymentIntentId,
-    });
+    let commission;
+    try {
+      commission = await MarketplaceCommission.findOne({
+        paymentIntentId,
+      });
+    } catch (dbError) {
+      console.error('[Marketplace Payment Confirmation] Database lookup error:', dbError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to look up payment record',
+        details: dbError.message,
+      });
+    }
 
     console.log('[Marketplace Payment Confirmation] Commission lookup:', {
       found: !!commission,
@@ -258,45 +268,88 @@ export const confirmMarketplacePayment = async (req, res) => {
     }
 
     // Check Stripe for payment status
-    const paymentIntentResult = await stripeService.retrievePaymentIntent(paymentIntentId);
+    let paymentIntentResult;
+    try {
+      paymentIntentResult = await stripeService.retrievePaymentIntent(paymentIntentId);
+    } catch (stripeError) {
+      console.error('[Marketplace Payment Confirmation] Stripe retrieval error:', stripeError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve payment from Stripe',
+        details: stripeError.message,
+      });
+    }
 
     console.log('[Marketplace Payment Confirmation] Stripe payment intent status:', {
-      success: paymentIntentResult.success,
-      status: paymentIntentResult.status,
+      success: paymentIntentResult?.success,
+      status: paymentIntentResult?.status,
+      paymentIntentResult,
     });
+
+    if (!paymentIntentResult) {
+      console.error('[Marketplace Payment Confirmation] No payment intent result returned');
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve payment status',
+        details: 'No result from Stripe query',
+      });
+    }
 
     if (!paymentIntentResult.success) {
       console.error('[Marketplace Payment Confirmation] Stripe payment intent retrieval failed:', paymentIntentResult.error);
       return res.status(400).json({
         success: false,
-        message: paymentIntentResult.error,
+        message: paymentIntentResult.error || 'Failed to retrieve payment status',
       });
     }
 
     if (paymentIntentResult.status === 'succeeded') {
       // Update commission status
-      commission.status = 'completed';
-      commission.paymentStatus = 'succeeded';
-      commission.paymentCompletedAt = new Date();
-      await commission.save();
+      try {
+        commission.status = 'completed';
+        commission.paymentStatus = 'succeeded';
+        commission.paymentCompletedAt = new Date();
+        await commission.save();
+        console.log('[Marketplace Payment Confirmation] Commission updated successfully');
+      } catch (saveError) {
+        console.error('[Marketplace Payment Confirmation] Commission save error:', saveError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to update payment record',
+          details: saveError.message,
+        });
+      }
 
       // Check if enrollment exists
-      let enrollment = await SelfPacedEnrollment.findOne({
-        customerId: commission.customerId,
-        courseId: commission.serviceId,
-      });
-
-      if (!enrollment) {
-        // Create enrollment
-        enrollment = await SelfPacedEnrollment.create({
+      let enrollment;
+      try {
+        enrollment = await SelfPacedEnrollment.findOne({
           customerId: commission.customerId,
-          customerEmail: commission.customerEmail,
-          specialistId: commission.specialistId,
-          specialistEmail: commission.specialistEmail,
           courseId: commission.serviceId,
-          paymentStatus: 'completed',
-          status: 'active',
-          paymentIntentId: paymentIntentId,
+        });
+
+        if (!enrollment) {
+          // Create enrollment
+          enrollment = await SelfPacedEnrollment.create({
+            customerId: commission.customerId,
+            customerEmail: commission.customerEmail,
+            specialistId: commission.specialistId,
+            specialistEmail: commission.specialistEmail,
+            courseId: commission.serviceId,
+            paymentStatus: 'completed',
+            status: 'active',
+            paymentIntentId: paymentIntentId,
+          });
+          console.log('[Marketplace Payment Confirmation] Enrollment created:', { id: enrollment._id });
+        } else {
+          console.log('[Marketplace Payment Confirmation] Enrollment already exists:', { id: enrollment._id });
+        }
+      } catch (enrollmentError) {
+        console.error('[Marketplace Payment Confirmation] Enrollment create/find error:', enrollmentError);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to create enrollment',
+          details: enrollmentError.message,
         });
       }
 
@@ -326,11 +379,13 @@ export const confirmMarketplacePayment = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('[Marketplace Payment Confirmation] Error:', error);
+    console.error('[Marketplace Payment Confirmation] Unhandled error:', error);
+    console.error('[Marketplace Payment Confirmation] Stack:', error.stack);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
       error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 };
