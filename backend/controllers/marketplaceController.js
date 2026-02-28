@@ -169,16 +169,16 @@ export const createMarketplacePaymentIntent = async (req, res) => {
  */
 export const getSpecialistOnboardingLink = async (req, res) => {
   try {
-    const specialistId = req.user?.userId;
+    const userEmail = req.user?.email;
 
-    if (!specialistId) {
+    if (!userEmail) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized',
       });
     }
 
-    const specialist = await CreatorProfile.findOne({ _id: specialistId });
+    const specialist = await CreatorProfile.findOne({ email: userEmail });
     if (!specialist) {
       return res.status(404).json({
         success: false,
@@ -280,16 +280,16 @@ export const getSpecialistOnboardingLink = async (req, res) => {
  */
 export const getSpecialistStatus = async (req, res) => {
   try {
-    const specialistId = req.user?.userId;
+    const userEmail = req.user?.email;
 
-    if (!specialistId) {
+    if (!userEmail) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized',
       });
     }
 
-    const specialist = await CreatorProfile.findOne({ _id: specialistId });
+    const specialist = await CreatorProfile.findOne({ email: userEmail });
     if (!specialist) {
       return res.status(404).json({
         success: false,
@@ -341,16 +341,16 @@ export const getSpecialistStatus = async (req, res) => {
  */
 export const getSpecialistEarnings = async (req, res) => {
   try {
-    const specialistId = req.user?.userId;
+    const userEmail = req.user?.email;
 
-    if (!specialistId) {
+    if (!userEmail) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized',
       });
     }
 
-    const specialist = await CreatorProfile.findOne({ _id: specialistId });
+    const specialist = await CreatorProfile.findOne({ email: userEmail });
     if (!specialist) {
       return res.status(404).json({
         success: false,
@@ -425,16 +425,16 @@ export const getSpecialistEarnings = async (req, res) => {
  */
 export const getSpecialistDashboardLink = async (req, res) => {
   try {
-    const specialistId = req.user?.userId;
+    const userEmail = req.user?.email;
 
-    if (!specialistId) {
+    if (!userEmail) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized',
       });
     }
 
-    const specialist = await CreatorProfile.findOne({ _id: specialistId });
+    const specialist = await CreatorProfile.findOne({ email: userEmail });
     if (!specialist?.stripeAccountId) {
       return res.status(400).json({
         success: false,
@@ -475,17 +475,25 @@ export const getSpecialistDashboardLink = async (req, res) => {
  */
 export const getSpecialistCommissions = async (req, res) => {
   try {
-    const specialistId = req.user?.userId;
+    const userEmail = req.user?.email;
     const { status, startDate, endDate, limit = 50, page = 1 } = req.query;
 
-    if (!specialistId) {
+    if (!userEmail) {
       return res.status(401).json({
         success: false,
         message: 'Unauthorized',
       });
     }
 
-    const filter = { specialistId };
+    const specialist = await CreatorProfile.findOne({ email: userEmail });
+    if (!specialist) {
+      return res.status(404).json({
+        success: false,
+        message: 'Specialist profile not found',
+      });
+    }
+
+    const filter = { specialistId: specialist._id.toString() };
     if (status) filter.status = status;
 
     if (startDate || endDate) {
