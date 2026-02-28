@@ -209,20 +209,9 @@ export const getSpecialistOnboardingLink = async (req, res) => {
       });
     }
 
-    // If onboarding link exists and hasn't expired, return it
-    if (
-      specialist.stripeConnectUrl &&
-      specialist.stripeOnboardingExpires &&
-      new Date() < specialist.stripeOnboardingExpires
-    ) {
-      return res.status(200).json({
-        success: true,
-        onboardingUrl: specialist.stripeConnectUrl,
-        expiresAt: specialist.stripeOnboardingExpires,
-      });
-    }
+    // Always create a new onboarding link (don't reuse old ones)
+    // This ensures correct redirect URLs are used
 
-    // Create new Express account for specialist
     try {
       // Validate required fields for Stripe account creation
       if (!specialist.creatorName || specialist.creatorName.trim() === '') {
@@ -239,32 +228,40 @@ export const getSpecialistOnboardingLink = async (req, res) => {
         });
       }
 
-      console.log('Creating Stripe Express account for specialist:', {
-        email: specialist.email,
-        name: specialist.creatorName,
-      });
+      let accountId = specialist.stripeAccountId;
 
-      const accountData = {
-        type: 'express',
-        country: 'US',
-        email: specialist.email,
-        business_profile: {
-          name: specialist.creatorName || 'Specialist',
-          product_description: 'Education and consulting services',
-          url: 'https://www.specialistly.com',
-          support_email: specialist.email,
-        },
-      };
+      // If no account exists yet, create one
+      if (!accountId) {
+        console.log('Creating Stripe Express account for specialist:', {
+          email: specialist.email,
+          name: specialist.creatorName,
+        });
 
-      console.log('Stripe account creation data:', JSON.stringify(accountData, null, 2));
+        const accountData = {
+          type: 'express',
+          country: 'US',
+          email: specialist.email,
+          business_profile: {
+            name: specialist.creatorName || 'Specialist',
+            product_description: 'Education and consulting services',
+            url: 'https://www.specialistly.com',
+            support_email: specialist.email,
+          },
+        };
 
-      const account = await stripe.accounts.create(accountData);
+        console.log('Stripe account creation data:', JSON.stringify(accountData, null, 2));
 
-      console.log('Stripe Express account created:', account.id);
+        const account = await stripe.accounts.create(accountData);
+        accountId = account.id;
+
+        console.log('Stripe Express account created:', accountId);
+      } else {
+        console.log('Using existing Stripe account:', accountId);
+      }
 
       // Generate onboarding link (valid for 24 hours)
       const onboardingLink = await stripe.accountLinks.create({
-        account: account.id,
+        account: accountId,
         type: 'account_onboarding',
         return_url: `${process.env.FRONTEND_URL}/settings`,
         refresh_url: `${process.env.FRONTEND_URL}/settings`,
@@ -275,7 +272,7 @@ export const getSpecialistOnboardingLink = async (req, res) => {
       });
 
       // Update specialist with account info
-      specialist.stripeAccountId = account.id;
+      specialist.stripeAccountId = accountId;
       specialist.stripeConnectStatus = 'pending';
       specialist.stripeConnectUrl = onboardingLink.url;
       specialist.stripeOnboardingExpires = new Date(
@@ -288,10 +285,10 @@ export const getSpecialistOnboardingLink = async (req, res) => {
         message: 'Onboarding link created',
         onboardingUrl: onboardingLink.url,
         expiresAt: specialist.stripeOnboardingExpires,
-        accountId: account.id,
+        accountId: accountId,
       });
     } catch (error) {
-      console.error('Error creating Stripe Express account:', {
+      console.error('Error in onboarding link creation:', {
         message: error.message,
         code: error.code,
         statusCode: error.statusCode,
@@ -300,7 +297,7 @@ export const getSpecialistOnboardingLink = async (req, res) => {
       });
       return res.status(400).json({
         success: false,
-        message: 'Failed to create Stripe account',
+        message: 'Failed to create onboarding link',
         error: error.message,
         code: error.code,
       });
