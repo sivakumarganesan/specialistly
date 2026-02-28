@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video } from "lucide-react";
+import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video, Trash2 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { creatorAPI, subscriptionAPI, API_BASE_URL } from "@/app/api/apiClient";
 import { ManageAvailability } from "@/app/components/ManageAvailability";
+import { DeleteAccountModal } from "@/app/components/DeleteAccountModal";
 import {
   Card,
   CardContent,
@@ -12,7 +13,7 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 
-type SettingsTab = "profile" | "payment" | "slots" | "availability" | "subscriptions";
+type SettingsTab = "profile" | "payment" | "slots" | "availability" | "subscriptions" | "danger";
 
 interface SettingsProps {
   initialTab?: SettingsTab;
@@ -20,8 +21,9 @@ interface SettingsProps {
 }
 
 export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) {
-  const { userType } = useAuth();
+  const { userType, setCurrentPage } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const tabs = [
     { id: "profile" as SettingsTab, label: "User Profile", icon: User },
@@ -29,7 +31,13 @@ export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) 
     { id: "availability" as SettingsTab, label: "Manage Availability", icon: Clock },
     { id: "slots" as SettingsTab, label: "Allotment Slots", icon: Clock },
     { id: "subscriptions" as SettingsTab, label: "My Subscriptions", icon: Package },
+    { id: "danger" as SettingsTab, label: "Danger Zone", icon: AlertCircle },
   ];
+
+  const handleDeleteSuccess = () => {
+    // Redirect to home page
+    setCurrentPage("homepage");
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -86,7 +94,15 @@ export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) 
         {activeTab === "availability" && <ManageAvailability />}
         {activeTab === "slots" && <AllotmentSlots />}
         {activeTab === "subscriptions" && <MySubscriptions />}
+        {activeTab === "danger" && <DangerZone onDeleteClick={() => setIsDeleteModalOpen(true)} />}
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onDeleteSuccess={handleDeleteSuccess}
+      />
     </div>
   );
 }
@@ -1268,6 +1284,44 @@ function MySubscriptions() {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+function DangerZone({ onDeleteClick }: { onDeleteClick: () => void }) {
+  return (
+    <div className="space-y-6">
+      <Card className="border-red-200 bg-red-50">
+        <CardHeader>
+          <CardTitle className="text-red-600">Delete Account</CardTitle>
+          <CardDescription>
+            Permanently delete your account and all associated data
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-white border border-red-200 rounded-lg p-4 space-y-3">
+            <h3 className="font-semibold text-red-700">⚠️ Warning: This action cannot be undone</h3>
+            <p className="text-sm text-gray-700">
+              Deleting your account will permanently remove:
+            </p>
+            <ul className="text-sm text-gray-700 space-y-1 ml-4">
+              <li>• Your account and profile information</li>
+              <li>• All courses and services you created</li>
+              <li>• All consulting slots and appointments</li>
+              <li>• All course enrollments and learning progress</li>
+              <li>• Your payment and subscription information</li>
+              <li>• All communications and messages</li>
+            </ul>
+          </div>
+
+          <Button
+            onClick={onDeleteClick}
+            className="w-full bg-red-600 hover:bg-red-700"
+            size="lg"
+          >
+            Delete My Account
+          </Button>
         </CardContent>
       </Card>
     </div>

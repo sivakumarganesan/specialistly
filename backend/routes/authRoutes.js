@@ -5,6 +5,7 @@ import {
   getProfile,
   updateSubscription,
   markOnboardingComplete,
+  deleteAccount,
 } from '../controllers/authController.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 
@@ -18,5 +19,6 @@ router.put('/onboarding-complete', markOnboardingComplete);
 // Protected routes
 router.get('/profile', authMiddleware, getProfile);
 router.put('/subscription', authMiddleware, updateSubscription);
+router.delete('/account', authMiddleware, deleteAccount);
 
 export default router;

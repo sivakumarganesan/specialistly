@@ -298,3 +298,100 @@ export const markOnboardingComplete = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+export const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    const userEmail = req.user?.email;
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    console.log('[AuthController] deleteAccount called for:', { userId, userEmail });
+
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    // Determine if specialist or customer based on user type
+    const isSpecialist = user.isSpecialist;
+
+    // Import models dynamically to avoid circular dependencies
+    const CourseModule = await import('../models/Course.js');
+    const ServiceModule = await import('../models/Service.js');
+    const ConsultingSlotModule = await import('../models/ConsultingSlot.js');
+    const CreatorProfileModule = await import('../models/CreatorProfile.js');
+    const SelfPacedEnrollmentModule = await import('../models/SelfPacedEnrollment.js');
+    const AppointmentModule = await import('../models/Appointment.js');
+    const MarketplaceCommissionModule = await import('../models/MarketplaceCommission.js');
+
+    // Delete specialist's courses, services, and consulting slots if specialist
+    if (isSpecialist) {
+      console.log('[AuthController] Deleting specialist data for:', userEmail);
+
+      // Delete courses
+      const deletedCourses = await CourseModule.default.deleteMany({ specialistEmail: userEmail });
+      console.log('[AuthController] Deleted courses:', deletedCourses.deletedCount);
+
+      // Delete services
+      const deletedServices = await ServiceModule.default.deleteMany({ creator: userEmail });
+      console.log('[AuthController] Deleted services:', deletedServices.deletedCount);
+
+      // Delete consulting slots
+      const deletedSlots = await ConsultingSlotModule.default.deleteMany({ specialistEmail: userEmail });
+      console.log('[AuthController] Deleted consulting slots:', deletedSlots.deletedCount);
+
+      // Delete appointments
+      const deletedAppointments = await AppointmentModule.default.deleteMany({ specialistId: userId });
+      console.log('[AuthController] Deleted appointments:', deletedAppointments.deletedCount);
+
+      // Delete creator profile
+      const deletedProfile = await CreatorProfileModule.default.deleteOne({ _id: user.creatorProfileId });
+      console.log('[AuthController] Deleted creator profile:', !!deletedProfile.deletedCount);
+
+      // Delete marketplace commissions for this specialist
+      const deletedCommissions = await MarketplaceCommissionModule.default.deleteMany({ specialistId: userId });
+      console.log('[AuthController] Deleted marketplace commissions:', deletedCommissions.deletedCount);
+    } else {
+      // Customer - delete enrollments and related data
+      console.log('[AuthController] Deleting customer data for:', userEmail);
+
+      // Delete self-paced enrollments
+      const deletedEnrollments = await SelfPacedEnrollmentModule.default.deleteMany({ customerId: userId });
+      console.log('[AuthController] Deleted enrollments:', deletedEnrollments.deletedCount);
+
+      // Delete marketplace commissions for this customer
+      const deletedCommissions = await MarketplaceCommissionModule.default.deleteMany({ customerId: userId });
+      console.log('[AuthController] Deleted marketplace commissions:', deletedCommissions.deletedCount);
+    }
+
+    // Delete user account
+    const deletedUser = await User.findByIdAndDelete(userId);
+    console.log('[AuthController] User account deleted:', !!deletedUser);
+
+    // Also delete from Customer model if exists
+    if (!isSpecialist) {
+      await Customer.deleteOne({ _id: user.customerId || userId });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Account and all associated data deleted successfully',
+    });
+  } catch (error) {
+    console.error('[AuthController] deleteAccount error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete account',
+      error: error.message,
+    });
+  }
+};
