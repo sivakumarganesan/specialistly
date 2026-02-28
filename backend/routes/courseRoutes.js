@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { authMiddleware } from '../middleware/authMiddleware.js';
+import { authMiddleware, optionalAuthMiddleware } from '../middleware/authMiddleware.js';
 import {
   createCourse,
   getAllCourses,
@@ -84,8 +84,8 @@ router.get('/browse', browseCourses);
 // Enroll in self-paced course
 router.post('/enrollments/self-paced', enrollSelfPaced);
 
-// Get my self-paced courses (requires authentication)
-router.get('/enrollments/self-paced/my-courses', authMiddleware, getMyCourses);
+// Get my self-paced courses (optional auth - works with or without token)
+router.get('/enrollments/self-paced/my-courses', optionalAuthMiddleware, getMyCourses);
 
 // Get self-paced enrollment details
 router.get('/enrollments/self-paced/:enrollmentId', getEnrollmentDetails);
@@ -103,8 +103,8 @@ router.get('/enrollments/self-paced/:enrollmentId/check-certificate', checkCerti
 // Enroll in cohort
 router.post('/enrollments/cohort', enrollCohort);
 
-// Get my cohorts (requires authentication)
-router.get('/enrollments/cohort/my-courses', authMiddleware, getMyCohorts);
+// Get my cohorts (optional auth - works with or without token)
+router.get('/enrollments/cohort/my-courses', optionalAuthMiddleware, getMyCohorts);
 
 // Mark session attended
 router.post(
@@ -129,8 +129,8 @@ router.post('/cohorts/:cohortId/sessions', addSession);
 router.get('/cohorts/:cohortId/sessions', getCohortSessions);
 
 // ===== CERTIFICATES =====
-// Get my certificates (requires authentication)
-router.get('/certificates/my-certificates', authMiddleware, getMyCertificates);
+// Get my certificates (optional auth - works with or without token)
+router.get('/certificates/my-certificates', optionalAuthMiddleware, getMyCertificates);
 
 // Download certificate
 router.get('/certificates/:certificateId/download', downloadCertificate);
