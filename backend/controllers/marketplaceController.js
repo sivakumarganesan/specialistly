@@ -118,10 +118,18 @@ export const createMarketplacePaymentIntent = async (req, res) => {
     });
 
     if (!paymentResult.success) {
+      console.error('[Marketplace Payment] Payment intent creation failed:', {
+        error: paymentResult.error,
+        code: paymentResult.code,
+        specialistAccountId: specialist.stripeAccountId,
+        amount: amountInCents,
+        customerId,
+      });
       return res.status(400).json({
         success: false,
         message: 'Failed to create payment intent',
         error: paymentResult.error,
+        code: paymentResult.code,
       });
     }
 

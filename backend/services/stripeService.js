@@ -418,7 +418,14 @@ export const stripeService = {
         specialistPayout,
       };
     } catch (error) {
-      console.error('Error creating marketplace payment intent:', error);
+      console.error('Error creating marketplace payment intent:', {
+        message: error.message,
+        code: error.code,
+        param: error.param,
+        type: error.type,
+        specialistStripeAccountId,
+        amount,
+      });
       return {
         success: false,
         error: error.message,
