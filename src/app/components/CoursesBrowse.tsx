@@ -38,7 +38,11 @@ export function CoursesBrowse() {
   useEffect(() => {
     // Only fetch enrolled courses when user is available
     if (user?.id) {
+      console.log('[CoursesBrowse] User logged in, fetching enrolled courses');
       fetchEnrolledCourses();
+    } else {
+      console.log('[CoursesBrowse] User not logged in, clearing enrolled courses');
+      setEnrolledCourseIds(new Set());
     }
   }, [user?.id]);
 
@@ -106,80 +110,107 @@ export function CoursesBrowse() {
     setFilteredCourses(filtered);
   }, [searchTerm, courseTypeFilter, courses]);
 
+  // Debug effect to track component state
+  useEffect(() => {
+    console.log('[CoursesBrowse] Component state:', {
+      user: user?.id ? `logged in (${user.id})` : 'not logged in',
+      enrolling: enrolling,
+      enrolledCourseIds: Array.from(enrolledCourseIds),
+      filteredCoursesCount: filteredCourses.length,
+      coursesCount: courses.length,
+    });
+  }, [user?.id, enrolling, enrolledCourseIds, filteredCourses.length, courses.length]);
+
   const handleEnroll = async (courseId: string, courseType: string, course?: Course) => {
     try {
       console.log('[CoursesBrowse] handleEnroll called:', { courseId, courseType, courseName: course?.title });
       
       if (!user?.id) {
+        console.log('[CoursesBrowse] User not logged in');
         alert('Please log in to enroll in a course');
         return;
       }
       
       setEnrolling(courseId);
-      if (courseType === "self-paced") {
-        // Check if course is FREE or PAID
-        const courseData = course || courses.find(c => c._id === courseId);
-        
-        if (!courseData) {
-          console.log('[CoursesBrowse] Course not found');
-          setEnrolling(null);
-          alert('Course not found');
-          return;
-        }
-
-        console.log('[CoursesBrowse] Course data:', { title: courseData.title, price: courseData.price });
-        
-        if (courseData?.price && courseData.price > 0) {
-          // Paid course - open payment modal
-          console.log('[CoursesBrowse] Opening payment modal for paid course');
-          openPayment({
-            serviceId: courseId,
-            serviceType: 'course',
-            serviceName: courseData.title,
-            amount: courseData.price * 100, // Convert to cents
-            currency: 'usd',
-            specialistId: '', // Would need to get from course data
-            specialistName: courseData.specialistName || 'Specialist',
-            onSuccess: async () => {
-              try {
-                console.log('[CoursesBrowse] Payment successful, refreshing enrolled courses...');
-                // Enrollment is already created by marketplace confirmation endpoint
-                // Just refresh the enrolled courses list from server
-                await fetchEnrolledCourses();
-                console.log('[CoursesBrowse] Enrollment confirmed and courses refreshed');
-                alert("Payment successful! Enrolled successfully. Check My Learning to start.");
-              } catch (error: any) {
-                console.error('[CoursesBrowse] Error refreshing courses after payment:', error);
-                // Still show success even if refresh fails - enrollment is already confirmed
-                alert("Payment successful! Enrollment confirmed. Check My Learning to start.");
-              } finally {
-                // Clear enrolling state after payment flow completes
-                setEnrolling(null);
-              }
-            },
-            onError: (error) => {
-              console.error('[CoursesBrowse] Payment error:', error);
-              alert(`Payment failed: ${error}`);
-              // Clear enrolling state on payment error
-              setEnrolling(null);
-            },
-          });
-          // Don't return here - let the modal handle cleanup via callbacks
-          return;
-        } else {
-          // Free course - enroll directly
-          console.log('[CoursesBrowse] Enrolling in free course');
-          await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
-          // Add to enrolled courses
-          setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
-          console.log('[CoursesBrowse] Free course enrollment complete');
-          alert("Enrolled successfully! Check My Learning to start.");
-          setEnrolling(null);
-        }
-      } else {
-        console.log('[CoursesBrowse] Non self-paced course type:', courseType);
+      
+      // Add a timeout to reset enrolling state if the request hangs
+      const timeoutId = setTimeout(() => {
+        console.warn('[CoursesBrowse] Enrollment request timeout, resetting state');
         setEnrolling(null);
-        alert("Please select a cohort to enroll");
+      }, 30000); // 30 second timeout
+      
+      try {
+        if (courseType === "self-paced") {
+          // Check if course is FREE or PAID
+          const courseData = course || courses.find(c => c._id === courseId);
+          
+          if (!courseData) {
+            console.log('[CoursesBrowse] Course not found');
+            setEnrolling(null);
+            clearTimeout(timeoutId);
+            alert('Course not found');
+            return;
+          }
+
+          console.log('[CoursesBrowse] Course data:', { title: courseData.title, price: courseData.price });
+          
+          if (courseData?.price && courseData.price > 0) {
+            // Paid course - open payment modal
+            console.log('[CoursesBrowse] Opening payment modal for paid course', { courseId, price: courseData.price });
+            clearTimeout(timeoutId);
+            openPayment({
+              serviceId: courseId,
+              serviceType: 'course',
+              serviceName: courseData.title,
+              amount: courseData.price * 100, // Convert to cents
+              currency: 'usd',
+              specialistId: '', // Would need to get from course data
+              specialistName: courseData.specialistName || 'Specialist',
+              onSuccess: async () => {
+                try {
+                  console.log('[CoursesBrowse] Payment successful, refreshing enrolled courses...');
+                  // Enrollment is already created by marketplace confirmation endpoint
+                  // Just refresh the enrolled courses list from server
+                  await fetchEnrolledCourses();
+                  console.log('[CoursesBrowse] Enrollment confirmed and courses refreshed');
+                  alert("Payment successful! Enrolled successfully. Check My Learning to start.");
+                } catch (error: any) {
+                  console.error('[CoursesBrowse] Error refreshing courses after payment:', error);
+                  // Still show success even if refresh fails - enrollment is already confirmed
+                  alert("Payment successful! Enrollment confirmed. Check My Learning to start.");
+                } finally {
+                  // Clear enrolling state after payment flow completes
+                  setEnrolling(null);
+                }
+              },
+              onError: (error) => {
+                console.error('[CoursesBrowse] Payment error:', error);
+                alert(`Payment failed: ${error}`);
+                // Clear enrolling state on payment error
+                setEnrolling(null);
+              },
+            });
+            // Don't return here - let the modal handle cleanup via callbacks
+            return;
+          } else {
+            // Free course - enroll directly
+            console.log('[CoursesBrowse] Enrolling in free course');
+            await courseAPI.enrollSelfPaced(courseId, user?.id, user?.email);
+            // Add to enrolled courses
+            setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
+            console.log('[CoursesBrowse] Free course enrollment complete');
+            alert("Enrolled successfully! Check My Learning to start.");
+            setEnrolling(null);
+            clearTimeout(timeoutId);
+          }
+        } else {
+          console.log('[CoursesBrowse] Non self-paced course type:', courseType);
+          setEnrolling(null);
+          clearTimeout(timeoutId);
+          alert("Please select a cohort to enroll");
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
     } catch (error: any) {
       console.error("[CoursesBrowse] Enrollment error:", error);
@@ -237,7 +268,11 @@ export function CoursesBrowse() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredCourses.map((course) => {
               const isEnrolled = enrolledCourseIds.has(course._id);
-              console.log(`[CoursesBrowse] Course "${course.title}" (${course._id}): isEnrolled=${isEnrolled}, enrolling=${enrolling === course._id}, enrolledSet=[${Array.from(enrolledCourseIds).join(', ')}]`);
+              const isEnrolling = enrolling === course._id;
+              const isButtonDisabled = isEnrolling || isEnrolled;
+              
+              console.log(`[CoursesBrowse] Rendering course "${course.title}" (${course._id}): isEnrolled=${isEnrolled}, isEnrolling=${isEnrolling}, buttonDisabled=${isButtonDisabled}`);
+              
               return (
               <Card key={course._id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 {/* Thumbnail */}
@@ -285,22 +320,25 @@ export function CoursesBrowse() {
                         {course.price === 0 ? "FREE" : `$${course.price}`}
                       </span>
                     </div>
-                    {console.log(`[CoursesBrowse Button] Course: ${course.title}, enrolling=${enrolling === course._id}, isEnrolled=${isEnrolled}, disabled=${enrolling === course._id || isEnrolled}`)}
                     <Button
                       type="button"
                       onClick={(e) => {
-                        console.log('[CoursesBrowse] Button click event received:', { course: course.title, courseId: course._id });
+                        console.log('[CoursesBrowse] Button clicked:', { course: course.title, courseId: course._id, isDisabled: isButtonDisabled });
                         e.preventDefault();
                         e.stopPropagation();
                         handleEnroll(course._id, course.courseType, course).catch((err) => {
                           console.error('[CoursesBrowse] handleEnroll error:', err);
                         });
                       }}
-                      disabled={enrolling === course._id || isEnrolled}
-                      className={`w-full ${isEnrolled ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed" : "cursor-pointer"}`}
+                      disabled={isButtonDisabled}
+                      className={`w-full transition-all ${
+                        isButtonDisabled
+                          ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed" 
+                          : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+                      }`}
                     >
-                      {enrolling === course._id ? "Enrolling..." : isEnrolled ? "Already Enrolled" : "Enroll Now"}
-                      {enrolling !== course._id && !isEnrolled && <ArrowRight className="ml-2 h-4 w-4" />}
+                      {isEnrolling ? "Enrolling..." : isEnrolled ? "Already Enrolled" : "Enroll Now"}
+                      {!isEnrolling && !isEnrolled && <ArrowRight className="ml-2 h-4 w-4" />}
                     </Button>
                   </div>
                 </div>
