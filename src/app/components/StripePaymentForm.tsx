@@ -81,6 +81,7 @@ export function StripePaymentForm({
       );
 
       if (stripeError) {
+        console.error('[StripePaymentForm] Stripe error:', stripeError);
         setError(stripeError.message || 'Payment failed');
         setPaymentStatus('error');
         onError(stripeError.message || 'Payment failed');
@@ -88,10 +89,16 @@ export function StripePaymentForm({
       }
 
       if (!paymentIntent) {
+        console.error('[StripePaymentForm] No payment intent returned from Stripe');
         setError('Payment processing failed');
         setPaymentStatus('error');
         return;
       }
+
+      console.log('[StripePaymentForm] Payment intent received:', {
+        id: paymentIntent.id,
+        status: paymentIntent.status,
+      });
 
       // Step 3: Handle different payment intent statuses
       if (paymentIntent.status === 'succeeded') {
@@ -99,9 +106,12 @@ export function StripePaymentForm({
         setPaymentStatus('success');
 
         // Confirm payment on backend (marketplace endpoint)
+        console.log('[StripePaymentForm] Confirming payment with intent ID:', paymentIntent.id);
         const confirmResponse = await marketplacePaymentAPI.confirmPayment({
           paymentIntentId: paymentIntent.id,
         });
+
+        console.log('[StripePaymentForm] Confirm response:', confirmResponse);
 
         if (confirmResponse.success) {
           onSuccess(confirmResponse.enrollmentId);

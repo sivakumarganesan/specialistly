@@ -215,11 +215,20 @@ export const marketplacePaymentAPI = {
         body: JSON.stringify(data),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        // Include error details from server response
+        const errorMessage = responseData.message || `HTTP error! status: ${response.status}`;
+        console.error('[marketplacePaymentAPI.confirmPayment] Error response:', {
+          status: response.status,
+          message: errorMessage,
+          data: responseData,
+        });
+        throw new Error(errorMessage);
       }
 
-      return await response.json();
+      return responseData;
     } catch (error) {
       console.error('Error confirming marketplace payment:', error);
       throw error;

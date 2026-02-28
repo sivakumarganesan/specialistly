@@ -285,6 +285,7 @@ export function CoursesBrowse() {
                         {course.price === 0 ? "FREE" : `$${course.price}`}
                       </span>
                     </div>
+                    {console.log(`[CoursesBrowse Button] Course: ${course.title}, enrolling=${enrolling === course._id}, isEnrolled=${isEnrolled}, disabled=${enrolling === course._id || isEnrolled}`)}
                     <Button
                       onClick={() => handleEnroll(course._id, course.courseType, course)}
                       disabled={enrolling === course._id || isEnrolled}
