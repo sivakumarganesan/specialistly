@@ -216,17 +216,43 @@ export const getSpecialistOnboardingLink = async (req, res) => {
 
     // Create new Express account for specialist
     try {
-      const account = await stripe.accounts.create({
+      // Validate required fields for Stripe account creation
+      if (!specialist.creatorName || specialist.creatorName.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Specialist name is required to connect Stripe account',
+        });
+      }
+
+      if (!specialist.email || specialist.email.trim() === '') {
+        return res.status(400).json({
+          success: false,
+          message: 'Specialist email is required to connect Stripe account',
+        });
+      }
+
+      console.log('Creating Stripe Express account for specialist:', {
+        email: specialist.email,
+        name: specialist.creatorName,
+      });
+
+      const accountData = {
         type: 'express',
-        country: 'US', // Adjust based on specialist location
+        country: 'US',
         email: specialist.email,
         business_profile: {
-          name: specialist.creatorName,
+          name: specialist.creatorName || 'Specialist',
           product_category: 'education',
-          url: 'https://specialistly.com',
+          url: 'https://www.specialistly.com',
           support_email: specialist.email,
         },
-      });
+      };
+
+      console.log('Stripe account creation data:', JSON.stringify(accountData, null, 2));
+
+      const account = await stripe.accounts.create(accountData);
+
+      console.log('Stripe Express account created:', account.id);
 
       // Generate onboarding link (valid for 24 hours)
       const onboardingLink = await stripe.accountLinks.create({
@@ -257,11 +283,18 @@ export const getSpecialistOnboardingLink = async (req, res) => {
         accountId: account.id,
       });
     } catch (error) {
-      console.error('Error creating Stripe Express account:', error);
+      console.error('Error creating Stripe Express account:', {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode,
+        type: error.type,
+        raw: error.raw,
+      });
       return res.status(400).json({
         success: false,
         message: 'Failed to create Stripe account',
         error: error.message,
+        code: error.code,
       });
     }
   } catch (error) {
