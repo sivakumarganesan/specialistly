@@ -209,17 +209,43 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
   };
 
   const handleEnrollCourse = async (courseId: string, course?: Course) => {
+    console.log('[SpecialistProfile] handleEnrollCourse called:', {
+      courseId,
+      courseTitle: course?.title,
+      userId: user?.id,
+      userEmail: user?.email,
+      userAvailable: !!user,
+    });
+
     if (!user?.id || !user?.email) {
+      console.warn('[SpecialistProfile] User not logged in or missing fields:', { 
+        userId: user?.id, 
+        userEmail: user?.email,
+        user 
+      });
       alert('Please log in to enroll in a course');
       return;
     }
     
     const courseData = course || courses.find(c => c._id === courseId);
     
+    if (!courseData) {
+      console.error('[SpecialistProfile] Course data not found:', { courseId, coursesAvailable: courses.length });
+      alert('Course not found');
+      return;
+    }
+    
+    console.log('[SpecialistProfile] Course data found:', { 
+      title: courseData.title, 
+      price: courseData.price,
+      isPaid: courseData.price && courseData.price > 0
+    });
+
     try {
       // Check if course is FREE or PAID
       if (courseData?.price && courseData.price > 0) {
         // Paid course - open payment modal
+        console.log('[SpecialistProfile] Opening payment modal for paid course');
         openPayment({
           serviceId: courseId,
           serviceType: 'course',
@@ -230,6 +256,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
           specialistName: specialist?.name || 'Specialist',
           onSuccess: async () => {
             try {
+              console.log('[SpecialistProfile] Payment successful, enrolling...');
               // Enroll after payment succeeds
               await courseAPI.enrollSelfPaced(courseId, user.id, user.email);
               // Update enrolled courses set
@@ -246,15 +273,21 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
           },
         });
       } else {
-        // Free course - enroll directly
+        console.log('[SpecialistProfile] Enrolling in free course');
         await courseAPI.enrollSelfPaced(courseId, user.id, user.email);
         // Update enrolled courses set
         setEnrolledCourseIds(new Set([...enrolledCourseIds, courseId]));
+        console.log('[SpecialistProfile] Free course enrollment complete');
         alert("✓ Successfully enrolled in course! View it in My Learning & Bookings.");
       }
-    } catch (error) {
-      console.error("[SpecialistProfile] Failed to enroll:", error);
-      alert(`Failed to enroll. Please try again.`);
+    } catch (error: any) {
+      console.error("[SpecialistProfile] Error during enrollment:", {
+        error,
+        message: error?.message,
+        courseId,
+        userId: user?.id,
+      });
+      alert(`Error: ${error?.message || 'Failed to enroll. Please try again.'}`);
     }
   };
 
@@ -370,7 +403,16 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
   if (!specialist) {
     return (
       <div className="p-6 max-w-6xl mx-auto">
-        <Button onClick={onBack} variant="outline" className="mb-4">
+        <Button 
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onBack();
+          }} 
+          variant="outline" 
+          className="mb-4"
+        >
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Marketplace
         </Button>
@@ -381,7 +423,17 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <Button onClick={onBack} variant="outline" className="mb-6">
+      <Button 
+        type="button"
+        onClick={(e) => {
+          console.log('[SpecialistProfile] Back button clicked');
+          e.preventDefault();
+          e.stopPropagation();
+          onBack();
+        }} 
+        variant="outline" 
+        className="mb-6"
+      >
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Marketplace
       </Button>
@@ -529,12 +581,20 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                       <Button
                         type="button"
                         onClick={(e) => {
-                          console.log('[SpecialistProfile] Enroll button clicked:', { course: course.title, courseId: course._id, isEnrolled });
+                          console.log('[SpecialistProfile] Enroll button clicked:', { 
+                            course: course.title, 
+                            courseId: course._id, 
+                            isEnrolled,
+                            button: e.currentTarget
+                          });
                           e.preventDefault();
                           e.stopPropagation();
-                          handleEnrollCourse(course._id, course).catch((err) => {
-                            console.error('[SpecialistProfile] handleEnrollCourse error:', err);
-                          });
+                          
+                          handleEnrollCourse(course._id, course)
+                            .then(() => console.log('[SpecialistProfile] Enrollment completed successfully'))
+                            .catch((err) => {
+                              console.error('[SpecialistProfile] handleEnrollCourse error:', err);
+                            });
                         }}
                         disabled={isEnrolled}
                         className={`w-full transition-all ${
