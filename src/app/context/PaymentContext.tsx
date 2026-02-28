@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 export interface PaymentContextType {
   isOpen: boolean;
@@ -26,6 +26,11 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentConfig, setPaymentConfig] = useState<PaymentConfig | null>(null);
+
+  // Debug: Log state changes
+  useEffect(() => {
+    console.log('[PaymentContext] State updated:', { isOpen, hasPaymentConfig: !!paymentConfig });
+  }, [isOpen, paymentConfig]);
 
   const openPayment = useCallback((config: PaymentConfig) => {
     console.log('[PaymentContext] openPayment called with config:', {

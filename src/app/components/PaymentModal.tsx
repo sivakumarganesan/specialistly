@@ -12,12 +12,18 @@ const stripePromise = stripePublicKey
   : Promise.reject(new Error('Stripe public key not found'));
 
 interface PaymentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose }) => {
+const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
   const context = usePaymentContext();
+  // Use context state primarily, fall back to props if needed
+  const isOpen = context.isOpen;
+  const onClose = () => {
+    context.closePayment();
+    propOnClose?.();
+  };
   const [clientSecret, setClientSecret] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [stripeError, setStripeError] = useState<string>('');
