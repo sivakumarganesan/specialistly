@@ -174,6 +174,13 @@ export const createMarketplacePaymentIntent = async (req, res) => {
       paymentStatus: 'pending',
     });
 
+    console.log('[Marketplace Payment] Commission created:', {
+      id: commission._id,
+      paymentIntentId: commission.paymentIntentId,
+      customerId: commission.customerId,
+      courseId: commission.serviceId,
+    });
+
     return res.status(200).json({
       success: true,
       paymentIntentId: paymentResult.paymentIntentId,
@@ -202,6 +209,11 @@ export const confirmMarketplacePayment = async (req, res) => {
     const { paymentIntentId } = req.body;
     const authenticatedUserId = req.user?.userId;
 
+    console.log('[Marketplace Payment Confirmation] Request:', {
+      paymentIntentId,
+      authenticatedUserId,
+    });
+
     if (!paymentIntentId) {
       return res.status(400).json({
         success: false,
@@ -214,15 +226,31 @@ export const confirmMarketplacePayment = async (req, res) => {
       paymentIntentId,
     });
 
+    console.log('[Marketplace Payment Confirmation] Commission lookup:', {
+      found: !!commission,
+      paymentIntentId,
+      commission: commission ? {
+        id: commission._id,
+        customerId: commission.customerId,
+        status: commission.status,
+      } : null,
+    });
+
     if (!commission) {
+      console.error('[Marketplace Payment Confirmation] Commission not found for paymentIntentId:', paymentIntentId);
       return res.status(404).json({
         success: false,
         message: 'Payment not found',
+        paymentIntentId,
       });
     }
 
     // Verify ownership - user must be the customer
     if (commission.customerId.toString() !== authenticatedUserId) {
+      console.error('[Marketplace Payment Confirmation] Authorization failed:', {
+        commissionCustomerId: commission.customerId.toString(),
+        authenticatedUserId,
+      });
       return res.status(403).json({
         success: false,
         message: 'Unauthorized',
@@ -232,7 +260,13 @@ export const confirmMarketplacePayment = async (req, res) => {
     // Check Stripe for payment status
     const paymentIntentResult = await stripeService.retrievePaymentIntent(paymentIntentId);
 
+    console.log('[Marketplace Payment Confirmation] Stripe payment intent status:', {
+      success: paymentIntentResult.success,
+      status: paymentIntentResult.status,
+    });
+
     if (!paymentIntentResult.success) {
+      console.error('[Marketplace Payment Confirmation] Stripe payment intent retrieval failed:', paymentIntentResult.error);
       return res.status(400).json({
         success: false,
         message: paymentIntentResult.error,
