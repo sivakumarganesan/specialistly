@@ -728,11 +728,20 @@ function PaymentSettings() {
 
       const data = await response.json();
 
+      console.log('Stripe onboarding response:', {
+        status: response.status,
+        success: data.success,
+        message: data.message,
+        error: data.error,
+        code: data.code,
+      });
+
       if (data.success && data.onboardingUrl) {
         // Redirect to Stripe onboarding
         window.location.href = data.onboardingUrl;
       } else {
-        setMessage(`❌ Failed to get onboarding link: ${data.message || "Please try again."}`);
+        const errorMsg = data.error || data.message || "Please try again.";
+        setMessage(`❌ Failed to get onboarding link: ${errorMsg}`);
       }
     } catch (error) {
       console.error("Failed to connect Stripe:", error);
