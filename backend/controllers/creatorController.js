@@ -145,8 +145,15 @@ export const getAllSpecialists = async (req, res) => {
         const servicesCount = await Service.countDocuments({ creator: specialist.email, status: 'active' });
         const coursesCount = await Course.countDocuments({ specialistEmail: specialist.email, status: 'published' });
         
+        const specialistObj = specialist.toObject();
+        
+        // Map profileImage to profilePicture for frontend compatibility
+        if (specialistObj.profileImage) {
+          specialistObj.profilePicture = specialistObj.profileImage;
+        }
+        
         return {
-          ...specialist.toObject(),
+          ...specialistObj,
           servicesCount,
           coursesCount,
         };
