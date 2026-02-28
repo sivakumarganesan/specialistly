@@ -2,6 +2,7 @@ import express from 'express';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 import {
   createMarketplacePaymentIntent,
+  confirmMarketplacePayment,
   getSpecialistOnboardingLink,
   getSpecialistStatus,
   getSpecialistEarnings,
@@ -18,6 +19,9 @@ const router = express.Router();
 
 // Create payment intent for marketplace (customer pays, specialist gets payout after commission)
 router.post('/payments/create-intent', authMiddleware, createMarketplacePaymentIntent);
+
+// Confirm marketplace payment and create enrollment
+router.post('/payments/confirm-payment', authMiddleware, confirmMarketplacePayment);
 
 /**
  * Specialist Stripe Connect Routes

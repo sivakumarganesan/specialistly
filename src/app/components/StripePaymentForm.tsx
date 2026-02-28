@@ -7,7 +7,7 @@ import {
 import { AlertCircle, Loader, CheckCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
-import { paymentAPI } from '@/app/api/paymentAPI';
+import { marketplacePaymentAPI } from '@/app/api/paymentAPI';
 
 interface StripePaymentFormProps {
   serviceId: string;
@@ -89,8 +89,8 @@ export function StripePaymentForm({
         // Payment successful!
         setPaymentStatus('success');
 
-        // Confirm payment on backend
-        const confirmResponse = await paymentAPI.confirmPayment({
+        // Confirm payment on backend (marketplace endpoint)
+        const confirmResponse = await marketplacePaymentAPI.confirmPayment({
           paymentIntentId: paymentIntent.id,
         });
 
@@ -135,7 +135,7 @@ export function StripePaymentForm({
 
     setTimeout(async () => {
       try {
-        const response = await paymentAPI.confirmPayment({
+        const response = await marketplacePaymentAPI.confirmPayment({
           paymentIntentId: intentId,
         });
 

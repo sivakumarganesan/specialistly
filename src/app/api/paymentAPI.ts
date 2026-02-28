@@ -2,8 +2,9 @@ import { API_BASE_URL } from '@/app/api/apiClient';
 
 export const paymentAPI = {
   /**
-   * Create Payment Intent
+   * Create Payment Intent (Legacy - for non-marketplace payments)
    * POST /api/payments/create-intent
+   * @deprecated Use marketplacePaymentAPI.createPaymentIntent instead for course payments
    */
   createPaymentIntent: async (data: {
     serviceId: string;
@@ -156,6 +157,71 @@ export const paymentAPI = {
       return await response.json();
     } catch (error) {
       console.error('Error fetching specialist statistics:', error);
+      throw error;
+    }
+  },
+};
+
+/**
+ * Marketplace Payment API - For Stripe Connect marketplace payments
+ * All course payments go through the marketplace endpoint
+ */
+export const marketplacePaymentAPI = {
+  /**
+   * Create Marketplace Payment Intent
+   * POST /api/marketplace/payments/create-intent
+   * Used for course enrollments with specialist stripe account
+   */
+  createPaymentIntent: async (data: {
+    courseId: string;
+    customerId: string;
+    customerEmail: string;
+    commissionPercentage?: number;
+  }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/marketplace/payments/create-intent`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating marketplace payment intent:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Confirm Marketplace Payment
+   * POST /api/marketplace/payments/confirm-payment
+   * Called after successful card payment to confirm and create enrollment
+   */
+  confirmPayment: async (data: { paymentIntentId: string }) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/marketplace/payments/confirm-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error confirming marketplace payment:', error);
       throw error;
     }
   },

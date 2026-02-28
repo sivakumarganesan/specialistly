@@ -194,6 +194,114 @@ export const createMarketplacePaymentIntent = async (req, res) => {
 };
 
 /**
+ * Confirm Marketplace Payment (marketplace-specific confirmation)
+ * POST /api/marketplace/payments/confirm-payment
+ */
+export const confirmMarketplacePayment = async (req, res) => {
+  try {
+    const { paymentIntentId } = req.body;
+    const authenticatedUserId = req.user?.userId;
+
+    if (!paymentIntentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment Intent ID required',
+      });
+    }
+
+    // Find marketplace commission record
+    const commission = await MarketplaceCommission.findOne({
+      paymentIntentId,
+    });
+
+    if (!commission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment not found',
+      });
+    }
+
+    // Verify ownership - user must be the customer
+    if (commission.customerId.toString() !== authenticatedUserId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    // Check Stripe for payment status
+    const paymentIntentResult = await stripeService.retrievePaymentIntent(paymentIntentId);
+
+    if (!paymentIntentResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: paymentIntentResult.error,
+      });
+    }
+
+    if (paymentIntentResult.status === 'succeeded') {
+      // Update commission status
+      commission.status = 'completed';
+      commission.paymentStatus = 'succeeded';
+      commission.paymentCompletedAt = new Date();
+      await commission.save();
+
+      // Check if enrollment exists
+      let enrollment = await SelfPacedEnrollment.findOne({
+        customerId: commission.customerId,
+        courseId: commission.serviceId,
+      });
+
+      if (!enrollment) {
+        // Create enrollment
+        enrollment = await SelfPacedEnrollment.create({
+          customerId: commission.customerId,
+          customerEmail: commission.customerEmail,
+          specialistId: commission.specialistId,
+          specialistEmail: commission.specialistEmail,
+          courseId: commission.serviceId,
+          paymentStatus: 'completed',
+          status: 'active',
+          paymentIntentId: paymentIntentId,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: 'Payment confirmed successfully',
+        enrollmentId: enrollment._id,
+        status: 'succeeded',
+      });
+    } else if (paymentIntentResult.status === 'processing') {
+      return res.status(200).json({
+        success: false,
+        message: 'Payment is still processing',
+        status: 'processing',
+      });
+    } else if (paymentIntentResult.status === 'requires_action') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment requires additional authentication',
+        status: 'requires_action',
+      });
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment could not be confirmed',
+        status: paymentIntentResult.status,
+      });
+    }
+  } catch (error) {
+    console.error('[Marketplace Payment Confirmation] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+};
+
+/**
  * Get or create specialist Stripe onboarding link
  * POST /api/marketplace/specialist/onboarding-link
  */
