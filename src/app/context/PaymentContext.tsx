@@ -38,9 +38,11 @@ export const PaymentProvider: React.FC<{ children: React.ReactNode }> = ({ child
       serviceType: config.serviceType,
       serviceName: config.serviceName,
     });
+    console.log('[PaymentContext] About to call setPaymentConfig');
     setPaymentConfig(config);
+    console.log('[PaymentContext] About to call setIsOpen(true)');
     setIsOpen(true);
-    console.log('[PaymentContext] State updated: isOpen = true, config set');
+    console.log('[PaymentContext] Called setIsOpen(true) - state update queued');
   }, []);
 
   const closePayment = useCallback(() => {

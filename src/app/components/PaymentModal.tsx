@@ -30,13 +30,21 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
 
   // Debug: Log whenever isOpen or context.isOpen changes
   useEffect(() => {
-    console.log('[PaymentModal] State changed:', {
-      propIsOpen: isOpen,
+    console.log('[PaymentModal] Context state changed:', {
       contextIsOpen: context.isOpen,
       hasPaymentConfig: !!context.paymentConfig,
-      paymentConfig: context.paymentConfig,
+      configServiceId: context.paymentConfig?.serviceId,
     });
-  }, [isOpen, context.isOpen, context.paymentConfig]);
+  }, [context.isOpen, context.paymentConfig]);
+
+  // Debug: Log render
+  useEffect(() => {
+    console.log('[PaymentModal] Component render check:', {
+      isOpen,
+      hasConfig: !!context.paymentConfig,
+      shouldRender: isOpen && !!context.paymentConfig,
+    });
+  }, [isOpen, context.paymentConfig]);
 
   // Check if Stripe key is available
   useEffect(() => {
@@ -126,8 +134,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
   }, [isOpen, context.paymentConfig]);
 
   if (!isOpen || !context.paymentConfig) {
+    console.log('[PaymentModal] Returning null - not rendering:', {
+      isOpen,
+      hasConfig: !!context.paymentConfig,
+    });
     return null;
   }
+
+  console.log('[PaymentModal] Rendering modal with config:', {
+    serviceName: context.paymentConfig.serviceName,
+    amount: context.paymentConfig.amount,
+  });
 
   if (stripeError) {
     return (
