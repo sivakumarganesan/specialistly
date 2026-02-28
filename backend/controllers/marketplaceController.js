@@ -250,7 +250,7 @@ export const getSpecialistOnboardingLink = async (req, res) => {
         email: specialist.email,
         business_profile: {
           name: specialist.creatorName || 'Specialist',
-          product_category: 'education',
+          product_description: 'Education and consulting services',
           url: 'https://www.specialistly.com',
           support_email: specialist.email,
         },
