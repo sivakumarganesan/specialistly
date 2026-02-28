@@ -10,13 +10,61 @@ import creatorRoutes from './routes/creatorRoutes.js';
 import subscriptionRoutes from './routes/subscriptionRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import websiteRoutes from './routes/websiteRoutes.js';
+import zoomRoutes from './routes/zoomRoutes.js';
+import brandingRoutes from './routes/brandingRoutes.js';
+import healthRoutes from './routes/healthRoutes.js';
+import messageRoutes from './routes/messageRoutes.js';
+import consultingSlotRoutes from './routes/consultingSlotRoutes.js';
+import availabilityScheduleRoutes from './routes/availabilityScheduleRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import commissionRoutes from './routes/commissionRoutes.js';
+import videoRoutes from './routes/videoRoutes.js';
+import marketplaceRoutes from './routes/marketplaceRoutes.js';
 
 dotenv.config();
 
 const app = express();
 
+// CORS Configuration
+const allowedOrigins = [
+  process.env.CORS_ORIGIN || 'http://localhost:3000',
+  'https://www.specialistly.com',
+  'https://specialistly-production.up.railway.app',
+  'http://localhost:3000',
+  'http://localhost:5173', // Vite dev server
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy: Origin not allowed'));
+    }
+  },
+  credentials: true,
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
 // Middleware
-app.use(cors());
+app.use(cors(corsOptions));
+
+// ⚠️ IMPORTANT: Stripe webhook middleware MUST be BEFORE express.json()
+// Webhook requires raw body, not JSON parsed
+app.post(
+  '/api/webhooks/stripe',
+  express.raw({ type: 'application/json' }),
+  (req, res, next) => {
+    // Import webhook handler without blocking
+    import('./controllers/webhookController.js').then(module => {
+      module.handleStripeWebhook(req, res).catch(next);
+    });
+  }
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -32,6 +80,16 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/creator', creatorRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/website', websiteRoutes);
+app.use('/api/branding', brandingRoutes);
+app.use('/api/zoom', zoomRoutes);
+app.use('/api/health', healthRoutes);
+app.use('/api/messages', messageRoutes);
+app.use('/api/consulting-slots', consultingSlotRoutes);
+app.use('/api/availability-schedule', availabilityScheduleRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/commission', commissionRoutes);
+app.use('/api/videos', videoRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -41,13 +99,39 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Test endpoint to get outbound IP
+app.get('/api/test/outbound-ip', async (req, res) => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    res.status(200).json({
+      success: true,
+      outboundIp: data.ip,
+      message: 'This is the IP to whitelist in MongoDB Atlas',
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      message: 'Failed to get outbound IP',
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('❌ Error caught by error handler:');
+  console.error('   Path:', req.path);
+  console.error('   Method:', req.method);
+  console.error('   Message:', err.message);
+  console.error('   Stack:', err.stack);
+  
+  // Send error response
   res.status(500).json({
     success: false,
     message: 'Internal server error',
     error: err.message,
+    path: req.path,
   });
 });
 
@@ -61,7 +145,12 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Backend server is running on port ${PORT}`);
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✓ Backend server is LISTENING on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
+});
+
+server.on('error', (error) => {
+  console.error(`✗ Server error:`, error.message);
+  process.exit(1);
 });

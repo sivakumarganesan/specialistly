@@ -22,13 +22,13 @@ const userSchema = new mongoose.Schema({
   },
   membership: {
     type: String,
-    enum: ['free', 'pro'],
+    enum: ['free', 'pro', 'customer'],
     default: 'free',
   },
   subscription: {
     planType: {
       type: String,
-      enum: ['free', 'pro'],
+      enum: ['free', 'pro', 'customer'],
       default: 'free',
     },
     price: {
@@ -64,9 +64,77 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  // Specialist/Creator profile fields (unified)
   profileImage: String,
   phone: String,
   bio: String,
+  location: String,
+  company: String,
+  website: String,
+  creatorName: String,
+  // Speciality categories from predefined list
+  specialityCategories: [{
+    type: String,
+    enum: [
+      'Healthcare',
+      'Sports',
+      'Dietitian',
+      'Entertainment',
+      'Astrology/Numerology',
+      'Coaching',
+      'Medical',
+      'Law & Legal Services',
+      'Technology & IT',
+      'Design & Arts',
+      'Digital Marketing',
+      'Fitness & Nutrition',
+      'Education & Career'
+    ]
+  }],
+  // Customer interests (same as speciality categories but for customers)
+  customerInterests: [{
+    type: String,
+    enum: [
+      'Healthcare',
+      'Sports',
+      'Dietitian',
+      'Entertainment',
+      'Astrology/Numerology',
+      'Coaching',
+      'Medical',
+      'Law & Legal Services',
+      'Technology & IT',
+      'Design & Arts',
+      'Digital Marketing',
+      'Fitness & Nutrition',
+      'Education & Career'
+    ]
+  }],
+  // Onboarding status
+  onboardingComplete: {
+    type: Boolean,
+    default: false,
+  },
+  categoriesSetAt: Date,
+  weeklyAvailability: [
+    {
+      day: String,
+      enabled: Boolean,
+      startTime: String,
+      endTime: String,
+    }
+  ],
+  appointmentSlots: mongoose.Schema.Types.Mixed,
+  paymentSettings: mongoose.Schema.Types.Mixed,
+  zoomAccessToken: String,
+  zoomRefreshToken: String,
+  zoomEmail: String,
+  zoomUserId: String,
+  zoomConnected: {
+    type: Boolean,
+    default: false,
+  },
+  zoomConnectedAt: Date,
   createdAt: {
     type: Date,
     default: Date.now,

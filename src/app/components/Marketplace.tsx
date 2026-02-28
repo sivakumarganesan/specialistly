@@ -4,6 +4,8 @@ import { creatorAPI } from "@/app/api/apiClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Search, MapPin, Star, Users } from "lucide-react";
+import { CategoryFilter } from "@/app/components/CategoryFilter";
+import { CATEGORY_COLORS } from "@/app/constants/specialityCategories";
 
 interface Specialist {
   _id: string;
@@ -16,6 +18,7 @@ interface Specialist {
   totalStudents: number;
   servicesCount: number;
   coursesCount: number;
+  specialityCategories?: string[];
 }
 
 interface MarketplaceProps {
@@ -28,6 +31,7 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
   const [filteredSpecialists, setFilteredSpecialists] = useState<Specialist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   useEffect(() => {
     fetchSpecialists();
@@ -53,6 +57,7 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
           totalStudents: creator.totalStudents || 0,
           servicesCount: creator.servicesCount || 0,
           coursesCount: creator.coursesCount || 0,
+          specialityCategories: creator.specialityCategories || [],
         }));
 
       setSpecialists(activeSpecialists);
@@ -65,13 +70,35 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
   };
 
   useEffect(() => {
-    const filtered = specialists.filter((specialist) =>
+    let filtered = specialists.filter((specialist) =>
       (specialist.name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (specialist.specialization || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
       (specialist.bio || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // Filter by selected categories
+    if (selectedCategories.length > 0) {
+      filtered = filtered.filter((specialist) =>
+        selectedCategories.some((category) =>
+          specialist.specialityCategories?.includes(category)
+        )
+      );
+    }
+
     setFilteredSpecialists(filtered);
-  }, [searchTerm, specialists]);
+  }, [searchTerm, specialists, selectedCategories]);
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    );
+  };
+
+  const handleClearAllCategories = () => {
+    setSelectedCategories([]);
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -89,10 +116,17 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
             placeholder="Search specialists by name or expertise..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
         </div>
       </div>
+
+      {/* Category Filter */}
+      <CategoryFilter 
+        selectedCategories={selectedCategories}
+        onCategoryChange={handleCategoryChange}
+        onClearAll={handleClearAllCategories}
+      />
 
       {/* Specialists Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -102,7 +136,7 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
           </div>
         ) : filteredSpecialists.length > 0 ? (
           filteredSpecialists.map((specialist) => (
-            <Card key={specialist._id} className="hover:shadow-lg transition-shadow">
+            <Card key={specialist._id} className="hover:shadow-lg transition-shadow overflow-hidden">
               <CardHeader>
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0">
@@ -113,7 +147,7 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
                         className="w-16 h-16 rounded-full object-cover"
                       />
                     ) : (
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white font-bold text-xl">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-400 flex items-center justify-center text-white font-bold text-xl">
                         {specialist.name ? specialist.name[0] : "S"}
                       </div>
                     )}
@@ -131,19 +165,40 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
               <CardContent className="space-y-4">
                 <p className="text-sm text-gray-600 line-clamp-2">{specialist.bio}</p>
 
+                {/* Category Badges */}
+                {specialist.specialityCategories && specialist.specialityCategories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {specialist.specialityCategories.slice(0, 3).map(category => (
+                      <span
+                        key={category}
+                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                          CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]
+                        }`}
+                      >
+                        {category}
+                      </span>
+                    ))}
+                    {specialist.specialityCategories.length > 3 && (
+                      <span className="inline-block px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full">
+                        +{specialist.specialityCategories.length - 3} more
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-3 gap-3 text-center py-3 border-y">
                   <div>
-                    <p className="text-lg font-bold text-purple-600">{specialist.coursesCount}</p>
+                    <p className="text-lg font-bold text-indigo-600">{specialist.coursesCount}</p>
                     <p className="text-xs text-gray-600">Courses</p>
                   </div>
                   <div>
-                    <p className="text-lg font-bold text-purple-600">{specialist.servicesCount}</p>
+                    <p className="text-lg font-bold text-indigo-600">{specialist.servicesCount}</p>
                     <p className="text-xs text-gray-600">Services</p>
                   </div>
                   <div className="flex flex-col items-center">
                     <div className="flex items-center gap-1">
                       <Users className="w-4 h-4 text-gray-600" />
-                      <p className="text-lg font-bold text-purple-600">{specialist.totalStudents}</p>
+                      <p className="text-lg font-bold text-indigo-600">{specialist.totalStudents}</p>
                     </div>
                     <p className="text-xs text-gray-600">Students</p>
                   </div>
@@ -151,7 +206,7 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
 
                 <Button
                   onClick={() => onViewSpecialist(specialist._id, specialist.email)}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700"
                 >
                   View Profile
                 </Button>
@@ -160,13 +215,17 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
           ))
         ) : (
           <div className="col-span-full text-center py-12">
-            <p className="text-gray-500 mb-4">No specialists found matching your search</p>
-            <Button
-              onClick={() => setSearchTerm("")}
-              variant="outline"
-            >
-              Clear Search
-            </Button>
+            <p className="text-gray-500 mb-4">
+              {selectedCategories.length > 0 ? "No specialists found in selected categories" : "No specialists found matching your search"}
+            </p>
+            {selectedCategories.length > 0 && (
+              <Button
+                onClick={handleClearAllCategories}
+                variant="outline"
+              >
+                Clear Filters
+              </Button>
+            )}
           </div>
         )}
       </div>

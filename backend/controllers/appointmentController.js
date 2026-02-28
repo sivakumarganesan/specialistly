@@ -1,9 +1,23 @@
+import mongoose from 'mongoose';
 import AppointmentSlot from '../models/AppointmentSlot.js';
-import googleMeetService from '../services/googleMeetService.js';
+import Customer from '../models/Customer.js';
+import zoomService from '../services/zoomService.js';
+
+// Helper function to calculate end time (add 1 hour to start time)
+const getEndTime = (startTime) => {
+  const [hours, minutes] = startTime.split(':').map(Number);
+  const endHours = (hours + 1) % 24;
+  return `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+};
 
 // Create appointment slot
 export const createAppointmentSlot = async (req, res) => {
   try {
+    // Auto-calculate endTime if not provided (1 hour after start time)
+    if (!req.body.endTime && req.body.startTime) {
+      req.body.endTime = getEndTime(req.body.startTime);
+    }
+    
     const slot = new AppointmentSlot(req.body);
     await slot.save();
     res.status(201).json({
@@ -38,10 +52,52 @@ export const getAllAppointmentSlots = async (req, res) => {
 // Get available slots
 export const getAvailableSlots = async (req, res) => {
   try {
-    const slots = await AppointmentSlot.find({ status: 'available' });
+    const { specialistEmail, specialistId } = req.query;
+    
+    // Build filter
+    const filter = { status: 'available' };
+    if (specialistEmail) {
+      filter.specialistEmail = specialistEmail;
+    } else if (specialistId) {
+      filter.specialistId = specialistId;
+    }
+    
+    const slots = await AppointmentSlot.find(filter).sort({ date: 1 });
     res.status(200).json({
       success: true,
       data: slots,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get scheduled webinars with Zoom details for specialist to start meetings
+export const getScheduledWebinars = async (req, res) => {
+  try {
+    const { specialistEmail } = req.query;
+    
+    if (!specialistEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'specialistEmail is required',
+      });
+    }
+    
+    // Get booked webinar appointments with Zoom data
+    const webinars = await AppointmentSlot.find({
+      specialistEmail,
+      status: { $in: ['booked', 'in-progress', 'completed'] },
+      zoomMeetingId: { $exists: true, $ne: null },
+      zoomStartUrl: { $exists: true, $ne: null },
+    }).sort({ date: 1 });
+    
+    res.status(200).json({
+      success: true,
+      data: webinars,
     });
   } catch (error) {
     res.status(500).json({
@@ -61,7 +117,8 @@ export const bookSlot = async (req, res) => {
       customerEmail, 
       customerName, 
       specialistEmail, 
-      specialistName 
+      specialistName,
+      specialistId,
     } = req.body;
 
     const slot = await AppointmentSlot.findById(slotId);
@@ -80,59 +137,243 @@ export const bookSlot = async (req, res) => {
     }
 
     try {
-      // Create Google Meet event
+      // Calculate meeting times
       const startDateTime = new Date(slot.date);
       const [startHour, startMin] = slot.startTime.split(':');
       startDateTime.setHours(parseInt(startHour), parseInt(startMin));
 
+      // Ensure endTime exists; if not, calculate it (1 hour after start)
+      const endTime = slot.endTime || getEndTime(slot.startTime);
       const endDateTime = new Date(slot.date);
-      const [endHour, endMin] = slot.endTime.split(':');
+      const [endHour, endMin] = endTime.split(':');
       endDateTime.setHours(parseInt(endHour), parseInt(endMin));
+      
+      // If end time is earlier than start time (wrapped around midnight), add 1 day
+      if (endDateTime <= startDateTime) {
+        endDateTime.setDate(endDateTime.getDate() + 1);
+      }
+      
+      // Validate that times are different
+      if (startDateTime.getTime() === endDateTime.getTime()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid meeting duration: start and end times must be different',
+        });
+      }
 
-      const meetData = await googleMeetService.createGoogleMeet({
-        serviceTitle,
-        startDateTime: startDateTime.toISOString(),
-        endDateTime: endDateTime.toISOString(),
-        specialistEmail,
-        specialistName,
-        customerEmail,
-        customerName,
-      });
+      // Create Zoom meeting using specialist's OAuth token
+      if (!specialistId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Specialist ID is required to create Zoom meeting',
+        });
+      }
 
-      // Update slot with booking and Google Meet details
+      // Validate Zoom authorization first
+      const UserOAuthToken = (await import('../models/UserOAuthToken.js')).default;
+      const zoomToken = await UserOAuthToken.findOne({ userId: specialistId });
+      
+      if (!zoomToken) {
+        console.error(`❌ No Zoom OAuth token found for specialist ${specialistId}`);
+        
+        // Send re-auth notification
+        try {
+          await zoomService.sendZoomReAuthNotification(
+            specialistEmail,
+            specialistName,
+            customerName,
+            serviceTitle
+          );
+        } catch (emailError) {
+          console.error('❌ Failed to send re-auth notification:', emailError.message);
+        }
+        
+        return res.status(400).json({
+          success: false,
+          message: `❌ The specialist hasn't connected their Zoom account yet. A notification has been sent to the specialist to authorize Zoom.`,
+          requiresReAuth: true,
+        });
+      }
+
+      if (!zoomToken.zoomAccessToken || zoomToken.zoomAccessToken === 'pending') {
+        console.error(`❌ Zoom access token not available for specialist ${specialistId}`);
+        
+        // Send re-auth notification
+        try {
+          await zoomService.sendZoomReAuthNotification(
+            specialistEmail,
+            specialistName,
+            customerName,
+            serviceTitle
+          );
+        } catch (emailError) {
+          console.error('❌ Failed to send re-auth notification:', emailError.message);
+        }
+        
+        return res.status(400).json({
+          success: false,
+          message: `❌ The specialist's Zoom authorization needs to be re-completed. A notification has been sent.`,
+          requiresReAuth: true,
+        });
+      }
+
+      console.log('🎥 Attempting to create Zoom meeting for specialist:', specialistId);
+      let meetData;
+      try {
+        meetData = await zoomService.createZoomMeeting({
+          specialistEmail,
+          specialistName,
+          specialistId,
+          customerEmail,
+          customerName,
+          serviceTitle,
+          startDateTime: startDateTime.toISOString(),
+          endDateTime: endDateTime.toISOString(),
+        });
+        console.log(`✅ Zoom meeting created successfully: ${meetData.zoomMeetingId}`);
+      } catch (zoomError) {
+        console.error('❌ Zoom meeting creation error:', zoomError.message);
+        
+        // Send re-authorization notification email to specialist
+        try {
+          await zoomService.sendZoomReAuthNotification(
+            specialistEmail,
+            specialistName,
+            customerName,
+            serviceTitle
+          );
+          console.log(`✓ Zoom re-auth notification sent to specialist`);
+        } catch (emailError) {
+          console.error('❌ Failed to send re-auth notification:', emailError.message);
+        }
+        
+        return res.status(400).json({
+          success: false,
+          message: `❌ Failed to create Zoom meeting: ${zoomError.message}. A notification has been sent to the specialist to re-authorize their Zoom account.`,
+          requiresReAuth: true,
+        });
+      }
+
+      // Update slot with booking and meeting details
       slot.status = 'booked';
       slot.bookedBy = bookedBy;
       slot.serviceTitle = serviceTitle;
       slot.customerEmail = customerEmail;
       slot.customerName = customerName;
       slot.specialistEmail = specialistEmail;
-      slot.googleEventId = meetData.googleEventId;
-      slot.googleMeetLink = meetData.googleMeetLink;
+      slot.specialistName = specialistName;
+      slot.specialistId = specialistId;
+      slot.endTime = endTime; // Ensure endTime is saved (in case it was calculated)
+      slot.zoomMeetingId = meetData.zoomMeetingId;
+      slot.zoomJoinUrl = meetData.joinUrl;
+      slot.zoomStartUrl = meetData.startUrl;
+      slot.zoomHostId = meetData.hostId;
       
       await slot.save();
 
+      // Add booking record to customer
+      try {
+        const customer = await Customer.findOne({ email: customerEmail });
+        if (customer) {
+          if (!customer.bookings) {
+            customer.bookings = [];
+          }
+          customer.bookings.push({
+            serviceId: slot._id,
+            serviceName: serviceTitle,
+            bookedAt: new Date(),
+            status: 'confirmed',
+          });
+
+          // Add specialist to customer's specialists list if not already there
+          if (!customer.specialists) {
+            customer.specialists = [];
+          }
+          const existingSpecialist = customer.specialists.find(
+            (s) => s.specialistEmail === specialistEmail
+          );
+          if (!existingSpecialist) {
+            customer.specialists.push({
+              specialistId: specialistId,
+              specialistEmail: specialistEmail,
+              specialistName: specialistName,
+              firstBookedDate: new Date(),
+            });
+          }
+
+          await customer.save();
+        }
+      } catch (customerError) {
+        console.warn('⚠️  Failed to add booking to customer record:', customerError.message);
+      }
+      try {
+        console.log('📧 Sending Zoom meeting invitations...');
+        const emailResult = await zoomService.sendMeetingInvitation({
+          specialistEmail,
+          specialistName,
+          customerEmail,
+          customerName,
+          serviceTitle,
+          date: slot.date,
+          startTime: slot.startTime,
+          joinUrl: meetData.joinUrl,
+          zoomMeetingId: meetData.zoomMeetingId,
+        });
+        if (!emailResult.success) {
+          console.error('⚠️  Email sending failed:', emailResult.message || emailResult.error);
+          console.error('   ERROR: Zoom appointment email was NOT sent to customer!');
+          console.error('   Message:', emailResult.message);
+        }
+      } catch (emailError) {
+        console.error('❌ CRITICAL: Email sending error:', emailError.message);
+        console.error('   ERROR: Zoom appointment email was NOT sent!');
+        console.error('   Stack:', emailError.stack);
+        // Don't fail the booking if email fails, but log the error
+      }
+
       res.status(200).json({
         success: true,
-        message: 'Slot booked successfully with Google Meet created',
+        message: 'Slot booked successfully with Zoom meeting created and invitation sent',
         data: slot,
       });
-    } catch (googleError) {
-      console.error('Google Meet creation error:', googleError);
-      // Still save the booking even if Google Meet fails
+    } catch (meetingError) {
+      console.error('❌ Meeting creation failed:', meetingError.message);
+      // Still save the booking even if meeting creation fails
       slot.status = 'booked';
       slot.bookedBy = bookedBy;
       slot.serviceTitle = serviceTitle;
       slot.customerEmail = customerEmail;
       slot.customerName = customerName;
       slot.specialistEmail = specialistEmail;
+      slot.specialistName = specialistName;
+      slot.specialistId = specialistId;
       
       await slot.save();
 
+      // Add booking record to customer
+      try {
+        const customer = await Customer.findOne({ email: customerEmail });
+        if (customer) {
+          if (!customer.bookings) {
+            customer.bookings = [];
+          }
+          customer.bookings.push({
+            serviceId: slot._id,
+            serviceName: serviceTitle,
+            bookedAt: new Date(),
+            status: 'confirmed',
+          });
+          await customer.save();
+        }
+      } catch (customerError) {
+        console.warn('⚠️  Failed to add booking to customer record:', customerError.message);
+      }
+
       res.status(200).json({
         success: true,
-        message: 'Slot booked but Google Meet creation failed',
+        message: 'Slot booked but meeting platform creation failed. Backup arrangements may be needed.',
         data: slot,
-        warning: googleError.message,
+        warning: meetingError.message,
       });
     }
   } catch (error) {
@@ -178,7 +419,7 @@ export const sendReminder = async (req, res) => {
       });
     }
 
-    if (!appointment.googleMeetLink || !appointment.customerEmail) {
+    if (!appointment.zoomJoinUrl || !appointment.customerEmail) {
       return res.status(400).json({
         success: false,
         message: 'Appointment does not have meeting link or customer email',
@@ -186,7 +427,7 @@ export const sendReminder = async (req, res) => {
     }
 
     // Send reminder emails
-    await googleMeetService.sendReminderEmail(appointment);
+    // Reminder email sending removed - use Zoom reminder instead
 
     appointment.reminderSent = true;
     appointment.reminderSentAt = new Date();
@@ -231,7 +472,7 @@ export const shareRecording = async (req, res) => {
     expiryDate.setDate(expiryDate.getDate() + expiryDays);
 
     // Send recording email
-    await googleMeetService.sendRecordingEmail(appointment, recordingLink, expiryDays);
+    // Recording email sending removed - use Zoom recording instead
 
     appointment.recordingLink = recordingLink;
     appointment.recordingExpiryDate = expiryDate;
@@ -273,7 +514,7 @@ export const getRecording = async (req, res) => {
       });
     }
 
-    const isExpired = googleMeetService.checkRecordingExpiry(appointment.recordingExpiryDate);
+    // Expiry check handled separately
 
     if (isExpired) {
       appointment.recordingExpired = true;

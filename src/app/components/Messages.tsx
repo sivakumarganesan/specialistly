@@ -1,0 +1,569 @@
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '@/app/context/AuthContext';
+import { messageAPI, customerAPI, creatorAPI } from '@/app/api/apiClient';
+import { Card, CardContent, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { Button } from '@/app/components/ui/button';
+import { Input } from '@/app/components/ui/input';
+import { Badge } from '@/app/components/ui/badge';
+import { Send, Search, Archive, Trash2, Plus, X, AlertCircle } from 'lucide-react';
+
+interface Participant {
+  userId: string;
+  email: string;
+  name: string;
+  userType: 'specialist' | 'customer';
+}
+
+interface Conversation {
+  _id: string;
+  participants: Participant[];
+  lastMessage: string;
+  lastMessageTime: string;
+  lastMessageSenderId: string;
+  preview: string;
+  unreadCounts: Record<string, number>;
+  isArchived: boolean;
+}
+
+interface Message {
+  _id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  senderEmail: string;
+  senderType: 'specialist' | 'customer';
+  receiverId: string;
+  text: string;
+  isRead: boolean;
+  readAt?: string;
+  createdAt: string;
+}
+
+export function Messages() {
+  const { user, userType } = useAuth();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [messageText, setMessageText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [showNewConversationModal, setShowNewConversationModal] = useState(false);
+  const [availableCustomers, setAvailableCustomers] = useState<any[]>([]);
+  const [availableSpecialists, setAvailableSpecialists] = useState<any[]>([]);
+  const [isLoadingContacts, setIsLoadingContacts] = useState(false);
+  const [customerSearchQuery, setCustomerSearchQuery] = useState('');
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+
+  // Auto-scroll to latest message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Load conversations
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const loadConversations = async () => {
+      try {
+        const data = await messageAPI.getConversations();
+        setConversations(data);
+        
+        // Auto-select first conversation if none selected
+        if (data.length > 0 && !selectedConversation) {
+          setSelectedConversation(data[0]);
+        }
+      } catch (error) {
+        console.error('Failed to load conversations:', error);
+      }
+    };
+
+    loadConversations();
+  }, [user?.id]);
+
+  // Load messages for selected conversation (on demand only)
+  const loadMessagesHandler = async () => {
+    if (!selectedConversation?._id || !user?.id) return;
+
+    try {
+      setIsLoading(true);
+      const data = await messageAPI.getMessages(selectedConversation._id);
+      setMessages(data.messages);
+
+      // Mark as read
+      await messageAPI.markAsRead(selectedConversation._id);
+      
+      // Update conversation list to remove unread badge
+      setConversations(convs =>
+        convs.map(conv =>
+          conv._id === selectedConversation._id
+            ? { ...conv, unreadCounts: { ...conv.unreadCounts, [user.id]: 0 } }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error('Failed to load messages:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load messages when conversation is selected
+  useEffect(() => {
+    if (!selectedConversation?._id || !user?.id) return;
+    loadMessagesHandler();
+  }, [selectedConversation?._id, user?.id]);
+
+  // Handle send message
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!messageText.trim() || !selectedConversation || !user?.id) return;
+
+    try {
+      setIsSending(true);
+      const otherParticipant = selectedConversation.participants.find(p => p.userId !== user.id);
+      
+      if (!otherParticipant) return;
+
+      const newMessage = await messageAPI.sendMessage({
+        conversationId: selectedConversation._id,
+        receiverId: otherParticipant.userId,
+        senderName: user.name || user.email,
+        senderEmail: user.email,
+        text: messageText.trim(),
+      });
+
+      setMessages([...messages, newMessage]);
+      setMessageText('');
+
+      // Reload messages to ensure consistency
+      await loadMessagesHandler();
+
+      // Update conversation list with new message
+      setConversations(convs =>
+        convs.map(conv =>
+          conv._id === selectedConversation._id
+            ? {
+                ...conv,
+                lastMessage: messageText.trim(),
+                lastMessageTime: new Date().toISOString(),
+                lastMessageSenderId: user.id,
+                preview: messageText.trim().substring(0, 100),
+              }
+            : conv
+        )
+      );
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Load available contacts when modal opens
+  const handleOpenNewConversation = async () => {
+    setShowNewConversationModal(true);
+    setIsLoadingContacts(true);
+    try {
+      if (userType === 'specialist') {
+        // Load customers for specialists
+        const response = await customerAPI.getAll({ specialistEmail: user?.email });
+        const customers = response?.data ? response.data : Array.isArray(response) ? response : [];
+        setAvailableCustomers(customers);
+        console.log('Loaded customers:', customers);
+      } else {
+        // Load specialists for customers
+        const response = await creatorAPI.getAllSpecialists();
+        const specialists = response?.data ? response.data : Array.isArray(response) ? response : [];
+        setAvailableSpecialists(specialists);
+        console.log('Loaded specialists:', specialists);
+      }
+    } catch (error) {
+      console.error('Failed to load contacts:', error);
+      if (userType === 'specialist') {
+        setAvailableCustomers([]);
+      } else {
+        setAvailableSpecialists([]);
+      }
+    } finally {
+      setIsLoadingContacts(false);
+    }
+  };
+
+  // Start a new conversation with a customer or specialist
+  const handleStartConversation = async (contact: any) => {
+    if (!user?.id || !user?.email) return;
+    
+    try {
+      const isSpecialist = userType === 'specialist';
+      const conversation = await messageAPI.getOrCreateConversation({
+        currentUserEmail: user.email,
+        currentUserName: user.name || user.email,
+        currentUserType: userType || 'specialist',
+        otherUserId: contact._id,
+        otherUserEmail: contact.email,
+        otherUserName: contact.name,
+        otherUserType: isSpecialist ? 'customer' : 'specialist',
+      });
+
+      setConversations([conversation, ...conversations.filter(c => c._id !== conversation._id)]);
+      setSelectedConversation(conversation);
+      setShowNewConversationModal(false);
+      setCustomerSearchQuery('');
+    } catch (error) {
+      console.error('Failed to start conversation:', error);
+    }
+  };
+
+  // Get other participant
+  const getOtherParticipant = (conversation: Conversation) => {
+    return conversation.participants.find(p => p.userId !== user?.id);
+  };
+
+  // Get list of customer IDs we already have conversations with
+  const conversationsCustomers = conversations
+    .map(conv => getOtherParticipant(conv))
+    .filter(p => p?.userType === 'customer');
+
+  // Filter conversations based on search
+  const filteredConversations = conversations.filter(conv => {
+    const otherParticipant = getOtherParticipant(conv);
+    if (!otherParticipant) return false;
+    
+    const query = searchQuery.toLowerCase();
+    const matchesSearch = (
+      otherParticipant.name.toLowerCase().includes(query) ||
+      otherParticipant.email.toLowerCase().includes(query) ||
+      conv.preview.toLowerCase().includes(query)
+    );
+
+    // If customer wants to show unread only
+    if (showUnreadOnly && userType === 'customer') {
+      return matchesSearch && getUnreadCount(conv) > 0;
+    }
+    
+    return matchesSearch;
+  });
+
+  // Sort conversations: unread first for customers
+  const sortedConversations = [...filteredConversations].sort((a, b) => {
+    if (userType === 'customer') {
+      const aUnread = getUnreadCount(a);
+      const bUnread = getUnreadCount(b);
+      if (aUnread !== bUnread) return bUnread - aUnread; // Unread first
+    }
+    // Then by last message time
+    return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
+  });
+
+  // Filter specialists/customers based on search
+  const getFilteredContacts = () => {
+    if (userType === 'specialist') {
+      // For specialists: filter customers
+      return (Array.isArray(availableCustomers) ? availableCustomers : []).filter(customer => {
+        if (!customer || !customer._id) return false;
+        
+        const query = customerSearchQuery.toLowerCase();
+        const existingConvIds = new Set(conversationsCustomers.map(c => c?._id));
+        
+        // Don't show customers we already have conversations with
+        if (existingConvIds.has(customer._id)) return false;
+        
+        const name = (customer.name || '').toLowerCase();
+        const email = (customer.email || '').toLowerCase();
+        
+        return name.includes(query) || email.includes(query);
+      });
+    } else {
+      // For customers: filter specialists
+      const specialistsInConversations = conversations
+        .map(conv => getOtherParticipant(conv))
+        .filter(p => p?.userType === 'specialist');
+      
+      return (Array.isArray(availableSpecialists) ? availableSpecialists : []).filter(specialist => {
+        if (!specialist || !specialist._id) return false;
+        
+        const query = customerSearchQuery.toLowerCase();
+        const existingConvIds = new Set(specialistsInConversations.map(s => s?._id));
+        
+        // Don't show specialists we already have conversations with
+        if (existingConvIds.has(specialist._id)) return false;
+        
+        const name = (specialist.name || '').toLowerCase();
+        const email = (specialist.email || '').toLowerCase();
+        
+        return name.includes(query) || email.includes(query);
+      });
+    }
+  };
+
+  const filteredContacts = getFilteredContacts();
+
+  // Get unread count for a conversation
+  const getUnreadCount = (conversation: Conversation) => {
+    return conversation.unreadCounts?.[user?.id || ''] || 0;
+  };
+
+  // Calculate total unread count across all conversations
+  const totalUnreadCount = conversations.reduce((sum, conv) => sum + getUnreadCount(conv), 0);
+
+  return (
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div>
+        <h1 className="text-3xl font-bold mb-2">Messages</h1>
+        <p className="text-gray-600">
+          {userType === 'specialist' 
+            ? 'Connect directly with customers'
+            : 'Connect directly with specialists'}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px] overflow-hidden">
+        {/* Conversations List */}
+        <div className="lg:col-span-1 flex flex-col bg-white rounded-lg border">
+          <div className="p-4 border-b space-y-3">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                onClick={handleOpenNewConversation}
+                className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+                size="sm"
+              >
+                <Plus className="h-4 w-4" />
+                {userType === 'specialist' ? 'New' : 'Message'}
+              </Button>
+            </div>
+            
+            {/* Unread Filter Toggle for Customers */}
+            {userType === 'customer' && totalUnreadCount > 0 && (
+              <div className="flex items-center justify-between">
+                <Button
+                  variant={showUnreadOnly ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowUnreadOnly(!showUnreadOnly)}
+                  className={showUnreadOnly ? 'bg-red-500 hover:bg-red-600 w-full' : 'w-full'}
+                >
+                  <AlertCircle className="h-4 w-4 mr-1" />
+                  Unread ({totalUnreadCount})
+                </Button>
+              </div>
+            )}
+            
+            <div className="text-sm text-gray-600">
+              {sortedConversations.length} conversation{sortedConversations.length !== 1 ? 's' : ''}
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {sortedConversations.length === 0 ? (
+              <div className="p-4 text-center text-gray-500 text-sm">
+                {searchQuery ? 'No conversations found' : userType === 'customer' && showUnreadOnly ? 'No unread messages' : 'No conversations yet'}
+              </div>
+            ) : (
+              sortedConversations.map(conversation => {
+                const otherParticipant = getOtherParticipant(conversation);
+                const unreadCount = getUnreadCount(conversation);
+
+                return (
+                  <button
+                    key={conversation._id}
+                    onClick={() => setSelectedConversation(conversation)}
+                    className={`w-full p-4 border-b text-left transition hover:bg-gray-50 ${
+                      selectedConversation?._id === conversation._id ? 'bg-indigo-50' : ''
+                    } ${unreadCount > 0 ? 'bg-blue-50' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className={`text-sm truncate ${unreadCount > 0 ? 'font-bold text-blue-900' : 'font-semibold'}`}>
+                        {otherParticipant?.name}
+                      </div>
+                      {unreadCount > 0 && (
+                        <Badge className="bg-red-500 h-5 px-2 flex items-center justify-center text-xs font-semibold whitespace-nowrap">
+                          {unreadCount}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="text-xs text-gray-600 truncate mb-1">
+                      {otherParticipant?.email}
+                    </div>
+                    <div className={`text-xs truncate ${unreadCount > 0 ? 'text-blue-700 font-medium' : 'text-gray-500'}`}>
+                      {conversation.preview || 'No messages yet'}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Messages Panel */}
+        <div className="lg:col-span-2 flex flex-col bg-white rounded-lg border">
+          {selectedConversation ? (
+            <>
+              {/* Header */}
+              <div className="p-4 border-b flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold text-lg">
+                    {getOtherParticipant(selectedConversation)?.name}
+                  </h2>
+                  <p className="text-xs text-gray-600">
+                    {getOtherParticipant(selectedConversation)?.userType === 'specialist'
+                      ? 'Specialist'
+                      : 'Customer'}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={loadMessagesHandler}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'Refreshing...' : 'Refresh'}
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => {/* Archive logic */}}
+                  >
+                    <Archive className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Messages */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+                {isLoading ? (
+                  <div className="text-center text-gray-500">Loading messages...</div>
+                ) : messages.length === 0 ? (
+                  <div className="text-center text-gray-500">No messages yet. Start the conversation!</div>
+                ) : (
+                  <>
+                    {messages.map(message => (
+                      <div
+                        key={message._id}
+                        className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div
+                          className={`max-w-xs px-4 py-2 rounded-lg ${
+                            message.senderId === user?.id
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-white border'
+                          }`}
+                        >
+                          <p className="text-sm break-words">{message.text}</p>
+                          <p className={`text-xs mt-1 ${
+                            message.senderId === user?.id ? 'text-indigo-100' : 'text-gray-500'
+                          }`}>
+                            {new Date(message.createdAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                            {message.isRead && message.senderId === user?.id && ' ✓'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </>
+                )}
+              </div>
+
+              {/* Input */}
+              <form onSubmit={handleSendMessage} className="p-4 border-t bg-white">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type your message..."
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    disabled={isSending}
+                  />
+                  <Button
+                    type="submit"
+                    disabled={isSending || !messageText.trim()}
+                    className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+                  >
+                    <Send className="h-4 w-4" />
+                    Send
+                  </Button>
+                </div>
+              </form>
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              Select a conversation to start messaging
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* New Conversation Modal */}
+      {showNewConversationModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+              <CardTitle>
+                {userType === 'specialist' ? 'Start New Conversation' : 'Message a Specialist'}
+              </CardTitle>
+              <button
+                onClick={() => {
+                  setShowNewConversationModal(false);
+                  setCustomerSearchQuery('');
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </CardHeader>
+            <CardContent className="flex flex-col flex-1 overflow-hidden space-y-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder={userType === 'specialist' ? 'Search customers...' : 'Search specialists...'}
+                  value={customerSearchQuery}
+                  onChange={(e) => setCustomerSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2">
+                {isLoadingContacts ? (
+                  <div className="text-center text-gray-500 text-sm py-4">
+                    Loading {userType === 'specialist' ? 'customers' : 'specialists'}...
+                  </div>
+                ) : filteredContacts.length === 0 ? (
+                  <div className="text-center text-gray-500 text-sm py-4">
+                    {(userType === 'specialist' ? availableCustomers : availableSpecialists).length === 0
+                      ? `No ${userType === 'specialist' ? 'customers' : 'specialists'} yet`
+                      : `No matching ${userType === 'specialist' ? 'customers' : 'specialists'}`}
+                  </div>
+                ) : (
+                  filteredContacts.map(contact => (
+                    <button
+                      key={contact._id}
+                      onClick={() => handleStartConversation(contact)}
+                      className="w-full p-3 text-left border rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition"
+                    >
+                      <div className="font-semibold text-sm">{contact.name}</div>
+                      <div className="text-xs text-gray-600">{contact.email}</div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Messages;

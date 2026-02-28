@@ -5,7 +5,7 @@ import { Badge } from "@/app/components/ui/badge";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
-import { courseAPI } from "@/app/api/apiClient";
+import { courseAPI, videoAPI, API_BASE_URL } from "@/app/api/apiClient";
 import { useAuth } from "@/app/context/AuthContext";
 import {
   Select,
@@ -37,6 +37,7 @@ import {
   X,
   CheckCircle,
   PlayCircle,
+  Play,
   Award,
 } from "lucide-react";
 import { Checkbox } from "@/app/components/ui/checkbox";
@@ -56,7 +57,7 @@ interface Course {
   price: string;
   duration: string;
   studentsEnrolled: number;
-  status: "active" | "draft";
+  status: "published" | "draft";
   level: string;
   category: string;
   thumbnail?: string;
@@ -65,6 +66,7 @@ interface Course {
   totalLessons?: number;
   certificateIncluded?: boolean;
   accessDuration?: string;
+  lessons?: any[];
   // Cohort-based specific fields
   cohortSize?: string;
   startDate?: string;
@@ -94,30 +96,31 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     const loadCourses = async () => {
       try {
         setIsLoading(true);
-        const response = await courseAPI.getAll({ creator: user?.email });
+        const response = await courseAPI.getAll({ specialistEmail: user?.email });
         const courseData = response.data || response;
         if (courseData) {
           // Transform MongoDB data to Course interface
           const transformedCourses: Course[] = (Array.isArray(courseData) ? courseData : []).map((course: any) => ({
             id: course._id || course.id,
             title: course.title,
-            type: course.type,
+            type: course.courseType || course.type,
             description: course.description,
-            price: course.price,
-            duration: course.duration,
+            price: course.price?.toString() || "",
+            duration: course.duration || "",
             studentsEnrolled: course.studentsEnrolled || 0,
             status: course.status || "draft",
-            level: course.level,
-            category: course.category,
+            level: course.level || "Beginner",
+            category: course.category || "Technology",
             modules: course.modules,
             totalLessons: course.totalLessons,
-            certificateIncluded: course.certificateIncluded,
-            accessDuration: course.accessDuration,
-            cohortSize: course.cohortSize,
-            startDate: course.startDate,
-            endDate: course.endDate,
-            schedule: course.schedule,
-            meetingPlatform: course.meetingPlatform,
+            certificateIncluded: course.certificateIncluded !== undefined ? course.certificateIncluded : true,
+            accessDuration: course.accessDuration || "Lifetime",
+            lessons: course.lessons || [],
+            cohortSize: course.cohortSize || "",
+            startDate: course.startDate || "",
+            endDate: course.endDate || "",
+            schedule: course.schedule || "",
+            meetingPlatform: course.meetingPlatform || "Zoom",
             liveSessions: course.liveSessions,
           }));
           setCourses(transformedCourses);
@@ -141,12 +144,45 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       type: "course",
     }));
     onUpdateSearchableItems(searchableItems);
-  }, [courses, onUpdateSearchableItems]);
+  }, [courses]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [manageLessonsDialogOpen, setManageLessonsDialogOpen] = useState(false);
+  const [enrollmentsDialogOpen, setEnrollmentsDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courseType, setCourseType] = useState<"self-paced" | "cohort-based" | null>(null);
+  const [courseEnrollments, setCourseEnrollments] = useState<any[]>([]);
+  const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
+
+  interface Lesson {
+    _id?: string;
+    title: string;
+    order: number;
+    files?: LessonFile[];
+    hlsUrl?: string;
+    cloudflareStreamId?: string;
+    cloudflareStatus?: string;
+    videoThumbnail?: string;
+  }
+
+  interface LessonFile {
+    _id?: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    fileSize?: number;
+    uploadedAt?: string;
+    googleDriveFileId?: string;
+    downloadLink?: string;
+    viewLink?: string;
+  }
+
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [uploadingFileFor, setUploadingFileFor] = useState<number | null>(null);
+  const [selectedFilesByLesson, setSelectedFilesByLesson] = useState<{ [key: number]: File[] }>({});
+  const [uploadingVideoFor, setUploadingVideoFor] = useState<number | null>(null);
+  const [videoUploadProgress, setVideoUploadProgress] = useState<{ [key: number]: number }>({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -178,15 +214,15 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       const modulesData = modules.map(({ id, ...rest }) => rest);
       const courseData = {
         title: formData.title,
-        type: courseType,
+        courseType: courseType,
         description: formData.description,
-        price: formData.price,
+        price: parseInt(formData.price) || 0,
         duration: formData.duration,
-        studentsEnrolled: 0,
         status: "draft",
         level: formData.level,
         category: formData.category,
-        creator: user?.email,
+        specialistId: user?.id,
+        specialistEmail: user?.email,
         ...(courseType === "self-paced" && {
           totalLessons: parseInt(formData.totalLessons) || 0,
           certificateIncluded: formData.certificateIncluded,
@@ -228,11 +264,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       const updatedData = {
         title: formData.title,
         description: formData.description,
-        price: formData.price,
+        price: parseInt(formData.price) || 0,
         duration: formData.duration,
         level: formData.level,
         category: formData.category,
-        creator: user?.email,
+        specialistId: user?.id,
+        specialistEmail: user?.email,
         ...(selectedCourse.type === "self-paced" && {
           totalLessons: parseInt(formData.totalLessons) || 0,
           certificateIncluded: formData.certificateIncluded,
@@ -288,7 +325,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const toggleStatus = async (id: string) => {
     const course = courses.find(c => c.id === id);
     if (course) {
-      const newStatus = course.status === "active" ? "draft" : "active";
+      const newStatus = course.status === "published" ? "draft" : "published";
       try {
         await courseAPI.update(id, { status: newStatus });
         setCourses(
@@ -301,7 +338,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               : c
           )
         );
-        alert(`✓ Course status updated to ${newStatus}!`);
+        alert(`✓ Course ${newStatus === 'published' ? 'published' : 'unpublished'} successfully!`);
       } catch (error) {
         console.error("Failed to update course status:", error);
         alert(`Failed to update course status: ${error instanceof Error ? error.message : "Please try again."}`);
@@ -309,17 +346,32 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     }
   };
 
+  const openEnrollmentsDialog = async (course: Course) => {
+    setSelectedCourse(course);
+    setEnrollmentsDialogOpen(true);
+    setEnrollmentsLoading(true);
+    try {
+      const response = await courseAPI.getCourseEnrollments(course.id);
+      setCourseEnrollments(response.data?.enrollments || []);
+    } catch (error) {
+      console.error("Failed to fetch enrollments:", error);
+      alert(`Failed to fetch enrollments: ${error instanceof Error ? error.message : "Please try again."}`);
+    } finally {
+      setEnrollmentsLoading(false);
+    }
+  };
+
   const openEditDialog = (course: Course) => {
     setSelectedCourse(course);
     setFormData({
-      title: course.title,
-      description: course.description,
-      price: course.price,
-      duration: course.duration,
-      level: course.level,
-      category: course.category,
+      title: course.title || "",
+      description: course.description || "",
+      price: course.price || "",
+      duration: course.duration || "",
+      level: course.level || "Beginner",
+      category: course.category || "Technology",
       totalLessons: course.totalLessons?.toString() || "",
-      certificateIncluded: course.certificateIncluded || true,
+      certificateIncluded: course.certificateIncluded !== undefined ? course.certificateIncluded : true,
       accessDuration: course.accessDuration || "Lifetime",
       cohortSize: course.cohortSize || "",
       startDate: course.startDate || "",
@@ -387,6 +439,413 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     );
   };
 
+  const addLesson = () => {
+    const newLesson: Lesson = {
+      title: "",
+      order: lessons.length + 1,
+    };
+    setLessons([...lessons, newLesson]);
+  };
+
+  const removeLesson = (index: number) => {
+    setLessons(lessons.filter((_, i) => i !== index));
+  };
+
+  const updateLesson = (index: number, field: keyof Lesson, value: string | number) => {
+    setLessons(
+      lessons.map((lesson, i) =>
+        i === index ? { ...lesson, [field]: value } : lesson
+      )
+    );
+  };
+
+  const uploadVideoToCloudflare = async (lessonIndex: number, file: File) => {
+    try {
+      if (!selectedCourse) {
+        throw new Error("No course selected");
+      }
+
+      const lesson = lessons[lessonIndex];
+      if (!lesson || !lesson.title) {
+        throw new Error("Lesson title is required before uploading video");
+      }
+
+      setUploadingVideoFor(lessonIndex);
+      setVideoUploadProgress({ ...videoUploadProgress, [lessonIndex]: 0 });
+
+      // Ensure lesson has an ID (use MongoDB _id if exists, otherwise use index as temporary ID)
+      const lessonId = lesson._id || `temp-${lessonIndex}-${Date.now()}`;
+
+      // Step 1: Get upload token from backend with required metadata
+      const tokenResponse = await videoAPI.getUploadToken({
+        courseId: selectedCourse.id,
+        lessonId: lessonId,
+        title: lesson.title,
+        fileName: file.name,
+        fileSize: file.size,
+      });
+
+      if (!tokenResponse.success) {
+        // Check for configuration errors
+        if (tokenResponse.error === 'CLOUDFLARE_NOT_CONFIGURED') {
+          throw new Error(
+            "⚠️ Cloudflare Stream is not configured on this server.\n\n" +
+            "The administrator needs to add these environment variables to the backend:\n" +
+            "• CLOUDFLARE_ACCOUNT_ID\n" +
+            "• CLOUDFLARE_API_TOKEN\n\n" +
+            "Once configured, video uploads will work."
+          );
+        }
+        throw new Error(tokenResponse.message || "Failed to get upload token from Cloudflare");
+      }
+
+      if (!tokenResponse.uploadUrl || !tokenResponse.streamId) {
+        throw new Error("Invalid upload token response from server");
+      }
+
+      const { uploadUrl, streamId } = tokenResponse;
+
+      // Step 2: Upload video to Cloudflare
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const uploadResponse = await fetch(uploadUrl, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
+
+      setVideoUploadProgress({ ...videoUploadProgress, [lessonIndex]: 100 });
+
+      // Step 3: Update lesson with video metadata
+      const updatedLessons = [...lessons];
+      updatedLessons[lessonIndex] = {
+        ...updatedLessons[lessonIndex],
+        cloudflareStreamId: streamId,
+        cloudflareStatus: "inprogress", // Valid enum: 'ready', 'inprogress', 'error', 'pending'
+      };
+      setLessons(updatedLessons);
+
+      alert("✓ Video uploaded! Cloudflare is processing it. Check back in a few minutes.");
+    } catch (error) {
+      console.error("Video upload error:", error);
+      alert(
+        `Video upload failed: ${error instanceof Error ? error.message : "Please try again."}`
+      );
+    } finally {
+      setUploadingVideoFor(null);
+      setVideoUploadProgress({});
+    }
+  };
+
+  const handleFileSelect = (lessonIndex: number, files: FileList | null) => {
+    if (!files) return;
+    
+    const fileArray = Array.from(files);
+    const lesson = lessons[lessonIndex];
+    
+    if (!lesson.files) {
+      lesson.files = [];
+    }
+    
+    // Add selected files to the lesson
+    for (const file of fileArray) {
+      const fileType = getFileType(file.name);
+      const newFile: LessonFile = {
+        fileName: file.name,
+        fileUrl: URL.createObjectURL(file), // Temporary URL for preview
+        fileType: fileType,
+        fileSize: file.size,
+        uploadedAt: new Date().toISOString(),
+      };
+      
+      if (!lesson.files.find(f => f.fileName === file.name)) {
+        lesson.files.push(newFile);
+      }
+    }
+    
+    setLessons([...lessons]);
+  };
+
+  const extractFileId = (url: string): string => {
+    if (!url) return '';
+    if (url.includes('/d/')) {
+      return url.split('/d/')[1]?.split('/')[0] || '';
+    } else if (url.includes('id=')) {
+      return new URL(url).searchParams.get('id') || '';
+    }
+    return url;
+  };
+
+  const uploadFileToLesson = async (lessonIndex: number, file: File) => {
+    if (!selectedCourse) {
+      alert("Please select a course first");
+      return;
+    }
+
+    const lesson = lessons[lessonIndex];
+
+    try {
+      // Max file size: 100MB
+      const maxFileSize = 100 * 1024 * 1024;
+      if (file.size > maxFileSize) {
+        alert("File size exceeds 100MB limit");
+        return;
+      }
+
+      setUploadingFileFor(lessonIndex);
+
+      // If lesson doesn't have an ID yet, we can't upload through the API
+      if (!lesson._id) {
+        // For new lessons, we'll add files locally with a placeholder and get real URL after lesson is created
+        if (!lesson.files) {
+          lesson.files = [];
+        }
+
+        const newFile: LessonFile = {
+          fileName: file.name,
+          fileUrl: '', // Will be populated after lesson creation
+          fileType: getFileType(file.name),
+          fileSize: file.size,
+          mimeType: file.type,
+          uploadedAt: new Date().toISOString(),
+        };
+
+        lesson.files.push(newFile);
+        setLessons([...lessons]);
+        alert(`✓ File "${file.name}" added. It will be uploaded when you save the course.`);
+        return;
+      }
+
+      // For existing lessons, upload to R2
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `${API_BASE_URL}/courses/${selectedCourse.id}/lessons/${lesson._id}/files`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload file');
+      }
+
+      const data = await response.json();
+
+      if (!lesson.files) {
+        lesson.files = [];
+      }
+
+      lesson.files.push(data.file);
+      setLessons([...lessons]);
+      alert(`✓ File "${file.name}" uploaded successfully!`);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert(`Failed to upload file: ${error instanceof Error ? error.message : 'Please try again'}`);
+    } finally {
+      setUploadingFileFor(null);
+    }
+  };
+
+  const deleteFileFromLesson = async (lessonIndex: number, fileIndex: number) => {
+    const lesson = lessons[lessonIndex];
+    if (!lesson.files) return;
+
+    const file = lesson.files[fileIndex];
+    
+    // If file hasn't been uploaded yet, just remove from local state
+    if (!file.fileKey) {
+      lesson.files.splice(fileIndex, 1);
+      setLessons([...lessons]);
+      return;
+    }
+
+    if (!selectedCourse) return;
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `${API_BASE_URL}/courses/${selectedCourse.id}/lessons/${lesson._id}/files/${encodeURIComponent(file.fileKey)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete file');
+      }
+
+      lesson.files.splice(fileIndex, 1);
+      setLessons([...lessons]);
+      alert('✓ File deleted successfully!');
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      alert(`Failed to delete file: ${error instanceof Error ? error.message : 'Please try again'}`);
+    }
+  };
+
+  const removeFileFromLesson = (lessonIndex: number, fileIndex: number) => {
+    const lesson = lessons[lessonIndex];
+    if (lesson.files) {
+      lesson.files.splice(fileIndex, 1);
+      setLessons([...lessons]);
+    }
+  };
+
+  const getFileType = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toLowerCase() || 'other';
+    const typeMap: { [key: string]: string } = {
+      'pdf': 'pdf',
+      'doc': 'doc',
+      'docx': 'docx',
+      'xls': 'xls',
+      'xlsx': 'xlsx',
+      'ppt': 'ppt',
+      'pptx': 'pptx',
+      'txt': 'txt',
+      'zip': 'zip',
+    };
+    return typeMap[extension] || 'other';
+  };
+
+  const getFileIcon = (fileType: string) => {
+    const icons: { [key: string]: string } = {
+      'pdf': '📄',
+      'doc': '📝',
+      'docx': '📝',
+      'xls': '📊',
+      'xlsx': '📊',
+      'ppt': '🎯',
+      'pptx': '🎯',
+      'txt': '📄',
+      'zip': '📦',
+      'other': '📎',
+    };
+    return icons[fileType] || '📎';
+  };
+
+  const openManageLessonsDialog = (course: Course) => {
+    setSelectedCourse(course);
+    // Initialize lessons from course if they exist
+    if (course.lessons && Array.isArray(course.lessons)) {
+      setLessons(course.lessons.map((l: any, idx) => ({
+        _id: l._id,
+        title: l.title,
+        order: idx + 1,
+        files: l.files || [],
+        cloudflareStreamId: l.cloudflareStreamId,
+        cloudflareStatus: l.cloudflareStatus,
+        hlsUrl: l.hlsUrl,
+        videoThumbnail: l.videoThumbnail,
+      })));
+    } else {
+      setLessons([]);
+    }
+    setManageLessonsDialogOpen(true);
+  };
+
+  const handleSaveLessons = async () => {
+    if (!selectedCourse) return;
+
+    // Validate all lessons have title
+    const invalidLessons = lessons.filter(l => !l.title);
+    if (invalidLessons.length > 0) {
+      alert("Please fill in all lesson titles. You can add files optionally. Videos are managed via Cloudflare Stream.");
+      return;
+    }
+
+    try {
+      // Handle both new and existing lessons
+      for (const lesson of lessons) {
+        if (!lesson._id) {
+          // Add NEW lessons
+          const lessonData: any = {
+            title: lesson.title,
+            files: lesson.files || [],
+            order: lesson.order,
+          };
+
+          // Include Cloudflare video metadata if available
+          if (lesson.cloudflareStreamId) {
+            lessonData.cloudflareStreamId = lesson.cloudflareStreamId;
+            lessonData.cloudflareStatus = lesson.cloudflareStatus || "inprogress"; // Valid enum: 'ready', 'inprogress', 'error', 'pending'
+          }
+
+          await courseAPI.addLesson(selectedCourse.id, lessonData);
+        } else if (lesson.cloudflareStreamId && typeof lesson._id === 'string' && lesson._id.length === 24) {
+          // UPDATE EXISTING lessons with video metadata ONLY if _id is valid MongoDB ObjectId
+          try {
+            await videoAPI.saveLessonVideo({
+              courseId: selectedCourse.id,
+              lessonId: lesson._id,
+              videoId: lesson.cloudflareStreamId,
+              title: lesson.title,
+              duration: lesson.duration,
+              thumbnail: lesson.videoThumbnail,
+            });
+          } catch (videoError) {
+            console.error(`Video save error for lesson ${lesson.title}:`, videoError);
+            // Don't fail the whole save if video metadata save fails
+          }
+        }
+      }
+      
+      setManageLessonsDialogOpen(false);
+      setSelectedFilesByLesson({});
+      alert("✓ Lessons saved successfully!");
+      
+      // Refresh courses
+      const response = await courseAPI.getAll({ specialistEmail: user?.email });
+      const courseData = response.data || response;
+      if (courseData) {
+        const transformedCourses: Course[] = (Array.isArray(courseData) ? courseData : []).map((course: any) => ({
+          id: course._id || course.id,
+          title: course.title,
+          type: course.courseType || course.type,
+          description: course.description,
+          price: course.price?.toString() || "",
+          duration: course.duration || "",
+          studentsEnrolled: course.studentsEnrolled || 0,
+          status: course.status || "draft",
+          level: course.level || "Beginner",
+          category: course.category || "Technology",
+          modules: course.modules,
+          totalLessons: course.totalLessons,
+          certificateIncluded: course.certificateIncluded !== undefined ? course.certificateIncluded : true,
+          accessDuration: course.accessDuration || "Lifetime",
+          cohortSize: course.cohortSize || "",
+          startDate: course.startDate || "",
+          endDate: course.endDate || "",
+          schedule: course.schedule || "",
+          meetingPlatform: course.meetingPlatform || "Zoom",
+          liveSessions: course.liveSessions,
+          lessons: course.lessons,
+        }));
+        setCourses(transformedCourses);
+      }
+    } catch (error) {
+      console.error("Failed to save lessons:", error);
+      alert(`Failed to save lessons: ${error instanceof Error ? error.message : "Please try again."}`);
+    }
+  };
+
+
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "self-paced":
@@ -401,9 +860,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case "self-paced":
-        return "bg-blue-100 text-blue-700";
+        return "bg-cyan-100 text-blue-700";
       case "cohort-based":
-        return "bg-purple-100 text-purple-700";
+        return "bg-indigo-100 text-indigo-700";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -414,7 +873,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   };
 
   const getActiveCourses = () => {
-    return courses.filter((c) => c.status === "active").length;
+    return courses.filter((c) => c.status === "published").length;
   };
 
   const getTotalRevenue = () => {
@@ -440,8 +899,8 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <GraduationCap className="h-5 w-5 text-purple-600" />
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <GraduationCap className="h-5 w-5 text-indigo-600" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Courses</p>
@@ -468,11 +927,11 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         <h2 className="text-lg font-semibold mb-3">Create New Course</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-blue-500"
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-cyan-500"
             onClick={() => openCreateDialog("self-paced")}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-blue-100 rounded-full">
+              <div className="p-4 bg-cyan-100 rounded-full">
                 <PlayCircle className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="font-semibold text-lg">Self-Paced Course</h3>
@@ -493,7 +952,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   Certificates
                 </Badge>
               </div>
-              <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+              <Button className="bg-cyan-600 hover:bg-cyan-700 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Self-Paced
               </Button>
@@ -501,12 +960,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           </Card>
 
           <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-purple-500"
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-indigo-500"
             onClick={() => openCreateDialog("cohort-based")}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-purple-100 rounded-full">
-                <Users className="h-8 w-8 text-purple-600" />
+              <div className="p-4 bg-indigo-100 rounded-full">
+                <Users className="h-8 w-8 text-indigo-600" />
               </div>
               <h3 className="font-semibold text-lg">Cohort-Based Course</h3>
               <p className="text-sm text-gray-600">
@@ -526,7 +985,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   Interactive
                 </Badge>
               </div>
-              <Button className="bg-purple-600 hover:bg-purple-700 gap-2">
+              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Cohort-Based
               </Button>
@@ -553,7 +1012,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   </div>
                   <Badge
                     className={
-                      course.status === "active"
+                      course.status === "published"
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-700"
                     }
@@ -631,12 +1090,32 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                     <Edit className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
+                  {course.type === "self-paced" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openManageLessonsDialog(course)}
+                      title="Add lessons/videos to your course"
+                    >
+                      <Video className="h-4 w-4 mr-1" />
+                      Lessons
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEnrollmentsDialog(course)}
+                    title="View students enrolled in this course"
+                  >
+                    <Users className="h-4 w-4 mr-1" />
+                    Enrollments
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => toggleStatus(course.id)}
                   >
-                    {course.status === "active" ? "Deactivate" : "Activate"}
+                    {course.status === "published" ? "Unpublish" : "Publish"}
                   </Button>
                   <Button
                     variant="outline"
@@ -1328,6 +1807,343 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </Button>
             <Button onClick={handleEditCourse}>
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Lessons Dialog */}
+      <Dialog open={manageLessonsDialogOpen} onOpenChange={setManageLessonsDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Course Lessons</DialogTitle>
+            <DialogDescription>
+              Add lessons with videos, files (PDF, Word, Excel), or both. Students will see these lessons after enrolling.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-md space-y-3">
+              <p className="text-sm font-semibold text-blue-900">📚 Add Course Lessons (Videos & Materials)</p>
+              <div className="text-sm text-blue-800 space-y-2">
+                <div className="bg-white p-3 rounded border border-green-300 border-dashed">
+                  <strong className="text-green-700">✓ How to add lessons:</strong>
+                  <p className="text-xs text-green-700 mt-2">
+                    1. <strong>Lesson Title</strong> (required) - Name your lesson<br/>
+                    2. <strong>Video URL</strong> (optional) - Video playback link<br/>
+                    3. <strong>Course Materials</strong> (optional) - Upload PDF, Word docs, Excel, PowerPoint, Images, ZIP files
+                  </p>
+                  <p className="text-xs text-green-700 mt-2">
+                    You can have a lesson with video only, materials only, or both!
+                  </p>
+                </div>
+                
+                <div>
+                  <strong className="text-blue-900">📎 Course Materials - Upload Files</strong>
+                  <p className="text-xs text-blue-700 mt-1 mb-2">
+                    Click "Choose" to upload course materials directly. Supported formats: PDF, Word (.doc, .docx), Excel (.xls, .xlsx), PowerPoint (.ppt, .pptx), Images (JPG, PNG, GIF), ZIP archives. Maximum 100MB per file.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {lessons.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No lessons added yet. Click "Add Lesson" to get started.</p>
+              ) : (
+                lessons.map((lesson, index) => (
+                  <Card key={index} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-sm">Lesson {index + 1}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeLesson(index)}
+                          className="text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div>
+                        <Label htmlFor={`lesson-title-${index}`} className="text-xs">
+                          Lesson Title *
+                        </Label>
+                        <Input
+                          id={`lesson-title-${index}`}
+                          placeholder="e.g., Introduction to React"
+                          value={lesson.title}
+                          onChange={(e) => updateLesson(index, "title", e.target.value)}
+                        />
+                      </div>
+
+                      {/* Cloudflare Video Upload Section */}
+                      <div className="border-t pt-3">
+                        <Label className="text-xs">
+                          🎬 Lesson Video (Cloudflare Stream) - Optional
+                        </Label>
+                        <div className="mt-2 space-y-3">
+                          {lesson.cloudflareStreamId ? (
+                            <div className="p-3 bg-green-50 border border-green-300 rounded">
+                              <p className="text-xs font-semibold text-green-800">✓ Video Uploaded</p>
+                              <p className="text-xs text-green-700 mt-1">
+                                Stream ID: <code className="bg-green-100 px-1 rounded text-xs">{lesson.cloudflareStreamId}</code>
+                              </p>
+                              <p className="text-xs text-green-700 mt-1">
+                                Status: <span className="font-semibold">{lesson.cloudflareStatus || 'ready'}</span>
+                              </p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  const updatedLessons = [...lessons];
+                                  updatedLessons[index] = {
+                                    ...updatedLessons[index],
+                                    cloudflareStreamId: undefined,
+                                    cloudflareStatus: undefined,
+                                  };
+                                  setLessons(updatedLessons);
+                                }}
+                                className="w-full mt-2 text-xs"
+                              >
+                                Remove Video
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="relative">
+                              <input
+                                id={`video-upload-${index}`}
+                                type="file"
+                                accept=".mp4,.webm,.mov"
+                                disabled={uploadingVideoFor === index}
+                                onChange={(e) => {
+                                  const file = e.currentTarget.files?.[0];
+                                  if (file) {
+                                    if (file.size > 5 * 1024 * 1024 * 1024) {
+                                      alert("File size must be under 5GB");
+                                      return;
+                                    }
+                                    uploadVideoToCloudflare(index, file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => document.getElementById(`video-upload-${index}`)?.click()}
+                                disabled={uploadingVideoFor === index}
+                                className="w-full"
+                              >
+                                {uploadingVideoFor === index ? (
+                                  <span className="flex items-center gap-2">
+                                    <span className="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
+                                    Uploading... {videoUploadProgress[index] || 0}%
+                                  </span>
+                                ) : (
+                                  <span className="flex items-center gap-2">
+                                    📤 Choose Video File
+                                  </span>
+                                )}
+                              </Button>
+                              <p className="text-xs text-gray-500 mt-2">
+                                MP4, WebM, or MOV • Max 5GB • Supports adaptive bitrate streaming
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* File Upload Section */}
+                      <div className="border-t pt-3">
+                        <Label htmlFor={`lesson-files-${index}`} className="text-xs">
+                          📎 Course Materials - Upload PDF, Documents, etc. (Optional)
+                        </Label>
+                        <div className="mt-2 space-y-3">
+                          <div className="flex gap-2">
+                            <input
+                              id={`lesson-files-${index}`}
+                              type="file"
+                              multiple={false}
+                              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.jpg,.jpeg,.png,.gif"
+                              className="flex-1 text-xs"
+                              onChange={(e) => {
+                                const file = e.currentTarget.files?.[0];
+                                if (file) {
+                                  uploadFileToLesson(index, file);
+                                  e.currentTarget.value = ''; // Reset input
+                                }
+                              }}
+                              disabled={uploadingFileFor === index}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => document.getElementById(`lesson-files-${index}`)?.click()}
+                              disabled={uploadingFileFor === index}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              {uploadingFileFor === index ? 'Uploading...' : 'Choose'}
+                            </Button>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            Supported: PDF, Word, Excel, PowerPoint, Images, ZIP • Max 100MB
+                          </p>
+                        </div>
+
+                        {/* Display files attached to this lesson */}
+                        {lesson.files && lesson.files.length > 0 && (
+                          <div className="mt-3 space-y-2 p-2 bg-blue-50 rounded border border-blue-200">
+                            <p className="text-xs font-semibold text-blue-900">Attached Files:</p>
+                            {lesson.files.map((file, fileIndex) => (
+                              <div
+                                key={fileIndex}
+                                className="flex items-center justify-between p-2 bg-white rounded border border-blue-100"
+                              >
+                                <div className="flex items-center gap-2 flex-1">
+                                  <span className="text-lg">{getFileIcon(file.fileType)}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium text-gray-900 truncate">
+                                      {file.fileName}
+                                    </p>
+                                    {file.fileSize && (
+                                      <p className="text-xs text-gray-500">
+                                        {(file.fileSize / 1024).toFixed(1)} KB
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteFileFromLesson(index, fileIndex)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                >
+                                  ✕
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={addLesson}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Lesson
+            </Button>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManageLessonsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveLessons}
+              disabled={lessons.some(l => !l.title)}
+            >
+              Save Lessons
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Enrollments Dialog */}
+      <Dialog open={enrollmentsDialogOpen} onOpenChange={setEnrollmentsDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Course Enrollments - {selectedCourse?.title}</DialogTitle>
+            <DialogDescription>
+              {enrollmentsLoading ? (
+                <span>Loading enrollments...</span>
+              ) : courseEnrollments.length === 0 ? (
+                <span>No students enrolled yet</span>
+              ) : (
+                <span>{courseEnrollments.length} student{courseEnrollments.length !== 1 ? 's' : ''} enrolled</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {enrollmentsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading enrollments...</p>
+              </div>
+            </div>
+          ) : courseEnrollments.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600">No students have enrolled in this course yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-3 font-semibold">Email</th>
+                      <th className="text-left py-2 px-3 font-semibold">Enrolled</th>
+                      <th className="text-center py-2 px-3 font-semibold">Progress</th>
+                      <th className="text-center py-2 px-3 font-semibold">Completion</th>
+                      <th className="text-center py-2 px-3 font-semibold">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {courseEnrollments.map((enrollment) => (
+                      <tr key={enrollment._id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-3">{enrollment.customerEmail}</td>
+                        <td className="py-3 px-3 text-xs text-gray-600">
+                          {new Date(enrollment.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-xs">
+                              <div 
+                                className="bg-green-600 h-2 rounded-full" 
+                                style={{ width: `${enrollment.completionPercentage}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs font-semibold text-gray-700 min-w-[45px] text-right">
+                              {enrollment.completionPercentage}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="text-xs px-2 py-1 rounded-full" style={{
+                            backgroundColor: enrollment.completed ? '#d1fae5' : '#f3f4f6',
+                            color: enrollment.completed ? '#065f46' : '#6b7280'
+                          }}>
+                            {enrollment.completedLessons}/{enrollment.totalLessons}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center font-semibold">
+                          {enrollment.amount > 0 ? `$${enrollment.amount}` : 'Free'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEnrollmentsDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

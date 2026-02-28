@@ -10,11 +10,16 @@ import {
   Download,
   GraduationCap,
   TrendingUp,
-  DollarSign
+  DollarSign,
+  ArrowLeft,
+  Calendar,
+  Video
 } from "lucide-react";
 import { Card } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
 import { customerAPI, serviceAPI, creatorAPI } from "@/app/api/apiClient";
+import { ManageSlots } from "@/app/components/ConsultingSlots";
+import { SpecialistMeetingManager } from "@/app/components/SpecialistMeetingManager";
 
 interface Offering {
   _id?: string;
@@ -33,10 +38,21 @@ interface Offering {
 
 const mockOfferings: Offering[] = [];
 
-export function Dashboard({ onNavigateToCustomers, onNavigateToServices }: { onNavigateToCustomers?: () => void; onNavigateToServices?: () => void }) {
-  const { user } = useAuth();
+export function Dashboard({ 
+  onNavigateToCustomers, 
+  onNavigateToServices,
+  onViewServiceDetail
+}: { 
+  onNavigateToCustomers?: () => void; 
+  onNavigateToServices?: () => void;
+  onViewServiceDetail?: (serviceId: string) => void;
+}) {
+  const { user, updateSubscription, setCurrentPage } = useAuth();
+  const [activeSection, setActiveSection] = useState<"overview" | "manage-slots" | "manage-meetings">("overview");
   const [filterTab, setFilterTab] = useState("all");
   const [offerings, setOfferings] = useState<Offering[]>([]);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const [activeCustomers, setActiveCustomers] = useState(0);
   const [activeSessions, setActiveSessions] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -101,35 +117,140 @@ export function Dashboard({ onNavigateToCustomers, onNavigateToServices }: { onN
     fetchDashboardData();
   }, [user?.email, user?.name]);
 
+  const handleUpgradeToPro = async () => {
+    try {
+      setIsUpgrading(true);
+      setUpgradeMessage(null);
+      
+      await updateSubscription('pro');
+      setUpgradeMessage('✓ Successfully upgraded to Pro Plan!');
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setUpgradeMessage(null), 3000);
+      
+      // Reload page after 2 seconds to reflect changes
+      setTimeout(() => window.location.reload(), 2000);
+    } catch (error) {
+      setUpgradeMessage(`Failed to upgrade: ${error instanceof Error ? error.message : 'Please try again.'}`);
+    } finally {
+      setIsUpgrading(false);
+    }
+  };
+
   const filteredOfferings = filterTab === "all" 
     ? offerings 
     : offerings.filter(o => o.type === filterTab);
+
+  // Show ManageSlots if that section is active
+  if (activeSection === "manage-slots") {
+    return (
+      <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
+        <button
+          onClick={() => setActiveSection("overview")}
+          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Overview
+        </button>
+        <ManageSlots 
+          specialistEmail={user?.email || ""}
+          specialistId={user?._id || ""}
+        />
+      </div>
+    );
+  }
+
+  // Show Specialist Meeting Manager if that section is active
+  if (activeSection === "manage-meetings") {
+    return (
+      <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
+        <button
+          onClick={() => setActiveSection("overview")}
+          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Overview
+        </button>
+        <SpecialistMeetingManager />
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
       {/* Membership Banner */}
       {user && (
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 md:p-6">
+        <div className="bg-gradient-to-r from-indigo-50 to-indigo-50 border border-purple-200 rounded-lg p-4 md:p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-1">
-                Current Plan: <Badge className={user.subscription?.planType === 'pro' ? 'bg-purple-600' : 'bg-gray-600'}>{user.subscription?.planType?.toUpperCase() || 'FREE'}</Badge>
+                Current Plan: <Badge className={user.subscription?.planType === 'pro' ? 'bg-indigo-600' : 'bg-gray-600'}>{user.subscription?.planType?.toUpperCase() || 'FREE'}</Badge>
               </h2>
               <p className="text-sm text-gray-600">
                 {user.subscription?.features?.join(' • ') || 'Free tier features'}
               </p>
             </div>
             {user.subscription?.planType === 'free' && (
-              <Button className="bg-purple-600 hover:bg-purple-700" size="sm">
-                Upgrade to Pro
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button 
+                  onClick={handleUpgradeToPro}
+                  disabled={isUpgrading}
+                  className="bg-indigo-600 hover:bg-indigo-700" 
+                  size="sm"
+                >
+                  {isUpgrading ? 'Upgrading...' : 'Upgrade to Pro'}
+                </Button>
+                {upgradeMessage && (
+                  <div className={`px-4 py-2 rounded text-sm font-medium ${
+                    upgradeMessage.includes('\u2713') 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {upgradeMessage}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
       )}
 
+      {/* Dashboard Navigation Tabs */}
+      <div className="flex gap-2 border-b border-gray-200 pb-4 flex-wrap">
+        <Button 
+          variant={activeSection === "overview" ? "default" : "outline"}
+          onClick={() => setActiveSection("overview")}
+          className={activeSection === "overview" ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+        >
+          Overview
+        </Button>
+        <Button 
+          variant={activeSection === "manage-meetings" ? "default" : "outline"}
+          onClick={() => setActiveSection("manage-meetings")}
+          className={activeSection === "manage-meetings" ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+        >
+          <Video className="h-4 w-4 mr-2" />
+          Zoom Meetings
+        </Button>
+        <Button 
+          variant={activeSection === "manage-slots" ? "default" : "outline"}
+          onClick={() => setActiveSection("manage-slots")}
+          className={activeSection === "manage-slots" ? "bg-indigo-600 hover:bg-indigo-700" : ""}
+        >
+          <Calendar className="h-4 w-4 mr-2" />
+          Manage Slots
+        </Button>
+      </div>
+
       {/* Welcome Section */}
       <div>
+        <button
+          onClick={() => setCurrentPage('homepage')}
+          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-4 font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </button>
         <h1 className="text-3xl font-bold mb-1">Welcome back, {fullName}!</h1>
         <p className="text-gray-600">Here's what's happening with your creator business today.</p>
       </div>
@@ -234,7 +355,7 @@ export function Dashboard({ onNavigateToCustomers, onNavigateToServices }: { onN
                     <Badge 
                       className={
                         offering.type === "webinar" 
-                          ? "bg-blue-100 text-blue-700" 
+                          ? "bg-cyan-100 text-blue-700" 
                           : "bg-green-100 text-green-700"
                       }
                     >
@@ -257,7 +378,12 @@ export function Dashboard({ onNavigateToCustomers, onNavigateToServices }: { onN
                     </div>
                   </div>
 
-                  <Button className="w-full" variant="outline" size="sm">
+                  <Button 
+                    className="w-full" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => onViewServiceDetail?.(offering._id || offering.id || "")}
+                  >
                     View Details
                   </Button>
                 </div>

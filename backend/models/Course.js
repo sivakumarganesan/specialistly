@@ -1,76 +1,165 @@
 import mongoose from 'mongoose';
 
-const moduleSchema = new mongoose.Schema({
+const fileSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId(),
+  },
+  fileName: {
+    type: String,
+    required: true,
+  },
+  fileUrl: {
+    type: String,
+    required: true,
+  },
+  fileType: {
+    type: String,
+    enum: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'other'],
+    default: 'other',
+  },
+  fileSize: Number, // in bytes
+  // Google Drive integration
+  googleDriveFileId: {
+    type: String,
+    default: null, // Will be set if file comes from Google Drive
+  },
+  downloadLink: {
+    type: String,
+    default: null, // Direct download link for Google Drive files
+  },
+  viewLink: {
+    type: String,
+    default: null, // Google Drive view link
+  },
+  uploadedAt: {
+    type: Date,
+    default: () => new Date(),
+  },
+});
+
+const lessonSchema = new mongoose.Schema({
+  _id: {
+    type: mongoose.Schema.Types.ObjectId,
+    default: () => new mongoose.Types.ObjectId(),
+  },
   title: {
     type: String,
     required: true,
   },
-  duration: {
+  videoUrl: {
     type: String,
-    required: true,
+    default: null, // Legacy: embed URLs (YouTube, etc)
   },
-  lessonsCount: {
+  // Cloudflare Stream video fields
+  cloudflareStreamId: {
+    type: String,
+    default: null, // Cloudflare Stream video UID
+  },
+  cloudflarePlaybackUrl: {
+    type: String,
+    default: null, // HLS manifest URL
+  },
+  cloudflareStatus: {
+    type: String,
+    enum: ['ready', 'inprogress', 'error', 'pending'],
+    default: 'pending',
+  },
+  videoDuration: {
+    type: Number,
+    default: 0, // Duration in seconds
+  },
+  videoThumbnail: {
+    type: String,
+    default: null,
+  },
+  files: [fileSchema], // Array of downloadable files (PDF, Word docs, etc)
+  order: {
     type: Number,
     required: true,
   },
 });
 
 const courseSchema = new mongoose.Schema({
-  title: {
+  // Basic Info
+  specialistId: {
     type: String,
     required: true,
   },
-  type: {
+  specialistEmail: {
     type: String,
-    enum: ['self-paced', 'cohort-based'],
+    required: true,
+  },
+  
+  title: {
+    type: String,
     required: true,
   },
   description: {
     type: String,
     required: true,
   },
-  price: {
-    type: String,
-    required: true,
-  },
-  duration: {
-    type: String,
-    required: true,
-  },
-  studentsEnrolled: {
-    type: Number,
-    default: 0,
-  },
-  status: {
-    type: String,
-    enum: ['active', 'draft'],
-    default: 'draft',
-  },
+  thumbnail: String,
+  
+  // Course Details
+  duration: String,
   level: {
     type: String,
-    required: true,
+    enum: ['Beginner', 'Intermediate', 'Advanced', 'All Levels'],
+    default: 'Beginner',
   },
   category: {
     type: String,
+    enum: ['Technology', 'Marketing', 'Business', 'Design', 'Personal Development', 'Health & Fitness'],
+    default: 'Technology',
+  },
+  
+  // Course Type
+  courseType: {
+    type: String,
+    enum: ['self-paced', 'cohort'],
     required: true,
   },
-  thumbnail: String,
-  creator: {
-    type: String,
-    required: false,
+  
+  // Pricing
+  price: {
+    type: Number,
+    default: 0,
   },
-  // Self-paced specific
-  modules: [moduleSchema],
+  
+  // Lessons (for both types)
+  lessons: [lessonSchema],
+  
+  // Self-Paced Specific Fields
   totalLessons: Number,
-  certificateIncluded: Boolean,
-  accessDuration: String,
-  // Cohort-based specific
+  certificateIncluded: {
+    type: Boolean,
+    default: true,
+  },
+  accessDuration: {
+    type: String,
+    default: 'Lifetime',
+  },
+  
+  // Cohort-Based Specific Fields
   cohortSize: String,
   startDate: Date,
   endDate: Date,
   schedule: String,
-  meetingPlatform: String,
+  meetingPlatform: {
+    type: String,
+    default: 'Zoom',
+  },
   liveSessions: Number,
+  
+  // Status
+  status: {
+    type: String,
+    enum: ['draft', 'published', 'archived'],
+    default: 'draft',
+  },
+  publishedAt: Date,
+  
   createdAt: {
     type: Date,
     default: Date.now,

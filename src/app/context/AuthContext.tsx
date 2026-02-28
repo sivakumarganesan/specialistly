@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5001/api";
+
 interface User {
   id: string;
   name: string;
@@ -22,9 +24,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   currentPage: string;
-  userType: "creator" | "customer" | null;
+  userType: "specialist" | "customer" | null;
   setCurrentPage: (page: string) => void;
-  setUserType: (type: "creator" | "customer") => void;
+  setUserType: (type: "specialist" | "customer") => void;
   signup: (data: any) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -37,26 +39,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [userType, setUserType] = useState<"creator" | "customer" | null>(null);
+  const [currentPage, setCurrentPage] = useState('homepage');
+  const [userType, setUserType] = useState<"specialist" | "customer" | null>(null);
 
   // Load auth data from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('authToken');
     const savedUser = localStorage.getItem('user');
-    const savedUserType = localStorage.getItem('userType') as "creator" | "customer" | null;
+    const savedUserType = localStorage.getItem('userType') as "specialist" | "customer" | null;
     
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
-      setUserType(savedUserType || "customer");
+      const userTypeValue = savedUserType || "customer";
+      setUserType(userTypeValue);
+      // Set default page based on user type on page refresh
+      setCurrentPage('dashboard');
     }
     setIsLoading(false);
   }, []);
 
   const signup = async (data: any) => {
     try {
-      const response = await fetch('http://localhost:5001/api/auth/signup', {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -75,7 +80,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setToken(result.token);
       setUser(result.user);
-      setUserType(data.userType || 'customer');
+      const userTypeValue = data.userType || 'customer';
+      setUserType(userTypeValue);
+      // Set default page based on user type
+      const defaultPage = userTypeValue === 'specialist' ? 'dashboard' : 'dashboard'; // 'browse-specialists' for customers
+      setCurrentPage(defaultPage);
     } catch (error) {
       console.error('Signup error:', error);
       throw error;
@@ -84,7 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await fetch('http://localhost:5001/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -103,7 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       
       setToken(result.token);
       setUser(result.user);
-      setUserType(result.userType || 'customer');
+      const userTypeValue = result.userType || 'customer';
+      setUserType(userTypeValue);
+      // Set default page based on user type
+      // Specialist: Dashboard, Customer: Browse Specialists (shown as dashboard with marketplace content)
+      const defaultPage = userTypeValue === 'specialist' ? 'dashboard' : 'dashboard';
+      setCurrentPage(defaultPage);
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -117,11 +131,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setToken(null);
     setUser(null);
     setUserType(null);
+    setCurrentPage('homepage');
   };
 
   const updateSubscription = async (planType: 'free' | 'pro') => {
     try {
-      const response = await fetch('http://localhost:5001/api/auth/subscription', {
+      const response = await fetch(`${API_BASE_URL}/auth/subscription`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

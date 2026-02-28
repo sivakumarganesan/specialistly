@@ -44,8 +44,8 @@ interface Service {
   type: "webinar" | "consulting";
   description: string;
   price: string;
-  duration: string;
-  capacity: string;
+  duration: string;  // Required for all services (in minutes for consulting, string format for webinar)
+  capacity?: string; // Required for webinars, not for consulting
   schedule: string;
   status: "active" | "draft";
   // Webinar specific fields
@@ -100,6 +100,8 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [bookedOfferings, setBookedOfferings] = useState<any[]>([]);
+  const [scheduledWebinars, setScheduledWebinars] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState<"all" | "active" | "draft">("all");
 
@@ -158,6 +160,61 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
     loadCustomers();
   }, []);
 
+  // Load booked offerings (appointment slots with status 'booked')
+  useEffect(() => {
+    const loadBookedOfferings = async () => {
+      try {
+        const response = await appointmentAPI.getAll();
+        if (response.data) {
+          // Filter for booked slots for this specialist only
+          const booked = response.data.filter((slot: any) => 
+            slot.status === "booked" && slot.specialistEmail === user?.email
+          );
+          
+          // Group by offering/service title
+          const groupedByOffering = booked.reduce((acc: any, slot: any) => {
+            const offering = acc.find((o: any) => o.serviceTitle === slot.serviceTitle);
+            if (offering) {
+              offering.bookings.push(slot);
+            } else {
+              acc.push({
+                serviceTitle: slot.serviceTitle,
+                bookings: [slot]
+              });
+            }
+            return acc;
+          }, []);
+          
+          setBookedOfferings(groupedByOffering);
+        }
+      } catch (error) {
+        console.error("Failed to load booked offerings:", error);
+      }
+    };
+
+    if (user?.email) {
+      loadBookedOfferings();
+    }
+  }, [user?.email]);
+
+  // Load scheduled webinars with Zoom data
+  useEffect(() => {
+    const loadScheduledWebinars = async () => {
+      try {
+        const response = await appointmentAPI.getScheduledWebinars(user?.email!);
+        if (response.data) {
+          setScheduledWebinars(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to load scheduled webinars:", error);
+      }
+    };
+
+    if (user?.email) {
+      loadScheduledWebinars();
+    }
+  }, [user?.email]);
+
   // Update searchable items whenever services change
   useEffect(() => {
     const searchableItems: SearchableItem[] = services.map(service => ({
@@ -166,7 +223,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       type: "offering",
     }));
     onUpdateSearchableItems(searchableItems);
-  }, [services, onUpdateSearchableItems]);
+  }, [services]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -186,14 +243,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
     sessionFrequency: "onetime" as "onetime" | "selected" | "repeat",
     // Consulting specific fields
     sessionLocation: "zoom",
-    availabilityType: "single_day",
-    sessionDuration: "60",
-    selectedDate: new Date().toISOString().split('T')[0],
-    startTime: "09",
-    startAmPm: "AM" as "AM" | "PM",
-    endTime: "10",
-    endAmPm: "AM" as "AM" | "PM",
-    assignedCustomerEmail: "",
   })
 
   const [webinarDates, setWebinarDates] = useState<{ date: string; time: string }[]>([
@@ -240,18 +289,28 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       alert("Please fill in all required fields (Title and Description)");
       return;
     }
+    // Require duration for all service types
+    if (!formData.duration) {
+      alert("Please enter the duration for your service");
+      return;
+    }
+    // Require capacity for webinars
+    if (serviceType === "webinar" && !formData.capacity) {
+      alert("Please enter the capacity for your webinar");
+      return;
+    }
     if (serviceType) {
       const serviceData = {
         title: formData.title,
         type: serviceType,
         description: formData.description,
         price: formData.price,
-        duration: serviceType === "consulting" ? formData.sessionDuration : formData.duration,
-        capacity: formData.capacity,
+        duration: formData.duration,
         schedule: formData.schedule,
         status: "draft",
         creator: user?.email,
         ...(serviceType === "webinar" && {
+          capacity: formData.capacity,
           eventType: formData.eventType,
           location: formData.location,
           sessionFrequency: formData.sessionFrequency,
@@ -264,14 +323,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         }),
         ...(serviceType === "consulting" && {
           sessionLocation: formData.sessionLocation,
-          availabilityType: formData.availabilityType,
-          sessionDuration: formData.sessionDuration,
-          selectedDate: formData.selectedDate,
-          startTime: formData.startTime,
-          startAmPm: formData.startAmPm,
-          endTime: formData.endTime,
-          endAmPm: formData.endAmPm,
-          assignedCustomerEmail: formData.assignedCustomerEmail,
         }),
       };
       
@@ -299,11 +350,11 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         title: formData.title,
         description: formData.description,
         price: formData.price,
-        duration: selectedService.type === "consulting" ? formData.sessionDuration : formData.duration,
-        capacity: formData.capacity,
+        duration: formData.duration,
         schedule: formData.schedule,
         creator: user?.email,
         ...(selectedService.type === "webinar" && {
+          capacity: formData.capacity,
           eventType: formData.eventType,
           location: formData.location,
           sessionFrequency: formData.sessionFrequency,
@@ -316,14 +367,6 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         }),
         ...(selectedService.type === "consulting" && {
           sessionLocation: formData.sessionLocation,
-          availabilityType: formData.availabilityType,
-          sessionDuration: formData.sessionDuration,
-          selectedDate: formData.selectedDate,
-          startTime: formData.startTime,
-          startAmPm: formData.startAmPm,
-          endTime: formData.endTime,
-          endAmPm: formData.endAmPm,
-          assignedCustomerEmail: formData.assignedCustomerEmail,
         }),
       };
       
@@ -363,12 +406,48 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
     }
   };
 
+  // Helper function to calculate end time (1 hour after start time)
+  const getEndTime = (startTime: string): string => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const endHours = (hours + 1) % 24;
+    return `${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+  };
+
   const toggleStatus = async (id: string) => {
     const service = services.find(s => s.id === id);
     if (service) {
       const newStatus = service.status === "active" ? "draft" : "active";
       try {
         await serviceAPI.update(id, { status: newStatus });
+        
+        // If activating a webinar, create appointment slots from webinar dates
+        if (newStatus === "active" && service.type === "webinar") {
+          if (service.webinarDates && service.webinarDates.length > 0) {
+            for (const dateSlot of service.webinarDates) {
+              try {
+                const endTime = getEndTime(dateSlot.time);
+                await appointmentAPI.create({
+                  date: dateSlot.date,
+                  startTime: dateSlot.time,
+                  endTime: endTime,
+                  status: "available",
+                  specialistEmail: user?.email,
+                  specialistName: user?.name,
+                  serviceTitle: service.title,
+                });
+              } catch (error) {
+                console.error("Failed to create appointment slot:", error);
+              }
+            }
+            alert(`✓ Webinar activated! ${service.webinarDates.length} appointment slot(s) created.`);
+          }
+        }
+        
+        // For consulting services, inform user to create slots in ManageSlots
+        if (newStatus === "active" && service.type === "consulting") {
+          alert(`✓ Consulting service activated! Now go to "Manage Consulting Slots" to set up your availability for customers to book.`);
+        }
+        
         setServices(
           services.map((s) =>
             s.id === id
@@ -393,20 +472,12 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       description: service.description,
       price: service.price,
       duration: service.duration,
-      capacity: service.capacity,
+      capacity: service.capacity || "",
       schedule: service.schedule,
       eventType: service.eventType || "single",
       location: service.location || "zoom",
       sessionFrequency: service.sessionFrequency || "onetime",
       sessionLocation: service.sessionLocation || "zoom",
-      availabilityType: service.availabilityType || "single_day",
-      sessionDuration: service.sessionDuration || "60",
-      selectedDate: service.selectedDate || new Date().toISOString().split('T')[0],
-      startTime: service.startTime || "09",
-      startAmPm: service.startAmPm || "AM",
-      endTime: service.endTime || "10",
-      endAmPm: service.endAmPm || "AM",
-      assignedCustomerEmail: service.assignedCustomerEmail || "",
     });
     if (service.type === "webinar" && service.webinarDates && service.webinarDates.length > 0) {
       setWebinarDates(service.webinarDates);
@@ -438,9 +509,9 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
       capacity: "",
       schedule: "Flexible",
       eventType: "single",
-      assignedCustomerEmail: "",
       location: "zoom",
       sessionFrequency: "onetime",
+      sessionLocation: "zoom",
     });
     setWebinarDates([{ date: new Date().toISOString().split('T')[0], time: "10:00" }]);
     setWeeklySchedule([
@@ -500,6 +571,8 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
           startTime: newSlot.startTime,
           endTime: newSlot.endTime,
           status: "available",
+          specialistEmail: user?.email,
+          specialistName: user?.name,
         };
         
         const response = await appointmentAPI.create(slotData);
@@ -605,7 +678,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case "webinar":
-        return "bg-blue-100 text-blue-700";
+        return "bg-cyan-100 text-blue-700";
       case "consulting":
         return "bg-green-100 text-green-700";
       default:
@@ -620,14 +693,14 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         <div>
           <h1 className="text-3xl font-bold mb-1">Services</h1>
           <p className="text-gray-600">
-            Create and manage your service offerings
+            Create and manage your offerings
           </p>
         </div>
         
         {/* Set Availability Button */}
         {getTotalConsultingServices() > 0 && (
           <Button
-            className="bg-blue-600 hover:bg-blue-700 gap-2"
+            className="bg-cyan-600 hover:bg-cyan-700 gap-2"
             onClick={openAppointmentDialog}
           >
             <CalendarClock className="h-5 w-5" />
@@ -646,8 +719,8 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
           onClick={() => setFilterStatus("all")}
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Briefcase className="h-5 w-5 text-purple-600" />
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <Briefcase className="h-5 w-5 text-indigo-600" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Services</p>
@@ -689,7 +762,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         </Card>
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
+            <div className="p-2 bg-cyan-100 rounded-lg">
               <CalendarClock className="h-5 w-5 text-blue-600" />
             </div>
             <div>
@@ -707,7 +780,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-blue-600 rounded-lg">
+              <div className="p-3 bg-cyan-600 rounded-lg">
                 <CalendarClock className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -734,23 +807,135 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         </Card>
       )}
 
+      {/* Booked Offerings Section */}
+      {bookedOfferings.length > 0 && (
+        <Card className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-1">
+              <Calendar className="h-5 w-5 text-green-600" />
+              Booked Offerings
+            </h2>
+            <p className="text-sm text-gray-600">
+              {bookedOfferings.reduce((total, o) => total + o.bookings.length, 0)} total bookings across {bookedOfferings.length} offering{bookedOfferings.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {bookedOfferings.map((offering, idx) => (
+              <div key={idx} className="bg-white rounded-lg border border-green-100 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <h3 className="font-semibold text-lg text-gray-800">{offering.serviceTitle}</h3>
+                    <p className="text-sm text-gray-600">
+                      {offering.bookings.length} customer{offering.bookings.length !== 1 ? 's' : ''} booked
+                    </p>
+                  </div>
+                  <Badge className="bg-green-600 hover:bg-green-700">
+                    {offering.bookings.length} Booking{offering.bookings.length !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
+
+                {/* Bookings List */}
+                <div className="space-y-2">
+                  {offering.bookings.map((booking, bookingIdx) => (
+                    <div key={bookingIdx} className="flex items-start justify-between text-sm bg-gray-50 p-3 rounded border border-gray-200">
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-800">{booking.customerName || 'Customer'}</p>
+                        <p className="text-gray-600 text-xs">{booking.customerEmail}</p>
+                        <p className="text-gray-700 mt-1">
+                          <Calendar className="h-4 w-4 inline mr-1" />
+                          {new Date(booking.date).toLocaleDateString()} at {booking.startTime}
+                        </p>
+                      </div>
+                      <Badge className="bg-green-100 text-green-700 ml-2">Booked</Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Scheduled Webinars Section - Start Meetings */}
+      {scheduledWebinars.length > 0 && (
+        <Card className="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2 mb-1">
+              <Video className="h-5 w-5 text-blue-600" />
+              Scheduled Webinars
+            </h2>
+            <p className="text-sm text-gray-600">
+              {scheduledWebinars.length} webinar{scheduledWebinars.length !== 1 ? 's' : ''} ready to start
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {scheduledWebinars.map((webinar, idx) => {
+              const meetingDate = new Date(webinar.date);
+              const now = new Date();
+              const isUpcoming = meetingDate > now;
+              const timeUntilMeeting = isUpcoming ? Math.ceil((meetingDate.getTime() - now.getTime()) / (1000 * 60)) : null;
+
+              return (
+                <div key={idx} className="flex items-center justify-between bg-white rounded-lg border border-blue-100 p-4">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-800">{webinar.serviceTitle}</h3>
+                    <p className="text-sm text-gray-600">{webinar.customerName || 'Customer'}</p>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-700">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        {meetingDate.toLocaleDateString()}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4 text-gray-500" />
+                        {webinar.startTime}
+                      </div>
+                      {isUpcoming && timeUntilMeeting !== null && (
+                        <Badge className="bg-amber-100 text-amber-700 ml-auto">
+                          {timeUntilMeeting} min
+                        </Badge>
+                      )}
+                      {!isUpcoming && (
+                        <Badge className="bg-gray-100 text-gray-700 ml-auto">Past</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    className="ml-4 bg-cyan-600 hover:bg-cyan-700 gap-2 whitespace-nowrap"
+                    onClick={() => {
+                      if (webinar.zoomStartUrl) {
+                        window.open(webinar.zoomStartUrl, '_blank');
+                      }
+                    }}
+                  >
+                    <Video className="h-4 w-4" />
+                    Start Meeting
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       {/* Create Service Type Selection */}
       <div>
         <h2 className="text-lg font-semibold mb-3">Create New Service</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-blue-500"
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-cyan-500"
             onClick={() => openCreateDialog("webinar")}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-blue-100 rounded-full">
+              <div className="p-4 bg-cyan-100 rounded-full">
                 <Video className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="font-semibold text-lg">Live Webinar</h3>
               <p className="text-sm text-gray-600">
                 Host live webinars for multiple participants
               </p>
-              <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+              <Button className="bg-cyan-600 hover:bg-cyan-700 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Webinar
               </Button>
@@ -780,23 +965,48 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
 
       {/* Services List */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">Your Services</h2>
-        {filterStatus !== "all" && (
-          <div className="mb-3 flex items-center gap-2">
-            <Badge className={filterStatus === "active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
-              Filter: {filterStatus}
-            </Badge>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-semibold mb-1">Your Offerings</h2>
+            <p className="text-sm text-gray-600">
+              {filterStatus === "all" 
+                ? `Total: ${services.length} offering${services.length !== 1 ? 's' : ''}`
+                : `${filterStatus}: ${services.filter(s => s.status === filterStatus).length} offering${services.filter(s => s.status === filterStatus).length !== 1 ? 's' : ''}`
+              }
+            </p>
+          </div>
+          {filterStatus !== "all" && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => setFilterStatus("all")}
+              className="whitespace-nowrap"
             >
-              Clear Filter
+              Show All
             </Button>
-          </div>
-        )}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {getFilteredServices().map((service) => (
+          )}
+        </div>
+        
+        {services.length === 0 ? (
+          <Card className="p-8 text-center bg-gray-50">
+            <p className="text-gray-600 mb-4">No offerings yet. Create one to get started!</p>
+          </Card>
+        ) : (
+          <>
+            {filterStatus !== "all" && (
+              <div className="mb-3 flex items-center gap-2">
+                <Badge className={filterStatus === "active" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"}>
+                  Filter: {filterStatus.charAt(0).toUpperCase() + filterStatus.slice(1)}
+                </Badge>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {getFilteredServices().length === 0 ? (
+                <Card className="p-6 col-span-full text-center bg-gray-50">
+                  <p className="text-gray-600">No {filterStatus === "all" ? "offerings" : filterStatus + " offerings"} yet.</p>
+                </Card>
+              ) : (
+                getFilteredServices().map((service) => (
             <Card key={service.id} className="p-4 hover:shadow-lg transition-all">
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
@@ -835,10 +1045,12 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                     <span className="text-gray-600">Duration:</span>
                     <span className="font-semibold">{service.duration}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Capacity:</span>
-                    <span className="font-semibold">{service.capacity}</span>
-                  </div>
+                  {service.type === "webinar" && service.capacity && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Capacity:</span>
+                      <span className="font-semibold">{service.capacity}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-1">
                     <CalendarClock className="h-4 w-4 text-gray-600" />
                     <span className="text-gray-600">{service.schedule}</span>
@@ -876,7 +1088,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   <div className="mt-2 pt-2 border-t">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Linked to your availability</span>
-                      <Badge className="bg-blue-100 text-blue-700">
+                      <Badge className="bg-cyan-100 text-blue-700">
                         {getAvailableSlots().length} slots
                       </Badge>
                     </div>
@@ -884,8 +1096,11 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                 )}
               </div>
             </Card>
-          ))}
-        </div>
+          ))
+              )}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Create Service Dialog */}
@@ -1003,21 +1218,23 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   </Select>
                 </div>
 
-                {/* Webinar Dates - Show only when "On Selected Dates" is selected */}
-                {formData.sessionFrequency === "selected" && (
+                {/* Webinar Dates - Show for Single Day OR when "On Selected Dates" is selected */}
+                {(formData.eventType === "single" || formData.sessionFrequency === "selected") && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label>Webinar Date & Time *</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addWebinarDate}
-                        className="gap-1"
-                      >
-                        <Plus className="h-3 w-3" />
-                        Add Date
-                      </Button>
+                      {formData.sessionFrequency === "selected" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addWebinarDate}
+                          className="gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Add Date
+                        </Button>
+                      )}
                     </div>
                     <div className="space-y-2">
                       {webinarDates.map((dateTime, index) => (
@@ -1040,7 +1257,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                               }
                             />
                           </div>
-                          {webinarDates.length > 1 && (
+                          {webinarDates.length > 1 && formData.sessionFrequency === "selected" && (
                             <Button
                               type="button"
                               variant="outline"
@@ -1112,162 +1329,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                       <SelectItem value="whatsapp">WhatsApp</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="availabilityType">Availability Type *</Label>
-                  <Select
-                    value={formData.availabilityType}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, availabilityType: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select availability type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="single_day">Single Day</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                      <SelectItem value="not_sure">Not Sure</SelectItem>
-                      <SelectItem value="set_after_booking">Set after Booking</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="sessionDuration">Set Duration of Each Session *</Label>
-                  <Select
-                    value={formData.sessionDuration}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, sessionDuration: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="45">45 minutes</SelectItem>
-                      <SelectItem value="60">60 minutes</SelectItem>
-                      <SelectItem value="120">120 minutes</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="selectedDate">Select Date *</Label>
-                  <Input
-                    id="selectedDate"
-                    type="date"
-                    value={formData.selectedDate}
-                    onChange={(e) =>
-                      setFormData({ ...formData, selectedDate: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="startTime">Start Time *</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.startTime}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, startTime: value })
-                        }
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Hour" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => {
-                            const hour = String(i + 1).padStart(2, '0');
-                            return (
-                              <SelectItem key={hour} value={hour}>
-                                {hour}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={formData.startAmPm}
-                        onValueChange={(value: "AM" | "PM") =>
-                          setFormData({ ...formData, startAmPm: value })
-                        }
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue placeholder="AM/PM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AM">AM</SelectItem>
-                          <SelectItem value="PM">PM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="endTime">End Time *</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.endTime}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, endTime: value })
-                        }
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Hour" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => {
-                            const hour = String(i + 1).padStart(2, '0');
-                            return (
-                              <SelectItem key={hour} value={hour}>
-                                {hour}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={formData.endAmPm}
-                        onValueChange={(value: "AM" | "PM") =>
-                          setFormData({ ...formData, endAmPm: value })
-                        }
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue placeholder="AM/PM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AM">AM</SelectItem>
-                          <SelectItem value="PM">PM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="assignedCustomer">Assign Customer *</Label>
-                  <Select
-                    value={formData.assignedCustomerEmail}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, assignedCustomerEmail: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer._id || customer.id} value={customer.email}>
-                          {customer.name} ({customer.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <p className="text-xs text-gray-500 mt-2 italic">📝 Note: Set specific dates and times in "Manage Consulting Slots" after activating this service.</p>
                 </div>
               </>
             )}
@@ -1284,34 +1346,32 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   }
                 />
               </div>
-              {serviceType === "webinar" && (
-                <div>
-                  <Label htmlFor="duration">Duration</Label>
-                  <Input
-                    id="duration"
-                    placeholder="2 hours"
-                    value={formData.duration}
-                    onChange={(e) =>
-                      setFormData({ ...formData, duration: e.target.value })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="capacity">Capacity</Label>
+                <Label htmlFor="duration">Duration {serviceType === "consulting" ? "(minutes) *" : ""}</Label>
                 <Input
-                  id="capacity"
-                  placeholder="50"
-                  value={formData.capacity}
+                  id="duration"
+                  placeholder={serviceType === "consulting" ? "30" : "2 hours"}
+                  value={formData.duration}
                   onChange={(e) =>
-                    setFormData({ ...formData, capacity: e.target.value })
+                    setFormData({ ...formData, duration: e.target.value })
                   }
                 />
               </div>
-              {serviceType === "webinar" && (
+            </div>
+
+            {serviceType === "webinar" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="capacity">Capacity *</Label>
+                  <Input
+                    id="capacity"
+                    placeholder="50"
+                    value={formData.capacity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, capacity: e.target.value })
+                    }
+                  />
+                </div>
                 <div>
                   <Label htmlFor="schedule">Schedule</Label>
                   <Input
@@ -1323,9 +1383,9 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                     }
                   />
                 </div>
-              )}
+              </div>
+            )}
             </div>
-          </div>
 
           <DialogFooter>
             <Button
@@ -1339,7 +1399,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
               Cancel
             </Button>
             <Button
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-indigo-600 hover:bg-indigo-700"
               onClick={handleCreateService}
             >
               Create Service
@@ -1461,21 +1521,23 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   </Select>
                 </div>
 
-                {/* Webinar Dates - Show only when "On Selected Dates" is selected */}
-                {formData.sessionFrequency === "selected" && (
+                {/* Webinar Dates - Show for Single Day OR when "On Selected Dates" is selected */}
+                {(formData.eventType === "single" || formData.sessionFrequency === "selected") && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label>Webinar Date & Time *</Label>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addWebinarDate}
-                        className="gap-1"
-                      >
-                        <Plus className="h-3 w-3" />
-                        Add Date
-                      </Button>
+                      {formData.sessionFrequency === "selected" && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addWebinarDate}
+                          className="gap-1"
+                        >
+                          <Plus className="h-3 w-3" />
+                          Add Date
+                        </Button>
+                      )}
                     </div>
                     <div className="space-y-2">
                       {webinarDates.map((dateTime, index) => (
@@ -1498,7 +1560,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                               }
                             />
                           </div>
-                          {webinarDates.length > 1 && (
+                          {webinarDates.length > 1 && formData.sessionFrequency === "selected" && (
                             <Button
                               type="button"
                               variant="outline"
@@ -1570,162 +1632,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                       <SelectItem value="whatsapp">WhatsApp</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-availabilityType">Availability Type *</Label>
-                  <Select
-                    value={formData.availabilityType || "single_day"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, availabilityType: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select availability type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="single_day">Single Day</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                      <SelectItem value="not_sure">Not Sure</SelectItem>
-                      <SelectItem value="set_after_booking">Set after Booking</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-sessionDuration">Set Duration of Each Session *</Label>
-                  <Select
-                    value={formData.sessionDuration || "60"}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, sessionDuration: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="45">45 minutes</SelectItem>
-                      <SelectItem value="60">60 minutes</SelectItem>
-                      <SelectItem value="120">120 minutes</SelectItem>
-                      <SelectItem value="custom">Custom</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-selectedDate">Select Date *</Label>
-                  <Input
-                    id="edit-selectedDate"
-                    type="date"
-                    value={formData.selectedDate || new Date().toISOString().split('T')[0]}
-                    onChange={(e) =>
-                      setFormData({ ...formData, selectedDate: e.target.value })
-                    }
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="edit-startTime">Start Time *</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.startTime || "09"}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, startTime: value })
-                        }
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Hour" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => {
-                            const hour = String(i + 1).padStart(2, '0');
-                            return (
-                              <SelectItem key={hour} value={hour}>
-                                {hour}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={formData.startAmPm || "AM"}
-                        onValueChange={(value: "AM" | "PM") =>
-                          setFormData({ ...formData, startAmPm: value })
-                        }
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue placeholder="AM/PM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AM">AM</SelectItem>
-                          <SelectItem value="PM">PM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="edit-endTime">End Time *</Label>
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.endTime || "10"}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, endTime: value })
-                        }
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Hour" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {Array.from({ length: 12 }, (_, i) => {
-                            const hour = String(i + 1).padStart(2, '0');
-                            return (
-                              <SelectItem key={hour} value={hour}>
-                                {hour}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      <Select
-                        value={formData.endAmPm || "AM"}
-                        onValueChange={(value: "AM" | "PM") =>
-                          setFormData({ ...formData, endAmPm: value })
-                        }
-                      >
-                        <SelectTrigger className="w-20">
-                          <SelectValue placeholder="AM/PM" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="AM">AM</SelectItem>
-                          <SelectItem value="PM">PM</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="edit-assignedCustomer">Assign Customer *</Label>
-                  <Select
-                    value={formData.assignedCustomerEmail}
-                    onValueChange={(value) =>
-                      setFormData({ ...formData, assignedCustomerEmail: value })
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a customer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer._id || customer.id} value={customer.email}>
-                          {customer.name} ({customer.email})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <p className="text-xs text-gray-500 mt-2 italic">📝 Note: Set specific dates and times in "Manage Consulting Slots" after activating this service.</p>
                 </div>
               </>
             )}
@@ -1742,34 +1649,32 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                   }
                 />
               </div>
-              {selectedService?.type !== "webinar" && (
-                <div>
-                  <Label htmlFor="edit-duration">Duration</Label>
-                  <Input
-                    id="edit-duration"
-                    placeholder="2 hours"
-                    value={formData.duration}
-                    onChange={(e) =>
-                      setFormData({ ...formData, duration: e.target.value })
-                    }
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-capacity">Capacity</Label>
+                <Label htmlFor="edit-duration">Duration {selectedService?.type === "consulting" ? "(minutes) *" : ""}</Label>
                 <Input
-                  id="edit-capacity"
-                  placeholder="50"
-                  value={formData.capacity}
+                  id="edit-duration"
+                  placeholder={selectedService?.type === "consulting" ? "30" : "2 hours"}
+                  value={formData.duration}
                   onChange={(e) =>
-                    setFormData({ ...formData, capacity: e.target.value })
+                    setFormData({ ...formData, duration: e.target.value })
                   }
                 />
               </div>
-              {selectedService?.type !== "webinar" && (
+            </div>
+
+            {selectedService?.type === "webinar" && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-capacity">Capacity *</Label>
+                  <Input
+                    id="edit-capacity"
+                    placeholder="50"
+                    value={formData.capacity}
+                    onChange={(e) =>
+                      setFormData({ ...formData, capacity: e.target.value })
+                    }
+                  />
+                </div>
                 <div>
                   <Label htmlFor="edit-schedule">Schedule</Label>
                   <Input
@@ -1781,8 +1686,8 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                     }
                   />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter>
@@ -1797,7 +1702,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
               Cancel
             </Button>
             <Button
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-indigo-600 hover:bg-indigo-700"
               onClick={handleEditService}
             >
               Save Changes
@@ -1989,7 +1894,7 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
                 </Button>
                 <Button
                   onClick={saveWeeklyAvailability}
-                  className="bg-blue-600 hover:bg-blue-700 gap-2"
+                  className="bg-cyan-600 hover:bg-cyan-700 gap-2"
                 >
                   <Calendar className="h-4 w-4" />
                   Save Availability

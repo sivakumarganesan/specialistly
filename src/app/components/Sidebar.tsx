@@ -14,6 +14,7 @@ import {
   ShoppingCart
 } from "lucide-react";
 import { cn } from "@/app/components/ui/utils";
+import { Badge } from "@/app/components/ui/badge";
 
 interface SidebarProps {
   activeTab: string;
@@ -21,13 +22,14 @@ interface SidebarProps {
   isMobileOpen?: boolean;
   onClose?: () => void;
   userType?: "specialist" | "customer";
+  unreadMessageCount?: number;
 }
 
 const creatorMenuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "services", label: "Create / Edit Service Offerings", icon: Briefcase },
-  { id: "mysite", label: "My Site", icon: Globe },
-  { id: "courses", label: "Courses", icon: GraduationCap },
+  { id: "services", label: "Create / Edit Offerings", icon: Briefcase },
+  { id: "page-builder", label: "Branded Page Builder", icon: Globe },
+  { id: "courses", label: "Manage Courses", icon: GraduationCap },
   { id: "customers", label: "Customers", icon: Users },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "settings", label: "Settings", icon: Settings },
@@ -35,12 +37,13 @@ const creatorMenuItems = [
 
 const customerMenuItems = [
   { id: "dashboard", label: "Browse Specialists", icon: Store },
-  { id: "purchases", label: "My Learning & Bookings", icon: ShoppingCart },
+  { id: "browse-courses", label: "Browse Courses", icon: GraduationCap },
+  { id: "my-learning", label: "My Learning & Bookings", icon: ShoppingCart },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
-export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userType = "customer" }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userType = "customer", unreadMessageCount = 0 }: SidebarProps) {
   const handleItemClick = (id: string) => {
     onTabChange(id);
     if (onClose) {
@@ -70,20 +73,28 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userTyp
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+            const showBadge = item.id === "messages" && unreadMessageCount > 0;
             
             return (
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item.id)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left",
+                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left justify-between",
                   isActive 
-                    ? "bg-purple-50 text-purple-600" 
+                    ? "bg-indigo-50 text-indigo-600" 
                     : "text-gray-700 hover:bg-gray-50"
                 )}
               >
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-3">
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </div>
+                {showBadge && (
+                  <Badge className="bg-red-500 h-5 px-2 flex items-center justify-center text-xs font-semibold">
+                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                  </Badge>
+                )}
               </button>
             );
           })}

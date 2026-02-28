@@ -1,0 +1,471 @@
+import cloudflareStreamService from '../services/cloudflareStreamService.js';
+import Certificate from '../models/Certificate.js';
+import Course from '../models/Course.js';
+import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
+
+const generateCertificateId = () => {
+  const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+  return `CERT-${new Date().getFullYear()}-${randomStr}`;
+};
+
+// Enroll in self-paced course
+export const enrollSelfPaced = async (req, res) => {
+  try {
+    const { courseId, customerId, customerEmail } = req.body;
+    
+    // Use values from body or from auth middleware if available
+    const finalCustomerId = customerId || req.user?.userId;
+    const finalCustomerEmail = customerEmail || req.user?.email;
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID is required',
+      });
+    }
+
+    if (!finalCustomerId || !finalCustomerEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer ID and email are required',
+      });
+    }
+
+    // Check if course exists and is published
+    const course = await Course.findById(courseId);
+    if (!course || course.status !== 'published') {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found or not published',
+      });
+    }
+
+    // Check for existing enrollment
+    const existingEnrollment = await SelfPacedEnrollment.findOne({
+      courseId,
+      customerId: finalCustomerId,
+    });
+
+    if (existingEnrollment) {
+      return res.status(400).json({
+        success: false,
+        message: 'Already enrolled in this course',
+      });
+    }
+
+    // Create enrollment
+    const enrollment = new SelfPacedEnrollment({
+      courseId,
+      customerId: finalCustomerId,
+      customerEmail: finalCustomerEmail,
+      completedLessons: [],
+      completed: false,
+      paidAt: course.price > 0 ? new Date() : null,
+      amount: course.price,
+    });
+
+    await enrollment.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Enrolled successfully',
+      enrollmentId: enrollment._id,
+      data: enrollment,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get self-paced enrollments (my courses)
+export const getMyCourses = async (req, res) => {
+  try {
+    // Use authenticated user ID if available, otherwise fall back to query parameter
+    // If neither is available, return empty list (not an error) to allow unauthenticated browsing
+    const customerId = req.user?.userId || req.query.customerId;
+
+    // Log for debugging
+    console.log('[getMyCourses] Request:', {
+      hasAuth: !!req.user,
+      userId: req.user?.userId,
+      queryCustomerId: req.query.customerId,
+      finalCustomerId: customerId,
+    });
+
+    if (!customerId) {
+      // Return empty list for unauthenticated requests instead of error
+      // This allows users to browse courses without an account
+      console.log('[getMyCourses] No user ID found, returning empty enrollments');
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
+    const enrollments = await SelfPacedEnrollment.find({ customerId })
+      .populate('courseId')
+      .sort({ createdAt: -1 });
+
+    if (!enrollments || enrollments.length === 0) {
+      return res.status(200).json({
+        success: true,
+        data: [],
+      });
+    }
+
+    // Filter out enrollments where course doesn't exist (deleted courses)
+    const validEnrollments = enrollments.filter((e) => {
+      // Check if courseId exists after populate
+      if (!e.courseId) {
+        // Silently filter out - course was deleted
+        return false;
+      }
+      return true;
+    });
+
+    const formatted = validEnrollments.map((e) => {
+      try {
+        // Double-check course exists before accessing properties
+        if (!e.courseId || !e.courseId._id) {
+          throw new Error(`Course reference invalid for enrollment ${e._id}`);
+        }
+
+        const lessonsTotal = (e.courseId.lessons && Array.isArray(e.courseId.lessons)) ? e.courseId.lessons.length : 0;
+        const lessonsCompleted = (e.completedLessons && Array.isArray(e.completedLessons)) ? e.completedLessons.length : 0;
+        
+        return {
+          enrollmentId: e._id,
+          courseId: e.courseId._id,
+          title: e.courseId.title || 'Untitled Course',
+          thumbnail: e.courseId.thumbnail || null,
+          lessonsTotal: lessonsTotal,
+          lessonsCompleted: lessonsCompleted,
+          percentComplete: lessonsTotal > 0 ? Math.round((lessonsCompleted / lessonsTotal) * 100) : 0,
+          completed: e.completed || false,
+          certificate: e.certificate || null,
+        };
+      } catch (mapError) {
+        console.error(`Error mapping enrollment:`, mapError.message);
+        throw mapError;
+      }
+    });
+
+    res.status(200).json({
+      success: true,
+      data: formatted,
+    });
+  } catch (error) {
+    console.error("Error fetching my courses:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get enrollment details
+export const getEnrollmentDetails = async (req, res) => {
+  try {
+    const { enrollmentId } = req.params;
+
+    const enrollment = await SelfPacedEnrollment.findById(enrollmentId).populate(
+      'courseId'
+    );
+
+    if (!enrollment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Enrollment not found',
+      });
+    }
+
+    const course = enrollment.courseId;
+    
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found. It may have been deleted.',
+      });
+    }
+
+    const lessonsTotal = course.lessons && course.lessons.length ? course.lessons.length : 0;
+    const completedCount = enrollment.completedLessons && enrollment.completedLessons.length ? enrollment.completedLessons.length : 0;
+    const percentComplete = lessonsTotal > 0 ? Math.round((completedCount / lessonsTotal) * 100) : 0;
+
+    const lessons = ((course.lessons && Array.isArray(course.lessons)) ? course.lessons : []).map((lesson) => {
+      if (!lesson) {
+        return null;
+      }
+      return {
+        _id: lesson._id,
+        title: lesson.title || 'Untitled Lesson',
+        order: lesson.order || 0,
+        videoUrl: lesson.videoUrl || null,
+        files: lesson.files || [],
+        completed: enrollment.completedLessons && enrollment.completedLessons.includes(lesson._id),
+        // Include Cloudflare Stream video metadata
+        cloudflareStreamId: lesson.cloudflareStreamId || null,
+        cloudflarePlaybackUrl: lesson.cloudflarePlaybackUrl || null,
+        cloudflareStatus: lesson.cloudflareStatus || null,
+        videoDuration: lesson.videoDuration || null,
+        videoThumbnail: lesson.videoThumbnail || null,
+      };
+    }).filter(l => l !== null);
+
+    // Fetch missing HLS URLs for videos with streamId but no playback URL
+    const lessonsWithMissingURL = lessons.filter(l => l.cloudflareStreamId && !l.cloudflarePlaybackUrl);
+    if (lessonsWithMissingURL.length > 0) {
+      console.log(`[Enrollment] Fetching ${lessonsWithMissingURL.length} missing HLS URLs for enrollment ${enrollmentId}`);
+      try {
+        for (const lesson of lessonsWithMissingURL) {
+          try {
+            console.log(`[Enrollment] Fetching HLS URL for video ${lesson.cloudflareStreamId}`);
+            const videoDetails = await cloudflareStreamService.getVideoDetails(lesson.cloudflareStreamId);
+            console.log(`[Enrollment] Got video details:`, { 
+              videoId: lesson.cloudflareStreamId, 
+              hlsUrl: videoDetails.hlsPlaybackUrl,
+              status: videoDetails.status 
+            });
+            
+            lesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
+            
+            // Also update the database for future requests
+            const dbLesson = course.lessons.find(l => l._id.toString() === lesson._id.toString());
+            if (dbLesson) {
+              console.log(`[Enrollment] Updating lesson ${lesson._id} in database with HLS URL`);
+              dbLesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
+              dbLesson.cloudflareStatus = videoDetails.status || dbLesson.cloudflareStatus;
+              if (!dbLesson.videoDuration && videoDetails.duration) dbLesson.videoDuration = videoDetails.duration;
+              if (!dbLesson.videoThumbnail && videoDetails.thumbnail) dbLesson.videoThumbnail = videoDetails.thumbnail;
+            }
+          } catch (singleError) {
+            console.warn(`[Enrollment] Error fetching HLS for video ${lesson.cloudflareStreamId}:`, singleError.message);
+          }
+        }
+        // Save updated course with HLS URLs
+        if (lessonsWithMissingURL.length > 0) {
+          await course.save().catch(err => console.warn('[Enrollment] Could not save updated HLS URLs:', err.message));
+        }
+      } catch (cloudflareError) {
+        console.warn('[Enrollment] Could not fetch Cloudflare video details:', cloudflareError.message);
+        // Continue anyway - return what we have
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        enrollmentId: enrollment._id,
+        courseId: course._id,
+        courseTitle: course.title,
+        courseDescription: course.description,
+        lessons,
+        percentComplete,
+        completed: enrollment.completed,
+        certificate: enrollment.certificate,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching enrollment details:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Mark lesson complete
+export const markLessonComplete = async (req, res) => {
+  try {
+    const { enrollmentId, lessonId } = req.params;
+
+    const enrollment = await SelfPacedEnrollment.findById(enrollmentId);
+    if (!enrollment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Enrollment not found',
+      });
+    }
+
+    // Add lesson to completed
+    if (!enrollment.completedLessons.includes(lessonId)) {
+      enrollment.completedLessons.push(lessonId);
+    }
+
+    // Get course for total count
+    const course = await Course.findById(enrollment.courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    const totalLessons = course.lessons && course.lessons.length ? course.lessons.length : 0;
+    const completedCount = enrollment.completedLessons && enrollment.completedLessons.length ? enrollment.completedLessons.length : 0;
+    const percentComplete = totalLessons > 0 ? (completedCount / totalLessons) * 100 : 0;
+
+    // Check if all lessons done
+    if (totalLessons > 0 && completedCount === totalLessons) {
+      enrollment.completed = true;
+
+      // Auto-generate certificate
+      const certificateId = generateCertificateId();
+      const certificate = new Certificate({
+        certificateId,
+        courseId: course._id,
+        courseName: course.title,
+        courseType: 'self-paced',
+        customerId: enrollment.customerId,
+        customerName: enrollment.customerEmail, // Can improve with user lookup
+        customerEmail: enrollment.customerEmail,
+        specialistId: course.specialistId,
+        specialistName: course.specialistEmail,
+        enrollmentId: enrollment._id,
+        pdfUrl: `https://specialistly.com/certificates/${certificateId}.pdf`,
+        verifyUrl: `https://specialistly.com/verify/${certificateId}`,
+      });
+
+      await certificate.save();
+
+      enrollment.certificate = {
+        issued: true,
+        certificateId,
+        issuedDate: new Date(),
+        downloadUrl: `https://specialistly.com/certificates/${certificateId}/download`,
+      };
+    }
+
+    enrollment.updatedAt = new Date();
+    await enrollment.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Lesson marked complete',
+      percentComplete: Math.round(percentComplete),
+      completed: enrollment.completed,
+      certificate: enrollment.certificate,
+    });
+  } catch (error) {
+    console.error("Error marking lesson complete:", error);
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Check certificate eligibility
+export const checkCertificateEligibility = async (req, res) => {
+  try {
+    const { enrollmentId } = req.params;
+
+    const enrollment = await SelfPacedEnrollment.findById(enrollmentId).populate(
+      'courseId'
+    );
+
+    if (!enrollment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Enrollment not found',
+      });
+    }
+
+    const course = enrollment.courseId;
+    
+    // Check if course exists (may be deleted)
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found or deleted',
+      });
+    }
+
+    const totalLessons = course.lessons && course.lessons.length ? course.lessons.length : 0;
+    const completedCount = enrollment.completedLessons && enrollment.completedLessons.length ? enrollment.completedLessons.length : 0;
+    const allDone = totalLessons > 0 && completedCount === totalLessons;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        eligible: allDone && enrollment.completed,
+        allLessonsDone: allDone,
+        certificate: enrollment.certificate,
+      },
+    });
+  } catch (error) {
+    console.error("Error checking certificate eligibility:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// Get all enrollments for a course (specialist view)
+export const getCourseEnrollments = async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    if (!courseId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID is required',
+      });
+    }
+
+    // Get all enrollments for this course
+    const enrollments = await SelfPacedEnrollment.find({ courseId })
+      .select('customerId customerEmail completedLessons completed createdAt paidAt amount')
+      .sort({ createdAt: -1 });
+
+    // Get course details
+    const course = await Course.findById(courseId)
+      .select('title lessons specialistId specialistEmail');
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    // Enrich enrollment data with lesson completion percentages
+    const enrichedEnrollments = enrollments.map(enrollment => {
+      const totalLessons = course.lessons ? course.lessons.length : 0;
+      const completedCount = enrollment.completedLessons ? enrollment.completedLessons.length : 0;
+      const completionPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+      return {
+        _id: enrollment._id,
+        customerId: enrollment.customerId,
+        customerEmail: enrollment.customerEmail,
+        completedLessons: completedCount,
+        totalLessons: totalLessons,
+        completionPercentage: completionPercentage,
+        completed: enrollment.completed,
+        createdAt: enrollment.createdAt,
+        paidAt: enrollment.paidAt,
+        amount: enrollment.amount,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        courseTitle: course.title,
+        totalEnrollments: enrollments.length,
+        enrollments: enrichedEnrollments,
+      },
+    });
+  } catch (error) {
+    console.error("Error getting course enrollments:", error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

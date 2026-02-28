@@ -20,20 +20,30 @@ const appointmentSlotSchema = new mongoose.Schema({
   },
   bookedBy: mongoose.Schema.Types.ObjectId,
   serviceTitle: String,
-  // Google Meet Integration
-  googleMeetLink: String,
-  googleEventId: String,
+  specialistName: String,
+  specialistId: mongoose.Schema.Types.ObjectId,
   specialistEmail: String,
   customerEmail: String,
   customerName: String,
+  
+  // Zoom Integration
+  zoomMeetingId: String,
+  zoomJoinUrl: String,
+  zoomStartUrl: String,
+  zoomHostId: String,
+  zoomRecordingId: String,
+  
   // Recording Details
   recordingLink: String,
+  recordingUrl: String,
   recordingId: String,
   recordingExpiryDate: Date,
   recordingExpired: {
     type: Boolean,
     default: false,
   },
+  recordingDuration: Number, // Duration in seconds
+  
   // Email Reminders
   reminderSent: {
     type: Boolean,
@@ -41,6 +51,8 @@ const appointmentSlotSchema = new mongoose.Schema({
   },
   reminderSentAt: Date,
   recordingSentAt: Date,
+  invitationSentAt: Date,
+  
   // Meeting Metadata
   meetingNotes: String,
   attendanceStatus: {
@@ -48,6 +60,7 @@ const appointmentSlotSchema = new mongoose.Schema({
     enum: ['attended', 'missed', 'rescheduled', null],
     default: null,
   },
+  
   createdAt: {
     type: Date,
     default: Date.now,
