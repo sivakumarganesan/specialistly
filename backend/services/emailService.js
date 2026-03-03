@@ -254,8 +254,99 @@ export const sendWelcomeEmail = async (options) => {
   }
 };
 
+/**
+ * Send password reset email
+ * @param {Object} options - Email options
+ * @param {string} options.email - User email address
+ * @param {string} options.name - User name
+ * @param {string} options.resetToken - Password reset token
+ */
+export const sendPasswordResetEmail = async (options) => {
+  try {
+    const { email, name, resetToken } = options;
+
+    if (!email || !resetToken) {
+      console.warn('⚠️  Missing required email parameters for password reset');
+      return;
+    }
+
+    const transporter = createTransporter();
+
+    // Create reset password link
+    const resetLink = `${process.env.FRONTEND_URL || 'https://specialistly.com'}/reset-password/${resetToken}`;
+
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: email,
+      subject: 'Password Reset Request - Specialistly',
+      html: `
+        <html>
+          <body style="font-family: Arial, sans-serif; color: #333; margin: 20px;">
+            <div style="max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px; background-color: #f9fafb;">
+              
+              <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #DC2626; margin: 0;">Password Reset</h1>
+                <p style="color: #666; margin: 10px 0 0 0; font-size: 14px;">You requested to reset your password</p>
+              </div>
+
+              <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
+                <p style="margin-top: 0; color: #555;">Hi ${name || 'there'},</p>
+                
+                <p style="color: #555; line-height: 1.6;">
+                  We received a request to reset your Specialistly account password. If you made this request, please click the button below to reset your password.
+                </p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                  <a href="${resetLink}" style="display: inline-block; background-color: #DC2626; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">
+                    Reset Password
+                  </a>
+                </div>
+
+                <p style="color: #666; font-size: 13px; margin-bottom: 10px;">
+                  Or copy and paste this link in your browser:
+                </p>
+                <p style="color: #4F46E5; font-size: 12px; word-break: break-all; margin: 0;">
+                  ${resetLink}
+                </p>
+              </div>
+
+              <div style="background-color: #fef2f2; padding: 15px; border-left: 4px solid #DC2626; border-radius: 4px; margin-bottom: 20px;">
+                <h4 style="color: #7F1D1D; margin-top: 0; margin-bottom: 10px;">⏰ Important</h4>
+                <ul style="margin: 0; padding-left: 20px; color: #7F1D1D; font-size: 14px;">
+                  <li style="margin-bottom: 8px;">This link will expire in 1 hour</li>
+                  <li style="margin-bottom: 8px;">If you didn't request this, please ignore this email</li>
+                  <li style="margin-bottom: 8px;">Never share this link with anyone else</li>
+                </ul>
+              </div>
+
+              <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center; color: #666; font-size: 13px;">
+                <p style="margin: 0 0 10px 0;">Having trouble? Contact our support team</p>
+                <p style="margin: 0;">
+                  <a href="mailto:support@specialistly.com" style="color: #4F46E5; text-decoration: none;">support@specialistly.com</a>
+                </p>
+                
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb; color: #999; font-size: 12px;">
+                  <p style="margin: 0;">Best regards,<br/>The Specialistly Team</p>
+                </div>
+              </div>
+
+            </div>
+          </body>
+        </html>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✓ Password reset email sent to ${email}`);
+  } catch (error) {
+    console.error('❌ Error sending password reset email:', error.message);
+    // Don't throw - let the request continue even if email fails
+  }
+};
+
 export default {
   sendEnrollmentConfirmation,
   sendSpecialistNotification,
   sendWelcomeEmail,
+  sendPasswordResetEmail,
 };

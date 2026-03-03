@@ -84,6 +84,16 @@ export function Login() {
                 />
               </div>
 
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage('forgotPassword')}
+                  className="text-sm text-indigo-600 hover:text-indigo-700 hover:underline font-medium"
+                >
+                  Forgot password?
+                </button>
+              </div>
+
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
                   {error}

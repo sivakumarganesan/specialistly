@@ -13,6 +13,8 @@ import { SpecialistSettings } from "@/app/components/SpecialistSettings";
 import { CustomerSettings } from "@/app/components/CustomerSettings";
 import { Signup } from "@/app/components/Signup";
 import { Login } from "@/app/components/Login";
+import { ForgotPassword } from "@/app/components/ForgotPassword";
+import { ResetPassword } from "@/app/components/ResetPassword";
 import { Homepage } from "@/app/components/Homepage";
 import { Marketplace } from "@/app/components/Marketplace";
 import { SpecialistProfile } from "@/app/components/SpecialistProfile";
@@ -91,6 +93,18 @@ export function AppContent() {
       return <Signup />;
     }
     if (currentPage === "login") {
+      return <Login />;
+    }
+    if (currentPage === "forgotPassword") {
+      return <ForgotPassword />;
+    }
+    if (currentPage === "resetPassword") {
+      // Extract reset token from URL
+      const urlParams = new URLSearchParams(window.location.pathname);
+      const resetToken = window.location.pathname.split('/reset-password/')[1];
+      if (resetToken) {
+        return <ResetPassword resetToken={resetToken} />;
+      }
       return <Login />;
     }
     // Show homepage by default for unauthenticated users

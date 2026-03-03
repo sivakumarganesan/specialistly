@@ -135,6 +135,15 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
   zoomConnectedAt: Date,
+  // Password reset
+  resetPasswordToken: {
+    type: String,
+    default: null,
+  },
+  resetPasswordExpire: {
+    type: Date,
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: Date.now,

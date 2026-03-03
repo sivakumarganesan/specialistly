@@ -318,6 +318,9 @@ export const authAPI = {
   getProfile: (token: string) => apiCall("/auth/profile", "GET", undefined, token),
   updateSubscription: (token: string, data: any) => apiCall("/auth/subscription", "PUT", data, token),
   markOnboardingComplete: (data: any) => apiCall("/auth/onboarding-complete", "PUT", data),
+  requestPasswordReset: (email: string) => apiCall("/auth/request-password-reset", "POST", { email }),
+  resetPassword: (resetToken: string, newPassword: string, confirmPassword: string) => 
+    apiCall("/auth/reset-password", "POST", { resetToken, newPassword, confirmPassword }),
 };
 
 // Messages API calls
