@@ -1050,10 +1050,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                     <span className="text-gray-600">Students:</span>
                     <span className="font-semibold">{course.studentsEnrolled}</span>
                   </div>
-                  {course.type === "self-paced" && course.totalLessons && (
+                  {course.type === "self-paced" && (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Lessons:</span>
-                      <span className="font-semibold">{course.totalLessons}</span>
+                      <span className="font-semibold">{course.totalLessons ?? course.lessons?.length ?? 0}</span>
                     </div>
                   )}
                   {course.type === "cohort-based" && course.liveSessions && (
