@@ -1080,6 +1080,14 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   </div>
                 )}
 
+                {course.type === "self-paced" && course.status === "draft" && (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                    <p className="text-sm text-blue-700 font-medium">
+                      📚 Start adding lessons to build your course
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex gap-2 pt-2">
                   <Button
                     variant="outline"
