@@ -9,6 +9,7 @@ import CreatorProfile from '../models/CreatorProfile.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import MarketplaceCommission from '../models/MarketplaceCommission.js';
 import Booking from '../models/Booking.js';
+import { sendWelcomeEmail } from '../services/emailService.js';
 
 const generateToken = (userId, email) => {
   return jwt.sign({ userId, email }, process.env.JWT_SECRET || 'your-secret-key', {
@@ -103,6 +104,19 @@ export const signup = async (req, res) => {
         console.warn('⚠️ Failed to create customer record:', customerError.message);
         // Don't fail the signup if customer creation fails
       }
+    }
+
+    // Send welcome email
+    try {
+      await sendWelcomeEmail({
+        email: user.email,
+        name: user.name,
+        userType: isSpecialist ? 'specialist' : 'customer',
+        categories: isSpecialist ? user.specialityCategories : user.customerInterests,
+      });
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send welcome email:', emailError.message);
+      // Don't fail the signup if email fails
     }
 
     const token = generateToken(user._id, user.email);
@@ -291,6 +305,19 @@ export const markOnboardingComplete = async (req, res) => {
     user.onboardingComplete = true;
     user.categoriesSetAt = new Date();
     await user.save();
+
+    // Send welcome email with categories/interests after onboarding complete
+    try {
+      await sendWelcomeEmail({
+        email: user.email,
+        name: user.name,
+        userType: user.isSpecialist ? 'specialist' : 'customer',
+        categories: user.isSpecialist ? user.specialityCategories : user.customerInterests,
+      });
+    } catch (emailError) {
+      console.warn('⚠️ Failed to send welcome email after onboarding:', emailError.message);
+      // Don't fail the onboarding if email fails
+    }
 
     res.json({
       success: true,
