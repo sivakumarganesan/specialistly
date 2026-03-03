@@ -1046,9 +1046,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                     <span className="text-gray-600">Duration:</span>
                     <span className="font-semibold">{course.duration}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Students:</span>
-                    <span className="font-semibold">{course.studentsEnrolled}</span>
+                  <div className="flex items-center justify-between bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-blue-600" />
+                      <span className="text-gray-700 font-medium">Enrollments:</span>
+                    </div>
+                    <span className="font-bold text-blue-600">{course.studentsEnrolled}</span>
                   </div>
                   {course.type === "self-paced" && (
                     <div className="flex items-center justify-between">
