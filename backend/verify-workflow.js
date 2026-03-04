@@ -7,7 +7,7 @@
  */
 
 import mongoose from 'mongoose';
-import nodemailer from 'nodemailer';
+import gmailApiService from './services/gmailApiService.js';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -86,15 +86,15 @@ async function verifyEnvironment() {
     'MONGODB_URI': process.env.MONGODB_URI,
     'ZOOM_USER_MANAGED_CLIENT_ID': process.env.ZOOM_USER_MANAGED_CLIENT_ID,
     'ZOOM_USER_MANAGED_CLIENT_SECRET': process.env.ZOOM_USER_MANAGED_CLIENT_SECRET,
-    'GMAIL_USER': process.env.GMAIL_USER,
-    'GMAIL_PASSWORD': process.env.GMAIL_PASSWORD ? '***' : undefined,
+    'RESEND_API_KEY': process.env.RESEND_API_KEY,
+    'FROM_EMAIL': process.env.FROM_EMAIL || 'notifications@resend.dev',
   };
   
   let allValid = true;
   for (const [key, value] of Object.entries(checks)) {
     const isValid = !!value;
     logCheck(`${key}`, isValid, value || 'NOT SET');
-    if (!isValid && key !== 'GMAIL_APP_PASSWORD') {
+    if (!isValid) {
       allValid = false;
     }
   }
@@ -102,24 +102,22 @@ async function verifyEnvironment() {
   return allValid;
 }
 
-async function testEmailTransporter() {
-  logSection('2. EMAIL SERVICE VERIFICATION');
+async function testEmailService() {
+  logSection('2. EMAIL SERVICE VERIFICATION (Resend API)');
   
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD || process.env.GMAIL_PASSWORD,
-      },
-    });
+    log('Testing Resend email service...', 'cyan');
+    const emailStatus = await gmailApiService.verifyEmailService();
     
-    log('Testing email transporter...', 'cyan');
-    const info = await transporter.verify();
-    logCheck('Email transporter connection', info, 'SMTP connection successful');
-    return true;
+    if (emailStatus.success) {
+      logCheck('Email service connection', true, 'Resend API connection successful');
+      return true;
+    } else {
+      logCheck('Email service connection', false, emailStatus.message);
+      return false;
+    }
   } catch (error) {
-    logCheck('Email transporter connection', false, error.message);
+    logCheck('Email service connection', false, error.message);
     return false;
   }
 }
@@ -377,7 +375,7 @@ async function main() {
     results.environment = await verifyEnvironment();
     
     // Test email service
-    results.emailService = await testEmailTransporter();
+    results.emailService = await testEmailService();
     
     // Connect to database
     if (!(await connectDatabase())) {

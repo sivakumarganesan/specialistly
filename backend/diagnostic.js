@@ -4,7 +4,7 @@
  */
 
 import dotenv from 'dotenv';
-import nodemailer from 'nodemailer';
+import gmailApiService from './services/gmailApiService.js';
 import mongoose from 'mongoose';
 import UserOAuthToken from './models/UserOAuthToken.js';
 
@@ -14,38 +14,27 @@ console.log('\n╔════════════════════�
 console.log('║     SPECIALISTLY DIAGNOSTIC CHECK         ║');
 console.log('╚════════════════════════════════════════════╝\n');
 
-// 1. Check Email Configuration
-console.log('📧 EMAIL CONFIGURATION');
+// 1. Check Email Configuration (Resend API)
+console.log('📧 EMAIL CONFIGURATION (Resend API)');
 console.log('─'.repeat(42));
 
 const emailChecks = {
-  'GMAIL_USER': process.env.GMAIL_USER,
-  'GMAIL_PASSWORD': process.env.GMAIL_PASSWORD ? '***' : 'NOT SET',
-  'EMAIL_SERVICE': process.env.EMAIL_SERVICE || 'gmail (default)',
+  'RESEND_API_KEY': process.env.RESEND_API_KEY ? '✅ SET' : '❌ NOT SET',
+  'FROM_EMAIL': process.env.FROM_EMAIL || '✓ USING DEFAULT (notifications@resend.dev)',
 };
 
 for (const [key, value] of Object.entries(emailChecks)) {
-  const status = value && value !== 'NOT SET' ? '✅' : '❌';
-  console.log(`${status} ${key}: ${value || 'NOT SET'}`);
+  console.log(`${key}: ${value}`);
 }
 
-// Test email transporter
+// Verify email service
 try {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_PASSWORD,
-    },
-  });
-
-  transporter.verify((error, success) => {
-    if (error) {
-      console.log(`❌ Email Verification Failed: ${error.message}`);
-    } else {
-      console.log(`✅ Email Service Connected Successfully`);
-    }
-  });
+  const emailServiceStatus = await gmailApiService.verifyEmailService();
+  if (emailServiceStatus.success) {
+    console.log(`✅ Email Service (Resend API) Verified Successfully`);
+  } else {
+    console.log(`❌ Email Service Verification Failed: ${emailServiceStatus.message}`);
+  }
 } catch (error) {
   console.log(`❌ Email Configuration Error: ${error.message}`);
 }
@@ -118,8 +107,9 @@ console.log('─'.repeat(42));
 
 const issues = [];
 
-if (!process.env.GMAIL_USER || !process.env.GMAIL_PASSWORD) {
-  issues.push('• Configure GMAIL_USER and GMAIL_PASSWORD in .env for email functionality');
+if (!process.env.RESEND_API_KEY) {
+  issues.push('• Configure RESEND_API_KEY in .env for email functionality');
+  issues.push('  Setup: https://resend.com → Create API Key → Set RESEND_API_KEY');
 }
 
 if (!process.env.ZOOM_CLIENT_ID || !process.env.ZOOM_CLIENT_SECRET) {
@@ -128,7 +118,7 @@ if (!process.env.ZOOM_CLIENT_ID || !process.env.ZOOM_CLIENT_SECRET) {
 
 if (issues.length === 0) {
   console.log('✅ All configurations appear to be set up correctly!');
-  console.log('   • Email service: Ready');
+  console.log('   • Email service (Resend API): Ready');
   console.log('   • Zoom OAuth: Ready');
   console.log('   • Database: Ready');
   console.log('\n⚠️  Note: Specialists must still authorize Zoom individually');
