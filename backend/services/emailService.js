@@ -205,7 +205,7 @@ export const sendWelcomeEmail = async (options) => {
             </div>
 
             <div style="text-align: center; margin-bottom: 20px;">
-              <a href="${process.env.FRONTEND_URL || 'https://specialistly.com'}/dashboard" style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">
+              <a href="${process.env.FRONTEND_URL || 'https://specialistly.com'}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">
                 Go to Dashboard
               </a>
             </div>
