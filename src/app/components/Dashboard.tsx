@@ -77,8 +77,8 @@ export function Dashboard({
           }
         }
         
-        // Fetch customers and count active ones
-        const customersResponse = await customerAPI.getAll();
+        // Fetch customers and count active ones (filtered by specialist)
+        const customersResponse = await customerAPI.getAll({ specialistEmail: user?.email });
         const customersArray = Array.isArray(customersResponse) 
           ? customersResponse 
           : (Array.isArray(customersResponse.data) ? customersResponse.data : []);
