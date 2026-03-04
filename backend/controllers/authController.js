@@ -93,14 +93,20 @@ export const signup = async (req, res) => {
     // Create a Customer record for non-specialist users
     if (!isSpecialist) {
       try {
-        const customer = new Customer({
-          email: user.email,
-          name: user.name,
-          enrollments: [],
-          bookings: [],
-        });
-        await customer.save();
-        console.log('✅ Customer record created for:', email);
+        // Check if customer already exists
+        const existingCustomer = await Customer.findOne({ email: user.email });
+        if (!existingCustomer) {
+          const customer = new Customer({
+            email: user.email,
+            name: user.name,
+            enrollments: [],
+            bookings: [],
+          });
+          await customer.save();
+          console.log('✅ Customer record created for:', email);
+        } else {
+          console.log('ℹ️ Customer record already exists for:', email);
+        }
       } catch (customerError) {
         console.warn('⚠️ Failed to create customer record:', customerError.message);
         // Don't fail the signup if customer creation fails
