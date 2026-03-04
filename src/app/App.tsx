@@ -49,17 +49,22 @@ export function AppContent() {
   } | null>(null);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [resetToken, setResetToken] = useState<string | null>(null);
 
-  // Handle query parameters for navigation (e.g., from Stripe redirect)
+  // Handle query parameters for navigation (e.g., from Stripe redirect, password reset)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const page = params.get('page');
     const tab = params.get('tab');
+    const token = params.get('token');
 
     if (page) {
       setCurrentPage(page as any);
       if (tab && (tab === "profile" || tab === "payment" || tab === "slots" || tab === "subscriptions")) {
         setSettingsTab(tab as SettingsTab);
+      }
+      if (page === 'resetPassword' && token) {
+        setResetToken(token);
       }
     }
   }, []);
@@ -99,9 +104,7 @@ export function AppContent() {
       return <ForgotPassword />;
     }
     if (currentPage === "resetPassword") {
-      // Extract reset token from URL
-      const urlParams = new URLSearchParams(window.location.pathname);
-      const resetToken = window.location.pathname.split('/reset-password/')[1];
+      // Use reset token from query parameters
       if (resetToken) {
         return <ResetPassword resetToken={resetToken} />;
       }

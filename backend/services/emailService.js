@@ -254,8 +254,8 @@ export const sendPasswordResetEmail = async (options) => {
       return;
     }
 
-    // Create reset password link
-    const resetLink = `${process.env.FRONTEND_URL || 'https://specialistly.com'}/reset-password/${resetToken}`;
+    // Create reset password link using query parameters (frontend uses query params for navigation)
+    const resetLink = `${process.env.FRONTEND_URL || 'https://specialistly.com'}/?page=resetPassword&token=${resetToken}`;
 
     const html = `
       <html>
