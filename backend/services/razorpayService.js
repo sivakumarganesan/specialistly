@@ -232,3 +232,204 @@ export const razorpayService = {
     }
   },
 };
+
+/**
+ * Process specialist payout to bank account
+ * Creates a transfer from platform to specialist bank
+ * @param {string} commissionId - Commission record ID
+ * @param {string} notes - Optional payout notes
+ * @returns {Promise<Object>} Payout result
+ */
+export async function processSpecialistPayout(commissionId, notes = '') {
+  try {
+    const rp = initializeRazorpay();
+    
+    // Import models
+    const { default: MarketplaceCommission } = await import('../models/MarketplaceCommission.js');
+    const { default: CreatorProfile } = await import('../models/CreatorProfile.js');
+    const { default: SpecialistPayout } = await import('../models/SpecialistPayout.js');
+
+    // Get commission record
+    const commission = await MarketplaceCommission.findById(commissionId);
+    if (!commission) {
+      return {
+        success: false,
+        error: 'Commission record not found',
+      };
+    }
+
+    // Get specialist with bank account
+    const specialist = await CreatorProfile.findOne({
+      email: commission.specialistEmail,
+    });
+    
+    if (!specialist) {
+      return {
+        success: false,
+        error: 'Specialist not found',
+      };
+    }
+
+    if (!specialist.bankAccount?.accountNumber) {
+      return {
+        success: false,
+        error: 'Specialist has not set up bank account',
+      };
+    }
+
+    // Prepare transfer data
+    const accountNumber = specialist.bankAccount.accountNumber;
+    const ifscCode = specialist.bankAccount.ifscCode;
+    const accountHolderName = specialist.bankAccount.accountHolderName;
+
+    console.log('[RazorpayService] Initiating payout:', {
+      specialistEmail: specialist.email,
+      amount: commission.specialistPayout,
+      accountNumber: accountNumber.slice(-4),
+    });
+
+    // Create transfer (fund account + transfer)
+    try {
+      // Step 1: Create or get contact for specialist
+      let contactId = specialist.bankAccount?.razorpayContactId;
+      
+      if (!contactId) {
+        const contactResponse = await rp.contacts.create({
+          type: 'vendor',
+          name: accountHolderName,
+          email: specialist.email,
+          gstin: null, // Optional: GST number
+          notes: {
+            specialistId: specialist._id.toString(),
+          },
+        });
+        contactId = contactResponse.id;
+        
+        // Update specialist with contact ID
+        specialist.bankAccount.razorpayContactId = contactId;
+        await specialist.save();
+        
+        console.log('[RazorpayService] Created Razorpay contact:', contactId);
+      }
+
+      // Step 2: Create fund account (bank account link)
+      const fundAccountResponse = await rp.fundAccounts.create({
+        contact_id: contactId,
+        account_type: 'bank_account',
+        bank_account: {
+          name: accountHolderName,
+          notes: {
+            notes_key: accountHolderName,
+          },
+          ifsc: ifscCode,
+          account_number: accountNumber,
+        },
+      });
+      const fundAccountId = fundAccountResponse.id;
+
+      console.log('[RazorpayService] Created fund account:', fundAccountId);
+
+      // Step 3: Create payout
+      const payoutResponse = await rp.payouts.create({
+        account_number: process.env.RAZORPAY_ACCOUNT_NUMBER || 'default', // Razorpay business account
+        fund_account_id: fundAccountId,
+        amount: commission.specialistPayout, // in paise
+        currency: 'INR',
+        mode: 'NEFT', // NEFT, RTGS, IMPS, IFT (Instant Fund Transfer)
+        purpose: 'payout',
+        description: `Payout for course sale - ${commission.serviceName}`,
+        notes: {
+          commissionId: commission._id.toString(),
+          courseTitle: commission.serviceName,
+          specialistEmail: specialist.email,
+          adminNotes: notes,
+        },
+      });
+
+      console.log('[RazorpayService] Payout initiated:', {
+        payoutId: payoutResponse.id,
+        status: payoutResponse.status,
+        amount: payoutResponse.amount,
+      });
+
+      // Step 4: Create payout record in database
+      const payoutRecord = await SpecialistPayout.create({
+        specialistId: specialist._id,
+        specialistEmail: specialist.email,
+        specialistName: specialist.creatorName,
+        commissionId: commission._id,
+        courseId: commission.serviceId,
+        amount: commission.specialistPayout,
+        currency: 'INR',
+        originalPaymentAmount: commission.grossAmount,
+        commissionDeducted: commission.commissionAmount,
+        razorpayPayoutId: payoutResponse.id,
+        razorpayPaymentId: commission.razorpayPaymentId || commission.paymentIntentId,
+        status: payoutResponse.status === 'pending' ? 'processing' : payoutResponse.status,
+        payoutInitiatedAt: new Date(),
+        bankDetailsSnapshot: {
+          accountHolderName: specialist.bankAccount.accountHolderName,
+          accountNumber: accountNumber.slice(-4),
+          accountType: specialist.bankAccount.accountType,
+          bankName: specialist.bankAccount.bankName,
+        },
+        notes: notes || null,
+      });
+
+      // Update commission status
+      commission.payoutStatus = 'initiated';
+      commission.razorpayPayoutId = payoutResponse.id;
+      await commission.save();
+
+      return {
+        success: true,
+        message: 'Payout initiated successfully',
+        payout: {
+          id: payoutRecord._id,
+          razorpayPayoutId: payoutResponse.id,
+          status: payoutResponse.status,
+          amount: commission.specialistPayout / 100, // Convert to rupees
+          specialistEmail: specialist.email,
+          estimatedArrivalTime: '2-4 hours for NEFT',
+        },
+      };
+    } catch (razorpayError) {
+      console.error('[RazorpayService] Razorpay payout error:', razorpayError);
+      
+      // Create failed payout record
+      await SpecialistPayout.create({
+        specialistId: specialist._id,
+        specialistEmail: specialist.email,
+        specialistName: specialist.creatorName,
+        commissionId: commission._id,
+        courseId: commission.serviceId,
+        amount: commission.specialistPayout,
+        currency: 'INR',
+        originalPaymentAmount: commission.grossAmount,
+        commissionDeducted: commission.commissionAmount,
+        status: 'failed',
+        failureReason: razorpayError.message,
+        bankDetailsSnapshot: {
+          accountHolderName: specialist.bankAccount.accountHolderName,
+          accountNumber: accountNumber.slice(-4),
+          accountType: specialist.bankAccount.accountType,
+          bankName: specialist.bankAccount.bankName,
+        },
+        notes: notes || null,
+      });
+
+      return {
+        success: false,
+        error: 'Failed to initiate payout',
+        details: razorpayError.message,
+      };
+    }
+  } catch (error) {
+    console.error('[RazorpayService] Error processing specialist payout:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+

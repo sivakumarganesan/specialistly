@@ -7,6 +7,55 @@ const weeklyAvailabilitySchema = new mongoose.Schema({
   endTime: String,
 }, { _id: false });
 
+const bankAccountSchema = new mongoose.Schema({
+  accountHolderName: {
+    type: String,
+    default: null, // Full name exactly as on bank account
+  },
+  accountNumber: {
+    type: String,
+    default: null, // Bank account number (encrypted in production)
+  },
+  ifscCode: {
+    type: String,
+    default: null, // IFSC code for Indian banks
+  },
+  accountType: {
+    type: String,
+    enum: ['savings', 'current', null],
+    default: null,
+  },
+  bankName: {
+    type: String,
+    default: null,
+  },
+  isVerified: {
+    type: Boolean,
+    default: false, // Verification done through test payout
+  },
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'verified', 'failed', 'unverified'],
+    default: 'unverified',
+  },
+  verificationDate: {
+    type: Date,
+    default: null,
+  },
+  razorpayContactId: {
+    type: String,
+    default: null, // Razorpay contact reference for payouts
+  },
+  addedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
+}, { _id: false });
+
 const creatorProfileSchema = new mongoose.Schema({
   creatorName: {
     type: String,
@@ -53,6 +102,8 @@ const creatorProfileSchema = new mongoose.Schema({
     type: Date,
     default: null, // Link expires after 24 hours
   },
+  // Razorpay Bank Account (for automated payouts)
+  bankAccount: bankAccountSchema,
   commissionPercentage: {
     type: Number,
     default: 15, // Specialistly takes 15% commission by default

@@ -20,6 +20,7 @@ import paymentRoutes from './routes/paymentRoutes.js';
 import commissionRoutes from './routes/commissionRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import marketplaceRoutes from './routes/marketplaceRoutes.js';
+import payoutRoutes from './routes/payoutRoutes.js';
 
 dotenv.config();
 
@@ -90,6 +91,7 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/commission', commissionRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/specialist', payoutRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
