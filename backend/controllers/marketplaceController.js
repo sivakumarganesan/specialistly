@@ -323,7 +323,6 @@ async function createRazorpayPaymentIntent(req, res, options) {
     keyId: process.env.RAZORPAY_KEY_ID, // Frontend needs this for checkout
   });
 }
-};
 
 /**
  * Confirm Marketplace Payment (marketplace-specific confirmation)
