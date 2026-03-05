@@ -42,6 +42,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
   // Razorpay state
   const [razorpayData, setRazorpayData] = useState<RazorpayPaymentState | null>(null);
   
+  // Gateway availability
+  const [availableGateways, setAvailableGateways] = useState<{ stripe: boolean; razorpay: boolean }>({
+    stripe: true,
+    razorpay: false,
+  });
+  
   // Common state
   const [isLoading, setIsLoading] = useState(false);
   const [stripeError, setStripeError] = useState<string>('');
@@ -51,6 +57,35 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
     if (!stripePublicKey) {
       setStripeError('Stripe is not configured. Please add VITE_STRIPE_PUBLIC_KEY environment variable.');
     }
+  }, []);
+
+  // Check available payment gateways on mount
+  useEffect(() => {
+    const checkGateways = async () => {
+      try {
+        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
+        const response = await fetch(`${apiBaseUrl}/marketplace/payments/gateways`);
+        const data = await response.json();
+        
+        if (data.success && data.gateways) {
+          setAvailableGateways({
+            stripe: data.gateways.stripe?.available || false,
+            razorpay: data.gateways.razorpay?.available || false,
+          });
+          
+          // If Razorpay is not available and it's selected, switch to Stripe
+          if (!data.gateways.razorpay?.available && paymentGateway === 'razorpay') {
+            setPaymentGateway('stripe');
+          }
+        }
+      } catch (error) {
+        console.error('[PaymentModal] Error checking gateways:', error);
+        // Default to Stripe if check fails
+        setAvailableGateways({ stripe: true, razorpay: false });
+      }
+    };
+    
+    checkGateways();
   }, []);
 
   useEffect(() => {
@@ -185,36 +220,45 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
             Choose Payment Method
           </label>
           <div className="space-y-2">
-            <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-white" style={{ borderColor: paymentGateway === 'stripe' ? '#6366f1' : '#ddd', backgroundColor: paymentGateway === 'stripe' ? '#f0f4ff' : 'white' }}>
-              <input
-                type="radio"
-                name="gateway"
-                value="stripe"
-                checked={paymentGateway === 'stripe'}
-                onChange={(e) => setPaymentGateway(e.target.value as 'stripe')}
-                disabled={isLoading}
-                className="h-4 w-4"
-              />
-              <span className="ml-3 flex-1">
-                <span className="font-semibold text-gray-900">Stripe</span>
-                <span className="text-xs text-gray-500 block">Credit/Debit Card (USD)</span>
-              </span>
-            </label>
-            <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-white" style={{ borderColor: paymentGateway === 'razorpay' ? '#6366f1' : '#ddd', backgroundColor: paymentGateway === 'razorpay' ? '#f0f4ff' : 'white' }}>
-              <input
-                type="radio"
-                name="gateway"
-                value="razorpay"
-                checked={paymentGateway === 'razorpay'}
-                onChange={(e) => setPaymentGateway(e.target.value as 'razorpay')}
-                disabled={isLoading}
-                className="h-4 w-4"
-              />
-              <span className="ml-3 flex-1">
-                <span className="font-semibold text-gray-900">Razorpay</span>
-                <span className="text-xs text-gray-500 block">Card, UPI, NetBanking (INR)</span>
-              </span>
-            </label>
+            {availableGateways.stripe && (
+              <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-white" style={{ borderColor: paymentGateway === 'stripe' ? '#6366f1' : '#ddd', backgroundColor: paymentGateway === 'stripe' ? '#f0f4ff' : 'white' }}>
+                <input
+                  type="radio"
+                  name="gateway"
+                  value="stripe"
+                  checked={paymentGateway === 'stripe'}
+                  onChange={(e) => setPaymentGateway(e.target.value as 'stripe')}
+                  disabled={isLoading}
+                  className="h-4 w-4"
+                />
+                <span className="ml-3 flex-1">
+                  <span className="font-semibold text-gray-900">Stripe</span>
+                  <span className="text-xs text-gray-500 block">Credit/Debit Card (USD)</span>
+                </span>
+              </label>
+            )}
+            {availableGateways.razorpay && (
+              <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-white" style={{ borderColor: paymentGateway === 'razorpay' ? '#6366f1' : '#ddd', backgroundColor: paymentGateway === 'razorpay' ? '#f0f4ff' : 'white' }}>
+                <input
+                  type="radio"
+                  name="gateway"
+                  value="razorpay"
+                  checked={paymentGateway === 'razorpay'}
+                  onChange={(e) => setPaymentGateway(e.target.value as 'razorpay')}
+                  disabled={isLoading}
+                  className="h-4 w-4"
+                />
+                <span className="ml-3 flex-1">
+                  <span className="font-semibold text-gray-900">Razorpay</span>
+                  <span className="text-xs text-gray-500 block">Card, UPI, NetBanking (INR)</span>
+                </span>
+              </label>
+            )}
+            {!availableGateways.stripe && !availableGateways.razorpay && (
+              <div className="p-3 text-center text-red-600 text-sm">
+                No payment methods available. Please contact support.
+              </div>
+            )}
           </div>
         </div>
 

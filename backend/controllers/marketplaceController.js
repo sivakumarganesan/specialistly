@@ -971,3 +971,36 @@ export const disconnectStripeAccount = async (req, res) => {
     });
   }
 };
+
+/**
+ * Check available payment gateways
+ * GET /api/marketplace/payments/gateways
+ * Returns which payment methods are available based on configuration
+ */
+export const checkAvailablePaymentGateways = async (req, res) => {
+  try {
+    const isStripeAvailable = !!process.env.STRIPE_SECRET_KEY;
+    const isRazorpayAvailable = !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+
+    return res.status(200).json({
+      success: true,
+      gateways: {
+        stripe: {
+          available: isStripeAvailable,
+          currency: 'USD',
+        },
+        razorpay: {
+          available: isRazorpayAvailable,
+          currency: 'INR',
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error checking payment gateways:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking payment gateways',
+      error: error.message,
+    });
+  }
+};

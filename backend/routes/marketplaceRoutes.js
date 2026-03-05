@@ -9,6 +9,7 @@ import {
   getSpecialistDashboardLink,
   getSpecialistCommissions,
   disconnectStripeAccount,
+  checkAvailablePaymentGateways,
 } from '../controllers/marketplaceController.js';
 
 const router = express.Router();
@@ -16,6 +17,9 @@ const router = express.Router();
 /**
  * Marketplace Payment Routes
  */
+
+// Check which payment gateways are available
+router.get('/payments/gateways', checkAvailablePaymentGateways);
 
 // Create payment intent for marketplace (customer pays, specialist gets payout after commission)
 router.post('/payments/create-intent', authMiddleware, createMarketplacePaymentIntent);
