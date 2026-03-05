@@ -4,11 +4,23 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Initialize Razorpay with API keys
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Lazy initialization of Razorpay - only create when credentials are available
+let razorpay = null;
+
+const initializeRazorpay = () => {
+  if (razorpay) return razorpay;
+
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+    throw new Error('Razorpay credentials not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables.');
+  }
+
+  razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
+
+  return razorpay;
+};
 
 export const razorpayService = {
   /**
@@ -31,6 +43,8 @@ export const razorpayService = {
     metadata = {},
   }) => {
     try {
+      const rp = initializeRazorpay();
+      
       if (amount < 100) {
         throw new Error('Amount must be at least 100 paise (₹1 for INR)');
       }
@@ -47,7 +61,7 @@ export const razorpayService = {
         },
       };
 
-      const order = await razorpay.orders.create(orderData);
+      const order = await rp.orders.create(orderData);
 
       return {
         success: true,
@@ -116,7 +130,8 @@ export const razorpayService = {
    */
   retrievePayment: async (paymentId) => {
     try {
-      const payment = await razorpay.payments.fetch(paymentId);
+      const rp = initializeRazorpay();
+      const payment = await rp.payments.fetch(paymentId);
 
       console.log('[RazorpayService] Retrieved payment:', {
         id: payment.id,
@@ -149,7 +164,8 @@ export const razorpayService = {
    */
   retrieveOrder: async (orderId) => {
     try {
-      const order = await razorpay.orders.fetch(orderId);
+      const rp = initializeRazorpay();
+      const order = await rp.orders.fetch(orderId);
 
       console.log('[RazorpayService] Retrieved order:', {
         id: order.id,
@@ -183,6 +199,8 @@ export const razorpayService = {
    */
   processRefund: async (paymentId, amount = null, notes = '') => {
     try {
+      const rp = initializeRazorpay();
+      
       const refundData = {
         notes: notes ? { reason: notes } : undefined,
       };
@@ -191,7 +209,7 @@ export const razorpayService = {
         refundData.amount = amount;
       }
 
-      const refund = await razorpay.payments.refund(paymentId, refundData);
+      const refund = await rp.payments.refund(paymentId, refundData);
 
       console.log('[RazorpayService] Refund processed:', {
         id: refund.id,
