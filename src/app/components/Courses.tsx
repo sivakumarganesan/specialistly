@@ -244,6 +244,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         const newCourse: Course = {
           id: response.data?._id,
           ...courseData,
+          type: courseType,
         };
         setCourses([...courses, newCourse]);
         setCreateDialogOpen(false);
