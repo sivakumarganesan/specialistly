@@ -67,6 +67,12 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
         const response = await fetch(`${apiBaseUrl}/marketplace/payments/gateways`);
         const data = await response.json();
         
+        console.log('[PaymentModal] Gateway availability:', {
+          response: data,
+          stripe: data.gateways?.stripe?.available,
+          razorpay: data.gateways?.razorpay?.available,
+        });
+        
         if (data.success && data.gateways) {
           setAvailableGateways({
             stripe: data.gateways.stripe?.available || false,
@@ -75,6 +81,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
           
           // If Razorpay is not available and it's selected, switch to Stripe
           if (!data.gateways.razorpay?.available && paymentGateway === 'razorpay') {
+            console.log('[PaymentModal] Razorpay not available, switching to Stripe');
             setPaymentGateway('stripe');
           }
         }
@@ -257,6 +264,14 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
             {!availableGateways.stripe && !availableGateways.razorpay && (
               <div className="p-3 text-center text-red-600 text-sm">
                 No payment methods available. Please contact support.
+              </div>
+            )}
+            {!availableGateways.razorpay && (
+              <div className="p-3 text-xs text-gray-600 bg-gray-100 rounded">
+                💡 <strong>Razorpay</strong> not available yet. Admin needs to configure Razorpay credentials in Railway.
+                <a href="https://dashboard.razorpay.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                  Get credentials
+                </a>
               </div>
             )}
           </div>

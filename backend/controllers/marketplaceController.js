@@ -982,6 +982,19 @@ export const checkAvailablePaymentGateways = async (req, res) => {
     const isStripeAvailable = !!process.env.STRIPE_SECRET_KEY;
     const isRazorpayAvailable = !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
 
+    // Log for debugging
+    console.log('[Gateway Check]', {
+      stripe: {
+        available: isStripeAvailable,
+        configured: process.env.STRIPE_SECRET_KEY ? 'YES' : 'NO',
+      },
+      razorpay: {
+        available: isRazorpayAvailable,
+        keyIdConfigured: process.env.RAZORPAY_KEY_ID ? 'YES' : 'NO (missing RAZORPAY_KEY_ID)',
+        keySecretConfigured: process.env.RAZORPAY_KEY_SECRET ? 'YES' : 'NO (missing RAZORPAY_KEY_SECRET)',
+      },
+    });
+
     return res.status(200).json({
       success: true,
       gateways: {
@@ -992,6 +1005,7 @@ export const checkAvailablePaymentGateways = async (req, res) => {
         razorpay: {
           available: isRazorpayAvailable,
           currency: 'INR',
+          setupGuide: 'See RAZORPAY_SETUP_GUIDE.md for configuration instructions',
         },
       },
     });
