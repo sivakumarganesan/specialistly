@@ -10,6 +10,7 @@ import {
   getSpecialistCommissions,
   disconnectStripeAccount,
   checkAvailablePaymentGateways,
+  getPaymentGatewayDiagnostics,
 } from '../controllers/marketplaceController.js';
 
 const router = express.Router();
@@ -48,5 +49,12 @@ router.get('/specialist/commissions', authMiddleware, getSpecialistCommissions);
 
 // Disconnect Stripe account
 router.post('/specialist/disconnect', authMiddleware, disconnectStripeAccount);
+
+/**
+ * Admin Diagnostics Route
+ */
+
+// Get payment gateway diagnostics (admin only) - verify actual environment configuration
+router.get('/payments/diagnostics', authMiddleware, getPaymentGatewayDiagnostics);
 
 export default router;

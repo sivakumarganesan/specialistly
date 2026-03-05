@@ -987,12 +987,17 @@ export const checkAvailablePaymentGateways = async (req, res) => {
       stripe: {
         available: isStripeAvailable,
         configured: process.env.STRIPE_SECRET_KEY ? 'YES' : 'NO',
+        keyLength: process.env.STRIPE_SECRET_KEY?.length || 0,
       },
       razorpay: {
         available: isRazorpayAvailable,
         keyIdConfigured: process.env.RAZORPAY_KEY_ID ? 'YES' : 'NO (missing RAZORPAY_KEY_ID)',
         keySecretConfigured: process.env.RAZORPAY_KEY_SECRET ? 'YES' : 'NO (missing RAZORPAY_KEY_SECRET)',
+        keyIdLength: process.env.RAZORPAY_KEY_ID?.length || 0,
+        keySecretLength: process.env.RAZORPAY_KEY_SECRET?.length || 0,
       },
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString(),
     });
 
     return res.status(200).json({
@@ -1014,6 +1019,91 @@ export const checkAvailablePaymentGateways = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error checking payment gateways',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Admin diagnostic endpoint to verify payment gateway credentials
+ * GET /api/marketplace/payments/diagnostics
+ * Shows actual configuration state (keys obfuscated for security)
+ */
+export const getPaymentGatewayDiagnostics = async (req, res) => {
+  try {
+    // Check if admin
+    if (req.user?.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required',
+      });
+    }
+
+    const stripeKeyId = process.env.STRIPE_SECRET_KEY;
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+    const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
+
+    // Obfuscate keys for security
+    const obfuscateKey = (key) => {
+      if (!key) return null;
+      const visible = key.substring(0, 8);
+      const hidden = key.length - 8 > 0 ? '*'.repeat(Math.min(10, key.length - 8)) : '';
+      return `${visible}${hidden} (length: ${key.length})`;
+    };
+
+    console.log('[Payment Gateway Diagnostics - Admin Check]', {
+      requestedAt: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      stripeConfigured: !!stripeKeyId,
+      razorpayConfigured: !!razorpayKeyId && !!razorpayKeySecret,
+      razorpayKeyIdExists: !!razorpayKeyId,
+      razorpayKeySecretExists: !!razorpayKeySecret,
+    });
+
+    return res.status(200).json({
+      success: true,
+      diagnostics: {
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV,
+        
+        stripe: {
+          configured: !!stripeKeyId,
+          keyPresent: !!stripeKeyId,
+          obfuscatedKey: obfuscateKey(stripeKeyId),
+          status: stripeKeyId ? '✅ Ready' : '❌ Missing',
+        },
+        
+        razorpay: {
+          configured: !!razorpayKeyId && !!razorpayKeySecret,
+          keyIdPresent: !!razorpayKeyId,
+          keySecretPresent: !!razorpayKeySecret,
+          obfuscatedKeyId: obfuscateKey(razorpayKeyId),
+          obfuscatedKeySecret: obfuscateKey(razorpayKeySecret),
+          status: razorpayKeyId && razorpayKeySecret ? '✅ Ready' : '❌ Missing credentials',
+          issues: [
+            !razorpayKeyId ? 'RAZORPAY_KEY_ID not set in environment' : null,
+            !razorpayKeySecret ? 'RAZORPAY_KEY_SECRET not set in environment' : null,
+          ].filter(Boolean),
+        },
+        
+        recommendations: {
+          razorpay: !razorpayKeyId || !razorpayKeySecret ? [
+            '1. Go to Railway Dashboard → Your Project → Variables',
+            '2. Click "+ New Variable"',
+            '3. Add RAZORPAY_KEY_ID with test credential from https://dashboard.razorpay.com',
+            '4. Add RAZORPAY_KEY_SECRET with test secret',
+            '5. Click "Save" and wait for deployment to complete',
+            '6. Check "Deployments" tab - should show "Success"',
+            '7. Refresh this diagnostic page to verify',
+          ] : [],
+        },
+      },
+    });
+  } catch (error) {
+    console.error('[Payment Gateway Diagnostics] Error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Diagnostic check failed',
       error: error.message,
     });
   }
