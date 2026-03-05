@@ -9,6 +9,7 @@ import {
 } from '../controllers/paymentController.js';
 import {
   handleStripeWebhook,
+  handleRazorpayWebhook,
   webhookHealth,
   testWebhook,
 } from '../controllers/webhookController.js';
@@ -17,8 +18,9 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 const router = express.Router();
 
 // ===== WEBHOOK ROUTES (No authentication required) =====
-// Must be first and use raw body
+// Must be first and use raw body for Stripe
 router.post('/webhooks/stripe', express.raw({ type: 'application/json' }), handleStripeWebhook);
+router.post('/webhooks/razorpay', handleRazorpayWebhook);
 router.get('/webhooks/health', webhookHealth);
 
 // Test webhook (development only)

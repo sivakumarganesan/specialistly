@@ -33,13 +33,24 @@ const selfPacedEnrollmentSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'completed', 'failed', 'refunded'],
     default: 'pending',
-    description: 'Payment status from Stripe',
+    description: 'Payment status from Stripe or Razorpay',
+  },
+  paymentGateway: {
+    type: String,
+    enum: ['stripe', 'razorpay'],
+    default: 'stripe',
+    description: 'Which payment gateway was used',
   },
   paymentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment',
     description: 'Reference to Payment document',
   },
+  // Stripe-specific payment fields
+  stripePaymentId: String,
+  // Razorpay-specific payment fields
+  razorpayOrderId: String,
+  razorpayPaymentId: String,
   paymentDate: {
     type: Date,
     description: 'Date when payment was completed',
@@ -47,7 +58,11 @@ const selfPacedEnrollmentSchema = new mongoose.Schema({
   webhookVerified: {
     type: Boolean,
     default: false,
-    description: 'Whether payment was verified via Stripe webhook',
+    description: 'Whether payment was verified via webhook',
+  },
+  failureReason: {
+    type: String,
+    description: 'Reason for payment failure if applicable',
   },
 
   // Enrollment status
@@ -90,5 +105,7 @@ const selfPacedEnrollmentSchema = new mongoose.Schema({
 selfPacedEnrollmentSchema.index({ courseId: 1, customerId: 1 }, { unique: true });
 selfPacedEnrollmentSchema.index({ customerId: 1 });
 selfPacedEnrollmentSchema.index({ courseId: 1 });
+selfPacedEnrollmentSchema.index({ razorpayOrderId: 1 });
+selfPacedEnrollmentSchema.index({ paymentGateway: 1 });
 
 export default mongoose.model('SelfPacedEnrollment', selfPacedEnrollmentSchema);

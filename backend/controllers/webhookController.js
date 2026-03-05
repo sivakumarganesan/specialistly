@@ -1,4 +1,5 @@
 import Stripe from 'stripe';
+import { razorpayService } from '../services/razorpayService.js';
 import Payment from '../models/Payment.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import { sendEnrollmentConfirmation, sendSpecialistNotification } from '../services/emailService.js';
@@ -361,6 +362,187 @@ function logWebhookError(error, body, signature) {
 
   const logFile = path.join(logDir, 'stripe-webhook-errors.log');
   fs.appendFileSync(logFile, JSON.stringify(errorEntry) + '\n');
+}
+
+/**
+ * Webhook Handler for Razorpay Events
+ * POST /api/webhooks/razorpay
+ * 
+ * Razorpay sends payment notifications in application/x-www-form-urlencoded format
+ */
+export const handleRazorpayWebhook = async (req, res) => {
+  try {
+    const { event, payload } = req.body;
+
+    console.log(`[Razorpay Webhook] Received event: ${event}`);
+
+    // Verify signature
+    if (!req.headers['x-razorpay-signature']) {
+      console.error('❌ Missing X-Razorpay-Signature header');
+      return res.status(400).json({ error: 'Missing signature header' });
+    }
+
+    // Process based on event type
+    switch (event) {
+      case 'payment.authorized':
+        await handleRazorpayPaymentAuthorized(payload);
+        break;
+
+      case 'payment.failed':
+        await handleRazorpayPaymentFailed(payload);
+        break;
+
+      case 'payment.captured':
+        await handleRazorpayPaymentCaptured(payload);
+        break;
+
+      case 'refund.created':
+        await handleRazorpayRefund(payload);
+        break;
+
+      default:
+        console.log(`⚠ Unhandled Razorpay event type: ${event}`);
+    }
+
+    // Acknowledge receipt
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('❌ Razorpay webhook error:', error.message);
+    res.status(500).json({ error: 'Webhook processing failed' });
+  }
+};
+
+/**
+ * Handle Razorpay payment.authorized event
+ */
+async function handleRazorpayPaymentAuthorized(payload) {
+  const payment = payload.payment;
+  const orderId = payment.order_id;
+  const paymentId = payment.id;
+
+  console.log(`💰 Processing Razorpay payment authorized: ${paymentId} for order ${orderId}`);
+
+  try {
+    // Find enrollment by razorpayOrderId
+    const enrollment = await SelfPacedEnrollment.findOne({
+      razorpayOrderId: orderId,
+    });
+
+    if (!enrollment) {
+      console.error(`⚠ No enrollment found for Razorpay order: ${orderId}`);
+      return;
+    }
+
+    // Update enrollment with payment status
+    enrollment.razorpayPaymentId = paymentId;
+    enrollment.paymentStatus = 'completed';
+    enrollment.status = 'active';
+    await enrollment.save();
+
+    console.log(`✓ Enrollment activated for orderId: ${orderId}`);
+
+    // Send confirmation emails
+    try {
+      await sendEnrollmentConfirmation({
+        customerEmail: enrollment.customerEmail,
+        courseName: enrollment.courseName,
+        specialistEmail: enrollment.specialistEmail,
+      });
+      await sendSpecialistNotification({
+        specialistEmail: enrollment.specialistEmail,
+        customerName: enrollment.customerName,
+        courseName: enrollment.courseName,
+      });
+    } catch (emailError) {
+      console.warn('⚠ Email send failed but enrollment is already active:', emailError.message);
+    }
+  } catch (error) {
+    console.error('❌ Error handling Razorpay payment authorized:', error);
+  }
+}
+
+/**
+ * Handle Razorpay payment.captured event
+ */
+async function handleRazorpayPaymentCaptured(payload) {
+  const payment = payload.payment;
+  const orderId = payment.order_id;
+  const paymentId = payment.id;
+
+  console.log(`✓ Razorpay payment captured: ${paymentId} for order ${orderId}`);
+
+  try {
+    // Update enrollment if not already processed
+    const enrollment = await SelfPacedEnrollment.findOne({
+      razorpayOrderId: orderId,
+    });
+
+    if (enrollment && enrollment.paymentStatus !== 'completed') {
+      enrollment.razorpayPaymentId = paymentId;
+      enrollment.paymentStatus = 'completed';
+      enrollment.status = 'active';
+      await enrollment.save();
+
+      console.log(`✓ Enrollment confirmed and activated for orderId: ${orderId}`);
+    }
+  } catch (error) {
+    console.error('❌ Error handling Razorpay payment captured:', error);
+  }
+}
+
+/**
+ * Handle Razorpay payment.failed event
+ */
+async function handleRazorpayPaymentFailed(payload) {
+  const payment = payload.payment;
+  const orderId = payment.order_id;
+  const paymentId = payment.id;
+
+  console.log(`❌ Razorpay payment failed: ${paymentId} for order ${orderId}`);
+
+  try {
+    // Find enrollment and mark as failed
+    const enrollment = await SelfPacedEnrollment.findOne({
+      razorpayOrderId: orderId,
+    });
+
+    if (enrollment) {
+      enrollment.paymentStatus = 'failed';
+      enrollment.failureReason = payment.description || 'Payment failed';
+      await enrollment.save();
+
+      console.log(`✓ Enrollment marked as failed for orderId: ${orderId}`);
+    }
+  } catch (error) {
+    console.error('❌ Error handling Razorpay payment failed:', error);
+  }
+}
+
+/**
+ * Handle Razorpay refund.created event
+ */
+async function handleRazorpayRefund(payload) {
+  const refund = payload.refund;
+  const paymentId = refund.payment_id;
+
+  console.log(`↩ Razorpay refund created: ${refund.id} for payment ${paymentId}`);
+
+  try {
+    // Find enrollment and update refund status
+    const enrollment = await SelfPacedEnrollment.findOne({
+      razorpayPaymentId: paymentId,
+    });
+
+    if (enrollment) {
+      enrollment.paymentStatus = 'refunded';
+      enrollment.status = 'cancelled';
+      await enrollment.save();
+
+      console.log(`✓ Enrollment refunded for paymentId: ${paymentId}`);
+    }
+  } catch (error) {
+    console.error('❌ Error handling Razorpay refund:', error);
+  }
 }
 
 /**

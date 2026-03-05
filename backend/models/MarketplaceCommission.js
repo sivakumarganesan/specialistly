@@ -1,11 +1,27 @@
 import mongoose from 'mongoose';
 
 const marketplaceCommissionSchema = new mongoose.Schema({
+  // Payment Gateway
+  paymentGateway: {
+    type: String,
+    enum: ['stripe', 'razorpay'],
+    default: 'stripe',
+  },
+
   // Payment Reference
   paymentIntentId: {
     type: String,
-    required: true,
     unique: true,
+    sparse: true,
+  },
+  razorpayOrderId: {
+    type: String,
+    unique: true,
+    sparse: true,
+  },
+  razorpayPaymentId: {
+    type: String,
+    default: null,
   },
   chargeId: {
     type: String,
@@ -31,7 +47,7 @@ const marketplaceCommissionSchema = new mongoose.Schema({
   },
   stripeAccountId: {
     type: String,
-    required: true, // Specialist's Stripe Connect account
+    default: null, // Optional: used only for Stripe
   },
 
   // Service Details
@@ -123,6 +139,8 @@ const marketplaceCommissionSchema = new mongoose.Schema({
 marketplaceCommissionSchema.index({ specialistId: 1, status: 1 });
 marketplaceCommissionSchema.index({ customerId: 1, createdAt: -1 });
 marketplaceCommissionSchema.index({ paymentIntentId: 1 });
+marketplaceCommissionSchema.index({ razorpayOrderId: 1 });
+marketplaceCommissionSchema.index({ paymentGateway: 1 });
 marketplaceCommissionSchema.index({ payoutStatus: 1 });
 
 export default mongoose.model('MarketplaceCommission', marketplaceCommissionSchema);

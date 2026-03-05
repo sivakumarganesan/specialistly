@@ -73,6 +73,16 @@ const paymentSchema = new mongoose.Schema({
   stripeCustomerId: String,
   stripeConnectAccountId: String,
   
+  // Razorpay Integration
+  paymentGateway: {
+    type: String,
+    enum: ['stripe', 'razorpay'],
+    default: 'stripe',
+  },
+  razorpayOrderId: String,
+  razorpayPaymentId: String,
+  razorpaySignature: String,
+  
   // Payment Status
   status: {
     type: String,
@@ -135,6 +145,8 @@ paymentSchema.index({ bookingId: 1 });
 paymentSchema.index({ specialistId: 1, status: 1 });
 paymentSchema.index({ customerId: 1, status: 1 });
 paymentSchema.index({ stripePaymentIntentId: 1 });
+paymentSchema.index({ razorpayOrderId: 1 });
+paymentSchema.index({ paymentGateway: 1 });
 paymentSchema.index({ createdAt: -1 });
 
 export default mongoose.model('Payment', paymentSchema);

@@ -1,5 +1,6 @@
 import stripe from '../config/stripe.js';
 import { stripeService } from '../services/stripeService.js';
+import { razorpayService } from '../services/razorpayService.js';
 import MarketplaceCommission from '../models/MarketplaceCommission.js';
 import CreatorProfile from '../models/CreatorProfile.js';
 import Course from '../models/Course.js';
@@ -9,6 +10,7 @@ import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
  * Create marketplace payment intent
  * Specialist receives payout after commission deduction
  * POST /api/marketplace/payments/create-intent
+ * Supports both Stripe and Razorpay as payment gateways
  */
 export const createMarketplacePaymentIntent = async (req, res) => {
   try {
@@ -17,6 +19,7 @@ export const createMarketplacePaymentIntent = async (req, res) => {
       customerId,
       customerEmail,
       commissionPercentage = 15,
+      paymentGateway = 'stripe', // Default to Stripe for backward compatibility
     } = req.body;
 
     // Validate input
@@ -24,6 +27,14 @@ export const createMarketplacePaymentIntent = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields',
+      });
+    }
+
+    // Validate payment gateway
+    if (!['stripe', 'razorpay'].includes(paymentGateway)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid payment gateway. Must be "stripe" or "razorpay"',
       });
     }
 
@@ -59,26 +70,30 @@ export const createMarketplacePaymentIntent = async (req, res) => {
       });
     }
 
-    // Get specialist Stripe account
+    // Get specialist account
     const specialist = await CreatorProfile.findOne({
       email: course.specialistEmail,
     });
 
-    if (!specialist?.stripeAccountId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Specialist has not set up Stripe account. Payment cannot be processed.',
-        code: 'SPECIALIST_NOT_ONBOARDED',
-      });
-    }
+    // For Stripe: Check Stripe onboarding
+    if (paymentGateway === 'stripe') {
+      if (!specialist?.stripeAccountId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Specialist has not set up Stripe account. Payment cannot be processed.',
+          code: 'SPECIALIST_NOT_ONBOARDED',
+        });
+      }
 
-    if (specialist.stripeConnectStatus !== 'active') {
-      return res.status(400).json({
-        success: false,
-        message: 'Specialist account is not fully set up. Payment cannot be processed.',
-        code: 'SPECIALIST_NOT_ACTIVE',
-      });
+      if (specialist.stripeConnectStatus !== 'active') {
+        return res.status(400).json({
+          success: false,
+          message: 'Specialist Stripe account is not fully set up. Payment cannot be processed.',
+          code: 'SPECIALIST_NOT_ACTIVE',
+        });
+      }
     }
+    // For Razorpay: No additional specialist checks needed (works globally)
 
     // Free course - direct enrollment
     const amount = course.price || 0;
@@ -101,95 +116,28 @@ export const createMarketplacePaymentIntent = async (req, res) => {
       });
     }
 
-    // Create Stripe customer if not exists
-    const stripeCustomerResult = await stripeService.createCustomer({
-      email: customerEmail,
-      name: req.user?.name || customerEmail,
-      metadata: {
-        userId: customerId,
-      },
-    });
-
-    if (!stripeCustomerResult.success) {
-      console.error('[Marketplace Payment] Stripe customer creation failed:', {
-        error: stripeCustomerResult.error,
-        customerEmail,
-      });
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to create payment customer',
-        error: stripeCustomerResult.error,
-      });
-    }
-
-    // Create marketplace payment intent
-    const amountInCents = Math.round(amount * 100);
-    const paymentResult = await stripeService.createMarketplacePaymentIntent({
-      amount: amountInCents,
-      specialistStripeAccountId: specialist.stripeAccountId,
-      commissionPercentage: specialist.commissionPercentage || commissionPercentage,
-      stripeCustomerId: stripeCustomerResult.customerId,
-      currency: 'usd',
-      description: `${course.title} - Course enrollment`,
-      metadata: {
-        courseId: courseId.toString(),
-        courseName: course.title,
-        specialistEmail: course.specialistEmail,
-      },
-    });
-
-    if (!paymentResult.success) {
-      console.error('[Marketplace Payment] Payment intent creation failed:', {
-        error: paymentResult.error,
-        code: paymentResult.code,
-        specialistAccountId: specialist.stripeAccountId,
-        stripeCustomerId: stripeCustomerResult.customerId,
-        amount: amountInCents,
+    // Route to appropriate payment gateway
+    if (paymentGateway === 'stripe') {
+      return await createStripePaymentIntent(req, res, {
+        course,
+        specialist,
         courseId,
+        customerId,
+        customerEmail,
+        amount,
+        commissionPercentage,
       });
-      return res.status(400).json({
-        success: false,
-        message: 'Failed to create payment intent',
-        error: paymentResult.error,
-        code: paymentResult.code,
+    } else if (paymentGateway === 'razorpay') {
+      return await createRazorpayPaymentIntent(req, res, {
+        course,
+        specialist,
+        courseId,
+        customerId,
+        customerEmail,
+        amount,
+        commissionPercentage,
       });
     }
-
-    // Create commission tracking record
-    const commission = await MarketplaceCommission.create({
-      paymentIntentId: paymentResult.paymentIntentId,
-      customerId,
-      customerEmail,
-      specialistId: course.specialistId.toString(),
-      specialistEmail: course.specialistEmail,
-      stripeAccountId: specialist.stripeAccountId,
-      serviceId: courseId,
-      serviceType: 'course',
-      serviceName: course.title,
-      grossAmount: amountInCents,
-      commissionPercentage: specialist.commissionPercentage || commissionPercentage,
-      commissionAmount: paymentResult.commissionAmount,
-      specialistPayout: paymentResult.specialistPayout,
-      status: 'pending',
-      paymentStatus: 'pending',
-    });
-
-    console.log('[Marketplace Payment] Commission created:', {
-      id: commission._id,
-      paymentIntentId: commission.paymentIntentId,
-      customerId: commission.customerId,
-      courseId: commission.serviceId,
-    });
-
-    return res.status(200).json({
-      success: true,
-      paymentIntentId: paymentResult.paymentIntentId,
-      clientSecret: paymentResult.clientSecret,
-      commissionRecord: commission._id,
-      amount: amountInCents / 100,
-      commissionAmount: paymentResult.commissionAmount / 100,
-      specialistPayout: paymentResult.specialistPayout / 100,
-    });
   } catch (error) {
     console.error('Error creating marketplace payment intent:', error);
     res.status(500).json({
@@ -198,6 +146,183 @@ export const createMarketplacePaymentIntent = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+/**
+ * Helper: Create Stripe Payment Intent
+ */
+async function createStripePaymentIntent(req, res, options) {
+  const { course, specialist, courseId, customerId, customerEmail, amount, commissionPercentage } = options;
+
+  // Create Stripe customer if not exists
+  const stripeCustomerResult = await stripeService.createCustomer({
+    email: customerEmail,
+    name: req.user?.name || customerEmail,
+    metadata: {
+      userId: customerId,
+    },
+  });
+
+  if (!stripeCustomerResult.success) {
+    console.error('[Marketplace Payment - Stripe] Customer creation failed:', {
+      error: stripeCustomerResult.error,
+      customerEmail,
+    });
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to create payment customer',
+      error: stripeCustomerResult.error,
+    });
+  }
+
+  // Create marketplace payment intent
+  const amountInCents = Math.round(amount * 100);
+  const paymentResult = await stripeService.createMarketplacePaymentIntent({
+    amount: amountInCents,
+    specialistStripeAccountId: specialist.stripeAccountId,
+    commissionPercentage: specialist.commissionPercentage || commissionPercentage,
+    stripeCustomerId: stripeCustomerResult.customerId,
+    currency: 'usd',
+    description: `${course.title} - Course enrollment`,
+    metadata: {
+      courseId: courseId.toString(),
+      courseName: course.title,
+      specialistEmail: course.specialistEmail,
+    },
+  });
+
+  if (!paymentResult.success) {
+    console.error('[Marketplace Payment - Stripe] Intent creation failed:', {
+      error: paymentResult.error,
+      code: paymentResult.code,
+      courseId,
+    });
+    return res.status(400).json({
+      success: false,
+      message: 'Failed to create payment intent',
+      error: paymentResult.error,
+      code: paymentResult.code,
+    });
+  }
+
+  // Create commission tracking record
+  const commission = await MarketplaceCommission.create({
+    paymentIntentId: paymentResult.paymentIntentId,
+    paymentGateway: 'stripe',
+    customerId,
+    customerEmail,
+    specialistId: course.specialistId.toString(),
+    specialistEmail: course.specialistEmail,
+    stripeAccountId: specialist.stripeAccountId,
+    serviceId: courseId,
+    serviceType: 'course',
+    serviceName: course.title,
+    grossAmount: amountInCents,
+    commissionPercentage: specialist.commissionPercentage || commissionPercentage,
+    commissionAmount: paymentResult.commissionAmount,
+    specialistPayout: paymentResult.specialistPayout,
+    status: 'pending',
+    paymentStatus: 'pending',
+  });
+
+  console.log('[Marketplace Payment - Stripe] Commission created:', {
+    id: commission._id,
+    paymentIntentId: commission.paymentIntentId,
+    customerId: commission.customerId,
+    courseId: commission.serviceId,
+  });
+
+  return res.status(200).json({
+    success: true,
+    paymentGateway: 'stripe',
+    paymentIntentId: paymentResult.paymentIntentId,
+    clientSecret: paymentResult.clientSecret,
+    commissionRecord: commission._id,
+    amount: amountInCents / 100,
+    commissionAmount: paymentResult.commissionAmount / 100,
+    specialistPayout: paymentResult.specialistPayout / 100,
+  });
+}
+
+/**
+ * Helper: Create Razorpay Order
+ */
+async function createRazorpayPaymentIntent(req, res, options) {
+  const { course, specialist, courseId, customerId, customerEmail, amount, commissionPercentage } = options;
+
+  // Create Razorpay order (amount in paise for INR)
+  const amountInPaise = Math.round(amount * 100);
+  const orderResult = await razorpayService.createOrder({
+    amount: amountInPaise,
+    currency: 'INR',
+    customerId,
+    customerEmail,
+    description: `${course.title} - Course enrollment`,
+    metadata: {
+      courseId: courseId.toString(),
+      courseName: course.title,
+      specialistEmail: course.specialistEmail,
+      customerId,
+      customerEmail,
+    },
+  });
+
+  if (!orderResult.success) {
+    console.error('[Marketplace Payment - Razorpay] Order creation failed:', {
+      error: orderResult.error,
+      code: orderResult.code,
+      courseId,
+    });
+    return res.status(400).json({
+      success: false,
+      message: 'Failed to create payment order',
+      error: orderResult.error,
+      code: orderResult.code,
+    });
+  }
+
+  // Calculate commission (same logic as Stripe)
+  const commissionAmountPaise = Math.round(amountInPaise * (specialist.commissionPercentage || commissionPercentage) / 100);
+  const specialistPayoutPaise = amountInPaise - commissionAmountPaise;
+
+  // Create commission tracking record
+  const commission = await MarketplaceCommission.create({
+    razorpayOrderId: orderResult.orderId, // Use razorpayOrderId instead of paymentIntentId
+    paymentGateway: 'razorpay',
+    customerId,
+    customerEmail,
+    specialistId: course.specialistId.toString(),
+    specialistEmail: course.specialistEmail,
+    serviceId: courseId,
+    serviceType: 'course',
+    serviceName: course.title,
+    grossAmount: amountInPaise,
+    commissionPercentage: specialist.commissionPercentage || commissionPercentage,
+    commissionAmount: commissionAmountPaise,
+    specialistPayout: specialistPayoutPaise,
+    status: 'pending',
+    paymentStatus: 'pending',
+  });
+
+  console.log('[Marketplace Payment - Razorpay] Order created:', {
+    id: commission._id,
+    razorpayOrderId: orderResult.orderId,
+    customerId: commission.customerId,
+    courseId: commission.serviceId,
+  });
+
+  return res.status(200).json({
+    success: true,
+    paymentGateway: 'razorpay',
+    orderId: orderResult.orderId,
+    amount: amountInPaise / 100,
+    currency: 'INR',
+    commissionRecord: commission._id,
+    commissionAmount: commissionAmountPaise / 100,
+    specialistPayout: specialistPayoutPaise / 100,
+    keyId: process.env.RAZORPAY_KEY_ID, // Frontend needs this for checkout
+  });
+}
 };
 
 /**
