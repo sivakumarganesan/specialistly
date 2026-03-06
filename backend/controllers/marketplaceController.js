@@ -271,13 +271,19 @@ async function createRazorpayPaymentIntent(req, res, options) {
     console.error('[Marketplace Payment - Razorpay] Order creation failed:', {
       error: orderResult.error,
       code: orderResult.code,
+      statusCode: orderResult.statusCode,
+      description: orderResult.description,
       courseId,
+      amount: amountInPaise,
     });
     return res.status(400).json({
       success: false,
       message: 'Failed to create payment order',
       error: orderResult.error,
       code: orderResult.code,
+      statusCode: orderResult.statusCode,
+      description: orderResult.description,
+      details: 'Check server logs for more information',
     });
   }
 

@@ -45,6 +45,14 @@ export const razorpayService = {
     try {
       const rp = initializeRazorpay();
       
+      console.log('[RazorpayService] Creating order with params:', {
+        amount,
+        currency,
+        customerId,
+        customerEmail,
+        description,
+      });
+
       if (amount < 100) {
         throw new Error('Amount must be at least 100 paise (₹1 for INR)');
       }
@@ -61,7 +69,16 @@ export const razorpayService = {
         },
       };
 
+      console.log('[RazorpayService] Order data being sent to Razorpay:', JSON.stringify(orderData));
+
       const order = await rp.orders.create(orderData);
+
+      console.log('[RazorpayService] Order created successfully:', {
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        status: order.status,
+      });
 
       return {
         success: true,
@@ -71,11 +88,19 @@ export const razorpayService = {
         status: order.status,
       };
     } catch (error) {
-      console.error('[RazorpayService] Error creating order:', error);
+      console.error('[RazorpayService] Error creating order:', {
+        message: error.message,
+        code: error.code,
+        statusCode: error.statusCode,
+        description: error.description,
+        fullError: error.toString(),
+      });
       return {
         success: false,
-        error: error.message,
+        error: error.message || 'Failed to create order',
         code: error.code,
+        statusCode: error.statusCode,
+        description: error.description,
       };
     }
   },
