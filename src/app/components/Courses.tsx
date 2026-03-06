@@ -55,6 +55,7 @@ interface Course {
   type: "self-paced" | "cohort-based";
   description: string;
   price: string;
+  currency?: string; // Add currency field
   duration: string;
   studentsEnrolled: number;
   status: "published" | "draft";
@@ -188,6 +189,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     title: "",
     description: "",
     price: "",
+    currency: "USD", // Add default currency
     duration: "",
     level: "Beginner",
     category: "Technology",
@@ -217,6 +219,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         courseType: courseType,
         description: formData.description,
         price: parseInt(formData.price) || 0,
+        currency: formData.currency || "USD", // Include currency
         duration: formData.duration,
         status: "draft",
         level: formData.level,
@@ -266,6 +269,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         title: formData.title,
         description: formData.description,
         price: parseInt(formData.price) || 0,
+        currency: formData.currency || "USD", // Include currency
         duration: formData.duration,
         level: formData.level,
         category: formData.category,
@@ -368,6 +372,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       title: course.title || "",
       description: course.description || "",
       price: course.price || "",
+      currency: course.currency || "USD", // Add currency field from course
       duration: course.duration || "",
       level: course.level || "Beginner",
       category: course.category || "Technology",
@@ -394,6 +399,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       title: "",
       description: "",
       price: "",
+      currency: "USD", // Reset to default currency
       duration: "",
       level: "Beginner",
       category: "Technology",
@@ -1041,7 +1047,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Price:</span>
-                    <span className="font-semibold">{course.price}</span>
+                    <span className="font-semibold">
+                      {course.currency === 'INR' ? '₹' : '$'}
+                      {course.price} {course.currency || 'USD'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Duration:</span>
@@ -1188,7 +1197,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                 <Label htmlFor="price">Price *</Label>
                 <Input
                   id="price"
-                  placeholder="$99"
+                  placeholder="99"
                   value={formData.price}
                   onChange={(e) =>
                     setFormData({ ...formData, price: e.target.value })
@@ -1196,6 +1205,26 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                 />
               </div>
 
+              <div>
+                <Label htmlFor="currency">Currency *</Label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, currency: value })
+                  }
+                >
+                  <SelectTrigger id="currency">
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">💵 USD (United States Dollar) - Stripe</SelectItem>
+                    <SelectItem value="INR">🇮🇳 INR (Indian Rupees) - Razorpay</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="duration">Duration *</Label>
                 <Input
@@ -1207,9 +1236,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   }
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="level">Course Level *</Label>
                 <Select
@@ -1229,17 +1256,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
-              <div>
-                <Label htmlFor="category">Category *</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+            <div className="grid grid-cols-2 gap-4">
+              <div>                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Technology">Technology</SelectItem>
