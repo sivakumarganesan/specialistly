@@ -1259,7 +1259,16 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>                    <SelectValue placeholder="Select category" />
+              <div>
+                <Label htmlFor="category">Category *</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, category: value })
+                  }
+                >
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Technology">Technology</SelectItem>
