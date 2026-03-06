@@ -1280,41 +1280,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   <h3 className="font-semibold mb-3">Self-Paced Course Settings</h3>
                   
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="totalLessons">Total Lessons</Label>
-                        <Input
-                          id="totalLessons"
-                          type="number"
-                          placeholder="e.g., 48"
-                          value={formData.totalLessons}
-                          onChange={(e) =>
-                            setFormData({ ...formData, totalLessons: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="accessDuration">Access Duration</Label>
-                        <Select
-                          value={formData.accessDuration}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, accessDuration: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select access duration" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Lifetime">Lifetime Access</SelectItem>
-                            <SelectItem value="1 Year">1 Year</SelectItem>
-                            <SelectItem value="6 Months">6 Months</SelectItem>
-                            <SelectItem value="3 Months">3 Months</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id="certificate"
@@ -1328,65 +1293,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                       </Label>
                     </div>
 
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Course Modules</Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addModule}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Module
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {modules.map((module, index) => (
-                          <Card key={module.id} className="p-3">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Module {index + 1}</span>
-                                {modules.length > 1 && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeModule(module.id)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                              <Input
-                                placeholder="Module title"
-                                value={module.title}
-                                onChange={(e) =>
-                                  updateModule(module.id, "title", e.target.value)
-                                }
-                              />
-                              <div className="grid grid-cols-2 gap-2">
-                                <Input
-                                  placeholder="Duration (e.g., 2 hours)"
-                                  value={module.duration}
-                                  onChange={(e) =>
-                                    updateModule(module.id, "duration", e.target.value)
-                                  }
-                                />
-                                <Input
-                                  type="number"
-                                  placeholder="Lessons count"
-                                  value={module.lessonsCount || ""}
-                                  onChange={(e) =>
-                                    updateModule(module.id, "lessonsCount", parseInt(e.target.value) || 0)
-                                  }
-                                />
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <p className="text-sm text-blue-800">
+                        <strong>💡 Lesson Information:</strong> You can add lessons and set course access duration after creating the course. Lessons will be added through the course editing interface.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -1619,41 +1529,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   <h3 className="font-semibold mb-3">Self-Paced Course Settings</h3>
                   
                   <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-totalLessons">Total Lessons</Label>
-                        <Input
-                          id="edit-totalLessons"
-                          type="number"
-                          placeholder="e.g., 48"
-                          value={formData.totalLessons}
-                          onChange={(e) =>
-                            setFormData({ ...formData, totalLessons: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-accessDuration">Access Duration</Label>
-                        <Select
-                          value={formData.accessDuration}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, accessDuration: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select access duration" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Lifetime">Lifetime Access</SelectItem>
-                            <SelectItem value="1 Year">1 Year</SelectItem>
-                            <SelectItem value="6 Months">6 Months</SelectItem>
-                            <SelectItem value="3 Months">3 Months</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id="edit-certificate"
@@ -1667,65 +1542,8 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                       </Label>
                     </div>
 
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Course Modules</Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addModule}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Module
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {modules.map((module, index) => (
-                          <Card key={module.id} className="p-3">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Module {index + 1}</span>
-                                {modules.length > 1 && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeModule(module.id)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                              <Input
-                                placeholder="Module title"
-                                value={module.title}
-                                onChange={(e) =>
-                                  updateModule(module.id, "title", e.target.value)
-                                }
-                              />
-                              <div className="grid grid-cols-2 gap-2">
-                                <Input
-                                  placeholder="Duration (e.g., 2 hours)"
-                                  value={module.duration}
-                                  onChange={(e) =>
-                                    updateModule(module.id, "duration", e.target.value)
-                                  }
-                                />
-                                <Input
-                                  type="number"
-                                  placeholder="Lessons count"
-                                  value={module.lessonsCount || ""}
-                                  onChange={(e) =>
-                                    updateModule(module.id, "lessonsCount", parseInt(e.target.value) || 0)
-                                  }
-                                />
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
+                    <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
+                      💡 <strong>Lesson Information:</strong> You can add lessons and set course access duration after updating the course. Lessons will be managed through the course editing interface.
                     </div>
                   </div>
                 </div>
