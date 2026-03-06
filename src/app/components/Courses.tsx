@@ -1273,36 +1273,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               </div>
             </div>
 
-            {/* Self-Paced Specific Fields */}
-            {courseType === "self-paced" && (
-              <>
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-3">Self-Paced Course Settings</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="certificate"
-                        checked={formData.certificateIncluded}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, certificateIncluded: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="certificate" className="cursor-pointer">
-                        Include certificate of completion
-                      </Label>
-                    </div>
-
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-800">
-                        <strong>💡 Lesson Information:</strong> You can add lessons and set course access duration after creating the course. Lessons will be added through the course editing interface.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
             {/* Cohort-Based Specific Fields */}
             {courseType === "cohort-based" && (
               <>
@@ -1521,34 +1491,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                 </Select>
               </div>
             </div>
-
-            {/* Self-Paced Specific Fields */}
-            {selectedCourse?.type === "self-paced" && (
-              <>
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-3">Self-Paced Course Settings</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="edit-certificate"
-                        checked={formData.certificateIncluded}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, certificateIncluded: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="edit-certificate" className="cursor-pointer">
-                        Include certificate of completion
-                      </Label>
-                    </div>
-
-                    <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
-                      💡 <strong>Lesson Information:</strong> You can add lessons and set course access duration after updating the course. Lessons will be managed through the course editing interface.
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
 
             {/* Cohort-Based Specific Fields */}
             {selectedCourse?.type === "cohort-based" && (
