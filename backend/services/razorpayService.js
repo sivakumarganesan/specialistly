@@ -61,7 +61,6 @@ export const razorpayService = {
         amount, // Amount in paise for INR
         currency,
         description,
-        customer_notify: 1,
         notes: {
           customerId,
           customerEmail,
