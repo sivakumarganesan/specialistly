@@ -189,14 +189,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     title: "",
     description: "",
     price: "",
-    currency: "USD", // Add default currency
+    currency: "USD",
     duration: "",
     level: "Beginner",
     category: "Technology",
-    // Self-paced specific fields
-    totalLessons: "",
-    certificateIncluded: true,
-    accessDuration: "Lifetime",
     // Cohort-based specific fields
     cohortSize: "",
     startDate: "",
