@@ -4,12 +4,20 @@ import cloudflareR2Service from '../services/cloudflareR2Service.js';
 // Create a new course (specialist only)
 export const createCourse = async (req, res) => {
   try {
-    const { title, description, courseType, price } = req.body;
+    const { title, description, courseType, price, currency = 'USD' } = req.body;
     
     if (!title || !courseType) {
       return res.status(400).json({
         success: false,
         message: 'Title and course type are required',
+      });
+    }
+
+    // Validate currency
+    if (!['USD', 'INR'].includes(currency)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid currency. Supported currencies are USD and INR',
       });
     }
 
@@ -20,6 +28,7 @@ export const createCourse = async (req, res) => {
       description,
       courseType,
       price: price || 0,
+      currency,
       lessons: [],
       status: 'draft',
     });
@@ -30,6 +39,7 @@ export const createCourse = async (req, res) => {
       message: 'Course created successfully',
       courseId: course._id,
       status: 'draft',
+      currency: course.currency,
       data: course,
     });
   } catch (error) {
@@ -72,7 +82,7 @@ export const browseCourses = async (req, res) => {
     if (courseType) filter.courseType = courseType;
 
     const courses = await Course.find(filter)
-      .select('_id title description thumbnail specialistEmail courseType price lessons')
+      .select('_id title description thumbnail specialistEmail courseType price currency lessons')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -123,6 +133,14 @@ export const updateCourse = async (req, res) => {
       });
     }
 
+    // Validate currency if provided
+    if (req.body.currency && !['USD', 'INR'].includes(req.body.currency)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid currency. Supported currencies are USD and INR',
+      });
+    }
+
     // Update course fields
     Object.assign(course, req.body);
     course.updatedAt = new Date();
@@ -139,6 +157,7 @@ export const updateCourse = async (req, res) => {
       success: true,
       message: 'Course updated successfully',
       courseStatus: course.status,
+      currency: course.currency,
       data: course,
     });
   } catch (error) {

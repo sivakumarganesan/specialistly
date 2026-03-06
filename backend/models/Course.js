@@ -126,6 +126,11 @@ const courseSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  currency: {
+    type: String,
+    enum: ['USD', 'INR'],
+    default: 'USD',
+  },
   
   // Lessons (for both types)
   lessons: [lessonSchema],

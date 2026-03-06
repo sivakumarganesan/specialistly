@@ -84,7 +84,8 @@ const marketplaceCommissionSchema = new mongoose.Schema({
   },
   currency: {
     type: String,
-    default: 'usd',
+    enum: ['USD', 'INR'],
+    default: 'USD',
   },
 
   // Payment Status

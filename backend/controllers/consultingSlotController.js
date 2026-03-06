@@ -155,11 +155,14 @@ export const createSlot = async (req, res) => {
       totalCapacity,
       timezone,
       notes,
+      price = 0,
+      currency = 'USD',
     } = req.body;
 
     console.log(`📝 Creating consulting slot for specialist: ${specialistEmail}`);
     console.log(`   auth user ID: ${req.user?.userId}`);
     console.log(`   request specialistId: ${specialistId}`);
+    console.log(`   price: ${price} ${currency}`);
 
     // Validation
     if (!specialistEmail || !date || !startTime || !endTime) {
@@ -173,6 +176,14 @@ export const createSlot = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'End time must be after start time',
+      });
+    }
+
+    // Validate currency
+    if (!['USD', 'INR'].includes(currency)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid currency. Supported currencies are USD and INR',
       });
     }
 
@@ -223,6 +234,8 @@ export const createSlot = async (req, res) => {
       totalCapacity: totalCapacity || 1,
       timezone: timezone || 'UTC',
       notes,
+      price,
+      currency,
       // Calculate duration in minutes
       duration: calculateDuration(startTime, endTime),
     });
@@ -433,7 +446,7 @@ export const bookSlot = async (req, res) => {
 export const updateSlot = async (req, res) => {
   try {
     const { slotId } = req.params;
-    const { startTime, endTime, status, notes, timezone } = req.body;
+    const { startTime, endTime, status, notes, timezone, price, currency } = req.body;
 
     const slot = await ConsultingSlot.findById(slotId);
 
@@ -441,6 +454,14 @@ export const updateSlot = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'Slot not found',
+      });
+    }
+
+    // Validate currency if provided
+    if (currency && !['USD', 'INR'].includes(currency)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid currency. Supported currencies are USD and INR',
       });
     }
 
@@ -468,6 +489,12 @@ export const updateSlot = async (req, res) => {
     }
     if (timezone) {
       slot.timezone = timezone;
+    }
+    if (price !== undefined) {
+      slot.price = price;
+    }
+    if (currency) {
+      slot.currency = currency;
     }
 
     // Recalculate duration if times changed

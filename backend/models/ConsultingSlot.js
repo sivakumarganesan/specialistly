@@ -66,6 +66,18 @@ const consultingSlotSchema = new mongoose.Schema(
       index: true,
     },
 
+    // Pricing
+    price: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    currency: {
+      type: String,
+      enum: ['USD', 'INR'],
+      default: 'USD',
+    },
+
     // Booking details
     bookings: [
       {

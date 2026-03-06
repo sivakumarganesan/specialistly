@@ -19,22 +19,13 @@ export const createMarketplacePaymentIntent = async (req, res) => {
       customerId,
       customerEmail,
       commissionPercentage = 15,
-      paymentGateway = 'stripe', // Default to Stripe for backward compatibility
     } = req.body;
 
     // Validate input
     if (!courseId || !customerId || !customerEmail) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields',
-      });
-    }
-
-    // Validate payment gateway
-    if (!['stripe', 'razorpay'].includes(paymentGateway)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid payment gateway. Must be "stripe" or "razorpay"',
+        message: 'Missing required fields: courseId, customerId, customerEmail',
       });
     }
 
@@ -75,12 +66,27 @@ export const createMarketplacePaymentIntent = async (req, res) => {
       email: course.specialistEmail,
     });
 
+    // Auto-select payment gateway based on course currency
+    const courseCurrency = course.currency || 'USD';
+    let paymentGateway = 'stripe'; // Default to Stripe
+    
+    if (courseCurrency === 'INR') {
+      paymentGateway = 'razorpay';
+    } else if (courseCurrency === 'USD') {
+      paymentGateway = 'stripe';
+    } else {
+      return res.status(400).json({
+        success: false,
+        message: `Unsupported course currency: ${courseCurrency}. Supported currencies are USD and INR.`,
+      });
+    }
+
     // For Stripe: Check Stripe onboarding
     if (paymentGateway === 'stripe') {
       if (!specialist?.stripeAccountId) {
         return res.status(400).json({
           success: false,
-          message: 'Specialist has not set up Stripe account. Payment cannot be processed.',
+          message: 'Specialist has not set up Stripe account for USD payments. Please choose a different course or contact the specialist.',
           code: 'SPECIALIST_NOT_ONBOARDED',
         });
       }
@@ -154,6 +160,9 @@ export const createMarketplacePaymentIntent = async (req, res) => {
 async function createStripePaymentIntent(req, res, options) {
   const { course, specialist, courseId, customerId, customerEmail, amount, commissionPercentage } = options;
 
+  // Determine currency - map course currency to Stripe currency code
+  const stripeCurrency = (course.currency || 'USD').toLowerCase();
+
   // Create Stripe customer if not exists
   const stripeCustomerResult = await stripeService.createCustomer({
     email: customerEmail,
@@ -182,12 +191,13 @@ async function createStripePaymentIntent(req, res, options) {
     specialistStripeAccountId: specialist.stripeAccountId,
     commissionPercentage: specialist.commissionPercentage || commissionPercentage,
     stripeCustomerId: stripeCustomerResult.customerId,
-    currency: 'usd',
+    currency: stripeCurrency,
     description: `${course.title} - Course enrollment`,
     metadata: {
       courseId: courseId.toString(),
       courseName: course.title,
       specialistEmail: course.specialistEmail,
+      currency: course.currency,
     },
   });
 
@@ -218,6 +228,7 @@ async function createStripePaymentIntent(req, res, options) {
     serviceType: 'course',
     serviceName: course.title,
     grossAmount: amountInCents,
+    currency: course.currency,
     commissionPercentage: specialist.commissionPercentage || commissionPercentage,
     commissionAmount: paymentResult.commissionAmount,
     specialistPayout: paymentResult.specialistPayout,
@@ -230,6 +241,7 @@ async function createStripePaymentIntent(req, res, options) {
     paymentIntentId: commission.paymentIntentId,
     customerId: commission.customerId,
     courseId: commission.serviceId,
+    currency: course.currency,
   });
 
   return res.status(200).json({
@@ -303,6 +315,7 @@ async function createRazorpayPaymentIntent(req, res, options) {
     serviceType: 'course',
     serviceName: course.title,
     grossAmount: amountInPaise,
+    currency: course.currency,
     commissionPercentage: specialist.commissionPercentage || commissionPercentage,
     commissionAmount: commissionAmountPaise,
     specialistPayout: specialistPayoutPaise,
@@ -315,6 +328,7 @@ async function createRazorpayPaymentIntent(req, res, options) {
     razorpayOrderId: orderResult.orderId,
     customerId: commission.customerId,
     courseId: commission.serviceId,
+    currency: course.currency,
   });
 
   return res.status(200).json({
