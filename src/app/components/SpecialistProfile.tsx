@@ -23,6 +23,7 @@ interface Course {
   title: string;
   description: string;
   price: number;
+  currency?: string; // Add currency field
   level: string;
   duration: string;
   enrollments: number;
@@ -212,6 +213,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
     console.log('[SpecialistProfile] handleEnrollCourse called:', {
       courseId,
       courseTitle: course?.title,
+      courseCurrency: course?.currency,
       userId: user?.id,
       userEmail: user?.email,
       userAvailable: !!user,
@@ -235,9 +237,11 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
       return;
     }
     
+    const courseCurrency = courseData.currency || 'USD';
     console.log('[SpecialistProfile] Course data found:', { 
       title: courseData.title, 
       price: courseData.price,
+      currency: courseCurrency,
       isPaid: courseData.price && courseData.price > 0
     });
 
@@ -250,8 +254,8 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
           serviceId: courseId,
           serviceType: 'course',
           serviceName: courseData.title,
-          amount: courseData.price * 100, // Convert to cents
-          currency: 'usd',
+          amount: courseData.price * 100, // Convert to cents/paise (same factor for both USD and INR)
+          currency: courseCurrency, // Pass actual course currency
           specialistId: specialistId,
           specialistName: specialist?.name || 'Specialist',
           onSuccess: async () => {

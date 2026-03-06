@@ -78,12 +78,6 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
             stripe: data.gateways.stripe?.available || false,
             razorpay: data.gateways.razorpay?.available || false,
           });
-          
-          // If Razorpay is not available and it's selected, switch to Stripe
-          if (!data.gateways.razorpay?.available && paymentGateway === 'razorpay') {
-            console.log('[PaymentModal] Razorpay not available, switching to Stripe');
-            setPaymentGateway('stripe');
-          }
         }
       } catch (error) {
         console.error('[PaymentModal] Error checking gateways:', error);
@@ -94,6 +88,25 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
     
     checkGateways();
   }, []);
+
+  // Auto-select payment gateway based on currency when modal opens
+  useEffect(() => {
+    if (!isOpen || !context.paymentConfig) {
+      return;
+    }
+
+    const currency = context.paymentConfig.currency?.toUpperCase() || 'USD';
+    console.log('[PaymentModal] Auto-selecting gateway based on currency:', {
+      currency,
+      paymentConfig: context.paymentConfig,
+    });
+
+    if (currency === 'INR') {
+      setPaymentGateway('razorpay');
+    } else if (currency === 'USD') {
+      setPaymentGateway('stripe');
+    }
+  }, [isOpen, context.paymentConfig]);
 
   useEffect(() => {
     if (!isOpen || !context.paymentConfig) {
@@ -121,7 +134,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
           customerId: user.id,
           customerEmail: user.email,
           commissionPercentage: 15,
-          paymentGateway, // Add gateway selection
+          // Backend auto-selects gateway based on course currency - no need to send paymentGateway param
         };
 
         const response = await fetch(endpoint, {
@@ -142,13 +155,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
           return;
         }
 
-        // Handle Stripe response
-        if (paymentGateway === 'stripe' && data.clientSecret) {
+        // Determine which response to expect based on currency
+        const currency = context.paymentConfig.currency?.toUpperCase() || 'USD';
+        
+        if (currency === 'USD' && data.clientSecret) {
+          console.log('[PaymentModal] Received Stripe payment intent');
           setClientSecret(data.clientSecret);
           setRazorpayData(null);
-        }
-        // Handle Razorpay response
-        else if (paymentGateway === 'razorpay' && data.orderId) {
+          setPaymentGateway('stripe');
+        } 
+        else if (currency === 'INR' && data.orderId) {
+          console.log('[PaymentModal] Received Razorpay order');
           setRazorpayData({
             orderId: data.orderId,
             keyId: data.keyId,
@@ -156,6 +173,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
             currency: data.currency || 'INR',
           });
           setClientSecret('');
+          setPaymentGateway('razorpay');
+        }
+        else {
+          console.error('[PaymentModal] Unexpected response format:', {
+            currency,
+            response: data,
+          });
+          const errorMsg = `Payment initialization failed. Unexpected response for ${currency} payment.`;
+          context.paymentConfig?.onError?.(errorMsg);
+          setIsLoading(false);
+          return;
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Payment initialization failed';
@@ -166,7 +194,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
     };
 
     initializePayment();
-  }, [isOpen, context.paymentConfig, paymentGateway]);
+  }, [isOpen, context.paymentConfig?.serviceId, context.paymentConfig?.currency]);
 
 
   if (!isOpen || !context.paymentConfig) {
@@ -220,60 +248,17 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
           />
         </div>
 
-        {/* Payment Gateway Selector */}
-        <div className="mb-6 p-4 border rounded-lg bg-gray-50">
-          <label className="block text-sm font-semibold text-gray-700 mb-3">
-            <CreditCard className="h-4 w-4 inline mr-2" />
-            Choose Payment Method
-          </label>
-          <div className="space-y-2">
-            {availableGateways.stripe && (
-              <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-white" style={{ borderColor: paymentGateway === 'stripe' ? '#6366f1' : '#ddd', backgroundColor: paymentGateway === 'stripe' ? '#f0f4ff' : 'white' }}>
-                <input
-                  type="radio"
-                  name="gateway"
-                  value="stripe"
-                  checked={paymentGateway === 'stripe'}
-                  onChange={(e) => setPaymentGateway(e.target.value as 'stripe')}
-                  disabled={isLoading}
-                  className="h-4 w-4"
-                />
-                <span className="ml-3 flex-1">
-                  <span className="font-semibold text-gray-900">Stripe</span>
-                  <span className="text-xs text-gray-500 block">Credit/Debit Card (USD)</span>
-                </span>
-              </label>
-            )}
-            {availableGateways.razorpay && (
-              <label className="flex items-center p-3 border rounded cursor-pointer hover:bg-white" style={{ borderColor: paymentGateway === 'razorpay' ? '#6366f1' : '#ddd', backgroundColor: paymentGateway === 'razorpay' ? '#f0f4ff' : 'white' }}>
-                <input
-                  type="radio"
-                  name="gateway"
-                  value="razorpay"
-                  checked={paymentGateway === 'razorpay'}
-                  onChange={(e) => setPaymentGateway(e.target.value as 'razorpay')}
-                  disabled={isLoading}
-                  className="h-4 w-4"
-                />
-                <span className="ml-3 flex-1">
-                  <span className="font-semibold text-gray-900">Razorpay</span>
-                  <span className="text-xs text-gray-500 block">Card, UPI, NetBanking (INR)</span>
-                </span>
-              </label>
-            )}
-            {!availableGateways.stripe && !availableGateways.razorpay && (
-              <div className="p-3 text-center text-red-600 text-sm">
-                No payment methods available. Please contact support.
-              </div>
-            )}
-            {!availableGateways.razorpay && (
-              <div className="p-3 text-xs text-gray-600 bg-gray-100 rounded">
-                💡 <strong>Razorpay</strong> not available yet. Admin needs to configure Razorpay credentials in Railway.
-                <a href="https://dashboard.razorpay.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
-                  Get credentials
-                </a>
-              </div>
-            )}
+        {/* Payment Gateway Info */}
+        <div className="mb-6 p-4 border rounded-lg bg-blue-50 border-blue-200">
+          <div className="flex items-center gap-3">
+            <CreditCard className="h-4 w-4 text-blue-600" />
+            <div className="text-sm">
+              <p className="font-semibold text-blue-900">Payment Method</p>
+              <p className="text-blue-800">
+                {paymentGateway === 'stripe' && '💳 Stripe (Credit/Debit Card) - USD'}
+                {paymentGateway === 'razorpay' && '🇮🇳 Razorpay (Card, UPI, NetBanking) - INR'}
+              </p>
+            </div>
           </div>
         </div>
 
