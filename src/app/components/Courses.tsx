@@ -212,26 +212,18 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
   const handleCreateCourse = async () => {
     if (courseType && formData.title) {
-      // Remove _id from modules to let backend generate them
-      const modulesData = modules.map(({ id, ...rest }) => rest);
       const courseData = {
         title: formData.title,
         courseType: courseType,
         description: formData.description,
         price: parseInt(formData.price) || 0,
-        currency: formData.currency || "USD", // Include currency
+        currency: formData.currency || "USD",
         duration: formData.duration,
         status: "draft",
         level: formData.level,
         category: formData.category,
         specialistId: user?.id,
         specialistEmail: user?.email,
-        ...(courseType === "self-paced" && {
-          totalLessons: parseInt(formData.totalLessons) || 0,
-          certificateIncluded: formData.certificateIncluded,
-          accessDuration: formData.accessDuration,
-          modules: modulesData,
-        }),
         ...(courseType === "cohort-based" && {
           cohortSize: formData.cohortSize,
           startDate: formData.startDate,
@@ -275,12 +267,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         category: formData.category,
         specialistId: user?.id,
         specialistEmail: user?.email,
-        ...(selectedCourse.type === "self-paced" && {
-          totalLessons: parseInt(formData.totalLessons) || 0,
-          certificateIncluded: formData.certificateIncluded,
-          accessDuration: formData.accessDuration,
-          modules: modulesData,
-        }),
         ...(selectedCourse.type === "cohort-based" && {
           cohortSize: formData.cohortSize,
           startDate: formData.startDate,
