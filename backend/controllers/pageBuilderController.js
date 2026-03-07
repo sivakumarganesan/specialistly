@@ -896,6 +896,7 @@ export const getPublicWebsite = async (req, res) => {
   try {
     const { domain } = req.params;
 
+    // Find website by subdomain or custom domain that is published
     const website = await Website.findOne({
       $or: [
         { subdomain: domain },
@@ -911,25 +912,33 @@ export const getPublicWebsite = async (req, res) => {
       });
     }
 
-    // Get published pages and their sections
-    const pages = await Page.find({ websiteId: website._id, isPublished: true })
+    // Get ALL published pages for this website, sorted by order
+    const pages = await Page.find({ 
+      websiteId: website._id, 
+      isPublished: true 
+    })
+      .populate('sections')
       .sort({ order: 1 });
 
-    // Get sections for each page
-    const pageData = await Promise.all(
-      pages.map(async (page) => {
-        const sections = await PageSection.find({ pageId: page._id })
-          .sort({ order: 1 });
-        return { ...page.toObject(), sections };
-      })
-    );
+    // If no pages found, return success with empty array
+    if (!pages || pages.length === 0) {
+      return res.json({
+        success: true,
+        data: {
+          website,
+          pages: [],
+        },
+        message: 'Website found but no published pages',
+      });
+    }
 
     res.json({
       success: true,
       data: {
         website,
-        pages: pageData,
+        pages,
       },
+      message: 'Website and pages fetched successfully',
     });
   } catch (error) {
     console.error('Get public website error:', error);
