@@ -2,7 +2,7 @@ import React from 'react';
 import { PageSection } from '@/app/hooks/usePageBuilder';
 import {
   Flame,
-  Grid3,
+  LayoutGrid,
   MessageSquare,
   Users,
   Mail,
@@ -40,7 +40,7 @@ const SECTION_TEMPLATES: SectionTemplate[] = [
     type: 'services',
     name: 'Services',
     description: 'Showcase your services or products',
-    icon: <Grid3 className="w-6 h-6" />,
+    icon: <LayoutGrid className="w-6 h-6" />,
     defaultContent: {
       title: 'Our Services',
       description: 'What we offer',

@@ -4,7 +4,7 @@ import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Plus, Trash2, Grid3, List } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -119,7 +119,7 @@ export const ServicesSectionEditor: React.FC<ServicesSectionEditorProps> = ({
                 onClick={() => handleLayoutChange('grid')}
                 className="flex-1 gap-2"
               >
-                <Grid3 className="w-4 h-4" />
+                <LayoutGrid className="w-4 h-4" />
                 Grid
               </Button>
               <Button

@@ -76,6 +76,7 @@ export interface UpdateSectionRequest {
   content?: Record<string, any>;
   styling?: Record<string, any>;
   visibility?: Record<string, any>;
+  order?: number;
 }
 
 class PageBuilderAPI {

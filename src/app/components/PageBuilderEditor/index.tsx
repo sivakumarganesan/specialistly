@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { usePageBuilder, Website, Page } from '@/app/hooks/usePageBuilder';
+import { usePageBuilder, Website, Page, PageSection } from '@/app/hooks/usePageBuilder';
 import { pageBuilderAPI } from '@/app/api/pageBuilderAPI';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
+import EditorCanvas from './EditorCanvas';
+import SectionLibrary from './SectionLibrary';
 import {
   Plus,
   Save,
@@ -12,6 +14,7 @@ import {
   Settings,
   Upload,
   Loader,
+  X,
 } from 'lucide-react';
 
 interface PageBuilderEditorProps {
@@ -20,6 +23,8 @@ interface PageBuilderEditorProps {
 
 const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
   const [showPublishDialog, setShowPublishDialog] = useState(false);
+  const [showSectionLibrary, setShowSectionLibrary] = useState(false);
+  const [selectedSection, setSelectedSection] = useState<PageSection | null>(null);
   const {
     website,
     pages,
@@ -39,6 +44,123 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
     redo,
     publish,
   } = usePageBuilder();
+
+  // Load website and pages on mount
+  useEffect(() => {
+    loadWebsiteData();
+  }, [websiteId]);
+
+  const handleAddSection = () => {
+    setShowSectionLibrary(true);
+  };
+
+  const handleSelectSectionTemplate = (template: any) => {
+    addSectionToPage(template.type, template.defaultContent);
+  };
+
+  const addSectionToPage = async (sectionType: string, sectionData: any) => {
+    if (!selectedPage) return;
+
+    try {
+      setLoading(true);
+      const newSection = await pageBuilderAPI.createSection(
+        websiteId,
+        selectedPage._id,
+        {
+          type: sectionType,
+          title: sectionData.title || '',
+          description: sectionData.description || '',
+          content: sectionData.content || {},
+          styling: sectionData.styling || {},
+        }
+      );
+
+      // Update local state
+      const updatedPage = {
+        ...selectedPage,
+        sections: [...(selectedPage.sections || []), newSection.data],
+      };
+      selectPage(updatedPage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add section');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateSection = async (sectionId: string, updates: Partial<PageSection>) => {
+    if (!selectedPage) return;
+
+    try {
+      setLoading(true);
+      await pageBuilderAPI.updateSection(
+        websiteId,
+        selectedPage._id,
+        sectionId,
+        updates
+      );
+
+      // Update local state
+      const updatedSections = selectedPage.sections.map(s =>
+        s._id === sectionId ? { ...s, ...updates } : s
+      );
+      const updatedPage = { ...selectedPage, sections: updatedSections };
+      selectPage(updatedPage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update section');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteSection = async (sectionId: string) => {
+    if (!selectedPage) return;
+
+    if (!confirm('Are you sure you want to delete this section?')) return;
+
+    try {
+      setLoading(true);
+      await pageBuilderAPI.deleteSection(
+        websiteId,
+        selectedPage._id,
+        sectionId
+      );
+
+      // Update local state
+      const updatedSections = selectedPage.sections.filter(s => s._id !== sectionId);
+      const updatedPage = { ...selectedPage, sections: updatedSections };
+      selectPage(updatedPage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete section');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReorderSections = async (newSections: PageSection[]) => {
+    if (!selectedPage) return;
+
+    try {
+      setLoading(true);
+      // Update each section with new order
+      for (let i = 0; i < newSections.length; i++) {
+        await pageBuilderAPI.updateSection(
+          websiteId,
+          selectedPage._id,
+          newSections[i]._id,
+          { order: i }
+        );
+      }
+
+      // Update local state
+      const updatedPage = { ...selectedPage, sections: newSections };
+      selectPage(updatedPage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reorder sections');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Load website and pages on mount
   useEffect(() => {
@@ -241,7 +363,22 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
         {/* Center Canvas */}
         <main className="flex-1 overflow-auto">
           {selectedPage && mode === 'edit' && (
-            <EditorCanvas page={selectedPage} />
+            <>
+              <EditorCanvas
+                page={selectedPage}
+                onAddSection={handleAddSection}
+                onUpdateSection={handleUpdateSection}
+                onDeleteSection={handleDeleteSection}
+                onReorderSections={handleReorderSections}
+                onSelectSection={setSelectedSection}
+                selectedSectionId={selectedSection?._id}
+              />
+              <SectionLibrary
+                isOpen={showSectionLibrary}
+                onSelectTemplate={handleSelectSectionTemplate}
+                onClose={() => setShowSectionLibrary(false)}
+              />
+            </>
           )}
           {selectedPage && mode === 'preview' && (
             <PreviewMode page={selectedPage} website={website} />
@@ -270,23 +407,6 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
 };
 
 // Sub-components (stubs for now)
-const EditorCanvas: React.FC<{ page: Page }> = ({ page }) => (
-  <div className="p-8">
-    <Card className="min-h-screen">
-      <div className="p-8">
-        <h1 className="text-3xl font-bold mb-4">{page.title}</h1>
-        <p className="text-gray-500">Sections coming soon...</p>
-        {page.sections.length === 0 && (
-          <div className="mt-8 text-center py-16 border-2 border-dashed border-gray-300 rounded-lg">
-            <Plus className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-            <p className="text-gray-600">No sections yet. Click to add one.</p>
-          </div>
-        )}
-      </div>
-    </Card>
-  </div>
-);
-
 const PreviewMode: React.FC<{ page: Page; website: Website | null }> = ({
   page,
   website,
