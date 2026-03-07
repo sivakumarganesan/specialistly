@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { subdomainMiddleware } from './middleware/subdomainMiddleware.js';
@@ -161,35 +162,38 @@ app.get('/api/test/outbound-ip', async (req, res) => {
 // Serve static files from dist folder BEFORE API routes
 const distPath = path.join(__dirname, '../dist');
 
+console.log('📁 Serving static files from:', distPath);
+
 // Serve static assets (js, css, images, etc.) with proper caching
 app.use(express.static(distPath, {
   maxAge: '1d',
   etag: false,
+  // Serve index.html for SPA routing
+  setHeaders: (res, path, stat) => {
+    if (path.endsWith('.html')) {
+      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+    }
+  }
 }));
 
 // SPA fallback - serve index.html for client-side routes
 // IMPORTANT: This must be AFTER express.static() but BEFORE error handler
 app.get('*', (req, res, next) => {
-  // Don't serve index.html for API routes
+  // Don't serve index.html for API routes - let them 404
   if (req.path.startsWith('/api')) {
-    return next(); // Let it 404 below
+    return next();
   }
   
-  // Don't serve index.html for files with extensions (js, css, png, etc.)
-  if (path.extname(req.path)) {
-    return res.status(404).json({
-      success: false,
-      message: 'File not found',
-    });
-  }
-  
-  // Serve index.html for all other routes (client-side routing)
-  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+  // For all other routes (including those without extensions), serve index.html
+  const indexPath = path.join(distPath, 'index.html');
+  res.sendFile(indexPath, (err) => {
     if (err) {
-      console.error('Error serving index.html:', err);
+      console.error('❌ Error serving index.html:', err.message);
+      // If index.html doesn't exist, the dist folder might not be built
       res.status(500).json({
         success: false,
-        message: 'Error loading application',
+        message: 'React app not found. Make sure dist/ folder is built.',
+        error: err.message
       });
     }
   });
@@ -218,6 +222,17 @@ const PORT = process.env.PORT || 5000;
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`✓ Backend server is LISTENING on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/api/health`);
+  
+  // Verify React build exists
+  const distPath = path.join(__dirname, '../dist');
+  if (fs.existsSync(distPath)) {
+    const files = fs.readdirSync(distPath);
+    console.log(`✓ React build found at ${distPath}`);
+    console.log(`  Files: ${files.join(', ')}`);
+  } else {
+    console.warn(`⚠ React build not found at ${distPath}`);
+    console.warn(`  Make sure 'npm run build' was executed before starting the server`);
+  }
 });
 
 server.on('error', (error) => {
