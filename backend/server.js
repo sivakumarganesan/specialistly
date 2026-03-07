@@ -24,6 +24,7 @@ import payoutRoutes from './routes/payoutRoutes.js';
 import pageBuilderRoutes from './routes/pageBuilderRoutes.js';
 import pageRoutes from './routes/pageRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
+import publicRoutes from './routes/publicRoutes.js';
 
 dotenv.config();
 
@@ -98,6 +99,7 @@ app.use('/api/specialist', payoutRoutes);
 app.use('/api/page-builder', pageBuilderRoutes);
 app.use('/api/page-builder/websites/:websiteId/pages', pageRoutes);
 app.use('/api/page-builder/websites/:websiteId/media', mediaRoutes);
+app.use('/api/public', publicRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

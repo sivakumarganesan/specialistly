@@ -7,6 +7,7 @@ import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
 import EditorCanvas from './EditorCanvas';
 import SectionLibrary from './SectionLibrary';
+import { PreviewMode } from './PreviewMode';
 import {
   Plus,
   Save,
@@ -237,7 +238,20 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
             <h1 className="text-2xl font-bold text-gray-900">
               {website?.displayName || 'Page Builder'}
             </h1>
-            <p className="text-sm text-gray-500">{website?.domainName}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-sm text-gray-500">{website?.domainName}</p>
+              {selectedPage && website?.subdomain && (
+                <a
+                  href={`/public/${website.subdomain}/${selectedPage.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                  title="View published page"
+                >
+                  📄 View published page
+                </a>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-4">

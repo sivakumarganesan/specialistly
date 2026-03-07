@@ -495,3 +495,57 @@ export const reorderSections = async (req, res) => {
     });
   }
 };
+
+// ============ Public Page Access (NO AUTH REQUIRED) ============
+
+export const getPublicPage = async (req, res) => {
+  try {
+    const { subdomain, pageSlug } = req.params;
+
+    // Find website by subdomain
+    const website = await Website.findOne({ subdomain, isPublished: true });
+    if (!website) {
+      return res.status(404).json({
+        success: false,
+        message: 'Website not found or not published',
+      });
+    }
+
+    // Find page by slug and check if published
+    const page = await Page.findOne({ websiteId: website._id, slug: pageSlug, isPublished: true });
+    if (!page) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found or not published',
+      });
+    }
+
+    // Get all sections for the page
+    const sections = await PageSection.find({ pageId: page._id }).sort({ order: 1 });
+
+    res.json({
+      success: true,
+      data: {
+        website: {
+          _id: website._id,
+          subdomain: website.subdomain,
+          branding: website.branding,
+          theme: website.theme,
+        },
+        page: {
+          _id: page._id,
+          title: page.title,
+          slug: page.slug,
+        },
+        sections,
+      },
+      message: 'Public page retrieved successfully',
+    });
+  } catch (error) {
+    console.error('Get public page error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
