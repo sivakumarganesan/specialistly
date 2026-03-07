@@ -159,91 +159,124 @@ app.get('/api/test/outbound-ip', async (req, res) => {
 
 // Error handling middleware
 // ============ REACT SPA SERVING ============
-// Serve static files from dist folder BEFORE API routes
-const distPath = path.join(__dirname, '../dist');
-const assetsPath = path.join(distPath, 'assets');
+// Find dist folder - try multiple locations
+let distPath;
 
-console.log('🔍 Static file paths:');
-console.log('   distPath:', distPath);
-console.log('   assetsPath:', assetsPath);
+// Try 1: ./public (where we copy dist to during build)
+let tryPath1 = path.join(__dirname, './public');
+// Try 2: ../dist (parent of backend when running from backend/)
+let tryPath2 = path.join(__dirname, '../dist');
+// Try 3: use process.cwd() + '/dist'
+let tryPath3 = path.join(process.cwd(), 'dist');
 
-// Verify dist folder exists
-if (!fs.existsSync(distPath)) {
-  console.error('❌ CRITICAL: dist/ folder not found at:', distPath);
-  console.error('   This means the React build did not complete.');
-  console.error('   Make sure "npm run build" ran during Railway deployment.');
+console.log('🔍 Looking for dist/ folder...');
+console.log('   Current working directory:', process.cwd());
+console.log('   __dirname:', __dirname);
+console.log('   Try 1 (backend/public):', tryPath1, '- exists:', fs.existsSync(tryPath1));
+console.log('   Try 2 (../dist):', tryPath2, '- exists:', fs.existsSync(tryPath2));
+console.log('   Try 3 (process.cwd/dist):', tryPath3, '- exists:', fs.existsSync(tryPath3));
+
+// Use the first one that exists
+if (fs.existsSync(tryPath1)) {
+  distPath = tryPath1;
+  console.log('✓ Using Try 1 (backend/public):', distPath);
+} else if (fs.existsSync(tryPath2)) {
+  distPath = tryPath2;
+  console.log('✓ Using Try 2 (../dist):', distPath);
+} else if (fs.existsSync(tryPath3)) {
+  distPath = tryPath3;
+  console.log('✓ Using Try 3 (process.cwd):', distPath);
 } else {
-  console.log('✓ dist/ folder found');
+  // None exist - show detailed error
+  console.error('❌ CRITICAL: dist/ folder not found in any location!');
+  console.error('   Checked:');
+  console.error('     1. backend/public:', tryPath1);
+  console.error('     2. ../dist:', tryPath2);
+  console.error('     3. process.cwd/dist:', tryPath3);
+  console.error('   This means the React build did not persist from build phase.');
+  console.error('   The "npm run build" command may have failed.');
+  distPath = tryPath1; // Set default anyway
+}
+
+// Verify contents
+if (distPath && fs.existsSync(distPath)) {
   const indexExists = fs.existsSync(path.join(distPath, 'index.html'));
-  const assetsExists = fs.existsSync(assetsPath);
-  console.log('   - index.html exists:', indexExists);
-  console.log('   - assets/ folder exists:', assetsExists);
+  const assetsExists = fs.existsSync(path.join(distPath, 'assets'));
+  console.log('   Contents check:');
+  console.log('     - index.html exists:', indexExists);
+  console.log('     - assets/ folder exists:', assetsExists);
+  
   if (assetsExists) {
-    const assetFiles = fs.readdirSync(assetsPath).slice(0, 5);
-    console.log('   - Sample assets:', assetFiles.join(', '));
+    try {
+      const assetFiles = fs.readdirSync(path.join(distPath, 'assets')).slice(0, 3);
+      console.log('     - Sample asset files:', assetFiles.join(', '));
+    } catch (e) {
+      console.error('     - Error reading assets:', e.message);
+    }
   }
 }
 
-// Request logging middleware - log all requests to see routing
+// Request logging middleware
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api') || req.path === '/api/health') {
-    // Don't log API calls to reduce noise
-    return next();
+  if (!req.path.startsWith('/api')) {
+    console.log(`[REQUEST] ${req.method} ${req.path}`);
   }
-  console.log(`[REQUEST] ${req.method} ${req.path} ${req.get('Accept') ? '(accept: ' + req.get('Accept').split(',')[0] + ')' : ''}`);
   next();
 });
 
-// Serve all static files including /assets with correct MIME types
-app.use(express.static(distPath, {
-  maxAge: '1d',
-  etag: false,
-  index: false, // Don't auto-serve index.html
-  setHeaders: (res, filePath) => {
-    // Set correct MIME types
-    if (filePath.endsWith('.js')) {
-      res.setHeader('Content-Type', 'application/javascript');
-      console.log(`  ✓ Serving .js: ${path.basename(filePath)}`);
-    } else if (filePath.endsWith('.css')) {
-      res.setHeader('Content-Type', 'text/css');
-      console.log(`  ✓ Serving .css: ${path.basename(filePath)}`);
-    } else if (filePath.endsWith('.wasm')) {
-      res.setHeader('Content-Type', 'application/wasm');
-    } else if (filePath.endsWith('.html')) {
-      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+// Serve static files from dist with correct MIME types
+if (distPath && fs.existsSync(distPath)) {
+  console.log('✓ Setting up static middleware for:', distPath);
+  app.use(express.static(distPath, {
+    maxAge: '1d',
+    etag: false,
+    index: false,
+    setHeaders: (res, filePath) => {
+      // Explicitly set MIME types
+      if (filePath.endsWith('.js')) {
+        res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+        console.log('  → Serving JS:', path.basename(filePath));
+      } else if (filePath.endsWith('.css')) {
+        res.setHeader('Content-Type', 'text/css; charset=utf-8');
+      } else if (filePath.endsWith('.wasm')) {
+        res.setHeader('Content-Type', 'application/wasm');
+      } else if (filePath.endsWith('.html')) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      } else if (filePath.endsWith('.json')) {
+        res.setHeader('Content-Type', 'application/json');
+      } else if (filePath.endsWith('.svg')) {
+        res.setHeader('Content-Type', 'image/svg+xml');
+      } else if (filePath.endsWith('.png')) {
+        res.setHeader('Content-Type', 'image/png');
+      }
     }
-  }
-}));
+  }));
+} else {
+  console.error('❌ Skipping static middleware - dist/ folder not found');
+}
 
-// SPA fallback - serve index.html for client-side routes
-// IMPORTANT: This must be AFTER express.static() but BEFORE error handler
+// SPA fallback
 app.get('*', (req, res, next) => {
-  // Skip API routes
   if (req.path.startsWith('/api')) {
-    console.log(`[API] ${req.method} ${req.path}`);
+    console.log('[API]', req.method, req.path);
     return next();
   }
   
-  // Serve index.html for all other routes
   const indexPath = path.join(distPath, 'index.html');
   
   if (!fs.existsSync(indexPath)) {
     console.error('❌ index.html not found at:', indexPath);
     return res.status(500).json({
       success: false,
-      message: 'React app not properly built',
-      message2: 'Make sure dist/ folder exists with index.html'
+      message: 'React app not found',
+      details: 'dist/ folder or index.html missing'
     });
   }
   
-  console.log(`[SPA] ${req.method} ${req.path} → serving index.html`);
+  console.log('[SPA]', req.method, req.path, '→ index.html');
   res.sendFile(indexPath, (err) => {
-    if (err) {
+    if (err && err.code !== 'ERR_HTTP_REQUEST_ABORTED') {
       console.error('❌ Error serving index.html:', err.message);
-      res.status(500).json({
-        success: false,
-        message: 'Error loading application'
-      });
     }
   });
 });
