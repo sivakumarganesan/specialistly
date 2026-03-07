@@ -192,8 +192,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     price: "",
     currency: "USD",
     duration: "",
-    level: "Beginner",
-    category: "Technology",
     // Cohort-based specific fields
     cohortSize: "",
     startDate: "",
@@ -218,8 +216,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         currency: formData.currency || "USD",
         duration: formData.duration,
         status: "draft",
-        level: formData.level,
-        category: formData.category,
         specialistId: user?.id,
         specialistEmail: user?.email,
         ...(courseType === "cohort-based" && {
@@ -262,8 +258,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         price: parseInt(formData.price) || 0,
         currency: formData.currency || "USD",
         duration: formData.duration,
-        level: formData.level,
-        category: formData.category,
         specialistId: user?.id,
         specialistEmail: user?.email,
         ...(selectedCourse.type === "cohort-based" && {
@@ -360,8 +354,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       price: course.price || "",
       currency: course.currency || "USD",
       duration: course.duration || "",
-      level: course.level || "Beginner",
-      category: course.category || "Technology",
       cohortSize: course.cohortSize || "",
       startDate: course.startDate || "",
       endDate: course.endDate || "",
@@ -385,8 +377,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       price: "",
       currency: "USD",
       duration: "",
-      level: "Beginner",
-      category: "Technology",
       cohortSize: "",
       startDate: "",
       endDate: "",
@@ -1278,50 +1268,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="level">Course Level</Label>
-                <Select
-                  value={formData.level}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, level: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Beginner">Beginner</SelectItem>
-                    <SelectItem value="Intermediate">Intermediate</SelectItem>
-                    <SelectItem value="Advanced">Advanced</SelectItem>
-                    <SelectItem value="All Levels">All Levels</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Technology">Technology</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                    <SelectItem value="Personal Development">Personal Development</SelectItem>
-                    <SelectItem value="Health & Fitness">Health & Fitness</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
             {/* Cohort-Based Specific Fields */}
             {courseType === "cohort-based" && (
               <>
@@ -1573,50 +1519,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                     setFormData({ ...formData, endDate: e.target.value })
                   }
                 />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-level">Course Level</Label>
-                <Select
-                  value={formData.level}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, level: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Beginner">Beginner</SelectItem>
-                    <SelectItem value="Intermediate">Intermediate</SelectItem>
-                    <SelectItem value="Advanced">Advanced</SelectItem>
-                    <SelectItem value="All Levels">All Levels</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="edit-category">Category</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Technology">Technology</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                    <SelectItem value="Personal Development">Personal Development</SelectItem>
-                    <SelectItem value="Health & Fitness">Health & Fitness</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
 
