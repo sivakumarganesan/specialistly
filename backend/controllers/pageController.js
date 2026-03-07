@@ -551,3 +551,72 @@ export const getPublicPage = async (req, res) => {
     });
   }
 };
+
+/**
+ * Get public page via subdomain routing
+ * Used when user accesses https://subdomain.specialistly.com/:pageSlug
+ */
+export const getPublicPageViaSubdomain = async (req, res) => {
+  try {
+    const subdomain = req.subdomain;
+    const pageSlug = req.params.pageSlug || 'home';
+
+    console.log(`[Public Page] Subdomain: ${subdomain}, Page: ${pageSlug}`);
+
+    // Validate subdomain exists
+    if (!subdomain) {
+      return res.status(404).json({
+        success: false,
+        message: 'No subdomain provided',
+      });
+    }
+
+    // Find website by subdomain
+    const website = await Website.findOne({ subdomain, isPublished: true });
+    if (!website) {
+      console.log(`[Public Page] Website not found for subdomain: ${subdomain}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Website not found or not published',
+      });
+    }
+
+    // Find page by slug and check if published
+    const page = await Page.findOne({ websiteId: website._id, slug: pageSlug, isPublished: true });
+    if (!page) {
+      console.log(`[Public Page] Page not found: ${pageSlug} for website: ${website._id}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found or not published',
+      });
+    }
+
+    // Get all sections for the page
+    const sections = await PageSection.find({ pageId: page._id }).sort({ order: 1 });
+
+    res.json({
+      success: true,
+      data: {
+        website: {
+          _id: website._id,
+          subdomain: website.subdomain,
+          branding: website.branding,
+          theme: website.theme,
+        },
+        page: {
+          _id: page._id,
+          title: page.title,
+          slug: page.slug,
+        },
+        sections,
+      },
+      message: 'Public page retrieved successfully',
+    });
+  } catch (error) {
+    console.error('Get public page via subdomain error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

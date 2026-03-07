@@ -257,6 +257,41 @@ if (distPath && fs.existsSync(distPath)) {
   console.error('❌ Skipping static middleware - dist/ folder not found');
 }
 
+// ============ PUBLIC PAGE VIEWER (Subdomain-based) ============
+// Handle public page requests via subdomain URLs
+// e.g., https://nithyachellam.specialistly.com/about
+app.get('/:pageSlug', async (req, res, next) => {
+  // Only handle if this is a subdomain request
+  if (!req.subdomain) {
+    return next();
+  }
+
+  try {
+    const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
+    await getPublicPageViaSubdomain(req, res);
+  } catch (error) {
+    console.error('Error in subdomain page handler:', error);
+    next(error);
+  }
+});
+
+// Also handle root path for subdomains (home page)
+app.get('/', async (req, res, next) => {
+  // Only handle if this is a subdomain request
+  if (!req.subdomain) {
+    return next();
+  }
+
+  try {
+    const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
+    req.params.pageSlug = 'home';
+    await getPublicPageViaSubdomain(req, res);
+  } catch (error) {
+    console.error('Error in subdomain home handler:', error);
+    next(error);
+  }
+});
+
 // SPA fallback
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) {
