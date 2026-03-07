@@ -1,0 +1,495 @@
+import Page from '../models/Page.js';
+import PageSection from '../models/PageSection.js';
+import Website from '../models/Website.js';
+
+// ============ Page Operations ============
+
+export const createPage = async (req, res) => {
+  try {
+    const { websiteId } = req.params;
+    const { title, slug } = req.body;
+    const specialistId = req.user.id;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    // Check if slug already exists for this website
+    const existing = await Page.findOne({ websiteId, slug });
+    if (existing) {
+      return res.status(400).json({
+        success: false,
+        message: 'Page slug already exists',
+      });
+    }
+
+    // Get max order
+    const maxOrder = await Page.findOne({ websiteId })
+      .sort({ order: -1 })
+      .select('order');
+
+    const page = new Page({
+      websiteId,
+      title,
+      slug: slug.toLowerCase().replace(/\s+/g, '-'),
+      order: (maxOrder?.order || 0) + 1,
+      sections: [],
+    });
+
+    await page.save();
+
+    // Add to website pages
+    website.pages.push({
+      _id: page._id,
+      title,
+      slug: page.slug,
+      isHomePage: false,
+      isPublished: false,
+      order: page.order,
+      sections: [],
+    });
+
+    // Add to navigation
+    website.navigation.push({
+      id: `nav-${page._id}`,
+      label: title,
+      pageId: page._id,
+      order: page.order,
+    });
+
+    await website.save();
+
+    res.status(201).json({
+      success: true,
+      data: page,
+      message: 'Page created successfully',
+    });
+  } catch (error) {
+    console.error('Create page error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getPages = async (req, res) => {
+  try {
+    const { websiteId } = req.params;
+    const specialistId = req.user.id;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const pages = await Page.find({ websiteId })
+      .populate('sections')
+      .sort({ order: 1 });
+
+    res.json({
+      success: true,
+      data: pages,
+    });
+  } catch (error) {
+    console.error('Get pages error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const getPageById = async (req, res) => {
+  try {
+    const { websiteId, pageId } = req.params;
+    const specialistId = req.user.id;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const page = await Page.findById(pageId)
+      .populate('sections');
+
+    if (!page || page.websiteId.toString() !== websiteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: page,
+    });
+  } catch (error) {
+    console.error('Get page error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updatePage = async (req, res) => {
+  try {
+    const { websiteId, pageId } = req.params;
+    const specialistId = req.user.id;
+    const { title, description, seo } = req.body;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const page = await Page.findById(pageId);
+    if (!page || page.websiteId.toString() !== websiteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found',
+      });
+    }
+
+    if (title) page.title = title;
+    if (description) page.description = description;
+    if (seo) page.seo = { ...page.seo, ...seo };
+
+    await page.save();
+
+    res.json({
+      success: true,
+      data: page,
+      message: 'Page updated successfully',
+    });
+  } catch (error) {
+    console.error('Update page error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const publishPage = async (req, res) => {
+  try {
+    const { websiteId, pageId } = req.params;
+    const specialistId = req.user.id;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const page = await Page.findById(pageId);
+    if (!page || page.websiteId.toString() !== websiteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found',
+      });
+    }
+
+    page.isPublished = true;
+    page.publishedAt = new Date();
+    page.publishedBy = specialistId;
+    await page.save();
+
+    res.json({
+      success: true,
+      data: page,
+      message: 'Page published successfully',
+    });
+  } catch (error) {
+    console.error('Publish page error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deletePage = async (req, res) => {
+  try {
+    const { websiteId, pageId } = req.params;
+    const specialistId = req.user.id;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const page = await Page.findById(pageId);
+    if (!page || page.websiteId.toString() !== websiteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found',
+      });
+    }
+
+    // Don't allow deleting homepage
+    if (page.isHomePage) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cannot delete homepage',
+      });
+    }
+
+    // Delete all sections for this page
+    await PageSection.deleteMany({ pageId });
+
+    // Delete page
+    await Page.findByIdAndDelete(pageId);
+
+    // Remove from website pages array
+    website.pages = website.pages.filter(p => p._id.toString() !== pageId);
+    // Remove from navigation
+    website.navigation = website.navigation.filter(n => n.pageId?.toString() !== pageId);
+    await website.save();
+
+    res.json({
+      success: true,
+      message: 'Page deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete page error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const reorderPages = async (req, res) => {
+  try {
+    const { websiteId } = req.params;
+    const specialistId = req.user.id;
+    const { pageOrder } = req.body;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    // Update order for each page
+    for (let i = 0; i < pageOrder.length; i++) {
+      await Page.findByIdAndUpdate(pageOrder[i], { order: i });
+    }
+
+    const pages = await Page.find({ websiteId }).sort({ order: 1 });
+
+    res.json({
+      success: true,
+      data: pages,
+      message: 'Pages reordered successfully',
+    });
+  } catch (error) {
+    console.error('Reorder pages error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// ============ Section Operations ============
+
+export const addSection = async (req, res) => {
+  try {
+    const { websiteId, pageId } = req.params;
+    const specialistId = req.user.id;
+    const { type, content, styling, order } = req.body;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const page = await Page.findById(pageId);
+    if (!page || page.websiteId.toString() !== websiteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page not found',
+      });
+    }
+
+    const section = new PageSection({
+      websiteId,
+      pageId,
+      type,
+      content: content || {},
+      styling: styling || {},
+      order: order || page.sections.length,
+    });
+
+    await section.save();
+
+    // Add to page sections
+    page.sections.push(section._id);
+    await page.save();
+
+    res.status(201).json({
+      success: true,
+      data: section,
+      message: 'Section added successfully',
+    });
+  } catch (error) {
+    console.error('Add section error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const updateSection = async (req, res) => {
+  try {
+    const { websiteId, pageId, sectionId } = req.params;
+    const specialistId = req.user.id;
+    const { content, styling } = req.body;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const section = await PageSection.findById(sectionId);
+    if (!section || section.websiteId.toString() !== websiteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Section not found',
+      });
+    }
+
+    if (content) section.content = { ...section.content, ...content };
+    if (styling) section.styling = { ...section.styling, ...styling };
+
+    await section.save();
+
+    res.json({
+      success: true,
+      data: section,
+      message: 'Section updated successfully',
+    });
+  } catch (error) {
+    console.error('Update section error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const deleteSection = async (req, res) => {
+  try {
+    const { websiteId, pageId, sectionId } = req.params;
+    const specialistId = req.user.id;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    const section = await PageSection.findById(sectionId);
+    if (!section || section.websiteId.toString() !== websiteId) {
+      return res.status(404).json({
+        success: false,
+        message: 'Section not found',
+      });
+    }
+
+    const page = await Page.findById(pageId);
+    page.sections = page.sections.filter(s => s.toString() !== sectionId);
+    await page.save();
+
+    await PageSection.findByIdAndDelete(sectionId);
+
+    res.json({
+      success: true,
+      message: 'Section deleted successfully',
+    });
+  } catch (error) {
+    console.error('Delete section error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+export const reorderSections = async (req, res) => {
+  try {
+    const { websiteId, pageId } = req.params;
+    const specialistId = req.user.id;
+    const { sectionOrder } = req.body;
+
+    // Verify website ownership
+    const website = await Website.findById(websiteId);
+    if (!website || website.specialistId.toString() !== specialistId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    // Update order for each section
+    for (let i = 0; i < sectionOrder.length; i++) {
+      await PageSection.findByIdAndUpdate(sectionOrder[i], { order: i });
+    }
+
+    const sections = await PageSection.find({ pageId }).sort({ order: 1 });
+
+    res.json({
+      success: true,
+      data: sections,
+      message: 'Sections reordered successfully',
+    });
+  } catch (error) {
+    console.error('Reorder sections error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

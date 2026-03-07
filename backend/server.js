@@ -21,6 +21,9 @@ import commissionRoutes from './routes/commissionRoutes.js';
 import videoRoutes from './routes/videoRoutes.js';
 import marketplaceRoutes from './routes/marketplaceRoutes.js';
 import payoutRoutes from './routes/payoutRoutes.js';
+import pageBuilderRoutes from './routes/pageBuilderRoutes.js';
+import pageRoutes from './routes/pageRoutes.js';
+import mediaRoutes from './routes/mediaRoutes.js';
 
 dotenv.config();
 
@@ -92,6 +95,9 @@ app.use('/api/commission', commissionRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/specialist', payoutRoutes);
+app.use('/api/page-builder', pageBuilderRoutes);
+app.use('/api/page-builder/websites/:websiteId/pages', pageRoutes);
+app.use('/api/page-builder/websites/:websiteId/media', mediaRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
