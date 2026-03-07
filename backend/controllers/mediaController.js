@@ -2,7 +2,7 @@ import MediaLibrary from '../models/MediaLibrary.js';
 import Website from '../models/Website.js';
 import {
   uploadMedia as uploadMediaProvider,
-  deleteMedia,
+  deleteMedia as deleteMediaProvider,
   uploadMediaToS3,
   uploadVideoToCloudflare,
   validateYouTubeVideo,
@@ -265,7 +265,7 @@ export const deleteMedia = async (req, res) => {
     }
 
     // Delete from appropriate provider
-    const deleteResult = await deleteMedia(
+    const deleteResult = await deleteMediaProvider(
       media.storageProvider,
       media.storageKey,
       media.cloudflareId
