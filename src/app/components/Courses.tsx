@@ -1162,16 +1162,27 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="description">Description</Label>
+                <span className="text-sm text-gray-600">
+                  {formData.description.length}/2000
+                </span>
+              </div>
               <Textarea
                 id="description"
                 placeholder="Describe what students will learn"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => {
+                  if (e.target.value.length <= 2000) {
+                    setFormData({ ...formData, description: e.target.value });
+                  }
+                }}
+                maxLength={2000}
                 rows={3}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Maximum 2000 characters allowed for course description
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -1401,16 +1412,27 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </div>
 
             <div>
-              <Label htmlFor="edit-description">Description</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <span className="text-sm text-gray-600">
+                  {formData.description.length}/2000
+                </span>
+              </div>
               <Textarea
                 id="edit-description"
                 placeholder="Describe what students will learn"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => {
+                  if (e.target.value.length <= 2000) {
+                    setFormData({ ...formData, description: e.target.value });
+                  }
+                }}
+                maxLength={2000}
                 rows={3}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Maximum 2000 characters allowed for course description
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
