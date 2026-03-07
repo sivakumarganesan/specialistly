@@ -1684,46 +1684,57 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                 <p className="text-sm text-gray-500 text-center py-4">No lessons added yet. Click "Add Lesson" to get started.</p>
               ) : (
                 lessons.map((lesson, index) => (
-                  <Card key={index} className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-sm">Lesson {index + 1}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeLesson(index)}
-                          className="text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                  <Card key={index} className="p-6 bg-gradient-to-br from-white to-gray-50">
+                    {/* Lesson Header */}
+                    <div className="flex items-center justify-between mb-6 pb-4 border-b">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-semibold text-sm">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <Input
+                            placeholder="e.g., Introduction to React"
+                            value={lesson.title}
+                            onChange={(e) => updateLesson(index, "title", e.target.value)}
+                            className="font-semibold text-base border-0 px-0 focus-visible:ring-0 focus-visible:border-b-2"
+                          />
+                        </div>
                       </div>
-                      <div>
-                        <Label htmlFor={`lesson-title-${index}`} className="text-xs">
-                          Lesson Title *
-                        </Label>
-                        <Input
-                          id={`lesson-title-${index}`}
-                          placeholder="e.g., Introduction to React"
-                          value={lesson.title}
-                          onChange={(e) => updateLesson(index, "title", e.target.value)}
-                        />
-                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLesson(index)}
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
 
-                      {/* Cloudflare Video Upload Section */}
-                      <div className="border-t pt-3">
-                        <Label className="text-xs">
-                          🎬 Lesson Video (Cloudflare Stream) - Optional
-                        </Label>
-                        <div className="mt-2 space-y-3">
-                          {lesson.cloudflareStreamId ? (
-                            <div className="p-3 bg-green-50 border border-green-300 rounded">
-                              <p className="text-xs font-semibold text-green-800">✓ Video Uploaded</p>
+                    {/* Video Preview Section */}
+                    <div className="mb-6">
+                      <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        🎬 Lesson Video
+                        {lesson.cloudflareStreamId && (
+                          <span className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">
+                            ✓ Uploaded
+                          </span>
+                        )}
+                      </p>
+                      
+                      {lesson.cloudflareStreamId ? (
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-20 h-20 bg-green-200 rounded-lg flex items-center justify-center">
+                              <span className="text-3xl">🎬</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-green-900">Video Uploaded</p>
                               <p className="text-xs text-green-700 mt-1">
-                                Stream ID: <code className="bg-green-100 px-1 rounded text-xs">{lesson.cloudflareStreamId}</code>
+                                Stream ID: <code className="bg-green-100 px-1 rounded text-xs font-mono">{lesson.cloudflareStreamId}</code>
                               </p>
                               <p className="text-xs text-green-700 mt-1">
-                                Status: <span className="font-semibold">{lesson.cloudflareStatus || 'ready'}</span>
+                                Status: <span className="font-bold">{lesson.cloudflareStatus || 'ready'}</span>
                               </p>
                               <Button
                                 type="button"
@@ -1738,139 +1749,161 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                                   };
                                   setLessons(updatedLessons);
                                 }}
-                                className="w-full mt-2 text-xs"
+                                className="mt-3 text-xs border-green-300 hover:bg-green-100"
                               >
                                 Remove Video
                               </Button>
                             </div>
-                          ) : (
-                            <div className="relative">
-                              <input
-                                id={`video-upload-${index}`}
-                                type="file"
-                                accept=".mp4,.webm,.mov"
-                                disabled={uploadingVideoFor === index}
-                                onChange={(e) => {
-                                  const file = e.currentTarget.files?.[0];
-                                  if (file) {
-                                    // Validate filename doesn't contain spaces
-                                    if (file.name.includes(' ')) {
-                                      alert(
-                                        "⚠️ Filename cannot contain spaces.\n\n" +
-                                        "Please rename your video file and try again.\n\n" +
-                                        "Example: 'MyVideo.mp4' instead of 'My Video.mp4'"
-                                      );
-                                      return;
-                                    }
-                                    if (file.size > 5 * 1024 * 1024 * 1024) {
-                                      alert("File size must be under 5GB");
-                                      return;
-                                    }
-                                    uploadVideoToCloudflare(index, file);
-                                  }
-                                }}
-                                className="hidden"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => document.getElementById(`video-upload-${index}`)?.click()}
-                                disabled={uploadingVideoFor === index}
-                                className="w-full"
-                              >
-                                {uploadingVideoFor === index ? (
-                                  <span className="flex items-center gap-2">
-                                    <span className="inline-block w-3 h-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></span>
-                                    Uploading... {videoUploadProgress[index] || 0}%
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center gap-2">
-                                    📤 Choose Video File
-                                  </span>
-                                )}
-                              </Button>
-                              <p className="text-xs text-gray-500 mt-2">
-                                MP4, WebM, or MOV • Max 5GB • Supports adaptive bitrate streaming
-                              </p>
-                            </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
-
-                      {/* File Upload Section */}
-                      <div className="border-t pt-3">
-                        <Label htmlFor={`lesson-files-${index}`} className="text-xs">
-                          📎 Course Materials - Upload PDF, Documents, etc. (Optional)
-                        </Label>
-                        <div className="mt-2 space-y-3">
-                          <div className="flex gap-2">
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition">
+                          <div className="text-center">
                             <input
-                              id={`lesson-files-${index}`}
+                              id={`video-upload-${index}`}
                               type="file"
-                              multiple={false}
-                              accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.jpg,.jpeg,.png,.gif"
-                              className="flex-1 text-xs"
+                              accept=".mp4,.webm,.mov"
+                              disabled={uploadingVideoFor === index}
                               onChange={(e) => {
                                 const file = e.currentTarget.files?.[0];
                                 if (file) {
-                                  uploadFileToLesson(index, file);
-                                  e.currentTarget.value = ''; // Reset input
+                                  if (file.name.includes(' ')) {
+                                    alert(
+                                      "⚠️ Filename cannot contain spaces.\n\n" +
+                                      "Please rename your video file and try again.\n\n" +
+                                      "Example: 'MyVideo.mp4' instead of 'My Video.mp4'"
+                                    );
+                                    return;
+                                  }
+                                  if (file.size > 5 * 1024 * 1024 * 1024) {
+                                    alert("File size must be under 5GB");
+                                    return;
+                                  }
+                                  uploadVideoToCloudflare(index, file);
                                 }
                               }}
-                              disabled={uploadingFileFor === index}
+                              className="hidden"
                             />
+                            <div className="mb-2">
+                              <span className="text-3xl">📤</span>
+                            </div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">
+                              {uploadingVideoFor === index ? `Uploading... ${videoUploadProgress[index] || 0}%` : "Drag & drop your video or click to browse"}
+                            </p>
+                            <p className="text-xs text-gray-500 mb-3">
+                              MP4, WebM, or MOV • Max 5GB
+                            </p>
                             <Button
                               type="button"
                               size="sm"
-                              onClick={() => document.getElementById(`lesson-files-${index}`)?.click()}
-                              disabled={uploadingFileFor === index}
-                              className="bg-blue-600 hover:bg-blue-700"
+                              onClick={() => document.getElementById(`video-upload-${index}`)?.click()}
+                              disabled={uploadingVideoFor === index}
+                              className="bg-indigo-600 hover:bg-indigo-700"
                             >
-                              {uploadingFileFor === index ? 'Uploading...' : 'Choose'}
+                              {uploadingVideoFor === index ? "Uploading..." : "Upload Video"}
                             </Button>
                           </div>
-                          <p className="text-xs text-gray-500">
-                            Supported: PDF, Word, Excel, PowerPoint, Images, ZIP • Max 100MB
-                          </p>
                         </div>
+                      )}
+                    </div>
 
-                        {/* Display files attached to this lesson */}
+                    {/* Course Materials Section */}
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        📎 Course Materials
                         {lesson.files && lesson.files.length > 0 && (
-                          <div className="mt-3 space-y-2 p-2 bg-blue-50 rounded border border-blue-200">
-                            <p className="text-xs font-semibold text-blue-900">Attached Files:</p>
-                            {lesson.files.map((file, fileIndex) => (
-                              <div
-                                key={fileIndex}
-                                className="flex items-center justify-between p-2 bg-white rounded border border-blue-100"
-                              >
-                                <div className="flex items-center gap-2 flex-1">
-                                  <span className="text-lg">{getFileIcon(file.fileType)}</span>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium text-gray-900 truncate">
-                                      {file.fileName}
-                                    </p>
-                                    {file.fileSize && (
-                                      <p className="text-xs text-gray-500">
-                                        {(file.fileSize / 1024).toFixed(1)} KB
-                                      </p>
-                                    )}
-                                  </div>
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => deleteFileFromLesson(index, fileIndex)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                >
-                                  ✕
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
+                          <span className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">
+                            {lesson.files.length} file{lesson.files.length !== 1 ? 's' : ''}
+                          </span>
                         )}
+                      </p>
+
+                      {/* Upload Input */}
+                      <div className="mb-4">
+                        <div className="flex gap-2 mb-2">
+                          <input
+                            id={`lesson-files-${index}`}
+                            type="file"
+                            multiple={false}
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.jpg,.jpeg,.png,.gif"
+                            className="flex-1 text-xs border rounded px-2 py-2 file:text-xs file:px-3 file:py-1 file:border file:border-gray-300 file:rounded file:bg-gray-50 hover:file:bg-gray-100"
+                            onChange={(e) => {
+                              const file = e.currentTarget.files?.[0];
+                              if (file) {
+                                uploadFileToLesson(index, file);
+                                e.currentTarget.value = '';
+                              }
+                            }}
+                            disabled={uploadingFileFor === index}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => document.getElementById(`lesson-files-${index}`)?.click()}
+                            disabled={uploadingFileFor === index}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            {uploadingFileFor === index ? 'Adding...' : '+ Add'}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          PDF, Word, Excel, PowerPoint, Images, ZIP • Max 100MB
+                        </p>
                       </div>
+
+                      {/* File Preview Cards */}
+                      {lesson.files && lesson.files.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {lesson.files.map((file, fileIndex) => (
+                            <div
+                              key={fileIndex}
+                              className="group relative bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 hover:shadow-sm transition"
+                            >
+                              <div className="flex items-start gap-3">
+                                {/* File Icon/Thumbnail */}
+                                <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                  {file.fileType.includes('image') ? (
+                                    <img
+                                      src={file.fileUrl}
+                                      alt={file.fileName}
+                                      className="w-full h-full object-cover rounded"
+                                    />
+                                  ) : (
+                                    <span className="text-xl">{getFileIcon(file.fileType)}</span>
+                                  )}
+                                </div>
+                                
+                                {/* File Info */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-gray-900 truncate break-words">
+                                    {file.fileName}
+                                  </p>
+                                  {file.fileSize && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {(file.fileSize / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Delete Button */}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteFileFromLesson(index, fileIndex)}
+                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition text-red-600 hover:bg-red-50 p-1 h-6 w-6"
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-xs text-gray-500">No files added yet</p>
+                        </div>
+                      )}
                     </div>
                   </Card>
                 ))
