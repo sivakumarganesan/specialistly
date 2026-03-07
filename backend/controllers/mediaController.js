@@ -3,10 +3,9 @@ import Website from '../models/Website.js';
 import {
   uploadMedia as uploadMediaProvider,
   deleteMedia as deleteMediaProvider,
-  uploadMediaToS3,
   uploadVideoToCloudflare,
   validateYouTubeVideo,
-} from '../services/unifiedMediaService.js';
+} from '../services/cloudflareMediaService.js';
 
 // Get all media for a website
 export const getMediaLibrary = async (req, res) => {
@@ -46,8 +45,17 @@ export const getMediaLibrary = async (req, res) => {
 export const uploadMedia = async (req, res) => {
   try {
     const { websiteId } = req.params;
-    const { provider = 's3', videoUrl, title } = req.body;
+    const { provider = 'cloudflare', videoUrl, title } = req.body;
     const specialistId = req.user.id;
+
+    // Validate provider
+    const allowedProviders = ['cloudflare', 'youtube'];
+    if (!allowedProviders.includes(provider)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid provider: ${provider}. Allowed: ${allowedProviders.join(', ')}`,
+      });
+    }
 
     // For YouTube: URL is provided
     if (provider === 'youtube' && videoUrl) {

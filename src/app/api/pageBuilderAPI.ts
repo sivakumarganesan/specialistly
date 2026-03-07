@@ -454,11 +454,12 @@ class PageBuilderAPI {
   // ============ Media Operations ============
 
   /**
-   * Upload media to S3 (default for images/documents)
+   * Upload video to Cloudflare HLS streaming (primary method)
    */
   async uploadMedia(
     websiteId: string,
     file: File,
+    title: string,
     tags: string[] = [],
     alt?: string,
     description?: string
@@ -466,7 +467,8 @@ class PageBuilderAPI {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('provider', 's3');
+      formData.append('provider', 'cloudflare');
+      formData.append('title', title || file.name);
       formData.append('tags', tags.join(','));
       if (alt) formData.append('alt', alt);
       if (description) formData.append('description', description);

@@ -70,8 +70,8 @@ const mediaLibrarySchema = new mongoose.Schema(
     // Storage provider
     storageProvider: {
       type: String,
-      enum: ['s3', 'cloudinary', 'local', 'cloudflare', 'youtube'],
-      default: 's3',
+      enum: ['cloudflare', 'youtube'],
+      default: 'cloudflare',
     },
     
     storageKey: String, // S3 key or Cloudinary public_id

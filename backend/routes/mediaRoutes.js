@@ -14,30 +14,22 @@ const router = express.Router({ mergeParams: true });
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 100 * 1024 * 1024, // 100MB
+    fileSize: 5 * 1024 * 1024 * 1024, // 5GB for Cloudflare Stream
   },
   fileFilter: (req, file, cb) => {
-    // Allow images, videos, and documents
+    // Allow video files for Cloudflare HLS
     const allowedMimes = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'image/webp',
       'video/mp4',
       'video/webm',
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/x-matroska',
     ];
 
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`File type ${file.mimetype} not allowed`), false);
+      cb(new Error(`File type ${file.mimetype} not allowed. Only video files are supported.`), false);
     }
   },
 });
@@ -50,7 +42,7 @@ router.get('/', getMediaLibrary);
 
 // Upload endpoint supports:
 // 1. File upload (multipart/form-data with 'file' field)
-//    - provider: 's3' (default), 'cloudflare' (for videos), 'youtube'
+//    - provider: 'cloudflare' (default, for HLS video)
 // 2. YouTube URL (JSON with 'videoUrl' field)
 //    - provider: 'youtube'
 router.post(
@@ -60,7 +52,7 @@ router.post(
     if (req.body.provider === 'youtube' && req.body.videoUrl) {
       return next();
     }
-    // Otherwise process file upload
+    // Otherwise process file upload (Cloudflare)
     upload.single('file')(req, res, next);
   },
   uploadMedia
