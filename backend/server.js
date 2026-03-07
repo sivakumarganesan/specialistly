@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/database.js';
+import { subdomainMiddleware } from './middleware/subdomainMiddleware.js';
 import courseRoutes from './routes/courseRoutes.js';
 import serviceRoutes from './routes/serviceRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
@@ -34,18 +35,38 @@ const app = express();
 const allowedOrigins = [
   process.env.CORS_ORIGIN || 'http://localhost:3000',
   'https://www.specialistly.com',
+  'https://specialistly.com',
   'https://specialistly-production.up.railway.app',
   'http://localhost:3000',
   'http://localhost:5173', // Vite dev server
 ];
 
+// Function to check if origin is allowed
+const isOriginAllowed = (origin) => {
+  if (!origin) return true; // Allow no-origin requests (mobile apps, curl)
+  
+  // Check exact matches
+  if (allowedOrigins.includes(origin)) return true;
+  
+  // Allow any subdomain of specialistly.com over HTTPS
+  if (origin.match(/^https:\/\/[a-z0-9-]+\.specialistly\.com(:[0-9]+)?$/)) {
+    return true;
+  }
+  
+  // Allow any subdomain of specialistly.local for local development
+  if (origin.match(/^https?:\/\/[a-z0-9-]+\.specialistly\.local(:[0-9]+)?$/)) {
+    return true;
+  }
+  
+  return false;
+};
+
 const corsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (isOriginAllowed(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('CORS policy: Origin not allowed'));
+      callback(new Error(`CORS policy: Origin ${origin} not allowed`));
     }
   },
   credentials: true,
@@ -56,6 +77,9 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
+
+// Add subdomain middleware to extract subdomain from hostname
+app.use(subdomainMiddleware);
 
 // ⚠️ IMPORTANT: Stripe webhook middleware MUST be BEFORE express.json()
 // Webhook requires raw body, not JSON parsed
