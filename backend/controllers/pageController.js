@@ -559,7 +559,7 @@ export const getPublicPage = async (req, res) => {
 export const getPublicPageViaSubdomain = async (req, res) => {
   try {
     const subdomain = req.subdomain;
-    const pageSlug = req.params.pageSlug || 'home';
+    const pageSlug = (req.params.pageSlug || 'home').toLowerCase();
 
     console.log(`[Public Page] Subdomain: ${subdomain}, Page: ${pageSlug}`);
 
@@ -571,25 +571,43 @@ export const getPublicPageViaSubdomain = async (req, res) => {
       });
     }
 
-    // Find website by subdomain
-    const website = await Website.findOne({ subdomain, isPublished: true });
+    // Find website by subdomain (don't require isPublished for now - let's debug)
+    const website = await Website.findOne({ subdomain });
     if (!website) {
       console.log(`[Public Page] Website not found for subdomain: ${subdomain}`);
       return res.status(404).json({
         success: false,
-        message: 'Website not found or not published',
+        message: 'Website not found',
+        debug: { subdomain },
       });
     }
 
-    // Find page by slug and check if published
-    const page = await Page.findOne({ websiteId: website._id, slug: pageSlug, isPublished: true });
+    console.log(`[Public Page] Website found: ${website._id}, isPublished: ${website.isPublished}`);
+
+    // Find page by slug (don't require isPublished for now - let's debug)
+    const page = await Page.findOne({ websiteId: website._id, slug: pageSlug });
     if (!page) {
-      console.log(`[Public Page] Page not found: ${pageSlug} for website: ${website._id}`);
+      // List available pages for debugging
+      const availablePages = await Page.find({ websiteId: website._id });
+      console.log(`[Public Page] Page not found: ${pageSlug}`);
+      console.log(`[Public Page] Available pages: ${availablePages.map(p => p.slug).join(', ')}`);
+      
       return res.status(404).json({
         success: false,
-        message: 'Page not found or not published',
+        message: 'Page not found',
+        debug: {
+          subdomain,
+          pageRequested: pageSlug,
+          availablePages: availablePages.map(p => ({
+            slug: p.slug,
+            title: p.title,
+            isPublished: p.isPublished,
+          })),
+        },
       });
     }
+
+    console.log(`[Public Page] Page found: ${page._id}, isPublished: ${page.isPublished}`);
 
     // Get all sections for the page
     const sections = await PageSection.find({ pageId: page._id }).sort({ order: 1 });
@@ -600,6 +618,7 @@ export const getPublicPageViaSubdomain = async (req, res) => {
         website: {
           _id: website._id,
           subdomain: website.subdomain,
+          isPublished: website.isPublished,
           branding: website.branding,
           theme: website.theme,
         },
@@ -607,6 +626,7 @@ export const getPublicPageViaSubdomain = async (req, res) => {
           _id: page._id,
           title: page.title,
           slug: page.slug,
+          isPublished: page.isPublished,
         },
         sections,
       },
