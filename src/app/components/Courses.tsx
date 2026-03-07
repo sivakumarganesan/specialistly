@@ -188,6 +188,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    thumbnail: "",
     price: "",
     currency: "USD",
     duration: "",
@@ -212,6 +213,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         title: formData.title,
         courseType: courseType,
         description: formData.description,
+        thumbnail: formData.thumbnail || "",
         price: parseInt(formData.price) || 0,
         currency: formData.currency || "USD",
         duration: formData.duration,
@@ -256,8 +258,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       const updatedData = {
         title: formData.title,
         description: formData.description,
+        thumbnail: formData.thumbnail || "",
         price: parseInt(formData.price) || 0,
-        currency: formData.currency || "USD", // Include currency
+        currency: formData.currency || "USD",
         duration: formData.duration,
         level: formData.level,
         category: formData.category,
@@ -353,14 +356,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     setFormData({
       title: course.title || "",
       description: course.description || "",
+      thumbnail: course.thumbnail || "",
       price: course.price || "",
-      currency: course.currency || "USD", // Add currency field from course
+      currency: course.currency || "USD",
       duration: course.duration || "",
       level: course.level || "Beginner",
       category: course.category || "Technology",
-      totalLessons: course.totalLessons?.toString() || "",
-      certificateIncluded: course.certificateIncluded !== undefined ? course.certificateIncluded : true,
-      accessDuration: course.accessDuration || "Lifetime",
       cohortSize: course.cohortSize || "",
       startDate: course.startDate || "",
       endDate: course.endDate || "",
@@ -380,14 +381,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     setFormData({
       title: "",
       description: "",
+      thumbnail: "",
       price: "",
-      currency: "USD", // Reset to default currency
+      currency: "USD",
       duration: "",
       level: "Beginner",
       category: "Technology",
-      totalLessons: "",
-      certificateIncluded: true,
-      accessDuration: "Lifetime",
       cohortSize: "",
       startDate: "",
       endDate: "",
@@ -1162,6 +1161,41 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </div>
 
             <div>
+              <Label htmlFor="thumbnail">Course Thumbnail Image</Label>
+              <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50">
+                <Input
+                  id="thumbnail"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setFormData({ ...formData, thumbnail: event.target?.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <label htmlFor="thumbnail" className="cursor-pointer block">
+                  {formData.thumbnail ? (
+                    <div>
+                      <img src={formData.thumbnail} alt="Thumbnail preview" className="w-20 h-20 object-cover mx-auto rounded mb-2" />
+                      <p className="text-sm text-blue-600">Click to change image</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-gray-600">Click to upload course thumbnail</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF (Max 5MB)</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            <div>
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="description">Description</Label>
                 <span className="text-sm text-gray-600">
@@ -1187,18 +1221,6 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="price">Price *</Label>
-                <Input
-                  id="price"
-                  placeholder="99"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
-                />
-              </div>
-
-              <div>
                 <Label htmlFor="currency">Currency *</Label>
                 <Select
                   value={formData.currency}
@@ -1215,23 +1237,50 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   </SelectContent>
                 </Select>
               </div>
+
+              <div>
+                <Label htmlFor="price">Price *</Label>
+                <Input
+                  id="price"
+                  placeholder="99"
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) =>
+                    setFormData({ ...formData, price: e.target.value })
+                  }
+                />
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="duration">Duration *</Label>
+                <Label htmlFor="startDate">Start Date *</Label>
                 <Input
-                  id="duration"
-                  placeholder="e.g., 8 weeks"
-                  value={formData.duration}
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, duration: e.target.value })
+                    setFormData({ ...formData, startDate: e.target.value })
                   }
                 />
               </div>
 
               <div>
-                <Label htmlFor="level">Course Level *</Label>
+                <Label htmlFor="endDate">End Date *</Label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, endDate: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="level">Course Level</Label>
                 <Select
                   value={formData.level}
                   onValueChange={(value) =>
@@ -1249,11 +1298,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="category">Category *</Label>
+                <Label htmlFor="category">Category</Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) =>
@@ -1412,6 +1459,41 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </div>
 
             <div>
+              <Label htmlFor="edit-thumbnail">Course Thumbnail Image</Label>
+              <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50">
+                <Input
+                  id="edit-thumbnail"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setFormData({ ...formData, thumbnail: event.target?.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <label htmlFor="edit-thumbnail" className="cursor-pointer block">
+                  {formData.thumbnail ? (
+                    <div>
+                      <img src={formData.thumbnail} alt="Thumbnail preview" className="w-20 h-20 object-cover mx-auto rounded mb-2" />
+                      <p className="text-sm text-blue-600">Click to change image</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-gray-600">Click to upload course thumbnail</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF (Max 5MB)</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            <div>
               <div className="flex items-center justify-between mb-2">
                 <Label htmlFor="edit-description">Description</Label>
                 <span className="text-sm text-gray-600">
@@ -1437,25 +1519,32 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-price">Price *</Label>
-                <Input
-                  id="edit-price"
-                  placeholder="$99"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
+                <Label htmlFor="edit-currency">Currency *</Label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, currency: value })
                   }
-                />
+                >
+                  <SelectTrigger id="edit-currency">
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">💵 USD (United States Dollar) - Stripe</SelectItem>
+                    <SelectItem value="INR">🇮🇳 INR (Indian Rupees) - Razorpay</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
-                <Label htmlFor="edit-duration">Duration *</Label>
+                <Label htmlFor="edit-price">Price *</Label>
                 <Input
-                  id="edit-duration"
-                  placeholder="e.g., 8 weeks"
-                  value={formData.duration}
+                  id="edit-price"
+                  placeholder="99"
+                  type="number"
+                  value={formData.price}
                   onChange={(e) =>
-                    setFormData({ ...formData, duration: e.target.value })
+                    setFormData({ ...formData, price: e.target.value })
                   }
                 />
               </div>
@@ -1463,7 +1552,33 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-level">Course Level *</Label>
+                <Label htmlFor="edit-startDate">Start Date *</Label>
+                <Input
+                  id="edit-startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startDate: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-endDate">End Date *</Label>
+                <Input
+                  id="edit-endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, endDate: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-level">Course Level</Label>
                 <Select
                   value={formData.level}
                   onValueChange={(value) =>
@@ -1483,7 +1598,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               </div>
 
               <div>
-                <Label htmlFor="edit-category">Category *</Label>
+                <Label htmlFor="edit-category">Category</Label>
                 <Select
                   value={formData.category}
                   onValueChange={(value) =>
