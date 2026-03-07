@@ -14,22 +14,22 @@ import {
 const router = express.Router();
 
 // Public routes - list templates
-router.get('/templates', listTemplates);
-router.get('/templates/:templateId', getTemplate);
+router.get('/', listTemplates);
+router.get('/:templateId', getTemplate);
 
 // Seed templates (admin only)
-router.post('/templates/admin/seed', seedTemplates);
+router.post('/admin/seed', seedTemplates);
 
 // Protected routes - require authentication
 router.use(authMiddleware);
 
 // Create page from template
-router.post('/templates/:templateId/create-page', createPageFromTemplate);
+router.post('/:templateId/create-page', createPageFromTemplate);
 
 // Admin only routes - template management
-router.get('/templates/admin/all', getAllTemplates);
-router.post('/templates/admin', createTemplate);
-router.put('/templates/admin/:templateId', updateTemplate);
-router.delete('/templates/admin/:templateId', deleteTemplate);
+router.get('/admin/all', getAllTemplates);
+router.post('/admin', createTemplate);
+router.put('/admin/:templateId', updateTemplate);
+router.delete('/admin/:templateId', deleteTemplate);
 
 export default router;
