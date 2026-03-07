@@ -184,28 +184,35 @@ if (!fs.existsSync(distPath)) {
   }
 }
 
-// Serve static assets (js, css, images, etc.) with proper headers
-app.use('/assets', express.static(assetsPath, {
+// Request logging middleware - log all requests to see routing
+app.use((req, res, next) => {
+  if (req.path.startsWith('/api') || req.path === '/api/health') {
+    // Don't log API calls to reduce noise
+    return next();
+  }
+  console.log(`[REQUEST] ${req.method} ${req.path} ${req.get('Accept') ? '(accept: ' + req.get('Accept').split(',')[0] + ')' : ''}`);
+  next();
+});
+
+// Serve all static files including /assets with correct MIME types
+app.use(express.static(distPath, {
   maxAge: '1d',
   etag: false,
-  setHeaders: (res, path) => {
-    // Ensure correct MIME types
-    if (path.endsWith('.js')) {
-      res.set('Content-Type', 'application/javascript');
-      console.log('[SERVE] JS file:', path.split('/').pop());
-    } else if (path.endsWith('.css')) {
-      res.set('Content-Type', 'text/css');
-    } else if (path.endsWith('.wasm')) {
-      res.set('Content-Type', 'application/wasm');
+  index: false, // Don't auto-serve index.html
+  setHeaders: (res, filePath) => {
+    // Set correct MIME types
+    if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+      console.log(`  ✓ Serving .js: ${path.basename(filePath)}`);
+    } else if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+      console.log(`  ✓ Serving .css: ${path.basename(filePath)}`);
+    } else if (filePath.endsWith('.wasm')) {
+      res.setHeader('Content-Type', 'application/wasm');
+    } else if (filePath.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
     }
   }
-}));
-
-// Serve other static files (index.html, favicon, etc.)
-app.use(express.static(distPath, {
-  maxAge: '0',
-  etag: false,
-  index: false // Don't auto-serve index.html here
 }));
 
 // SPA fallback - serve index.html for client-side routes
@@ -213,7 +220,7 @@ app.use(express.static(distPath, {
 app.get('*', (req, res, next) => {
   // Skip API routes
   if (req.path.startsWith('/api')) {
-    console.log('[API]', req.method, req.path);
+    console.log(`[API] ${req.method} ${req.path}`);
     return next();
   }
   
@@ -229,7 +236,7 @@ app.get('*', (req, res, next) => {
     });
   }
   
-  console.log('[SPA]', req.path, '→ index.html');
+  console.log(`[SPA] ${req.method} ${req.path} → serving index.html`);
   res.sendFile(indexPath, (err) => {
     if (err) {
       console.error('❌ Error serving index.html:', err.message);
