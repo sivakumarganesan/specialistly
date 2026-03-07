@@ -1,6 +1,12 @@
 import MediaLibrary from '../models/MediaLibrary.js';
 import Website from '../models/Website.js';
-import { uploadToS3, deleteFromS3 } from '../services/s3Service.js';
+import {
+  uploadMedia: uploadMediaToProvider,
+  deleteMedia: deleteMediaFromProvider,
+  uploadMediaToS3,
+  uploadVideoToCloudflare,
+  validateYouTubeVideo,
+} from '../services/unifiedMediaService.js';
 
 // Get all media for a website
 export const getMediaLibrary = async (req, res) => {
@@ -36,12 +42,69 @@ export const getMediaLibrary = async (req, res) => {
   }
 };
 
-// Upload media file
+// Upload media file or video
 export const uploadMedia = async (req, res) => {
   try {
     const { websiteId } = req.params;
+    const { provider = 's3', videoUrl, title } = req.body;
     const specialistId = req.user.id;
 
+    // For YouTube: URL is provided
+    if (provider === 'youtube' && videoUrl) {
+      // Verify website ownership
+      const website = await Website.findById(websiteId);
+      if (!website || website.specialistId.toString() !== specialistId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Unauthorized',
+        });
+      }
+
+      // Validate YouTube URL
+      const youtubeResult = await validateYouTubeVideo(videoUrl);
+      if (!youtubeResult.success) {
+        return res.status(400).json({
+          success: false,
+          message: youtubeResult.error,
+        });
+      }
+
+      // Create media entry
+      const media = new MediaLibrary({
+        specialistId,
+        websiteId,
+        filename: youtubeResult.videoId,
+        originalName: title || youtubeResult.videoId,
+        fileType: 'video',
+        mimeType: 'video/youtube',
+        url: youtubeResult.embedUrl,
+        thumbnailUrl: youtubeResult.thumbnailUrl,
+        storageProvider: 'youtube',
+        youtubeVideoId: youtubeResult.videoId,
+        embedUrl: youtubeResult.embedUrl,
+        metadata: {
+          source: 'youtube',
+        },
+      });
+
+      if (req.body.tags) {
+        media.tags = req.body.tags.split(',').map(t => t.trim());
+      }
+
+      if (req.body.alt) {
+        media.alt = req.body.alt;
+      }
+
+      await media.save();
+
+      return res.status(201).json({
+        success: true,
+        data: media,
+        message: 'YouTube video added successfully',
+      });
+    }
+
+    // For file uploads (S3 or Cloudflare)
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -70,14 +133,18 @@ export const uploadMedia = async (req, res) => {
       fileType = 'audio';
     }
 
-    // Upload to S3
-    const s3Key = `media/${specialistId}/${websiteId}/${Date.now()}-${req.file.originalname}`;
-    const uploadResult = await uploadToS3(req.file, s3Key);
+    // Upload to selected provider
+    const uploadResult = await uploadMediaToProvider(
+      req.file,
+      fileType,
+      provider,
+      title || req.file.originalname
+    );
 
     if (!uploadResult.success) {
       return res.status(500).json({
         success: false,
-        message: 'Upload failed',
+        message: uploadResult.error || 'Upload failed',
       });
     }
 
@@ -85,15 +152,21 @@ export const uploadMedia = async (req, res) => {
     const media = new MediaLibrary({
       specialistId,
       websiteId,
-      filename: uploadResult.filename,
+      filename: uploadResult.filename || req.file.originalname,
       originalName: req.file.originalname,
       fileType,
       mimeType,
       url: uploadResult.url,
+      thumbnailUrl: uploadResult.thumbnailUrl || null,
       size: req.file.size,
-      storageProvider: 's3',
-      storageKey: s3Key,
-      metadata: req.body.metadata || {},
+      storageProvider: uploadResult.provider,
+      storageKey: uploadResult.key || null,
+      cloudflareId: uploadResult.cloudflareId || null,
+      cloudflarePlaylistUrl: uploadResult.hlsPlaylistUrl || null,
+      metadata: {
+        ...uploadResult.metadata,
+        uploadedVia: uploadResult.provider,
+      },
     });
 
     if (req.body.tags) {
@@ -104,12 +177,16 @@ export const uploadMedia = async (req, res) => {
       media.alt = req.body.alt;
     }
 
+    if (req.body.description) {
+      media.description = req.body.description;
+    }
+
     await media.save();
 
     res.status(201).json({
       success: true,
       data: media,
-      message: 'Media uploaded successfully',
+      message: `Media uploaded successfully via ${uploadResult.provider.toUpperCase()}`,
     });
   } catch (error) {
     console.error('Upload media error:', error);
@@ -187,9 +264,18 @@ export const deleteMedia = async (req, res) => {
       });
     }
 
-    // Delete from S3
-    if (media.storageProvider === 's3') {
-      await deleteFromS3(media.storageKey);
+    // Delete from appropriate provider
+    const deleteResult = await deleteMediaFromProvider(
+      media.storageProvider,
+      media.storageKey,
+      media.cloudflareId
+    );
+
+    if (!deleteResult.success) {
+      console.warn(
+        `Warning: Failed to delete from ${media.storageProvider}: ${deleteResult.error}`
+      );
+      // Continue with soft delete even if provider deletion fails
     }
 
     // Soft delete

@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 import {
   createPage,
   getPages,
@@ -17,7 +17,7 @@ import {
 const router = express.Router({ mergeParams: true });
 
 // Protected routes - require authentication
-router.use(protect);
+router.use(authMiddleware);
 
 // Page routes
 router.post('/', createPage);

@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { protect } from '../middleware/auth.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 import {
   getMediaLibrary,
   uploadMedia,
@@ -43,11 +43,29 @@ const upload = multer({
 });
 
 // Protected routes
-router.use(protect);
+router.use(authMiddleware);
 
 // Media library routes
 router.get('/', getMediaLibrary);
-router.post('/upload', upload.single('file'), uploadMedia);
+
+// Upload endpoint supports:
+// 1. File upload (multipart/form-data with 'file' field)
+//    - provider: 's3' (default), 'cloudflare' (for videos), 'youtube'
+// 2. YouTube URL (JSON with 'videoUrl' field)
+//    - provider: 'youtube'
+router.post(
+  '/upload',
+  (req, res, next) => {
+    // Skip multer if it's a YouTube URL upload
+    if (req.body.provider === 'youtube' && req.body.videoUrl) {
+      return next();
+    }
+    // Otherwise process file upload
+    upload.single('file')(req, res, next);
+  },
+  uploadMedia
+);
+
 router.put('/:mediaId', updateMedia);
 router.delete('/:mediaId', deleteMedia);
 

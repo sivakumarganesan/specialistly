@@ -70,11 +70,19 @@ const mediaLibrarySchema = new mongoose.Schema(
     // Storage provider
     storageProvider: {
       type: String,
-      enum: ['s3', 'cloudinary', 'local'],
+      enum: ['s3', 'cloudinary', 'local', 'cloudflare', 'youtube'],
       default: 's3',
     },
     
     storageKey: String, // S3 key or Cloudinary public_id
+    
+    // Cloudflare specific
+    cloudflareId: String, // Cloudflare Stream video UID
+    cloudflarePlaylistUrl: String, // HLS playlist URL
+    
+    // YouTube specific
+    youtubeVideoId: String, // YouTube video ID
+    embedUrl: String, // YouTube embed URL
     
     // Soft delete
     isDeleted: {

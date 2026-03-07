@@ -453,11 +453,23 @@ class PageBuilderAPI {
 
   // ============ Media Operations ============
 
-  async uploadMedia(websiteId: string, file: File, tags: string[] = []) {
+  /**
+   * Upload media to S3 (default for images/documents)
+   */
+  async uploadMedia(
+    websiteId: string,
+    file: File,
+    tags: string[] = [],
+    alt?: string,
+    description?: string
+  ) {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('tags', JSON.stringify(tags));
+      formData.append('provider', 's3');
+      formData.append('tags', tags.join(','));
+      if (alt) formData.append('alt', alt);
+      if (description) formData.append('description', description);
 
       const response = await fetch(
         `${this.baseURL}/websites/${websiteId}/media/upload`,
@@ -471,12 +483,97 @@ class PageBuilderAPI {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to upload media');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upload media');
       }
 
       return await response.json();
     } catch (error) {
       console.error('Error uploading media:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Upload video to Cloudflare HLS streaming
+   */
+  async uploadVideoToCloudflare(
+    websiteId: string,
+    file: File,
+    title: string,
+    tags: string[] = [],
+    alt?: string
+  ) {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('provider', 'cloudflare');
+      formData.append('title', title);
+      formData.append('tags', tags.join(','));
+      if (alt) formData.append('alt', alt);
+
+      const response = await fetch(
+        `${this.baseURL}/websites/${websiteId}/media/upload`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upload video');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading video to Cloudflare:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add YouTube video link
+   */
+  async addYouTubeVideo(
+    websiteId: string,
+    videoUrl: string,
+    title: string,
+    tags: string[] = [],
+    alt?: string,
+    description?: string
+  ) {
+    try {
+      const response = await fetch(
+        `${this.baseURL}/websites/${websiteId}/media/upload`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: JSON.stringify({
+            provider: 'youtube',
+            videoUrl,
+            title,
+            tags: tags.join(','),
+            alt,
+            description,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to add YouTube video');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding YouTube video:', error);
       throw error;
     }
   }
