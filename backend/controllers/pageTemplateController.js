@@ -152,6 +152,7 @@ export const createPageFromTemplate = async (req, res) => {
     const createdSections = [];
     for (const templateSection of template.sections || []) {
       const section = new PageSection({
+        websiteId,
         pageId: page._id,
         type: templateSection.type,
         title: templateSection.title,
