@@ -1,7 +1,7 @@
 import MediaLibrary from '../models/MediaLibrary.js';
 import Website from '../models/Website.js';
 import {
-  uploadMedia,
+  uploadMedia as uploadMediaProvider,
   deleteMedia,
   uploadMediaToS3,
   uploadVideoToCloudflare,
@@ -134,7 +134,7 @@ export const uploadMedia = async (req, res) => {
     }
 
     // Upload to selected provider
-    const uploadResult = await uploadMedia(
+    const uploadResult = await uploadMediaProvider(
       req.file,
       fileType,
       provider,
