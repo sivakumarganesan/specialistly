@@ -510,7 +510,7 @@ export const updatePage = async (req, res) => {
     }
 
     // Update fields
-    if (title) page.title = title;
+    if (title !== undefined) page.title = title;
     if (slug) {
       // Check if new slug is unique
       const existingPage = await Page.findOne({ 
@@ -808,7 +808,7 @@ export const updateSection = async (req, res) => {
 
     // Update fields
     if (type) section.type = type;
-    if (title) section.title = title;
+    if (title !== undefined) section.title = title;
     if (description !== undefined) section.description = description;
     if (content) section.content = content;
     if (styling) section.styling = styling;
