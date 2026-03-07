@@ -9,6 +9,7 @@ import {
   publishWebsite,
   deleteWebsite,
   ensureSubdomain,
+  updateSubdomain,
   createPage,
   getPages,
   getPageById,
@@ -35,6 +36,7 @@ router.put('/websites/:websiteId', updateWebsite);
 router.put('/websites/:websiteId/branding', updateBranding);
 router.put('/websites/:websiteId/publish', publishWebsite);
 router.put('/websites/:websiteId/ensure-subdomain', ensureSubdomain);
+router.put('/websites/:websiteId/subdomain', updateSubdomain);
 router.delete('/websites/:websiteId', deleteWebsite);
 
 // Page routes

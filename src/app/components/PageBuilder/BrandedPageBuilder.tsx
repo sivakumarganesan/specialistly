@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, AlertCircle, Edit2, Eye } from 'lucide-react';
+import { Plus, Loader2, AlertCircle, Edit2, Eye, X, Check } from 'lucide-react';
 import { TemplateGallery } from './TemplateGallery';
 import { CreatePageFromTemplate } from './CreatePageFromTemplate';
 import PageBuilderEditor from '../PageBuilderEditor';
@@ -28,6 +28,10 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
   const [error, setError] = useState('');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [actualSubdomain, setActualSubdomain] = useState<string | undefined>(subdomain);
+  const [isEditingSubdomain, setIsEditingSubdomain] = useState(false);
+  const [newSubdomain, setNewSubdomain] = useState<string>('');
+  const [subdomainError, setSubdomainError] = useState('');
+  const [subdomainLoading, setSubdomainLoading] = useState(false);
 
   useEffect(() => {
     ensureSubdomainConfigured();
@@ -55,10 +59,58 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
         const data = await response.json();
         if (data.data?.subdomain) {
           setActualSubdomain(data.data.subdomain);
+          setNewSubdomain(data.data.subdomain);
         }
       }
     } catch (err) {
       console.error('Error ensuring subdomain configured:', err);
+    }
+  };
+
+  const updateSubdomainHandler = async () => {
+    setSubdomainError('');
+    
+    // Basic validation
+    if (!newSubdomain.trim()) {
+      setSubdomainError('Subdomain is required');
+      return;
+    }
+
+    if (newSubdomain === actualSubdomain) {
+      setIsEditingSubdomain(false);
+      return;
+    }
+
+    setSubdomainLoading(true);
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+      const authToken = localStorage.getItem('authToken');
+
+      const response = await fetch(
+        `${apiUrl}/page-builder/websites/${websiteId}/subdomain`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ subdomain: newSubdomain.toLowerCase().trim() }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setSubdomainError(data.message || 'Failed to update subdomain');
+        return;
+      }
+
+      setActualSubdomain(data.data.subdomain);
+      setIsEditingSubdomain(false);
+    } catch (err) {
+      setSubdomainError(err instanceof Error ? err.message : 'Error updating subdomain');
+    } finally {
+      setSubdomainLoading(false);
     }
   };
 
@@ -161,12 +213,27 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
                 Create and manage branded pages for your specialist website
               </p>
               <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                <p className="text-sm text-gray-600">
-                  <span className="font-semibold">Domain:</span>
-                </p>
-                <p className="text-lg font-mono text-blue-700 mt-1">
-                  https://{actualSubdomain}.specialistly.com
-                </p>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Domain:</span>
+                    </p>
+                    <p className="text-lg font-mono text-blue-700 mt-1">
+                      https://{actualSubdomain}.specialistly.com
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setIsEditingSubdomain(true);
+                      setNewSubdomain(actualSubdomain || '');
+                      setSubdomainError('');
+                    }}
+                    className="ml-4 p-2 hover:bg-blue-100 rounded-lg transition"
+                    title="Edit subdomain"
+                  >
+                    <Edit2 className="w-4 h-4 text-blue-600" />
+                  </button>
+                </div>
               </div>
             </div>
             <button
@@ -293,6 +360,86 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
           </div>
         )}
       </div>
+
+      {/* Edit Subdomain Modal */}
+      {isEditingSubdomain && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6 border-b">
+              <h2 className="text-xl font-bold">Edit Subdomain</h2>
+              <p className="text-blue-100 text-sm mt-1">Change your website address</p>
+            </div>
+
+            <div className="p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Subdomain
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newSubdomain}
+                    onChange={(e) => {
+                      setNewSubdomain(e.target.value);
+                      setSubdomainError('');
+                    }}
+                    placeholder="e.g., my-business"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={subdomainLoading}
+                  />
+                  <span className="text-gray-500 py-2 text-sm">.specialistly.com</span>
+                </div>
+                {subdomainError && (
+                  <p className="text-red-500 text-sm mt-2">{subdomainError}</p>
+                )}
+                <p className="text-gray-500 text-xs mt-2">
+                  Use letters, numbers, and hyphens (3-50 characters)
+                </p>
+              </div>
+
+              <div className="bg-gray-50 p-3 rounded-lg text-sm">
+                <p className="text-gray-600">
+                  Your website will be accessible at:<br />
+                  <span className="font-mono text-blue-600 break-all">
+                    https://{newSubdomain || 'subdomain'}.specialistly.com
+                  </span>
+                </p>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => {
+                    setIsEditingSubdomain(false);
+                    setSubdomainError('');
+                  }}
+                  disabled={subdomainLoading}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+                >
+                  <X className="w-4 h-4 inline mr-2" />
+                  Cancel
+                </button>
+                <button
+                  onClick={updateSubdomainHandler}
+                  disabled={subdomainLoading}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {subdomainLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      Save
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {showTemplateGallery && (

@@ -397,6 +397,76 @@ export const ensureSubdomain = async (req, res) => {
   }
 };
 
+export const updateSubdomain = async (req, res) => {
+  try {
+    const { websiteId } = req.params;
+    const userEmail = req.user.email;
+    const { subdomain: newSubdomain } = req.body;
+
+    // Validate subdomain format
+    if (!newSubdomain || typeof newSubdomain !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Subdomain is required and must be a string',
+      });
+    }
+
+    // Validate subdomain format (alphanumeric and hyphens only, 3-50 chars)
+    const subdomainRegex = /^[a-z0-9]([a-z0-9-]{1,48}[a-z0-9])?$/;
+    if (!subdomainRegex.test(newSubdomain)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Subdomain must be 3-50 characters, start/end with alphanumeric, and contain only letters, numbers, and hyphens',
+      });
+    }
+
+    const website = await Website.findById(websiteId);
+
+    if (!website) {
+      return res.status(404).json({
+        success: false,
+        message: 'Website not found',
+      });
+    }
+
+    // Verify ownership
+    if (website.creatorEmail !== userEmail) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    // Check if subdomain already taken by another website
+    const existingWebsite = await Website.findOne({ 
+      subdomain: newSubdomain, 
+      _id: { $ne: websiteId } 
+    });
+
+    if (existingWebsite) {
+      return res.status(400).json({
+        success: false,
+        message: 'This subdomain is already taken. Please choose another.',
+      });
+    }
+
+    website.subdomain = newSubdomain;
+    await website.save();
+
+    res.json({
+      success: true,
+      data: website,
+      message: `Subdomain updated to: ${newSubdomain}.specialistly.com`,
+    });
+  } catch (error) {
+    console.error('Update subdomain error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // ============ Page Operations ============
 
 export const createPage = async (req, res) => {
