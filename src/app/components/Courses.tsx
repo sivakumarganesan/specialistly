@@ -5,6 +5,7 @@ import { Badge } from "@/app/components/ui/badge";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
+import { HLSVideoPlayer } from "@/app/components/HLSVideoPlayer";
 import { courseAPI, videoAPI, API_BASE_URL } from "@/app/api/apiClient";
 import { useAuth } from "@/app/context/AuthContext";
 import {
@@ -766,7 +767,21 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         return;
       }
 
-      // Load video playback URL from Cloudflare
+      // If lesson has already been saved, fetch the HLS URL from the server
+      if (lesson._id && selectedCourse?.id) {
+        try {
+          const response = await videoAPI.getLessonVideo(selectedCourse.id, lesson._id);
+          if (response?.success && response.video?.hlsUrl) {
+            setPreviewHlsUrl(response.video.hlsUrl);
+            setShowVideoPreview(true);
+            return;
+          }
+        } catch (err) {
+          console.warn("Could not fetch video from API, trying backend endpoint:", err);
+        }
+      }
+
+      // Fallback: Try to get playback URL from Cloudflare Stream ID
       const token = localStorage.getItem('authToken');
       const response = await fetch(
         `${API_BASE_URL}/videos/playback-url/${lesson.cloudflareStreamId}`,
@@ -779,13 +794,19 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
       if (response.ok) {
         const data = await response.json();
-        setPreviewHlsUrl(data.hlsUrl);
+        if (data.hlsUrl) {
+          setPreviewHlsUrl(data.hlsUrl);
+        } else if (data.playbackUrl) {
+          setPreviewHlsUrl(data.playbackUrl);
+        }
+      } else {
+        alert("Video is still being processed or not available yet. Please try again in a moment.");
       }
       
       setShowVideoPreview(true);
     } catch (error) {
       console.error("Error loading video preview:", error);
-      alert("Failed to load video preview");
+      alert("Failed to load video preview. The video may still be processing.");
     } finally {
       setLoadingPreviewVideo(false);
     }
@@ -1997,15 +2018,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               </DialogHeader>
               <div className="w-full bg-black rounded-lg aspect-video flex items-center justify-center relative overflow-hidden">
                 {previewHlsUrl ? (
-                  <video
-                    key={previewHlsUrl}
-                    controls
+                  <HLSVideoPlayer
+                    hlsUrl={previewHlsUrl}
+                    title={previewLessonIndex !== null ? lessons[previewLessonIndex]?.title : 'Video Preview'}
+                    onError={(err) => console.error("Video playback error:", err)}
                     className="w-full h-full"
-                    autoPlay
-                  >
-                    <source src={previewHlsUrl} type="application/x-mpegURL" />
-                    Your browser does not support the video tag.
-                  </video>
+                  />
                 ) : loadingPreviewVideo ? (
                   <div className="text-white flex items-center gap-2">
                     <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
