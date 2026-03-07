@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, AlertCircle } from 'lucide-react';
+import { Plus, Loader2, AlertCircle, Edit2, Eye } from 'lucide-react';
 import { TemplateGallery } from './TemplateGallery';
 import { CreatePageFromTemplate } from './CreatePageFromTemplate';
+import PageBuilderEditor from '../PageBuilderEditor';
 
 interface BrandedPageBuilderProps {
   websiteId: string;
@@ -25,6 +26,7 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchPages();
@@ -75,10 +77,32 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
     if (onPageCreated) {
       onPageCreated(newPage);
     }
-    // Optionally refresh pages
     fetchPages();
   };
 
+  // When editing a page, show the page editor in full screen
+  if (editingPageId) {
+    return (
+      <div>
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <button
+              onClick={() => {
+                setEditingPageId(null);
+                fetchPages();
+              }}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition"
+            >
+              ← Back to Pages
+            </button>
+          </div>
+        </div>
+        <PageBuilderEditor websiteId={websiteId} />
+      </div>
+    );
+  }
+
+  // Main page builder UI
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -190,10 +214,18 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
 
                   {/* Actions */}
                   <div className="mt-4 flex gap-2">
-                    <button className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm font-medium rounded-lg transition">
+                    <button 
+                      onClick={() => setEditingPageId(page._id)}
+                      className="flex-1 px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm font-medium rounded-lg transition flex items-center justify-center gap-1"
+                    >
+                      <Edit2 className="w-4 h-4" />
                       Edit
                     </button>
-                    <button className="flex-1 px-3 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 text-sm font-medium rounded-lg transition">
+                    <button 
+                      onClick={() => window.open(`https://${subdomain}.specialistly.com/${page.slug}`, '_blank')}
+                      className="flex-1 px-3 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 text-sm font-medium rounded-lg transition flex items-center justify-center gap-1"
+                    >
+                      <Eye className="w-4 h-4" />
                       View
                     </button>
                   </div>
