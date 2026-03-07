@@ -381,9 +381,12 @@ export const createPage = async (req, res) => {
 
     await page.save();
 
+    // Populate sections before returning
+    const populatedPage = await Page.findById(page._id).populate('sections');
+
     res.status(201).json({
       success: true,
-      data: page,
+      data: populatedPage,
       message: 'Page created successfully',
     });
   } catch (error) {
@@ -417,6 +420,7 @@ export const getPages = async (req, res) => {
     }
 
     const pages = await Page.find({ websiteId })
+      .populate('sections')
       .sort({ order: 1 });
 
     res.json({
@@ -453,7 +457,8 @@ export const getPageById = async (req, res) => {
       });
     }
 
-    const page = await Page.findById(pageId);
+    const page = await Page.findById(pageId)
+      .populate('sections');
     if (!page || page.websiteId.toString() !== websiteId) {
       return res.status(404).json({
         success: false,
@@ -527,9 +532,12 @@ export const updatePage = async (req, res) => {
 
     await page.save();
 
+    // Populate sections before returning
+    const populatedPage = await Page.findById(page._id).populate('sections');
+
     res.json({
       success: true,
-      data: page,
+      data: populatedPage,
       message: 'Page updated successfully',
     });
   } catch (error) {
@@ -574,9 +582,12 @@ export const publishPage = async (req, res) => {
     page.publishedAt = new Date();
     await page.save();
 
+    // Populate sections before returning
+    const populatedPage = await Page.findById(page._id).populate('sections');
+
     res.json({
       success: true,
-      data: page,
+      data: populatedPage,
       message: 'Page published successfully',
     });
   } catch (error) {
