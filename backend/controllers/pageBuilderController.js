@@ -255,10 +255,14 @@ export const publishWebsite = async (req, res) => {
       });
     }
 
-    // Publish all published pages
+    // Publish ALL pages (not just already published ones)
     await Page.updateMany(
-      { websiteId, isPublished: true },
-      { publishedAt: new Date() }
+      { websiteId },
+      { 
+        isPublished: true,
+        publishedAt: new Date(),
+        publishedBy: req.user.id
+      }
     );
 
     website.isPublished = true;
@@ -268,7 +272,7 @@ export const publishWebsite = async (req, res) => {
     res.json({
       success: true,
       data: website,
-      message: 'Website published successfully',
+      message: 'Website and all pages published successfully',
     });
   } catch (error) {
     console.error('Publish website error:', error);

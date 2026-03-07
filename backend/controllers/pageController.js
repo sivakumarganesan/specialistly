@@ -327,7 +327,7 @@ export const addSection = async (req, res) => {
   try {
     const { websiteId, pageId } = req.params;
     const specialistId = req.user.id;
-    const { type, content, styling, order } = req.body;
+    const { type, title, description, content, styling, order } = req.body;
 
     // Verify website ownership
     const website = await Website.findById(websiteId);
@@ -350,6 +350,8 @@ export const addSection = async (req, res) => {
       websiteId,
       pageId,
       type,
+      title: title || '',
+      description: description || '',
       content: content || {},
       styling: styling || {},
       order: order || page.sections.length,

@@ -10,12 +10,13 @@ interface PreviewModeProps {
 }
 
 const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
-  switch (section.type) {
-    case 'hero':
-      return <HeroSectionPreview section={section} />;
-    case 'services':
-      return <ServicesSectionPreview section={section} />;
-    case 'cta':
+  try {
+    switch (section.type) {
+      case 'hero':
+        return <HeroSectionPreview section={section} />;
+      case 'services':
+        return <ServicesSectionPreview section={section} />;
+      case 'cta':
       return (
         <div
           className="py-16 px-4 text-center text-white"
@@ -178,6 +179,18 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
           </div>
         </div>
       );
+    }
+  } catch (error) {
+    console.error('Error rendering section:', error, section);
+    return (
+      <div className="py-16 px-4 bg-red-50 border border-red-200">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-2xl font-bold text-red-900 mb-2">Error rendering section</h2>
+          <p className="text-red-700 text-sm mb-2">Type: {section.type}</p>
+          <p className="text-red-600 text-xs">{error instanceof Error ? error.message : 'Unknown error'}</p>
+        </div>
+      </div>
+    );
   }
 };
 
