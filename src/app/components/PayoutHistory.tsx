@@ -41,7 +41,7 @@ export const PayoutHistory: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
+        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || '/api';
         const authToken = localStorage.getItem('authToken');
 
         // Fetch stats

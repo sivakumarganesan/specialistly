@@ -63,7 +63,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
   useEffect(() => {
     const checkGateways = async () => {
       try {
-        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
+        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || '/api';
         const response = await fetch(`${apiBaseUrl}/marketplace/payments/gateways`);
         const data = await response.json();
         
@@ -126,7 +126,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
         }
 
         const user = JSON.parse(userStr);
-        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
+        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || '/api';
         const endpoint = `${apiBaseUrl}/marketplace/payments/create-intent`;
 
         const requestBody = {

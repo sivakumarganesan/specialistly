@@ -32,7 +32,7 @@ export const SpecialistBankSetup: React.FC = () => {
   useEffect(() => {
     const fetchBankAccount = async () => {
       try {
-        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
+        const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || '/api';
         const response = await fetch(`${apiBaseUrl}/specialist/bank-account`, {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -98,7 +98,7 @@ export const SpecialistBankSetup: React.FC = () => {
         return;
       }
 
-      const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || 'http://localhost:5001/api';
+      const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || '/api';
       const response = await fetch(`${apiBaseUrl}/specialist/bank-account`, {
         method: 'POST',
         headers: {

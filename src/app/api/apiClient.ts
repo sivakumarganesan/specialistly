@@ -1,7 +1,7 @@
-// API Base URL - use environment variable, fallback to localhost for development
+// API Base URL - use environment variable, fallback to /api for production
 // For production: uses relative path /api (same domain)
 // For development: uses http://localhost:5001/api
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5001/api";
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "/api";
 
 export { API_BASE_URL };
 

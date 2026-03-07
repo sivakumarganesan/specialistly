@@ -34,7 +34,7 @@ export const CommissionSettings: React.FC<CommissionStatsProps> = ({ onSaved }) 
     try {
       setLoading(true);
       const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api'}/commission/rates`
+        `${process.env.REACT_APP_API_BASE_URL || (import.meta.env.VITE_API_URL as string) || '/api'}/commission/rates`
       );
       const data = await response.json();
       if (data.success) {
@@ -65,7 +65,7 @@ export const CommissionSettings: React.FC<CommissionStatsProps> = ({ onSaved }) 
       }
 
       const response = await fetch(
-        `${process.env.REACT_APP_API_BASE_URL || 'http://localhost:5001/api'}/commission/update`,
+        `${process.env.REACT_APP_API_BASE_URL || (import.meta.env.VITE_API_URL as string) || '/api'}/commission/update`,
         {
           method: 'POST',
           headers: {

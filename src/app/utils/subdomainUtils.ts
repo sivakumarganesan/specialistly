@@ -65,9 +65,6 @@ export const getApiBaseUrl = (): string => {
     return 'http://localhost:5001/api';
   }
   
-  if (window.location.hostname.includes('railway')) {
-    return 'https://specialistly-production.up.railway.app/api';
-  }
-  
-  return `https://${window.location.hostname}/api`;
+  // For production, use relative path
+  return '/api';
 };

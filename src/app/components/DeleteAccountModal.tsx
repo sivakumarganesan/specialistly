@@ -32,7 +32,7 @@ export function DeleteAccountModal({ isOpen, onClose, onDeleteSuccess }: DeleteA
       setError('');
 
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5001/api'}/auth/account`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || '/api'}/auth/account`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
