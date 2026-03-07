@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 
+// API Base URL - for production uses /api (relative), for dev uses localhost
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "http://localhost:5001/api";
 
 interface User {
