@@ -74,12 +74,23 @@ export const createWebsite = async (req, res) => {
 
 export const getWebsites = async (req, res) => {
   try {
+    console.log('[getWebsites] User authenticated:', req.user);
     const userEmail = req.user.email;
 
+    if (!userEmail) {
+      console.error('[getWebsites] No user email in token');
+      return res.status(400).json({
+        success: false,
+        message: 'User email not found in token',
+      });
+    }
+
+    console.log('[getWebsites] Searching for websites by email:', userEmail);
     const websites = await Website.find({ creatorEmail: userEmail })
       .select('-notes')
       .sort({ createdAt: -1 });
 
+    console.log(`[getWebsites] Found ${websites.length} websites`);
     res.json({
       success: true,
       data: websites,
