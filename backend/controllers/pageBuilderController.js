@@ -702,6 +702,10 @@ export const createSection = async (req, res) => {
 
     await section.save();
 
+    // Add section to page's sections array
+    page.sections.push(section._id);
+    await page.save();
+
     res.status(201).json({
       success: true,
       data: section,
@@ -868,6 +872,10 @@ export const deleteSection = async (req, res) => {
 
     // Delete the section
     await PageSection.findByIdAndDelete(sectionId);
+
+    // Remove section from page's sections array
+    page.sections = page.sections.filter(id => id.toString() !== sectionId);
+    await page.save();
 
     res.json({
       success: true,
