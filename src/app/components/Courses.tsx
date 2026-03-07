@@ -184,6 +184,14 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const [selectedFilesByLesson, setSelectedFilesByLesson] = useState<{ [key: number]: File[] }>({});
   const [uploadingVideoFor, setUploadingVideoFor] = useState<number | null>(null);
   const [videoUploadProgress, setVideoUploadProgress] = useState<{ [key: number]: number }>({});
+  
+  // Preview states
+  const [previewLessonIndex, setPreviewLessonIndex] = useState<number | null>(null);
+  const [previewFileIndex, setPreviewFileIndex] = useState<number | null>(null);
+  const [showVideoPreview, setShowVideoPreview] = useState(false);
+  const [showFilePreview, setShowFilePreview] = useState(false);
+  const [previewHlsUrl, setPreviewHlsUrl] = useState<string | null>(null);
+  const [loadingPreviewVideo, setLoadingPreviewVideo] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -745,6 +753,42 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       setLessons([]);
     }
     setManageLessonsDialogOpen(true);
+  };
+
+  const handlePreviewVideo = async (lessonIndex: number) => {
+    try {
+      setPreviewLessonIndex(lessonIndex);
+      setLoadingPreviewVideo(true);
+      
+      const lesson = lessons[lessonIndex];
+      if (!lesson.cloudflareStreamId) {
+        alert("No video available for preview");
+        return;
+      }
+
+      // Load video playback URL from Cloudflare
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `${API_BASE_URL}/videos/playback-url/${lesson.cloudflareStreamId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setPreviewHlsUrl(data.hlsUrl);
+      }
+      
+      setShowVideoPreview(true);
+    } catch (error) {
+      console.error("Error loading video preview:", error);
+      alert("Failed to load video preview");
+    } finally {
+      setLoadingPreviewVideo(false);
+    }
   };
 
   const handleSaveLessons = async () => {
@@ -1736,23 +1780,34 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                               <p className="text-xs text-green-700 mt-1">
                                 Status: <span className="font-bold">{lesson.cloudflareStatus || 'ready'}</span>
                               </p>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  const updatedLessons = [...lessons];
-                                  updatedLessons[index] = {
-                                    ...updatedLessons[index],
-                                    cloudflareStreamId: undefined,
-                                    cloudflareStatus: undefined,
-                                  };
-                                  setLessons(updatedLessons);
-                                }}
-                                className="mt-3 text-xs border-green-300 hover:bg-green-100"
-                              >
-                                Remove Video
-                              </Button>
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => handlePreviewVideo(index)}
+                                  disabled={loadingPreviewVideo}
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                                >
+                                  👁️ Preview
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const updatedLessons = [...lessons];
+                                    updatedLessons[index] = {
+                                      ...updatedLessons[index],
+                                      cloudflareStreamId: undefined,
+                                      cloudflareStatus: undefined,
+                                    };
+                                    setLessons(updatedLessons);
+                                  }}
+                                  className="text-xs border-green-300 hover:bg-green-100"
+                                >
+                                  ✕
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1857,11 +1912,16 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                           {lesson.files.map((file, fileIndex) => (
                             <div
                               key={fileIndex}
-                              className="group relative bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 hover:shadow-sm transition"
+                              className="group relative bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 hover:shadow-sm transition cursor-pointer"
+                              onClick={() => {
+                                setPreviewLessonIndex(index);
+                                setPreviewFileIndex(fileIndex);
+                                setShowFilePreview(true);
+                              }}
                             >
                               <div className="flex items-start gap-3">
                                 {/* File Icon/Thumbnail */}
-                                <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
+                                <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
                                   {file.fileType.includes('image') ? (
                                     <img
                                       src={file.fileUrl}
@@ -1875,7 +1935,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                                 
                                 {/* File Info */}
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-semibold text-gray-900 truncate break-words">
+                                  <p className="text-xs font-semibold text-gray-900 truncate break-words hover:text-blue-600">
                                     {file.fileName}
                                   </p>
                                   {file.fileSize && (
@@ -1883,6 +1943,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                                       {(file.fileSize / 1024 / 1024).toFixed(2)} MB
                                     </p>
                                   )}
+                                  <p className="text-xs text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition">
+                                    👁️ Click to preview
+                                  </p>
                                 </div>
                               </div>
 
@@ -1891,7 +1954,10 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                                 type="button"
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => deleteFileFromLesson(index, fileIndex)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteFileFromLesson(index, fileIndex);
+                                }}
                                 className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition text-red-600 hover:bg-red-50 p-1 h-6 w-6"
                               >
                                 ✕
@@ -1920,6 +1986,147 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               Add Lesson
             </Button>
           </div>
+
+          {/* Video Preview Modal */}
+          <Dialog open={showVideoPreview} onOpenChange={setShowVideoPreview}>
+            <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>
+                  {previewLessonIndex !== null ? `Preview: ${lessons[previewLessonIndex]?.title}` : 'Video Preview'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="w-full bg-black rounded-lg aspect-video flex items-center justify-center relative overflow-hidden">
+                {previewHlsUrl ? (
+                  <video
+                    key={previewHlsUrl}
+                    controls
+                    className="w-full h-full"
+                    autoPlay
+                  >
+                    <source src={previewHlsUrl} type="application/x-mpegURL" />
+                    Your browser does not support the video tag.
+                  </video>
+                ) : loadingPreviewVideo ? (
+                  <div className="text-white flex items-center gap-2">
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Loading video...
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-center">
+                    <p className="mb-2">Video preview not available</p>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowVideoPreview(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* File Preview Modal */}
+          <Dialog open={showFilePreview} onOpenChange={setShowFilePreview}>
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {previewLessonIndex !== null && previewFileIndex !== null
+                    ? lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileName
+                    : 'File Preview'}
+                </DialogTitle>
+              </DialogHeader>
+              
+              {previewLessonIndex !== null && previewFileIndex !== null && (
+                <div className="space-y-4">
+                  {(() => {
+                    const file = lessons[previewLessonIndex]?.files?.[previewFileIndex];
+                    if (!file) return <p>File not found</p>;
+
+                    // Image preview
+                    if (file.fileType.includes('image')) {
+                      return (
+                        <div className="flex justify-center">
+                          <img
+                            src={file.fileUrl}
+                            alt={file.fileName}
+                            className="max-w-full max-h-96 rounded-lg"
+                          />
+                        </div>
+                      );
+                    }
+
+                    // PDF preview (embed)
+                    if (file.fileType === 'pdf') {
+                      return (
+                        <div className="w-full h-96 rounded-lg border border-gray-200 overflow-hidden">
+                          <iframe
+                            src={`${file.fileUrl}#toolbar=0`}
+                            className="w-full h-full"
+                            title="PDF Preview"
+                          />
+                        </div>
+                      );
+                    }
+
+                    // For other file types, show file info and download option
+                    return (
+                      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <div className="text-5xl">
+                          {getFileIcon(file.fileType)}
+                        </div>
+                        <p className="font-semibold text-gray-900">{file.fileName}</p>
+                        <p className="text-sm text-gray-600">
+                          {(file.fileSize ? file.fileSize / 1024 / 1024 : 0).toFixed(2)} MB
+                        </p>
+                        <p className="text-xs text-gray-500 text-center max-w-xs">
+                          Preview not available for this file type. Click below to download.
+                        </p>
+                        <a
+                          href={file.fileUrl}
+                          download={file.fileName}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition"
+                        >
+                          ⬇️ Download File
+                        </a>
+                      </div>
+                    );
+                  })()}
+
+                  {/* File Info */}
+                  <div className="p-3 bg-gray-50 rounded border border-gray-200 space-y-2">
+                    <p className="text-xs text-gray-600">
+                      <strong>File Name:</strong> {lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileName}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      <strong>File Size:</strong> {((lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileSize || 0) / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      <strong>Type:</strong> {lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileType.toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowFilePreview(false)}>
+                  Close
+                </Button>
+                {previewLessonIndex !== null && previewFileIndex !== null && (
+                  <a
+                    href={lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileUrl}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition"
+                  >
+                    ⬇️ Download
+                  </a>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setManageLessonsDialogOpen(false)}>
