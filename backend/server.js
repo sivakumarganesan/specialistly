@@ -161,39 +161,81 @@ app.get('/api/test/outbound-ip', async (req, res) => {
 // ============ REACT SPA SERVING ============
 // Serve static files from dist folder BEFORE API routes
 const distPath = path.join(__dirname, '../dist');
+const assetsPath = path.join(distPath, 'assets');
 
-console.log('📁 Serving static files from:', distPath);
+console.log('🔍 Static file paths:');
+console.log('   distPath:', distPath);
+console.log('   assetsPath:', assetsPath);
 
-// Serve static assets (js, css, images, etc.) with proper caching
-app.use(express.static(distPath, {
+// Verify dist folder exists
+if (!fs.existsSync(distPath)) {
+  console.error('❌ CRITICAL: dist/ folder not found at:', distPath);
+  console.error('   This means the React build did not complete.');
+  console.error('   Make sure "npm run build" ran during Railway deployment.');
+} else {
+  console.log('✓ dist/ folder found');
+  const indexExists = fs.existsSync(path.join(distPath, 'index.html'));
+  const assetsExists = fs.existsSync(assetsPath);
+  console.log('   - index.html exists:', indexExists);
+  console.log('   - assets/ folder exists:', assetsExists);
+  if (assetsExists) {
+    const assetFiles = fs.readdirSync(assetsPath).slice(0, 5);
+    console.log('   - Sample assets:', assetFiles.join(', '));
+  }
+}
+
+// Serve static assets (js, css, images, etc.) with proper headers
+app.use('/assets', express.static(assetsPath, {
   maxAge: '1d',
   etag: false,
-  // Serve index.html for SPA routing
-  setHeaders: (res, path, stat) => {
-    if (path.endsWith('.html')) {
-      res.set('Cache-Control', 'public, max-age=0, must-revalidate');
+  setHeaders: (res, path) => {
+    // Ensure correct MIME types
+    if (path.endsWith('.js')) {
+      res.set('Content-Type', 'application/javascript');
+      console.log('[SERVE] JS file:', path.split('/').pop());
+    } else if (path.endsWith('.css')) {
+      res.set('Content-Type', 'text/css');
+    } else if (path.endsWith('.wasm')) {
+      res.set('Content-Type', 'application/wasm');
     }
   }
+}));
+
+// Serve other static files (index.html, favicon, etc.)
+app.use(express.static(distPath, {
+  maxAge: '0',
+  etag: false,
+  index: false // Don't auto-serve index.html here
 }));
 
 // SPA fallback - serve index.html for client-side routes
 // IMPORTANT: This must be AFTER express.static() but BEFORE error handler
 app.get('*', (req, res, next) => {
-  // Don't serve index.html for API routes - let them 404
+  // Skip API routes
   if (req.path.startsWith('/api')) {
+    console.log('[API]', req.method, req.path);
     return next();
   }
   
-  // For all other routes (including those without extensions), serve index.html
+  // Serve index.html for all other routes
   const indexPath = path.join(distPath, 'index.html');
+  
+  if (!fs.existsSync(indexPath)) {
+    console.error('❌ index.html not found at:', indexPath);
+    return res.status(500).json({
+      success: false,
+      message: 'React app not properly built',
+      message2: 'Make sure dist/ folder exists with index.html'
+    });
+  }
+  
+  console.log('[SPA]', req.path, '→ index.html');
   res.sendFile(indexPath, (err) => {
     if (err) {
       console.error('❌ Error serving index.html:', err.message);
-      // If index.html doesn't exist, the dist folder might not be built
       res.status(500).json({
         success: false,
-        message: 'React app not found. Make sure dist/ folder is built.',
-        error: err.message
+        message: 'Error loading application'
       });
     }
   });
