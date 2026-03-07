@@ -75,13 +75,20 @@ export const createPageFromTemplate = async (req, res) => {
   try {
     const { templateId } = req.params;
     const { websiteId, pageTitle } = req.body;
-    const userId = req.user.id;
+    const userEmail = req.user.email;
 
     // Validate inputs
     if (!websiteId || !pageTitle) {
       return res.status(400).json({
         success: false,
         message: 'Website ID and page title are required',
+      });
+    }
+
+    if (!userEmail) {
+      return res.status(401).json({
+        success: false,
+        message: 'User email not found in token',
       });
     }
 
@@ -103,9 +110,8 @@ export const createPageFromTemplate = async (req, res) => {
       });
     }
 
-    // Check authorization
-    const user = await User.findById(userId);
-    if (website.creatorEmail !== user.email) {
+    // Check authorization - user must be the website creator
+    if (website.creatorEmail !== userEmail) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized to modify this website',
