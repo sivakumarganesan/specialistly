@@ -27,10 +27,40 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [actualSubdomain, setActualSubdomain] = useState<string | undefined>(subdomain);
 
   useEffect(() => {
+    ensureSubdomainConfigured();
     fetchPages();
   }, [websiteId]);
+
+  // Ensure subdomain is configured for this website
+  const ensureSubdomainConfigured = async () => {
+    try {
+      const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+      const authToken = localStorage.getItem('authToken');
+
+      const response = await fetch(
+        `${apiUrl}/page-builder/websites/${websiteId}/ensure-subdomain`,
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data?.subdomain) {
+          setActualSubdomain(data.data.subdomain);
+        }
+      }
+    } catch (err) {
+      console.error('Error ensuring subdomain configured:', err);
+    }
+  };
 
   const fetchPages = async () => {
     try {
@@ -102,6 +132,22 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
     );
   }
 
+  // Check if subdomain is missing
+  if (!actualSubdomain) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-6 rounded-lg">
+            <p className="font-semibold mb-2">⚠️ Subdomain Configuring</p>
+            <p className="text-sm">
+              Setting up your subdomain. Please refresh the page in a moment...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Main page builder UI
   return (
     <div className="min-h-screen bg-gray-50">
@@ -114,16 +160,14 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
               <p className="text-gray-600 mt-1">
                 Create and manage branded pages for your specialist website
               </p>
-              {subdomain && (
-                <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                  <p className="text-sm text-gray-600">
-                    <span className="font-semibold">Domain:</span>
-                  </p>
-                  <p className="text-lg font-mono text-blue-700 mt-1">
-                    https://{subdomain}.specialistly.com
-                  </p>
-                </div>
-              )}
+              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-gray-600">
+                  <span className="font-semibold">Domain:</span>
+                </p>
+                <p className="text-lg font-mono text-blue-700 mt-1">
+                  https://{actualSubdomain}.specialistly.com
+                </p>
+              </div>
             </div>
             <button
               onClick={() => setShowTemplateGallery(true)}
@@ -222,7 +266,7 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
                       Edit
                     </button>
                     <button 
-                      onClick={() => window.open(`https://${subdomain}.specialistly.com/${page.slug}`, '_blank')}
+                      onClick={() => window.open(`https://${actualSubdomain}.specialistly.com/${page.slug}`, '_blank')}
                       className="flex-1 px-3 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 text-sm font-medium rounded-lg transition flex items-center justify-center gap-1"
                     >
                       <Eye className="w-4 h-4" />

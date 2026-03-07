@@ -328,6 +328,75 @@ export const deleteWebsite = async (req, res) => {
   }
 };
 
+// ============ Configure Subdomain for Existing Websites ============
+
+export const ensureSubdomain = async (req, res) => {
+  try {
+    const { websiteId } = req.params;
+    const userEmail = req.user.email;
+    const { subdomain: proposedSubdomain } = req.body;
+
+    const website = await Website.findById(websiteId);
+
+    if (!website) {
+      return res.status(404).json({
+        success: false,
+        message: 'Website not found',
+      });
+    }
+
+    // Verify ownership
+    if (website.creatorEmail !== userEmail) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    // If already has subdomain, return it
+    if (website.subdomain) {
+      return res.json({
+        success: true,
+        data: website,
+        message: 'Website already has subdomain configured',
+      });
+    }
+
+    // Generate subdomain from siteName or name
+    let subdomain = proposedSubdomain;
+    if (!subdomain) {
+      subdomain = (website.branding?.siteName || 'website')
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w-]/g, '')
+        .substring(0, 50);
+    }
+
+    // Make subdomain unique if needed
+    let finalSubdomain = subdomain;
+    let counter = 1;
+    while (await Website.findOne({ subdomain: finalSubdomain, _id: { $ne: websiteId } })) {
+      finalSubdomain = `${subdomain}-${counter}`;
+      counter++;
+    }
+
+    website.subdomain = finalSubdomain;
+    await website.save();
+
+    res.json({
+      success: true,
+      data: website,
+      message: `Subdomain configured: ${finalSubdomain}.specialistly.com`,
+    });
+  } catch (error) {
+    console.error('Ensure subdomain error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // ============ Page Operations ============
 
 export const createPage = async (req, res) => {
