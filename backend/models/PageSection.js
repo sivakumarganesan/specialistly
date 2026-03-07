@@ -38,6 +38,17 @@ const pageSectionSchema = new mongoose.Schema(
       required: true,
     },
     
+    // Section title and description
+    title: {
+      type: String,
+      default: '',
+    },
+    
+    description: {
+      type: String,
+      default: '',
+    },
+    
     // Content - flexible schema to accommodate different section types
     content: {
       type: mongoose.Schema.Types.Mixed,

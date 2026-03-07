@@ -379,7 +379,7 @@ export const updateSection = async (req, res) => {
   try {
     const { websiteId, pageId, sectionId } = req.params;
     const specialistId = req.user.id;
-    const { content, styling } = req.body;
+    const { title, description, content, styling } = req.body;
 
     // Verify website ownership
     const website = await Website.findById(websiteId);
@@ -398,6 +398,8 @@ export const updateSection = async (req, res) => {
       });
     }
 
+    if (title !== undefined) section.title = title;
+    if (description !== undefined) section.description = description;
     if (content) section.content = { ...section.content, ...content };
     if (styling) section.styling = { ...section.styling, ...styling };
 
