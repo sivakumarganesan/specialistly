@@ -1,8 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { subdomainMiddleware } from './middleware/subdomainMiddleware.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import courseRoutes from './routes/courseRoutes.js';
 import serviceRoutes from './routes/serviceRoutes.js';
 import customerRoutes from './routes/customerRoutes.js';
@@ -169,12 +173,27 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Route not found',
-  });
+// Serve static files from dist folder (React frontend)
+app.use(express.static(path.join(__dirname, '../dist')));
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (req, res) => {
+  // Only serve index.html for non-API routes
+  if (!req.path.startsWith('/api')) {
+    res.sendFile(path.join(__dirname, '../dist/index.html'), (err) => {
+      if (err) {
+        res.status(404).json({
+          success: false,
+          message: 'Route not found',
+        });
+      }
+    });
+  } else {
+    res.status(404).json({
+      success: false,
+      message: 'API route not found',
+    });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
