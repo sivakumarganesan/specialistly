@@ -234,52 +234,74 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm">
         <div className="px-6 py-4 flex items-center justify-between">
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">
               {website?.displayName || 'Page Builder'}
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-sm text-gray-500">{website?.domainName}</p>
-              {selectedPage && website?.subdomain && (
-                <a
-                  href={`/public/${website.subdomain}/${selectedPage.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-                  title="View published page"
-                >
-                  📄 View published page
-                </a>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-600">Domain:</p>
+                <p className="text-sm font-mono text-gray-700">{website?.domainName}</p>
+              </div>
+              {website?.subdomain && (
+                <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
+                  <p className="text-sm text-gray-600">Subdomain:</p>
+                  <p className="text-sm font-mono text-blue-600 font-semibold">{website.subdomain}</p>
+                </div>
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-4">
             {/* Mode Selection */}
-            <div className="flex gap-2">
-              <Button
-                variant={mode === 'edit' ? 'default' : 'outline'}
-                onClick={() => setMode('edit')}
-                className="gap-2"
-              >
-                Edit
-              </Button>
-              <Button
-                variant={mode === 'preview' ? 'default' : 'outline'}
-                onClick={() => setMode('preview')}
-                className="gap-2"
-              >
-                <Eye className="w-4 h-4" />
-                Preview
-              </Button>
-              <Button
-                variant={mode === 'branding' ? 'default' : 'outline'}
-                onClick={() => setMode('branding')}
-                className="gap-2"
-              >
-                <Settings className="w-4 h-4" />
-                Branding
-              </Button>
+            <div className="flex gap-2 flex-col items-end">
+              {selectedPage && website?.subdomain && website.isPublished && (
+                <div className="mb-2 p-2 bg-green-50 rounded border border-green-200 text-right">
+                  <p className="text-xs text-green-700 font-semibold mb-1">✓ Published:</p>
+                  <a
+                    href={`/public/${website.subdomain}/${selectedPage.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-mono text-green-600 hover:text-green-700 hover:underline block break-all"
+                    title="Open published page in new tab"
+                  >
+                    specialistly.com/public/{website.subdomain}/{selectedPage.slug}
+                  </a>
+                </div>
+              )}
+              {selectedPage && website?.subdomain && !website.isPublished && (
+                <div className="mb-2 p-2 bg-yellow-50 rounded border border-yellow-200 text-right">
+                  <p className="text-xs text-yellow-700 mb-1">📋 Not published yet</p>
+                  <p className="text-xs text-yellow-600 font-mono">
+                    /public/{website.subdomain}/{selectedPage.slug}
+                  </p>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <Button
+                  variant={mode === 'edit' ? 'default' : 'outline'}
+                  onClick={() => setMode('edit')}
+                  className="gap-2"
+                >
+                  Edit
+                </Button>
+                <Button
+                  variant={mode === 'preview' ? 'default' : 'outline'}
+                  onClick={() => setMode('preview')}
+                  className="gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Preview
+                </Button>
+                <Button
+                  variant={mode === 'branding' ? 'default' : 'outline'}
+                  onClick={() => setMode('branding')}
+                  className="gap-2"
+                >
+                  <Settings className="w-4 h-4" />
+                  Branding
+                </Button>
+              </div>
             </div>
 
             {/* Actions */}

@@ -55,6 +55,8 @@ export interface Page {
 export interface Website {
   _id?: string;
   specialistId?: string;
+  creatorEmail?: string;
+  subdomain?: string;
   displayName: string;
   description?: string;
   domainName: string;
