@@ -3,6 +3,8 @@ import { usePageBuilder, Website, Page, PageSection } from '@/app/hooks/usePageB
 import { pageBuilderAPI } from '@/app/api/pageBuilderAPI';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
+import { Input } from '@/app/components/ui/input';
+import { Textarea } from '@/app/components/ui/textarea';
 import EditorCanvas from './EditorCanvas';
 import SectionLibrary from './SectionLibrary';
 import {
@@ -390,7 +392,10 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
 
         {/* Right Sidebar - Properties */}
         <aside className="w-80 border-l border-gray-200 bg-white overflow-y-auto">
-          <PropertiesPanel />
+          <PropertiesPanel 
+            section={selectedSection} 
+            onUpdateSection={selectedSection ? (updates) => handleUpdateSection(selectedSection._id, updates) : undefined}
+          />
         </aside>
       </div>
 
@@ -450,12 +455,254 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => (
   </div>
 );
 
-const PropertiesPanel: React.FC = () => (
-  <div className="p-6">
-    <h3 className="text-lg font-semibold mb-4">Properties</h3>
-    <p className="text-gray-500">Select a section to edit its properties</p>
-  </div>
-);
+const PropertiesPanel: React.FC<{
+  section?: PageSection;
+  onUpdateSection?: (updates: Partial<PageSection>) => void;
+}> = ({ section, onUpdateSection }) => {
+  const [title, setTitle] = useState(section?.title || '');
+  const [description, setDescription] = useState(section?.description || '');
+  const [content, setContent] = useState<Record<string, any>>(section?.content || {});
+
+  useEffect(() => {
+    setTitle(section?.title || '');
+    setDescription(section?.description || '');
+    setContent(section?.content || {});
+  }, [section]);
+
+  if (!section) {
+    return (
+      <div className="p-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">Properties</h3>
+        <p className="text-gray-500 text-sm">Click on a section to edit its properties</p>
+      </div>
+    );
+  }
+
+  const handleSave = () => {
+    if (onUpdateSection) {
+      onUpdateSection({
+        title,
+        description,
+        content,
+      });
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-4 text-gray-900">
+          {section.type.charAt(0).toUpperCase() + section.type.slice(1)} Section
+        </h3>
+        <p className="text-xs text-gray-500 mb-4">Edit the section properties below</p>
+      </div>
+
+      {/* Section Title */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+        <Input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder="Section title"
+        />
+      </div>
+
+      {/* Section Description */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Section description"
+        />
+      </div>
+
+      {/* Section-specific content editors */}
+      <div className="border-t pt-4">
+        <h4 className="text-sm font-semibold text-gray-900 mb-4">Content</h4>
+        
+        {section.type === 'hero' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Headline</label>
+              <Input
+                type="text"
+                value={content.title || ''}
+                onChange={(e) => setContent({ ...content, title: e.target.value })}
+                placeholder="Hero headline"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Subheadline</label>
+              <Input
+                type="text"
+                value={content.subtitle || ''}
+                onChange={(e) => setContent({ ...content, subtitle: e.target.value })}
+                placeholder="Hero subtitle"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CTA Button Text</label>
+              <Input
+                type="text"
+                value={content.ctaText || ''}
+                onChange={(e) => setContent({ ...content, ctaText: e.target.value })}
+                placeholder="Call to action text"
+              />
+            </div>
+          </div>
+        )}
+
+        {section.type === 'services' && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-600">Services can be added by clicking the "Add Service" button in the section preview</p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
+              <div className="flex gap-2">
+                <Button
+                  variant={content.layout === 'grid' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'grid' })}
+                  className="flex-1 text-xs"
+                >
+                  Grid
+                </Button>
+                <Button
+                  variant={content.layout === 'list' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'list' })}
+                  className="flex-1 text-xs"
+                >
+                  List
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {section.type === 'cta' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+              <Input
+                type="text"
+                value={content.buttonText || ''}
+                onChange={(e) => setContent({ ...content, buttonText: e.target.value })}
+                placeholder="CTA button text"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.backgroundColor || '#3B82F6'}
+                  onChange={(e) => setContent({ ...content, backgroundColor: e.target.value })}
+                  className="w-12 h-10 rounded cursor-pointer"
+                />
+                <Input
+                  type="text"
+                  value={content.backgroundColor || '#3B82F6'}
+                  onChange={(e) => setContent({ ...content, backgroundColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {section.type === 'contact' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <Input
+                type="email"
+                value={content.email || ''}
+                onChange={(e) => setContent({ ...content, email: e.target.value })}
+                placeholder="Contact email"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <Input
+                type="tel"
+                value={content.phone || ''}
+                onChange={(e) => setContent({ ...content, phone: e.target.value })}
+                placeholder="Phone number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+              <Textarea
+                value={content.address || ''}
+                onChange={(e) => setContent({ ...content, address: e.target.value })}
+                placeholder="Street address"
+              />
+            </div>
+          </div>
+        )}
+
+        {section.type === 'pricing' && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-600">Pricing plans can be managed in the section editor</p>
+          </div>
+        )}
+
+        {section.type === 'faq' && (
+          <div className="space-y-3">
+            <p className="text-xs text-gray-600">FAQ items can be added in the section editor</p>
+          </div>
+        )}
+
+        {section.type === 'gallery' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Columns</label>
+              <Input
+                type="number"
+                min="1"
+                max="6"
+                value={content.columns || 3}
+                onChange={(e) => setContent({ ...content, columns: parseInt(e.target.value) })}
+              />
+            </div>
+          </div>
+        )}
+
+        {section.type === 'newsletter' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email Placeholder</label>
+              <Input
+                type="text"
+                value={content.placeholder || ''}
+                onChange={(e) => setContent({ ...content, placeholder: e.target.value })}
+                placeholder="Enter your email"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+              <Input
+                type="text"
+                value={content.buttonText || ''}
+                onChange={(e) => setContent({ ...content, buttonText: e.target.value })}
+                placeholder="Subscribe"
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Save Button */}
+      <Button
+        onClick={handleSave}
+        className="w-full bg-blue-600 hover:bg-blue-700"
+      >
+        <Save className="w-4 h-4 mr-2" />
+        Save Changes
+      </Button>
+    </div>
+  );
+};
 
 const PublishDialog: React.FC<{
   isLoading: boolean;
