@@ -7,18 +7,27 @@ import User from '../models/User.js';
 
 export const createWebsite = async (req, res) => {
   try {
-    const { displayName, description, theme } = req.body;
+    const { name, tagline, colors } = req.body;
     const specialistId = req.user.id;
+    const userEmail = req.user.email;
 
-    // Generate subdomain from display name
-    const subdomain = displayName
+    // Validate required fields
+    if (!name) {
+      return res.status(400).json({
+        success: false,
+        message: 'Website name is required',
+      });
+    }
+
+    // Generate subdomain from name
+    const subdomain = name
       .toLowerCase()
       .replace(/\s+/g, '-')
       .replace(/[^\w-]/g, '')
       .substring(0, 50);
 
     // Check if subdomain already exists
-    const existing = await Website.findOne({ domainName: subdomain });
+    const existing = await Website.findOne({ subdomain });
     if (existing) {
       return res.status(400).json({
         success: false,
@@ -27,42 +36,24 @@ export const createWebsite = async (req, res) => {
     }
 
     const website = new Website({
-      specialistId,
-      displayName,
-      description,
-      domainName: `${subdomain}.specialistly.com`,
-      theme: theme || { id: 'default', name: 'Default', version: '1.0' },
-      pages: [],
-      navigation: [],
-    });
-
-    // Create homepage
-    const homepage = new Page({
-      websiteId: website._id,
-      title: 'Home',
-      slug: 'home',
-      isHomePage: true,
-      order: 0,
-      sections: [],
-    });
-
-    await homepage.save();
-    website.pages.push({
-      _id: homepage._id,
-      title: 'Home',
-      slug: 'home',
-      isHomePage: true,
+      creatorEmail: userEmail,
+      subdomain,
+      isConfigured: true,
+      branding: {
+        siteName: name,
+        tagline: tagline || '',
+        primaryColor: colors?.primary || '#4f46e5',
+        secondaryColor: colors?.secondary || '#06b6d4',
+        logo: colors?.logo || '',
+      },
+      theme: {
+        mode: 'light',
+      },
+      content: {
+        selectedCourses: [],
+        selectedServices: [],
+      },
       isPublished: false,
-      order: 0,
-      sections: [],
-    });
-
-    // Add homepage to navigation
-    website.navigation.push({
-      id: `nav-${homepage._id}`,
-      label: 'Home',
-      pageId: homepage._id,
-      order: 0,
     });
 
     await website.save();
@@ -76,16 +67,16 @@ export const createWebsite = async (req, res) => {
     console.error('Create website error:', error);
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || 'Failed to create website',
     });
   }
 };
 
 export const getWebsites = async (req, res) => {
   try {
-    const specialistId = req.user.id;
+    const userEmail = req.user.email;
 
-    const websites = await Website.find({ specialistId })
+    const websites = await Website.find({ creatorEmail: userEmail })
       .select('-notes')
       .sort({ createdAt: -1 });
 
@@ -105,7 +96,7 @@ export const getWebsites = async (req, res) => {
 export const getWebsiteById = async (req, res) => {
   try {
     const { websiteId } = req.params;
-    const specialistId = req.user.id;
+    const userEmail = req.user.email;
 
     const website = await Website.findById(websiteId);
 
@@ -117,7 +108,7 @@ export const getWebsiteById = async (req, res) => {
     }
 
     // Verify ownership
-    if (website.specialistId.toString() !== specialistId) {
+    if (website.creatorEmail !== userEmail) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized',
@@ -140,8 +131,8 @@ export const getWebsiteById = async (req, res) => {
 export const updateWebsite = async (req, res) => {
   try {
     const { websiteId } = req.params;
-    const specialistId = req.user.id;
-    const { displayName, description, header, footer, navigation } = req.body;
+    const userEmail = req.user.email;
+    const { name, tagline, colors, header, footer, navigation } = req.body;
 
     const website = await Website.findById(websiteId);
 
@@ -153,16 +144,24 @@ export const updateWebsite = async (req, res) => {
     }
 
     // Verify ownership
-    if (website.specialistId.toString() !== specialistId) {
+    if (website.creatorEmail !== userEmail) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized',
       });
     }
 
-    // Update fields
-    if (displayName) website.displayName = displayName;
-    if (description) website.description = description;
+    // Update branding fields
+    if (name || tagline || colors) {
+      website.branding = {
+        ...website.branding,
+        ...(name && { siteName: name }),
+        ...(tagline && { tagline }),
+        ...(colors?.primary && { primaryColor: colors.primary }),
+        ...(colors?.secondary && { secondaryColor: colors.secondary }),
+      };
+    }
+
     if (header) website.header = { ...website.header, ...header };
     if (footer) website.footer = { ...website.footer, ...footer };
     if (navigation) website.navigation = navigation;
@@ -186,7 +185,7 @@ export const updateWebsite = async (req, res) => {
 export const updateBranding = async (req, res) => {
   try {
     const { websiteId } = req.params;
-    const specialistId = req.user.id;
+    const userEmail = req.user.email;
     const branding = req.body;
 
     const website = await Website.findById(websiteId);
@@ -199,7 +198,7 @@ export const updateBranding = async (req, res) => {
     }
 
     // Verify ownership
-    if (website.specialistId.toString() !== specialistId) {
+    if (website.creatorEmail !== userEmail) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized',
@@ -226,7 +225,7 @@ export const updateBranding = async (req, res) => {
 export const publishWebsite = async (req, res) => {
   try {
     const { websiteId } = req.params;
-    const specialistId = req.user.id;
+    const userEmail = req.user.email;
 
     const website = await Website.findById(websiteId);
 
@@ -238,7 +237,7 @@ export const publishWebsite = async (req, res) => {
     }
 
     // Verify ownership
-    if (website.specialistId.toString() !== specialistId) {
+    if (website.creatorEmail !== userEmail) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized',
@@ -272,7 +271,7 @@ export const publishWebsite = async (req, res) => {
 export const deleteWebsite = async (req, res) => {
   try {
     const { websiteId } = req.params;
-    const specialistId = req.user.id;
+    const userEmail = req.user.email;
 
     const website = await Website.findById(websiteId);
 
@@ -284,7 +283,7 @@ export const deleteWebsite = async (req, res) => {
     }
 
     // Verify ownership
-    if (website.specialistId.toString() !== specialistId) {
+    if (website.creatorEmail !== userEmail) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized',
@@ -322,7 +321,7 @@ export const getPublicWebsite = async (req, res) => {
 
     const website = await Website.findOne({
       $or: [
-        { domainName: `${domain}.specialistly.com` },
+        { subdomain: domain },
         { customDomain: domain },
       ],
       isPublished: true,
