@@ -1,0 +1,224 @@
+import React from 'react';
+import { PageSection } from '@/app/hooks/usePageBuilder';
+import {
+  Flame,
+  Grid3,
+  MessageSquare,
+  Users,
+  Mail,
+  DollarSign,
+  Zap,
+  FileText,
+  Image,
+  Award,
+  BookOpen,
+  HelpCircle,
+} from 'lucide-react';
+
+interface SectionTemplate {
+  type: string;
+  name: string;
+  description: string;
+  icon: React.ReactNode;
+  defaultContent: Record<string, any>;
+}
+
+const SECTION_TEMPLATES: SectionTemplate[] = [
+  {
+    type: 'hero',
+    name: 'Hero',
+    description: 'Large banner with headline, subtitle, and CTA',
+    icon: <Flame className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Welcome to Your Website',
+      subtitle: 'Create an amazing first impression',
+      ctaText: 'Get Started',
+      overlayOpacity: 0.3,
+    },
+  },
+  {
+    type: 'services',
+    name: 'Services',
+    description: 'Showcase your services or products',
+    icon: <Grid3 className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Our Services',
+      description: 'What we offer',
+      layout: 'grid',
+      services: [],
+    },
+  },
+  {
+    type: 'testimonials',
+    name: 'Testimonials',
+    description: 'Display client testimonials and reviews',
+    icon: <MessageSquare className="w-6 h-6" />,
+    defaultContent: {
+      title: 'What Our Clients Say',
+      testimonials: [],
+      layout: 'carousel',
+    },
+  },
+  {
+    type: 'about',
+    name: 'About',
+    description: 'Tell your story',
+    icon: <FileText className="w-6 h-6" />,
+    defaultContent: {
+      title: 'About Us',
+      description: 'Our story and mission',
+      image: null,
+      richText: '',
+    },
+  },
+  {
+    type: 'team',
+    name: 'Team',
+    description: 'Introduce your team members',
+    icon: <Users className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Our Team',
+      description: 'Meet the people behind our success',
+      members: [],
+      layout: 'grid',
+    },
+  },
+  {
+    type: 'contact',
+    name: 'Contact',
+    description: 'Contact form and information',
+    icon: <Mail className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Get In Touch',
+      description: 'We would love to hear from you',
+      email: '',
+      phone: '',
+      address: '',
+      enableForm: true,
+    },
+  },
+  {
+    type: 'pricing',
+    name: 'Pricing',
+    description: 'Display your pricing plans',
+    icon: <DollarSign className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Pricing Plans',
+      description: 'Choose the perfect plan for you',
+      plans: [],
+    },
+  },
+  {
+    type: 'features',
+    name: 'Features',
+    description: 'Highlight key features',
+    icon: <Zap className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Key Features',
+      description: 'Everything you need',
+      features: [],
+      layout: 'list',
+    },
+  },
+  {
+    type: 'cta',
+    name: 'Call to Action',
+    description: 'Encourage visitor action',
+    icon: <Award className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Ready to Get Started?',
+      description: 'Join thousands of satisfied customers',
+      buttonText: 'Start Now',
+      backgroundColor: '#3B82F6',
+    },
+  },
+  {
+    type: 'faq',
+    name: 'FAQ',
+    description: 'Answer common questions',
+    icon: <HelpCircle className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Frequently Asked Questions',
+      questions: [],
+    },
+  },
+  {
+    type: 'gallery',
+    name: 'Gallery',
+    description: 'Display image gallery',
+    icon: <Image className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Our Work',
+      images: [],
+      columns: 3,
+    },
+  },
+  {
+    type: 'newsletter',
+    name: 'Newsletter',
+    description: 'Email subscription form',
+    icon: <BookOpen className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Subscribe to Our Newsletter',
+      description: 'Stay updated with our latest news',
+      placeholder: 'Enter your email',
+      buttonText: 'Subscribe',
+    },
+  },
+];
+
+interface SectionLibraryProps {
+  onSelectTemplate: (template: SectionTemplate) => void;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export const SectionLibrary: React.FC<SectionLibraryProps> = ({
+  onSelectTemplate,
+  isOpen,
+  onClose,
+}) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold">Add Section</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {SECTION_TEMPLATES.map((template) => (
+              <button
+                key={template.type}
+                onClick={() => {
+                  onSelectTemplate(template);
+                  onClose();
+                }}
+                className="group p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left"
+              >
+                <div className="flex items-center justify-center w-10 h-10 bg-gray-100 group-hover:bg-blue-100 rounded-lg mb-3 transition-colors">
+                  <div className="text-gray-600 group-hover:text-blue-600">
+                    {template.icon}
+                  </div>
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-1">{template.name}</h3>
+                <p className="text-xs text-gray-600">{template.description}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export { SECTION_TEMPLATES };
+export default SectionLibrary;
