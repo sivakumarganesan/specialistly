@@ -157,6 +157,46 @@ app.get('/api/test/outbound-ip', async (req, res) => {
 });
 
 // Error handling middleware
+// ============ REACT SPA SERVING ============
+// Serve static files from dist folder BEFORE API routes
+const distPath = path.join(__dirname, '../dist');
+
+// Serve static assets (js, css, images, etc.) with proper caching
+app.use(express.static(distPath, {
+  maxAge: '1d',
+  etag: false,
+}));
+
+// SPA fallback - serve index.html for client-side routes
+// IMPORTANT: This must be AFTER express.static() but BEFORE error handler
+app.get('*', (req, res, next) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api')) {
+    return next(); // Let it 404 below
+  }
+  
+  // Don't serve index.html for files with extensions (js, css, png, etc.)
+  if (path.extname(req.path)) {
+    return res.status(404).json({
+      success: false,
+      message: 'File not found',
+    });
+  }
+  
+  // Serve index.html for all other routes (client-side routing)
+  res.sendFile(path.join(distPath, 'index.html'), (err) => {
+    if (err) {
+      console.error('Error serving index.html:', err);
+      res.status(500).json({
+        success: false,
+        message: 'Error loading application',
+      });
+    }
+  });
+});
+
+// ============ ERROR HANDLING ============
+// Error handler middleware (MUST be last)
 app.use((err, req, res, next) => {
   console.error('❌ Error caught by error handler:');
   console.error('   Path:', req.path);
@@ -171,29 +211,6 @@ app.use((err, req, res, next) => {
     error: err.message,
     path: req.path,
   });
-});
-
-// Serve static files from dist folder (React frontend)
-app.use(express.static(path.join(__dirname, '../dist')));
-
-// SPA fallback - serve index.html for all non-API routes
-app.get('*', (req, res) => {
-  // Only serve index.html for non-API routes
-  if (!req.path.startsWith('/api')) {
-    res.sendFile(path.join(__dirname, '../dist/index.html'), (err) => {
-      if (err) {
-        res.status(404).json({
-          success: false,
-          message: 'Route not found',
-        });
-      }
-    });
-  } else {
-    res.status(404).json({
-      success: false,
-      message: 'API route not found',
-    });
-  }
 });
 
 const PORT = process.env.PORT || 5000;
