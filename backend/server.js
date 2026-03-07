@@ -87,6 +87,38 @@ app.use(cors(corsOptions));
 // Add subdomain middleware to extract subdomain from hostname
 app.use(subdomainMiddleware);
 
+// ============ SUBDOMAIN PUBLIC PAGE HANDLER (Early Middleware) ============
+// Must run BEFORE express.json() and static serving
+app.use(async (req, res, next) => {
+  // Only handle subdomain requests that are not API calls
+  if (req.subdomain && req.method === 'GET' && !req.path.startsWith('/api')) {
+    // Skip static assets
+    if (req.path.match(/\.(js|css|wasm|png|jpg|gif|svg|ico|json|map|webp)$/i)) {
+      return next();
+    }
+    
+    try {
+      console.log(`[Subdomain] ${req.subdomain}${req.path}`);
+      
+      // Extract page slug from path, default to 'home'
+      const pathParts = req.path.split('/').filter(Boolean);
+      const pageSlug = pathParts[0] || 'home';
+      
+      const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
+      req.params.pageSlug = pageSlug;
+      
+      // Call the handler
+      await getPublicPageViaSubdomain(req, res);
+      return; // Response already sent by handler
+    } catch (error) {
+      // Don't log errors for now, just continue
+      console.error('[Subdomain Handler Error]', error.message);
+    }
+  }
+  
+  next();
+});
+
 // ⚠️ IMPORTANT: Stripe webhook middleware MUST be BEFORE express.json()
 // Webhook requires raw body, not JSON parsed
 app.post(
@@ -257,41 +289,7 @@ if (distPath && fs.existsSync(distPath)) {
   console.error('❌ Skipping static middleware - dist/ folder not found');
 }
 
-// ============ PUBLIC PAGE VIEWER (Subdomain-based) ============
-// Handle public page requests via subdomain URLs
-// e.g., https://nithyachellam.specialistly.com/about
-app.get('/:pageSlug', async (req, res, next) => {
-  // Only handle if this is a subdomain request
-  if (!req.subdomain) {
-    return next();
-  }
-
-  try {
-    const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
-    await getPublicPageViaSubdomain(req, res);
-  } catch (error) {
-    console.error('Error in subdomain page handler:', error);
-    next(error);
-  }
-});
-
-// Also handle root path for subdomains (home page)
-app.get('/', async (req, res, next) => {
-  // Only handle if this is a subdomain request
-  if (!req.subdomain) {
-    return next();
-  }
-
-  try {
-    const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
-    req.params.pageSlug = 'home';
-    await getPublicPageViaSubdomain(req, res);
-  } catch (error) {
-    console.error('Error in subdomain home handler:', error);
-    next(error);
-  }
-});
-
+// ============ SPA FALLBACK ============
 // SPA fallback
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) {
