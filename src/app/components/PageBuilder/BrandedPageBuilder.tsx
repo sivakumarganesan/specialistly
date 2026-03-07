@@ -6,12 +6,14 @@ import { CreatePageFromTemplate } from './CreatePageFromTemplate';
 interface BrandedPageBuilderProps {
   websiteId: string;
   websiteName: string;
+  subdomain?: string;
   onPageCreated?: (page: any) => void;
 }
 
 export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
   websiteId,
   websiteName,
+  subdomain,
   onPageCreated,
 }) => {
   const [showTemplateGallery, setShowTemplateGallery] = useState(false);
@@ -82,16 +84,26 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex-1">
               <h1 className="text-3xl font-bold text-gray-900">{websiteName}</h1>
-              <p className="text-gray-600 mt-2">
+              <p className="text-gray-600 mt-1">
                 Create and manage branded pages for your specialist website
               </p>
+              {subdomain && (
+                <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-600">
+                    <span className="font-semibold">Domain:</span>
+                  </p>
+                  <p className="text-lg font-mono text-blue-700 mt-1">
+                    https://{subdomain}.specialistly.com
+                  </p>
+                </div>
+              )}
             </div>
             <button
               onClick={() => setShowTemplateGallery(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition font-medium"
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition font-medium h-fit"
             >
               <Plus className="w-5 h-5" />
               Create New Page

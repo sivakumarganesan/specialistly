@@ -8,6 +8,7 @@ import {
   updateTemplate,
   deleteTemplate,
   getAllTemplates,
+  seedTemplates,
 } from '../controllers/pageTemplateController.js';
 
 const router = express.Router();
@@ -15,6 +16,9 @@ const router = express.Router();
 // Public routes - list templates
 router.get('/templates', listTemplates);
 router.get('/templates/:templateId', getTemplate);
+
+// Seed templates (admin only)
+router.post('/templates/admin/seed', seedTemplates);
 
 // Protected routes - require authentication
 router.use(authMiddleware);

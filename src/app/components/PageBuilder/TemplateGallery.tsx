@@ -46,13 +46,14 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
       const data = await response.json();
 
       if (data.success) {
-        setTemplates(data.data);
+        setTemplates(data.data || []);
       } else {
-        setError('Failed to load templates');
+        setError(data.message || 'Failed to load templates');
+        console.error('Template load error:', data);
       }
     } catch (err) {
       console.error('Error fetching templates:', err);
-      setError('Failed to load templates');
+      setError(err instanceof Error ? err.message : 'Failed to load templates. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -109,9 +110,22 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ onSelectTempla
               <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
           ) : templates.length === 0 ? (
-            <div className="text-center py-12">
-              <Code2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 text-lg">No templates available in this category</p>
+            <div className="text-center py-16">
+              <Code2 className="w-16 h-16 text-gray-300 mx-auto mb-6" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Templates Available</h3>
+              <p className="text-gray-600 mb-6">
+                {selectedCategory !== 'all' 
+                  ? `No templates found in "${selectedCategory}" category.`
+                  : 'No templates have been created yet.'}
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 inline-block">
+                <p className="text-sm text-blue-900">
+                  📧 Contact your administrator to seed initial templates
+                </p>
+                <p className="text-xs text-blue-800 mt-2">
+                  API endpoint: <code className="bg-white px-2 py-1 rounded">/api/page-templates/admin/seed</code>
+                </p>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

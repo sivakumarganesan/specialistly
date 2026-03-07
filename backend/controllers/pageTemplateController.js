@@ -344,3 +344,270 @@ export const deleteTemplate = async (req, res) => {
     });
   }
 };
+
+// ============ SEED TEMPLATES - Initialize sample templates ============
+
+export const seedTemplates = async (req, res) => {
+  try {
+    // Check if templates already exist
+    const existingCount = await PageTemplate.countDocuments();
+    if (existingCount > 0) {
+      return res.json({
+        success: true,
+        message: `Templates already exist (${existingCount} templates found)`,
+        data: { created: 0, existing: existingCount },
+      });
+    }
+
+    const seedData = [
+      {
+        name: 'Modern Landing Page',
+        description: 'Clean, modern landing page with hero section and services showcase',
+        category: 'landing',
+        isActive: true,
+        isDefault: true,
+        sections: [
+          {
+            type: 'hero',
+            title: 'Welcome to Your Business',
+            subtitle: 'Professional Services Start Here',
+            order: 0,
+            defaultContent: {
+              heading: 'Transform Your Expertise Into Revenue',
+              subheading: 'Showcase your skills and connect with clients who need you',
+              buttonText: 'Get Started',
+              buttonLink: '#contact',
+            },
+            styling: {
+              backgroundColor: '#ffffff',
+              textColor: '#000000',
+              alignment: 'center',
+              padding: '120px 20px',
+            },
+          },
+          {
+            type: 'services',
+            title: 'Services',
+            subtitle: 'What We Offer',
+            order: 1,
+            defaultContent: {
+              items: [
+                {
+                  title: 'Consulting',
+                  description: 'Expert guidance on industry best practices',
+                  icon: '💼',
+                },
+                {
+                  title: 'Training',
+                  description: 'Hands-on training sessions for your team',
+                  icon: '🎓',
+                },
+                {
+                  title: 'Support',
+                  description: '24/7 support for all your needs',
+                  icon: '🤝',
+                },
+              ],
+            },
+            styling: {
+              backgroundColor: '#f9fafb',
+              textColor: '#000000',
+              padding: '80px 20px',
+            },
+          },
+          {
+            type: 'cta',
+            title: 'Ready to Get Started?',
+            order: 2,
+            defaultContent: {
+              heading: 'Transform Your Business Today',
+              subheading: 'Join hundreds of satisfied clients',
+              buttonText: 'Contact Us Now',
+              buttonLink: '#contact',
+            },
+            styling: {
+              backgroundColor: '#4f46e5',
+              textColor: '#ffffff',
+              padding: '80px 20px',
+              alignment: 'center',
+            },
+          },
+        ],
+        branding: {
+          primaryColor: '#4f46e5',
+          secondaryColor: '#06b6d4',
+          fontFamily: 'Inter',
+          headerStyle: 'standard',
+          footerStyle: 'simple',
+        },
+        layout: {
+          headerType: 'sticky',
+          footerIncluded: true,
+          sidebarIncluded: false,
+          containerWidth: 'standard',
+        },
+      },
+      {
+        name: 'About Page',
+        description: 'Professional about page to showcase your background and expertise',
+        category: 'about',
+        isActive: true,
+        sections: [
+          {
+            type: 'hero',
+            title: 'About Us',
+            order: 0,
+            defaultContent: {
+              heading: 'About Our Company',
+              subheading: 'Our story, mission, and values',
+            },
+            styling: {
+              backgroundColor: '#ffffff',
+              padding: '80px 20px',
+            },
+          },
+          {
+            type: 'about',
+            title: 'Our Story',
+            order: 1,
+            defaultContent: {
+              content: 'Share your journey and what drives your passion for helping clients...',
+            },
+            styling: {
+              backgroundColor: '#ffffff',
+              padding: '60px 20px',
+            },
+          },
+        ],
+        branding: {
+          primaryColor: '#4f46e5',
+          secondaryColor: '#06b6d4',
+          fontFamily: 'Inter',
+          headerStyle: 'standard',
+          footerStyle: 'simple',
+        },
+        layout: {
+          headerType: 'sticky',
+          footerIncluded: true,
+          sidebarIncluded: false,
+          containerWidth: 'standard',
+        },
+      },
+      {
+        name: 'Services Showcase',
+        description: 'Detailed services page with service cards and descriptions',
+        category: 'services',
+        isActive: true,
+        sections: [
+          {
+            type: 'hero',
+            title: 'Our Services',
+            order: 0,
+            defaultContent: {
+              heading: 'Professional Services',
+              subheading: 'Choose the service that fits your needs',
+            },
+            styling: {
+              backgroundColor: '#ffffff',
+              padding: '80px 20px',
+            },
+          },
+          {
+            type: 'services',
+            title: 'Services Offered',
+            order: 1,
+            defaultContent: {
+              items: [
+                { title: 'Service 1', description: 'Description of first service', icon: '✓' },
+                { title: 'Service 2', description: 'Description of second service', icon: '✓' },
+                { title: 'Service 3', description: 'Description of third service', icon: '✓' },
+              ],
+            },
+            styling: {
+              backgroundColor: '#f9fafb',
+              padding: '80px 20px',
+            },
+          },
+        ],
+        branding: {
+          primaryColor: '#4f46e5',
+          secondaryColor: '#06b6d4',
+          fontFamily: 'Inter',
+          headerStyle: 'standard',
+          footerStyle: 'simple',
+        },
+        layout: {
+          headerType: 'sticky',
+          footerIncluded: true,
+          sidebarIncluded: false,
+          containerWidth: 'standard',
+        },
+      },
+      {
+        name: 'Contact Page',
+        description: 'Simple contact page with contact form',
+        category: 'contact',
+        isActive: true,
+        sections: [
+          {
+            type: 'hero',
+            title: 'Contact Us',
+            order: 0,
+            defaultContent: {
+              heading: 'Get In Touch',
+              subheading: 'We would love to hear from you',
+            },
+            styling: {
+              backgroundColor: '#ffffff',
+              padding: '80px 20px',
+            },
+          },
+          {
+            type: 'contact',
+            title: 'Contact Form',
+            order: 1,
+            defaultContent: {
+              email: 'contact@example.com',
+              phone: '+1 (555) 123-4567',
+              address: 'Your Address Here',
+            },
+            styling: {
+              backgroundColor: '#ffffff',
+              padding: '80px 20px',
+            },
+          },
+        ],
+        branding: {
+          primaryColor: '#4f46e5',
+          secondaryColor: '#06b6d4',
+          fontFamily: 'Inter',
+          headerStyle: 'standard',
+          footerStyle: 'simple',
+        },
+        layout: {
+          headerType: 'sticky',
+          footerIncluded: true,
+          sidebarIncluded: false,
+          containerWidth: 'standard',
+        },
+      },
+    ];
+
+    const created = await PageTemplate.insertMany(seedData);
+
+    res.status(201).json({
+      success: true,
+      message: `Successfully seeded ${created.length} templates`,
+      data: {
+        created: created.length,
+        templates: created.map((t) => ({ id: t._id, name: t.name })),
+      },
+    });
+  } catch (error) {
+    console.error('Seed templates error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to seed templates',
+    });
+  }
+};
