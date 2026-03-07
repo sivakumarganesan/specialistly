@@ -531,6 +531,16 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     
     // Add selected files to the lesson
     for (const file of fileArray) {
+      // Validate filename doesn't contain spaces
+      if (file.name.includes(' ')) {
+        alert(
+          "⚠️ Filename cannot contain spaces.\n\n" +
+          "Please rename your file and try again.\n\n" +
+          "Example: 'MyFile.pdf' instead of 'My File.pdf'"
+        );
+        continue;
+      }
+
       const fileType = getFileType(file.name);
       const newFile: LessonFile = {
         fileName: file.name,
@@ -1743,6 +1753,15 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                                 onChange={(e) => {
                                   const file = e.currentTarget.files?.[0];
                                   if (file) {
+                                    // Validate filename doesn't contain spaces
+                                    if (file.name.includes(' ')) {
+                                      alert(
+                                        "⚠️ Filename cannot contain spaces.\n\n" +
+                                        "Please rename your video file and try again.\n\n" +
+                                        "Example: 'MyVideo.mp4' instead of 'My Video.mp4'"
+                                      );
+                                      return;
+                                    }
                                     if (file.size > 5 * 1024 * 1024 * 1024) {
                                       alert("File size must be under 5GB");
                                       return;
