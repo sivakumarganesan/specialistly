@@ -17,7 +17,7 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       case 'services':
         return <ServicesSectionPreview section={section} />;
       case 'cta':
-      return (
+        return (
         <div
           className="py-16 px-4 text-center text-white"
           style={{
@@ -195,11 +195,23 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
 };
 
 export const PreviewMode: React.FC<PreviewModeProps> = ({ page, website }) => {
+  // Debug logging
+  React.useEffect(() => {
+    console.log('PreviewMode - page:', page);
+    console.log('PreviewMode - sections:', page.sections);
+    console.log('PreviewMode - sections length:', page.sections?.length);
+  }, [page]);
+
   if (!page.sections || page.sections.length === 0) {
     return (
       <div className="flex items-center justify-center h-96 bg-gray-50">
         <div className="text-center">
           <p className="text-gray-600 text-lg">No sections yet. Add sections to preview.</p>
+          <p className="text-sm text-gray-500 mt-2">
+            {page.sections === undefined && 'sections is undefined'}
+            {page.sections === null && 'sections is null'}
+            {Array.isArray(page.sections) && page.sections.length === 0 && 'sections array is empty'}
+          </p>
         </div>
       </div>
     );
@@ -210,7 +222,7 @@ export const PreviewMode: React.FC<PreviewModeProps> = ({ page, website }) => {
       <div className="min-h-full">
         {/* Render in order */}
         {[...page.sections]
-          .sort((a, b) => a.order - b.order)
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
           .map((section) => (
             <SectionRenderer key={section._id} section={section} />
           ))}

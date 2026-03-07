@@ -438,6 +438,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
       {/* Publish Dialog */}
       {showPublishDialog && (
         <PublishDialog
+          website={website}
           isLoading={isLoading}
           onPublish={handlePublish}
           onCancel={() => setShowPublishDialog(false)}
@@ -1076,39 +1077,64 @@ const PublishDialog: React.FC<{
   isLoading: boolean;
   onPublish: () => void;
   onCancel: () => void;
-}> = ({ isLoading, onPublish, onCancel }) => (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <Card className="w-96 p-6">
-      <h2 className="text-xl font-bold mb-4">Publish Website</h2>
-      <p className="text-gray-600 mb-6">
-        This will publish all your pages and make them visible to the public.
-      </p>
-      <div className="flex gap-4">
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="flex-1"
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={onPublish}
-          disabled={isLoading}
-          className="flex-1 bg-green-600 hover:bg-green-700"
-        >
-          {isLoading ? (
-            <>
-              <Loader className="w-4 h-4 mr-2 animate-spin" />
-              Publishing...
-            </>
-          ) : (
-            'Publish'
+  website?: Website;
+}> = ({ isLoading, onPublish, onCancel, website }) => {
+  const getPublicURL = () => {
+    if (!website?.subdomain) return 'https://yoursite.specialistly.com';
+    return `https://${website.subdomain}.specialistly.com`;
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <Card className="w-96 p-6">
+        <h2 className="text-xl font-bold mb-4">Publish Website</h2>
+        <div className="space-y-4 mb-6">
+          <p className="text-gray-600">
+            This will publish all your pages and make them visible to the public.
+          </p>
+          
+          {/* Show public URL */}
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <p className="text-sm text-gray-600 mb-1">Your website will be available at:</p>
+            <p className="text-lg font-mono font-semibold text-blue-700 break-all">
+              {getPublicURL()}
+            </p>
+          </div>
+
+          {!website?.subdomain && (
+            <p className="text-sm text-yellow-700 bg-yellow-50 p-2 rounded">
+              ⚠️ Set a subdomain in Branding settings to customize your URL
+            </p>
           )}
-        </Button>
-      </div>
-    </Card>
-  </div>
-);
+        </div>
+        
+        <div className="flex gap-4">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onPublish}
+            disabled={isLoading}
+            className="flex-1 bg-green-600 hover:bg-green-700"
+          >
+            {isLoading ? (
+              <>
+                <Loader className="w-4 h-4 mr-2 animate-spin" />
+                Publishing...
+              </>
+            ) : (
+              'Publish'
+            )}
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+};
 
 export default PageBuilderEditor;
