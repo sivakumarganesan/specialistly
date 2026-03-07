@@ -89,7 +89,7 @@ class PageBuilderAPI {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify(data),
       });
@@ -110,7 +110,7 @@ class PageBuilderAPI {
     try {
       const response = await fetch(`${this.baseURL}/websites`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
       });
 
@@ -129,7 +129,7 @@ class PageBuilderAPI {
     try {
       const response = await fetch(`${this.baseURL}/websites/${websiteId}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
       });
 
@@ -150,7 +150,7 @@ class PageBuilderAPI {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify(data),
       });
@@ -172,7 +172,7 @@ class PageBuilderAPI {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: JSON.stringify(data),
       });
@@ -193,7 +193,7 @@ class PageBuilderAPI {
       const response = await fetch(`${this.baseURL}/websites/${websiteId}/publish`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
       });
 
@@ -213,7 +213,7 @@ class PageBuilderAPI {
       const response = await fetch(`${this.baseURL}/websites/${websiteId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
       });
 
@@ -253,7 +253,7 @@ class PageBuilderAPI {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
           body: JSON.stringify(data),
         }
@@ -276,7 +276,7 @@ class PageBuilderAPI {
         `${this.baseURL}/websites/${websiteId}/pages`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
         }
       );
@@ -300,7 +300,7 @@ class PageBuilderAPI {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
           body: JSON.stringify(data),
         }
@@ -324,7 +324,7 @@ class PageBuilderAPI {
         {
           method: 'PUT',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
         }
       );
@@ -347,7 +347,7 @@ class PageBuilderAPI {
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
         }
       );
@@ -377,7 +377,7 @@ class PageBuilderAPI {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
           body: JSON.stringify(data),
         }
@@ -407,7 +407,7 @@ class PageBuilderAPI {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
           body: JSON.stringify(data),
         }
@@ -435,7 +435,7 @@ class PageBuilderAPI {
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
         }
       );
@@ -478,7 +478,7 @@ class PageBuilderAPI {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
           body: formData,
         }
@@ -519,7 +519,7 @@ class PageBuilderAPI {
         {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
           body: formData,
         }
@@ -555,7 +555,7 @@ class PageBuilderAPI {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
           body: JSON.stringify({
             provider: 'youtube',
@@ -586,7 +586,7 @@ class PageBuilderAPI {
         `${this.baseURL}/websites/${websiteId}/media`,
         {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
         }
       );
@@ -609,7 +609,7 @@ class PageBuilderAPI {
         {
           method: 'DELETE',
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
         }
       );

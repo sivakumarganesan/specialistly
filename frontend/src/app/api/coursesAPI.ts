@@ -6,14 +6,14 @@ const API_BASE = '/api/courses';
 
 export const createCourse = (courseData) => {
   return axios.post(`${API_BASE}`, courseData, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
 export const getMyCourses = (filters = {}) => {
   return axios.get(`${API_BASE}/my-courses`, {
     params: filters,
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
@@ -27,13 +27,13 @@ export const getCourseById = (courseId) => {
 
 export const updateCourse = (courseId, courseData) => {
   return axios.put(`${API_BASE}/${courseId}`, courseData, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
 export const addLesson = (courseId, lessonData) => {
   return axios.post(`${API_BASE}/${courseId}/lessons`, lessonData, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
@@ -42,7 +42,7 @@ export const publishCourse = (courseId) => {
     `${API_BASE}/${courseId}/publish`,
     {},
     {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     }
   );
 };
@@ -52,14 +52,14 @@ export const archiveCourse = (courseId) => {
     `${API_BASE}/${courseId}/archive`,
     {},
     {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     }
   );
 };
 
 export const deleteCourse = (courseId) => {
   return axios.delete(`${API_BASE}/${courseId}`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
@@ -70,20 +70,20 @@ export const enrollSelfPaced = (courseId) => {
     `${API_BASE}/enrollments/self-paced`,
     { courseId },
     {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     }
   );
 };
 
 export const getMySelfPacedCourses = () => {
   return axios.get(`${API_BASE}/enrollments/self-paced/my-courses`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
 export const getSelfPacedEnrollmentDetails = (enrollmentId) => {
   return axios.get(`${API_BASE}/enrollments/self-paced/${enrollmentId}`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
@@ -92,7 +92,7 @@ export const markLessonComplete = (enrollmentId, lessonId) => {
     `${API_BASE}/enrollments/self-paced/${enrollmentId}/lessons/${lessonId}/complete`,
     {},
     {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     }
   );
 };
@@ -101,7 +101,7 @@ export const checkSelfPacedCertificateEligibility = (enrollmentId) => {
   return axios.get(
     `${API_BASE}/enrollments/self-paced/${enrollmentId}/check-certificate`,
     {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     }
   );
 };
@@ -110,7 +110,7 @@ export const checkSelfPacedCertificateEligibility = (enrollmentId) => {
 
 export const createCohort = (cohortData) => {
   return axios.post(`${API_BASE}/cohorts`, cohortData, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
@@ -119,14 +119,14 @@ export const publishCohort = (cohortId) => {
     `${API_BASE}/cohorts/${cohortId}/publish`,
     {},
     {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     }
   );
 };
 
 export const addSessionToCohort = (cohortId, sessionData) => {
   return axios.post(`${API_BASE}/cohorts/${cohortId}/sessions`, sessionData, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
@@ -145,14 +145,14 @@ export const enrollCohort = (cohortId) => {
     `${API_BASE}/enrollments/cohort`,
     { cohortId },
     {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     }
   );
 };
 
 export const getMyCohorts = () => {
   return axios.get(`${API_BASE}/enrollments/cohort/my-courses`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
@@ -161,7 +161,7 @@ export const markSessionAttended = (enrollmentId, sessionId) => {
     `${API_BASE}/enrollments/cohort/${enrollmentId}/sessions/${sessionId}/attend`,
     {},
     {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     }
   );
 };
@@ -170,7 +170,7 @@ export const getSessionJoinLink = (cohortId, sessionId) => {
   return axios.get(
     `${API_BASE}/enrollments/cohort/${cohortId}/sessions/${sessionId}/join`,
     {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
     }
   );
 };
@@ -179,7 +179,7 @@ export const getSessionJoinLink = (cohortId, sessionId) => {
 
 export const downloadCertificate = (certificateId) => {
   return axios.get(`${API_BASE}/certificates/${certificateId}/download`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
 
@@ -193,6 +193,6 @@ export const verifyCertificate = (certificateId) => {
 
 export const getMyCertificates = () => {
   return axios.get(`${API_BASE}/certificates/my-certificates`, {
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
   });
 };
