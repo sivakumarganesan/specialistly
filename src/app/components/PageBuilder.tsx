@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import { Plus, Loader } from "lucide-react";
+import { Plus, Loader, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { pageBuilderAPI } from "@/app/api/pageBuilderAPI";
-import PageBuilderEditor from "@/app/components/PageBuilderEditor";
+import BrandedPageBuilder from "@/app/components/PageBuilder/BrandedPageBuilder";
 
 interface Website {
   _id: string;
   name: string;
-  domain?: string;
+  subdomain?: string;
+  branding?: any;
   isPublished: boolean;
   createdAt: string;
 }
@@ -74,12 +75,28 @@ export function PageBuilder() {
     }
   };
 
-  // If a website is selected, show the editor
+  // If a website is selected, show the branded page builder
   if (selectedWebsiteId) {
+    const selectedWebsite = websites.find(w => w._id === selectedWebsiteId);
     return (
       <div className="min-h-screen bg-gray-50">
-      <PageBuilderEditor websiteId={selectedWebsiteId} />
-    </div>
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <button
+              onClick={() => setSelectedWebsiteId(null)}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Websites
+            </button>
+          </div>
+        </div>
+        <BrandedPageBuilder
+          websiteId={selectedWebsiteId}
+          websiteName={selectedWebsite?.name || 'Website'}
+          subdomain={selectedWebsite?.subdomain}
+        />
+      </div>
     );
   }
 
@@ -155,12 +172,16 @@ export function PageBuilder() {
                 </div>
                 
                 <p className="text-sm text-gray-600 mb-4">
-                  {website.domain ? (
+                  {website.subdomain ? (
                     <>
-                      <strong>Domain:</strong> {website.domain}
+                      <strong>Domain:</strong>
+                      <br />
+                      <code className="text-xs bg-gray-100 px-2 py-1 rounded mt-1 block">
+                        {website.subdomain}.specialistly.com
+                      </code>
                     </>
                   ) : (
-                    <span className="text-gray-500">No domain configured</span>
+                    <span className="text-gray-500">No subdomain configured</span>
                   )}
                 </p>
 
