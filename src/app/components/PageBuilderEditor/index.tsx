@@ -555,8 +555,24 @@ const PropertiesPanel: React.FC<{
         )}
 
         {section.type === 'services' && (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-600">Services can be added by clicking the "Add Service" button in the section preview</p>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Section Title</label>
+              <Input
+                type="text"
+                value={content.title || ''}
+                onChange={(e) => setContent({ ...content, title: e.target.value })}
+                placeholder="Our Services"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Section Description</label>
+              <Textarea
+                value={content.description || ''}
+                onChange={(e) => setContent({ ...content, description: e.target.value })}
+                placeholder="Brief description of your services"
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
               <div className="flex gap-2">
@@ -574,6 +590,80 @@ const PropertiesPanel: React.FC<{
                 >
                   List
                 </Button>
+              </div>
+            </div>
+            
+            {/* Services Management */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">Services</h4>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const services = content.services || [];
+                    services.push({
+                      id: Date.now().toString(),
+                      title: 'New Service',
+                      description: 'Service description',
+                      icon: '',
+                    });
+                    setContent({ ...content, services });
+                  }}
+                  className="text-xs"
+                >
+                  + Add Service
+                </Button>
+              </div>
+              
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {(content.services || []).map((service: any, idx: number) => (
+                  <div key={service.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-medium text-gray-600">Service {idx + 1}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const services = content.services.filter(
+                            (s: any) => s.id !== service.id
+                          );
+                          setContent({ ...content, services });
+                        }}
+                        className="text-xs text-red-600 h-6 px-2"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <Input
+                      type="text"
+                      value={service.title}
+                      onChange={(e) => {
+                        const services = content.services.map((s: any) =>
+                          s.id === service.id
+                            ? { ...s, title: e.target.value }
+                            : s
+                        );
+                        setContent({ ...content, services });
+                      }}
+                      placeholder="Service title"
+                      className="mb-2 text-xs"
+                    />
+                    <Textarea
+                      value={service.description}
+                      onChange={(e) => {
+                        const services = content.services.map((s: any) =>
+                          s.id === service.id
+                            ? { ...s, description: e.target.value }
+                            : s
+                        );
+                        setContent({ ...content, services });
+                      }}
+                      placeholder="Service description"
+                      className="text-xs"
+                      rows={2}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -642,14 +732,92 @@ const PropertiesPanel: React.FC<{
         )}
 
         {section.type === 'pricing' && (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-600">Pricing plans can be managed in the section editor</p>
-          </div>
-        )}
-
-        {section.type === 'faq' && (
-          <div className="space-y-3">
-            <p className="text-xs text-gray-600">FAQ items can be added in the section editor</p>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="text-sm font-semibold text-gray-900">Pricing Plans</h4>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const plans = content.plans || [];
+                  plans.push({
+                    id: Date.now().toString(),
+                    name: 'Standard',
+                    price: '$99',
+                    description: 'Perfect for small businesses',
+                    features: ['Feature 1', 'Feature 2'],
+                  });
+                  setContent({ ...content, plans });
+                }}
+                className="text-xs"
+              >
+                + Add Plan
+              </Button>
+            </div>
+            
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {(content.plans || []).map((plan: any, idx: number) => (
+                <div key={plan.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-medium text-gray-600">Plan {idx + 1}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        const plans = content.plans.filter(
+                          (p: any) => p.id !== plan.id
+                        );
+                        setContent({ ...content, plans });
+                      }}
+                      className="text-xs text-red-600 h-6 px-2"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <Input
+                    type="text"
+                    value={plan.name}
+                    onChange={(e) => {
+                      const plans = content.plans.map((p: any) =>
+                        p.id === plan.id
+                          ? { ...p, name: e.target.value }
+                          : p
+                      );
+                      setContent({ ...content, plans });
+                    }}
+                    placeholder="Plan name"
+                    className="mb-2 text-xs"
+                  />
+                  <Input
+                    type="text"
+                    value={plan.price}
+                    onChange={(e) => {
+                      const plans = content.plans.map((p: any) =>
+                        p.id === plan.id
+                          ? { ...p, price: e.target.value }
+                          : p
+                      );
+                      setContent({ ...content, plans });
+                    }}
+                    placeholder="Price (e.g., $99/month)"
+                    className="mb-2 text-xs"
+                  />
+                  <Textarea
+                    value={plan.description}
+                    onChange={(e) => {
+                      const plans = content.plans.map((p: any) =>
+                        p.id === plan.id
+                          ? { ...p, description: e.target.value }
+                          : p
+                      );
+                      setContent({ ...content, plans });
+                    }}
+                    placeholder="Plan description"
+                    className="text-xs"
+                    rows={1}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -687,6 +855,170 @@ const PropertiesPanel: React.FC<{
                 onChange={(e) => setContent({ ...content, buttonText: e.target.value })}
                 placeholder="Subscribe"
               />
+            </div>
+          </div>
+        )}
+
+        {section.type === 'testimonials' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="text-sm font-semibold text-gray-900">Testimonials</h4>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const testimonials = content.testimonials || [];
+                  testimonials.push({
+                    id: Date.now().toString(),
+                    name: 'Client Name',
+                    title: 'Client Title',
+                    text: 'Your testimonial text here...',
+                    image: '',
+                  });
+                  setContent({ ...content, testimonials });
+                }}
+                className="text-xs"
+              >
+                + Add Testimonial
+              </Button>
+            </div>
+            
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {(content.testimonials || []).map((testimonial: any, idx: number) => (
+                <div key={testimonial.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-medium text-gray-600">Testimonial {idx + 1}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        const testimonials = content.testimonials.filter(
+                          (t: any) => t.id !== testimonial.id
+                        );
+                        setContent({ ...content, testimonials });
+                      }}
+                      className="text-xs text-red-600 h-6 px-2"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <Input
+                    type="text"
+                    value={testimonial.name}
+                    onChange={(e) => {
+                      const testimonials = content.testimonials.map((t: any) =>
+                        t.id === testimonial.id
+                          ? { ...t, name: e.target.value }
+                          : t
+                      );
+                      setContent({ ...content, testimonials });
+                    }}
+                    placeholder="Client name"
+                    className="mb-2 text-xs"
+                  />
+                  <Input
+                    type="text"
+                    value={testimonial.title}
+                    onChange={(e) => {
+                      const testimonials = content.testimonials.map((t: any) =>
+                        t.id === testimonial.id
+                          ? { ...t, title: e.target.value }
+                          : t
+                      );
+                      setContent({ ...content, testimonials });
+                    }}
+                    placeholder="Title/Company"
+                    className="mb-2 text-xs"
+                  />
+                  <Textarea
+                    value={testimonial.text}
+                    onChange={(e) => {
+                      const testimonials = content.testimonials.map((t: any) =>
+                        t.id === testimonial.id
+                          ? { ...t, text: e.target.value }
+                          : t
+                      );
+                      setContent({ ...content, testimonials });
+                    }}
+                    placeholder="Testimonial text"
+                    className="text-xs"
+                    rows={2}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {section.type === 'faq' && (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h4 className="text-sm font-semibold text-gray-900">FAQ Items</h4>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const faqs = content.faqs || [];
+                  faqs.push({
+                    id: Date.now().toString(),
+                    question: 'Your question here?',
+                    answer: 'Your answer here...',
+                  });
+                  setContent({ ...content, faqs });
+                }}
+                className="text-xs"
+              >
+                + Add FAQ
+              </Button>
+            </div>
+            
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {(content.faqs || []).map((faq: any, idx: number) => (
+                <div key={faq.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                  <div className="flex justify-between items-start mb-2">
+                    <span className="text-xs font-medium text-gray-600">FAQ {idx + 1}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        const faqs = content.faqs.filter(
+                          (f: any) => f.id !== faq.id
+                        );
+                        setContent({ ...content, faqs });
+                      }}
+                      className="text-xs text-red-600 h-6 px-2"
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                  <Input
+                    type="text"
+                    value={faq.question}
+                    onChange={(e) => {
+                      const faqs = content.faqs.map((f: any) =>
+                        f.id === faq.id
+                          ? { ...f, question: e.target.value }
+                          : f
+                      );
+                      setContent({ ...content, faqs });
+                    }}
+                    placeholder="Question"
+                    className="mb-2 text-xs"
+                  />
+                  <Textarea
+                    value={faq.answer}
+                    onChange={(e) => {
+                      const faqs = content.faqs.map((f: any) =>
+                        f.id === faq.id
+                          ? { ...f, answer: e.target.value }
+                          : f
+                      );
+                      setContent({ ...content, faqs });
+                    }}
+                    placeholder="Answer"
+                    className="text-xs"
+                    rows={2}
+                  />
+                </div>
+              ))}
             </div>
           </div>
         )}
