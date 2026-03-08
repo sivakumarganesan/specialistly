@@ -6,6 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { subdomainMiddleware } from './middleware/subdomainMiddleware.js';
+import { getPublicPageViaSubdomain } from './controllers/pageController.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import courseRoutes from './routes/courseRoutes.js';
@@ -97,22 +98,29 @@ app.use(async (req, res, next) => {
       return next();
     }
     
+    console.log(`[Subdomain Handler] ${req.subdomain}${req.path}`);
+    
     try {
-      console.log(`[Subdomain] ${req.subdomain}${req.path}`);
-      
       // Extract page slug from path, default to 'home'
       const pathParts = req.path.split('/').filter(Boolean);
       const pageSlug = pathParts[0] || 'home';
       
-      const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
       req.params.pageSlug = pageSlug;
       
       // Call the handler
       await getPublicPageViaSubdomain(req, res);
       return; // Response already sent by handler
     } catch (error) {
-      // Don't log errors for now, just continue
-      console.error('[Subdomain Handler Error]', error.message);
+      console.error('[Subdomain Handler Catch Error]', error.message);
+      // Only send error if not already sent
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          message: 'Internal server error',
+          error: error.message,
+        });
+      }
+      return;
     }
   }
   
