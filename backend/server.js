@@ -172,6 +172,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Debug endpoint for subdomain detection
+app.get('/debug/subdomain', (req, res) => {
+  res.status(200).json({
+    subdomain: req.subdomain,
+    hostname: req.get('host'),
+    path: req.path,
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Test endpoint to get outbound IP
 app.get('/api/test/outbound-ip', async (req, res) => {
   try {
