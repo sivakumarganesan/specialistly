@@ -269,8 +269,6 @@ if (distPath && fs.existsSync(distPath)) {
 
 // ============ SUBDOMAIN PUBLIC PAGE ROUTES ============
 // Handle subdomain-based page requests before SPA fallback
-// TEMPORARILY DISABLED - Testing if server starts
-/*
 app.get('/', async (req, res, next) => {
   if (!req.subdomain) return next();
   
@@ -301,7 +299,6 @@ app.get('/:pageSlug', async (req, res, next) => {
     });
   }
 });
-*/
 
 // ============ SPA FALLBACK ============
 // SPA fallback

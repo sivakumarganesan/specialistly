@@ -22,7 +22,7 @@ export const subdomainMiddleware = (req, res, next) => {
     }
     
     req.subdomain = subdomain;
-    req.hostname = hostname;
+    req.requestHostname = hostname; // Use requestHostname instead of hostname (which is read-only)
     
     console.log(`[Subdomain] Hostname: ${hostname} | Subdomain: ${subdomain}`);
     
