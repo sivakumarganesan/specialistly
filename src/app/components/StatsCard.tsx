@@ -18,7 +18,7 @@ export function StatsCard({ title, value, icon: Icon, trend, trendUp, isClickabl
           <p className="text-sm text-gray-600 mb-2">{title}</p>
           <p className="text-4xl font-bold">{value}</p>
         </div>
-        <div className="bg-blue-100 p-3 rounded-lg">
+        <div className="bg-cyan-100 p-3 rounded-lg">
           <Icon className="h-6 w-6 text-blue-600" />
         </div>
       </div>

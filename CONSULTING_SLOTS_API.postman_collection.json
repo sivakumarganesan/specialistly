@@ -1,0 +1,272 @@
+{
+  "info": {
+    "_postman_id": "12345678-abcd-efgh-ijkl-mnopqrstuvwx",
+    "name": "Consulting Slots Management API",
+    "description": "Phase 1 Complete - Backend API for managing specialist consulting slot availability",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "📖 Available Slots (Customer)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots/available?specialistEmail=john@example.com&startDate=2026-02-19&endDate=2026-03-19",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots",
+            "available"
+          ],
+          "query": [
+            {
+              "key": "specialistEmail",
+              "value": "john@example.com"
+            },
+            {
+              "key": "startDate",
+              "value": "2026-02-19"
+            },
+            {
+              "key": "endDate",
+              "value": "2026-03-19"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "👤 Specialist All Slots",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots/john@example.com",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots",
+            "john@example.com"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "📊 Specialist Stats",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots/john@example.com/stats",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots",
+            "john@example.com",
+            "stats"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "🎫 Slot Details",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots/slot/{{slotId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots",
+            "slot",
+            "{{slotId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "✨ Create Slot",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specialistEmail\": \"john@example.com\",\n  \"specialistId\": \"65a9b2c1d2e3f4g5h6i7j8k9\",\n  \"date\": \"2026-02-20\",\n  \"startTime\": \"14:00\",\n  \"endTime\": \"15:00\",\n  \"totalCapacity\": 1,\n  \"timezone\": \"America/New_York\",\n  \"notes\": \"Career consultation\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "🚀 Bulk Create Slots",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"specialistEmail\": \"john@example.com\",\n  \"specialistId\": \"65a9b2c1d2e3f4g5h6i7j8k9\",\n  \"slots\": [\n    {\n      \"date\": \"2026-02-20\",\n      \"startTime\": \"09:00\",\n      \"endTime\": \"10:00\",\n      \"totalCapacity\": 1\n    },\n    {\n      \"date\": \"2026-02-20\",\n      \"startTime\": \"14:00\",\n      \"endTime\": \"15:00\",\n      \"totalCapacity\": 1\n    },\n    {\n      \"date\": \"2026-02-21\",\n      \"startTime\": \"10:00\",\n      \"endTime\": \"11:00\",\n      \"totalCapacity\": 1\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots/bulk/create",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots",
+            "bulk",
+            "create"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "💼 Book Slot (Customer)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"customerId\": \"65a9b2c1d2e3f4g5h6i7j8ka\",\n  \"customerEmail\": \"alice@example.com\",\n  \"customerName\": \"Alice Smith\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots/{{slotId}}/book",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots",
+            "{{slotId}}",
+            "book"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "✏️ Update Slot",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"startTime\": \"14:30\",\n  \"endTime\": \"15:30\",\n  \"status\": \"inactive\",\n  \"notes\": \"Updated notes\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots/{{slotId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots",
+            "{{slotId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "❌ Delete Slot",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots/{{slotId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots",
+            "{{slotId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "🔄 Cancel Booking",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/consulting-slots/{{slotId}}/book/{{customerId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "consulting-slots",
+            "{{slotId}}",
+            "book",
+            "{{customerId}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "slotId",
+      "value": "replace_with_actual_slot_id",
+      "type": "string"
+    },
+    {
+      "key": "customerId",
+      "value": "replace_with_actual_customer_id",
+      "type": "string"
+    }
+  ]
+}

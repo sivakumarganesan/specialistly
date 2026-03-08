@@ -12,7 +12,7 @@ async function clearDatabase() {
     const db = mongoose.connection;
     
     // Clear collections
-    const collections = ['users', 'courses', 'services', 'creatorprofiles', 'customers', 'websites', 'subscriptions', 'appointments'];
+    const collections = ['users', 'courses', 'services', 'creatorprofiles', 'customers', 'websites', 'subscriptions', 'appointments', 'appointmentslots'];
     
     for (const collection of collections) {
       try {

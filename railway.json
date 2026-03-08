@@ -1,0 +1,9 @@
+{
+  "build": {
+    "builder": "nixpacks",
+    "buildCommand": "npm run build && mkdir -p backend/public && cp -r dist/* backend/public/ && cd backend && npm install"
+  },
+  "deploy": {
+    "startCommand": "cd backend && node server.js"
+  }
+}
