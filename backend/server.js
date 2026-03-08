@@ -6,7 +6,6 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { subdomainMiddleware } from './middleware/subdomainMiddleware.js';
-import { getPublicPageViaSubdomain } from './controllers/pageController.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import courseRoutes from './routes/courseRoutes.js';
@@ -87,45 +86,6 @@ app.use(cors(corsOptions));
 
 // Add subdomain middleware to extract subdomain from hostname
 app.use(subdomainMiddleware);
-
-// ============ SUBDOMAIN PUBLIC PAGE HANDLER (Early Middleware) ============
-// Must run BEFORE express.json() and static serving
-app.use(async (req, res, next) => {
-  // Only handle subdomain requests that are not API calls
-  if (req.subdomain && req.method === 'GET' && !req.path.startsWith('/api')) {
-    // Skip static assets
-    if (req.path.match(/\.(js|css|wasm|png|jpg|gif|svg|ico|json|map|webp)$/i)) {
-      return next();
-    }
-    
-    console.log(`[Subdomain Handler] ${req.subdomain}${req.path}`);
-    
-    try {
-      // Extract page slug from path, default to 'home'
-      const pathParts = req.path.split('/').filter(Boolean);
-      const pageSlug = pathParts[0] || 'home';
-      
-      req.params.pageSlug = pageSlug;
-      
-      // Call the handler
-      await getPublicPageViaSubdomain(req, res);
-      return; // Response already sent by handler
-    } catch (error) {
-      console.error('[Subdomain Handler Catch Error]', error.message);
-      // Only send error if not already sent
-      if (!res.headersSent) {
-        res.status(500).json({
-          success: false,
-          message: 'Internal server error',
-          error: error.message,
-        });
-      }
-      return;
-    }
-  }
-  
-  next();
-});
 
 // ⚠️ IMPORTANT: Stripe webhook middleware MUST be BEFORE express.json()
 // Webhook requires raw body, not JSON parsed
@@ -306,6 +266,39 @@ if (distPath && fs.existsSync(distPath)) {
 } else {
   console.error('❌ Skipping static middleware - dist/ folder not found');
 }
+
+// ============ SUBDOMAIN PUBLIC PAGE ROUTES ============
+// Handle subdomain-based page requests before SPA fallback
+app.get('/', async (req, res, next) => {
+  if (!req.subdomain) return next();
+  
+  try {
+    const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
+    req.params.pageSlug = 'home';
+    return await getPublicPageViaSubdomain(req, res);
+  } catch (error) {
+    console.error('[Subdomain Root] Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+app.get('/:pageSlug', async (req, res, next) => {
+  if (!req.subdomain) return next();
+  
+  try {
+    const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
+    return await getPublicPageViaSubdomain(req, res);
+  } catch (error) {
+    console.error('[Subdomain Page] Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
 
 // ============ SPA FALLBACK ============
 // SPA fallback
