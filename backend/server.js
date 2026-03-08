@@ -270,33 +270,59 @@ if (distPath && fs.existsSync(distPath)) {
 // ============ SUBDOMAIN PUBLIC PAGE ROUTES ============
 // Handle subdomain-based page requests before SPA fallback
 app.get('/', async (req, res, next) => {
-  if (!req.subdomain) return next();
+  // Skip if no subdomain
+  if (!req.subdomain) {
+    console.log('[Subdomain Route /] Skipping - no subdomain');
+    return next();
+  }
   
+  console.log('[Subdomain Route /] Handling:', req.subdomain);
   try {
     const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
     req.params.pageSlug = 'home';
-    return await getPublicPageViaSubdomain(req, res);
+    await getPublicPageViaSubdomain(req, res);
+    return;
   } catch (error) {
-    console.error('[Subdomain Root] Error:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error('[Subdomain Route /] Unhandled error:', error.message);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+        error: true,
+      });
+    }
+    return;
   }
 });
 
 app.get('/:pageSlug', async (req, res, next) => {
-  if (!req.subdomain) return next();
+  // Skip if no subdomain
+  if (!req.subdomain) {
+    console.log('[Subdomain Route /:pageSlug] Skipping - no subdomain');
+    return next();
+  }
   
+  // Skip if path looks like an asset or API
+  if (req.params.pageSlug.startsWith('api') || req.path.match(/\.(js|css|wasm|png|jpg|gif|svg|ico|json|map|webp|html)$/i)) {
+    console.log('[Subdomain Route /:pageSlug] Skipping - looks like asset');
+    return next();
+  }
+  
+  console.log('[Subdomain Route /:pageSlug] Handling:', req.subdomain + req.path);
   try {
     const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
-    return await getPublicPageViaSubdomain(req, res);
+    await getPublicPageViaSubdomain(req, res);
+    return;
   } catch (error) {
-    console.error('[Subdomain Page] Error:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error('[Subdomain Route /:pageSlug] Unhandled error:', error.message);
+    if (!res.headersSent) {
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+        error: true,
+      });
+    }
+    return;
   }
 });
 
