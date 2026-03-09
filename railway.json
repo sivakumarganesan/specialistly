@@ -1,9 +1,9 @@
 {
   "build": {
     "builder": "nixpacks",
-    "buildCommand": "npm ci --prefer-offline --no-audit && npm run build && mkdir -p backend/public && cp -r dist/* backend/public/ && cd backend && npm ci --prefer-offline --no-audit"
+    "buildCommand": "npm config set cache /dev/null && npm ci && npm run build && mkdir -p backend/public && cp -r dist/* backend/public/"
   },
   "deploy": {
-    "startCommand": "cd backend && node server.js"
+    "startCommand": "cd backend && npm config set cache /dev/null && npm ci && node server.js"
   }
 }
