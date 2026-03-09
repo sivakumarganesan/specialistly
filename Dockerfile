@@ -21,13 +21,14 @@ WORKDIR /app
 # Copy compiled frontend from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy backend code
+# Copy backend code and package files
+COPY backend/package*.json ./backend/
 COPY --from=builder /app/backend ./backend
 
 WORKDIR /app/backend
 
-# Install only production dependencies for backend
-RUN npm ci --omit=dev
+# Install backend dependencies (production and any needed for runtime)
+RUN npm ci
 
 # Expose port
 EXPOSE 5000
