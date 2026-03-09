@@ -1,6 +1,6 @@
 node_modules
-dist
 backend/node_modules
+dist
 .git
 .gitignore
 .env.local
@@ -19,3 +19,16 @@ coverage
 *.swo
 *~
 .cache
+README.md
+CONTRIBUTING.md
+LICENSE
+.github
+test
+tests
+__tests__
+*.test.js
+*.spec.js
+.eslintrc*
+.prettierrc*
+.editorconfig
+

@@ -3,30 +3,26 @@ FROM node:20-slim as builder
 
 WORKDIR /app
 
-# Copy everything except node_modules
-COPY package*.json .npmrc ./
-COPY src ./src
-COPY vite.config.ts tsconfig.json tsconfig.node.json ./
-COPY backend ./backend
+# Copy all source files
+COPY . .
 
-# Install frontend dependencies and build
-RUN npm ci --omit=dev && npm run build
+# Install ALL dependencies (including dev for build)
+RUN npm ci && npm run build
 
 # Create runtime stage
 FROM node:20-slim
 
 WORKDIR /app
 
-# Copy frontend build from builder
+# Copy frontend dist from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy backend
+# Copy backend with dependencies
 COPY --from=builder /app/backend ./backend
 
 WORKDIR /app/backend
 
 # Install backend production dependencies only
-COPY --from=builder /app/backend/package*.json ./
 RUN npm ci --omit=dev
 
 # Expose port
