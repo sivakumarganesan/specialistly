@@ -463,34 +463,244 @@ const PreviewMode: React.FC<{ page: Page; website: Website | null }> = ({
   </div>
 );
 
-const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => (
-  <div className="p-8">
-    <Card className="p-8">
-      <h2 className="text-2xl font-bold mb-6">Branding Settings</h2>
-      <div className="space-y-6">
-        <div>
-          <label className="block text-sm font-medium mb-2">Logo</label>
-          <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center">
-            {website?.branding?.logo ? (
-              <img src={website.branding.logo} alt="Logo" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-gray-400">No logo</span>
-            )}
+const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
+  const [logo, setLogo] = useState<string | null>(website?.branding?.logo || null);
+  const [primaryColor, setPrimaryColor] = useState(website?.branding?.colors?.primary || '#3B82F6');
+  const [secondaryColor, setSecondaryColor] = useState(website?.branding?.colors?.secondary || '#ec4899');
+  const [siteName, setSiteName] = useState(website?.branding?.siteName || '');
+  const [tagline, setTagline] = useState(website?.branding?.tagline || '');
+  const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !website) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setErrorMessage('');
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+      const authToken = localStorage.getItem('authToken');
+
+      // Upload to media endpoint
+      const uploadResponse = await fetch(
+        `${apiUrl}/page-builder/websites/${website._id}/media/upload`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json();
+        throw new Error(error.message || 'Upload failed');
+      }
+
+      const uploadData = await uploadResponse.json();
+      const logoUrl = uploadData.data?.url || uploadData.data?.media?.url;
+
+      if (!logoUrl) {
+        throw new Error('No URL returned from upload');
+      }
+
+      setLogo(logoUrl);
+      setSuccessMessage('Logo uploaded successfully');
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to upload logo');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleSaveBranding = async () => {
+    if (!website) return;
+
+    try {
+      setIsSaving(true);
+      setErrorMessage('');
+
+      await pageBuilderAPI.updateBranding(website._id, {
+        logo: logo || undefined,
+        colors: {
+          primary: primaryColor,
+          secondary: secondaryColor,
+        },
+        siteName,
+        tagline,
+      });
+
+      setSuccessMessage('Branding settings saved successfully');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (error) {
+      console.error('Save branding error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to save branding');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="p-8">
+      <Card className="p-8">
+        <h2 className="text-2xl font-bold mb-6">Branding Settings</h2>
+        
+        {successMessage && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded">
+            {successMessage}
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
+            {errorMessage}
+          </div>
+        )}
+
+        <div className="space-y-6">
+          {/* Site Name */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Site Name</label>
+            <Input
+              type="text"
+              value={siteName}
+              onChange={(e) => setSiteName(e.target.value)}
+              placeholder="My Creator Site"
+            />
+          </div>
+
+          {/* Tagline */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Tagline</label>
+            <Input
+              type="text"
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+              placeholder="Welcome to my site"
+            />
+          </div>
+
+          {/* Logo Upload */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Logo</label>
+            <div className="space-y-3">
+              <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                {logo ? (
+                  <img src={logo} alt="Logo" className="w-full h-full object-contain p-2" />
+                ) : (
+                  <span className="text-gray-400 text-center text-xs">No logo</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  {isUploading ? 'Uploading...' : 'Upload Logo'}
+                </Button>
+                {logo && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLogo(null)}
+                    disabled={isUploading}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleLogoUpload}
+                disabled={isUploading}
+                className="hidden"
+              />
+              <p className="text-xs text-gray-500">Max 5MB, PNG or JPG recommended</p>
+            </div>
+          </div>
+
+          {/* Primary Color */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Primary Color</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={primaryColor}
+                onChange={(e) => setPrimaryColor(e.target.value)}
+                className="w-16 h-10 rounded cursor-pointer"
+              />
+              <code className="text-sm text-gray-600 font-mono">{primaryColor}</code>
+            </div>
+          </div>
+
+          {/* Secondary Color */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Secondary Color</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={secondaryColor}
+                onChange={(e) => setSecondaryColor(e.target.value)}
+                className="w-16 h-10 rounded cursor-pointer"
+              />
+              <code className="text-sm text-gray-600 font-mono">{secondaryColor}</code>
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="border-t pt-6">
+            <Button
+              onClick={handleSaveBranding}
+              disabled={isSaving}
+              className="gap-2 bg-blue-600 hover:bg-blue-700"
+            >
+              {isSaving ? (
+                <>
+                  <Loader className="w-4 h-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Save Branding
+                </>
+              )}
+            </Button>
           </div>
         </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-2">Primary Color</label>
-          <input
-            type="color"
-            defaultValue={website?.branding?.colors?.primary || '#3B82F6'}
-            className="w-16 h-10 rounded cursor-pointer"
-          />
-        </div>
-      </div>
-    </Card>
-  </div>
-);
+      </Card>
+    </div>
+  );
+};
 
 const PropertiesPanel: React.FC<{
   section?: PageSection;
