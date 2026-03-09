@@ -25,6 +25,9 @@ import {
 
 const router = express.Router();
 
+// Public routes - no authentication required
+router.get('/public/websites/:domain', getPublicWebsite);
+
 // Protected routes - require authentication
 router.use(authMiddleware);
 
@@ -52,8 +55,5 @@ router.post('/websites/:websiteId/pages/:pageId/sections', createSection);
 router.get('/websites/:websiteId/pages/:pageId/sections', getSections);
 router.put('/websites/:websiteId/pages/:pageId/sections/:sectionId', updateSection);
 router.delete('/websites/:websiteId/pages/:pageId/sections/:sectionId', deleteSection);
-
-// Public routes - no authentication required
-router.get('/public/websites/:domain', getPublicWebsite);
 
 export default router;

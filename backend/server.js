@@ -267,64 +267,9 @@ if (distPath && fs.existsSync(distPath)) {
   console.error('❌ Skipping static middleware - dist/ folder not found');
 }
 
-// ============ SUBDOMAIN PUBLIC PAGE ROUTES ============
-// Handle subdomain-based page requests before SPA fallback
-app.get('/', async (req, res, next) => {
-  // Skip if no subdomain
-  if (!req.subdomain) {
-    console.log('[Subdomain Route /] Skipping - no subdomain');
-    return next();
-  }
-  
-  console.log('[Subdomain Route /] Handling:', req.subdomain);
-  try {
-    const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
-    req.params.pageSlug = 'home';
-    await getPublicPageViaSubdomain(req, res);
-    return;
-  } catch (error) {
-    console.error('[Subdomain Route /] Unhandled error:', error.message);
-    if (!res.headersSent) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-        error: true,
-      });
-    }
-    return;
-  }
-});
-
-app.get('/:pageSlug', async (req, res, next) => {
-  // Skip if no subdomain
-  if (!req.subdomain) {
-    console.log('[Subdomain Route /:pageSlug] Skipping - no subdomain');
-    return next();
-  }
-  
-  // Skip if path looks like an asset or API
-  if (req.params.pageSlug.startsWith('api') || req.path.match(/\.(js|css|wasm|png|jpg|gif|svg|ico|json|map|webp|html)$/i)) {
-    console.log('[Subdomain Route /:pageSlug] Skipping - looks like asset');
-    return next();
-  }
-  
-  console.log('[Subdomain Route /:pageSlug] Handling:', req.subdomain + req.path);
-  try {
-    const { getPublicPageViaSubdomain } = await import('./controllers/pageController.js');
-    await getPublicPageViaSubdomain(req, res);
-    return;
-  } catch (error) {
-    console.error('[Subdomain Route /:pageSlug] Unhandled error:', error.message);
-    if (!res.headersSent) {
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-        error: true,
-      });
-    }
-    return;
-  }
-});
+// Note: Subdomain routing is now handled entirely by the React frontend (PublicWebsite component)
+// The frontend detects the subdomain and calls /api/page-builder/public/websites/:domain
+// No need for special subdomain handlers here
 
 // ============ SPA FALLBACK ============
 // SPA fallback
