@@ -376,23 +376,88 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
 
             <div className="space-y-2">
               {pages.map((page) => (
-                <button
+                <div
                   key={page._id}
-                  onClick={() => selectPage(page)}
-                  className={`w-full text-left px-4 py-3 rounded-lg border-2 transition-colors ${
+                  className={`px-4 py-3 rounded-lg border-2 transition-colors group ${
                     selectedPage?._id === page._id
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <div className="font-medium text-gray-900">{page.title}</div>
-                  <div className="text-sm text-gray-500">{page.slug}</div>
-                  {page.isHomePage && (
-                    <div className="text-xs font-semibold text-green-600 mt-1">
-                      HOME PAGE
-                    </div>
-                  )}
-                </button>
+                  <button
+                    onClick={() => selectPage(page)}
+                    className="w-full text-left mb-2"
+                  >
+                    <div className="font-medium text-gray-900">{page.title}</div>
+                    <div className="text-sm text-gray-500">{page.slug}</div>
+                    {page.isHomePage && (
+                      <div className="text-xs font-semibold text-green-600 mt-1">
+                        HOME PAGE
+                      </div>
+                    )}
+                    {page.isPublished && (
+                      <div className="text-xs font-semibold text-blue-600 mt-1">
+                        ✓ PUBLISHED
+                      </div>
+                    )}
+                  </button>
+                  
+                  {/* Page Actions */}
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant={page.isPublished ? "default" : "outline"}
+                      onClick={async () => {
+                        try {
+                          setLoading(true);
+                          await pageBuilderAPI.publishPage(
+                            website?._id || websiteId,
+                            page._id
+                          );
+                          // Update page state
+                          const updatedPage = { ...page, isPublished: !page.isPublished };
+                          selectPage(updatedPage);
+                          setPages(pages.map(p => p._id === page._id ? updatedPage : p));
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'Failed to publish page');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={isLoading}
+                      className="flex-1 text-xs gap-1"
+                    >
+                      <Upload className="w-3 h-3" />
+                      {page.isPublished ? 'Unpublish' : 'Publish'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        if (!confirm(`Delete page "${page.title}"?`)) return;
+                        try {
+                          setLoading(true);
+                          await pageBuilderAPI.deletePage(
+                            website?._id || websiteId,
+                            page._id
+                          );
+                          setPages(pages.filter(p => p._id !== page._id));
+                          if (selectedPage?._id === page._id) {
+                            selectPage(pages[0] || null);
+                          }
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'Failed to delete page');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={isLoading}
+                      className="text-xs text-red-600 hover:text-red-700 px-2"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
