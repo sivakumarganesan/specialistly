@@ -1,4 +1,5 @@
-# Multi-stage build
+# Multi-stage Docker build
+# Stage 1: Build frontend and prepare app
 FROM node:20-slim as builder
 
 WORKDIR /app
@@ -6,27 +7,30 @@ WORKDIR /app
 # Copy all source files
 COPY . .
 
-# Install ALL dependencies (including dev for build)
-RUN npm ci && npm run build
+# Install all dependencies (dev deps needed for Vite build)
+RUN npm ci
 
-# Create runtime stage
+# Build frontend with Vite
+RUN npm run build
+
+# Stage 2: Runtime image with just the app
 FROM node:20-slim
 
 WORKDIR /app
 
-# Copy frontend dist from builder
+# Copy compiled frontend from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy backend with dependencies
+# Copy backend code
 COPY --from=builder /app/backend ./backend
 
 WORKDIR /app/backend
 
-# Install backend production dependencies only
+# Install only production dependencies for backend
 RUN npm ci --omit=dev
 
 # Expose port
 EXPOSE 5000
 
-# Start server
+# Start the backend server
 CMD ["node", "server.js"]
