@@ -1,9 +1,6 @@
 {
   "build": {
-    "builder": "nixpacks",
-    "buildCommand": "rm -rf /app/node_modules/.cache 2>/dev/null; npm ci && npm run build && mkdir -p backend/public && cp -r dist/* backend/public/"
-  },
-  "deploy": {
-    "startCommand": "cd backend && npm ci && node server.js"
+    "builder": "dockerfile",
+    "dockerfile": "./Dockerfile"
   }
 }
