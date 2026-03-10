@@ -128,8 +128,6 @@ app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/specialist', payoutRoutes);
 app.use('/api/page-builder', pageBuilderRoutes);
 app.use('/api/page-templates', pageTemplateRoutes);
-app.use('/api/page-builder/websites/:websiteId/pages', pageRoutes);
-app.use('/api/page-builder/websites/:websiteId/media', mediaRoutes);
 app.use('/api/public', publicRoutes);
 
 // Health check endpoint
