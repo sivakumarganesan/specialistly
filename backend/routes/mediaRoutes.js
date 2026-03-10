@@ -17,8 +17,15 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024 * 1024, // 5GB for Cloudflare Stream
   },
   fileFilter: (req, file, cb) => {
-    // Allow video files for Cloudflare HLS
+    // Allow both image and video files
     const allowedMimes = [
+      // Images
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/svg+xml',
+      // Videos
       'video/mp4',
       'video/webm',
       'video/quicktime',
@@ -29,7 +36,7 @@ const upload = multer({
     if (allowedMimes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`File type ${file.mimetype} not allowed. Only video files are supported.`), false);
+      cb(new Error(`File type ${file.mimetype} not allowed. Only image and video files are supported.`), false);
     }
   },
 });
