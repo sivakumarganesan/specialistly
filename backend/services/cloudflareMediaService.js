@@ -15,24 +15,34 @@ dotenv.config();
 
 // ============ Cloudflare R2 Image Upload ============
 
-const r2Client = new S3Client({
-  region: 'auto',
-  credentials: {
-    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || '',
-  },
-  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID || ''}}.r2.cloudflarestorage.com`,
-});
+let r2Client;
+
+try {
+  if (process.env.CLOUDFLARE_R2_ACCESS_KEY_ID && process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY && process.env.CLOUDFLARE_ACCOUNT_ID) {
+    r2Client = new S3Client({
+      region: 'auto',
+      credentials: {
+        accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
+        secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+      },
+      endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    });
+    console.log('✅ R2 client initialized');
+  }
+} catch (err) {
+  console.error('⚠️ Failed to initialize R2 client:', err.message);
+}
 
 export const uploadImageToR2 = async (file, fileName) => {
   try {
-    if (!process.env.CLOUDFLARE_R2_BUCKET_NAME) {
-      console.log('📷 R2 not configured, skipping R2 upload');
-      // Return a data URL for development
+    if (!r2Client) {
+      console.log('📷 R2 not configured, using data URL fallback');
+      // Fallback: return data URL for development (works for images < ~1MB)
+      const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
       return {
         success: true,
-        provider: 'local',
-        url: `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
+        provider: 'dataurl',
+        url: dataUrl,
         filename: fileName,
       };
     }
@@ -66,10 +76,22 @@ export const uploadImageToR2 = async (file, fileName) => {
     };
   } catch (error) {
     console.error('❌ R2 upload error:', error);
-    return {
-      success: false,
-      error: error.message || 'Failed to upload image to R2',
-    };
+    // Fallback to data URL on error
+    try {
+      const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+      console.log('📷 Falling back to data URL');
+      return {
+        success: true,
+        provider: 'dataurl',
+        url: dataUrl,
+        filename: fileName,
+      };
+    } catch (fallbackError) {
+      return {
+        success: false,
+        error: error.message || 'Failed to upload image',
+      };
+    }
   }
 };
 
