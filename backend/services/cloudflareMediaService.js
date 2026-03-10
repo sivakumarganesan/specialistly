@@ -1,6 +1,7 @@
 import dotenv from 'dotenv';
 import cloudflareConfig from '../config/cloudflareConfig.js';
 import axios from 'axios';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 dotenv.config();
 
@@ -8,8 +9,69 @@ dotenv.config();
  * Simplified Media Service - Cloudflare HLS + YouTube
  * Supports:
  * 1. Cloudflare Stream - HLS video streaming (primary)
- * 2. YouTube - Embedded video links (secondary)
+ * 2. Cloudflare R2 - Image storage via S3-compatible API
+ * 3. YouTube - Embedded video links (secondary)
  */
+
+// ============ Cloudflare R2 Image Upload ============
+
+const r2Client = new S3Client({
+  region: 'auto',
+  credentials: {
+    accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY || '',
+  },
+  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID || ''}}.r2.cloudflarestorage.com`,
+});
+
+export const uploadImageToR2 = async (file, fileName) => {
+  try {
+    if (!process.env.CLOUDFLARE_R2_BUCKET_NAME) {
+      console.log('📷 R2 not configured, skipping R2 upload');
+      // Return a data URL for development
+      return {
+        success: true,
+        provider: 'local',
+        url: `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
+        filename: fileName,
+      };
+    }
+
+    console.log(`📷 Uploading image to R2: ${fileName}`);
+
+    const key = `images/${Date.now()}-${fileName.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    
+    const command = new PutObjectCommand({
+      Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+      Metadata: {
+        'original-filename': fileName,
+      },
+    });
+
+    await r2Client.send(command);
+
+    const url = `https://${process.env.CLOUDFLARE_R2_BUCKET_NAME}.${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/${key}`;
+
+    console.log('✅ R2 image upload successful:', url);
+
+    return {
+      success: true,
+      provider: 'r2',
+      url,
+      filename: fileName,
+      key,
+    };
+  } catch (error) {
+    console.error('❌ R2 upload error:', error);
+    return {
+      success: false,
+      error: error.message || 'Failed to upload image to R2',
+    };
+  }
+};
 
 // ============ Cloudflare HLS Video ============
 
@@ -230,6 +292,12 @@ export const uploadMedia = async (
 ) => {
   try {
     console.log(`\n🎯 Uploading ${mediaType} to ${provider}`);
+
+    // For images, use R2 regardless of provider
+    if (mediaType === 'image') {
+      console.log('📷 Image detected, using R2 for storage');
+      return await uploadImageToR2(file, title || file.originalname);
+    }
 
     switch (provider) {
       case 'cloudflare': {

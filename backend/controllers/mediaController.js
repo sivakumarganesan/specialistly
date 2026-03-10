@@ -48,6 +48,8 @@ export const uploadMedia = async (req, res) => {
     const { provider = 'cloudflare', videoUrl, title } = req.body;
     const specialistId = req.user.id;
 
+    console.log(`📤 Upload media request: mediaType, provider=${provider}, websiteId=${websiteId}`);
+
     // Validate provider
     const allowedProviders = ['cloudflare', 'youtube'];
     if (!allowedProviders.includes(provider)) {
@@ -197,10 +199,19 @@ export const uploadMedia = async (req, res) => {
       message: `Media uploaded successfully via ${uploadResult.provider.toUpperCase()}`,
     });
   } catch (error) {
-    console.error('Upload media error:', error);
+    console.error('❌ Upload media error:', {
+      message: error.message,
+      stack: error.stack,
+      file: req.file ? {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      } : null,
+    });
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: error.message || 'Failed to upload media',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 };
