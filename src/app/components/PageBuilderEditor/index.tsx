@@ -230,104 +230,107 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 shadow-sm">
-        <div className="px-6 py-4 flex items-center justify-between">
+    <div className="h-screen flex flex-col bg-slate-50">
+      {/* Professional Header */}
+      <header className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 shadow-lg">
+        <div className="px-8 py-6 flex items-center justify-between">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {website?.displayName || 'Page Builder'}
-            </h1>
-            <div className="flex items-center gap-4 mt-2">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-lg">📄</span>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-white">
+                  {website?.displayName || 'Page Builder'}
+                </h1>
+                <p className="text-blue-100 text-sm mt-1">Professional Website Designer</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-6 mt-4">
               <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-600">Domain:</p>
-                <p className="text-sm font-mono text-gray-700">{website?.domainName}</p>
+                <span className="text-blue-100 text-sm">Domain:</span>
+                <span className="text-white text-sm font-mono font-semibold bg-white bg-opacity-10 px-3 py-1 rounded">{website?.domainName}</span>
               </div>
               {website?.subdomain && (
-                <div className="flex items-center gap-2 pl-4 border-l border-gray-200">
-                  <p className="text-sm text-gray-600">Subdomain:</p>
-                  <p className="text-sm font-mono text-blue-600 font-semibold">{website.subdomain}</p>
+                <div className="flex items-center gap-2 pl-6 border-l border-white border-opacity-20">
+                  <span className="text-blue-100 text-sm">Subdomain:</span>
+                  <span className="text-white font-mono font-semibold bg-white bg-opacity-10 px-3 py-1 rounded">{website.subdomain}</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Mode Selection */}
-            <div className="flex gap-2 flex-col items-end">
-              {selectedPage && website?.subdomain && website.isPublished && (
-                <div className="mb-2 p-2 bg-green-50 rounded border border-green-200 text-right">
-                  <p className="text-xs text-green-700 font-semibold mb-1">✓ Published:</p>
-                  <a
-                    href={`/public/${website.subdomain}/${selectedPage.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-mono text-green-600 hover:text-green-700 hover:underline block break-all"
-                    title="Open published page in new tab"
-                  >
-                    specialistly.com/public/{website.subdomain}/{selectedPage.slug}
-                  </a>
-                </div>
-              )}
-              {selectedPage && website?.subdomain && !website.isPublished && (
-                <div className="mb-2 p-2 bg-yellow-50 rounded border border-yellow-200 text-right">
-                  <p className="text-xs text-yellow-700 mb-1">📋 Not published yet</p>
-                  <p className="text-xs text-yellow-600 font-mono">
-                    /public/{website.subdomain}/{selectedPage.slug}
-                  </p>
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Button
-                  variant={mode === 'edit' ? 'default' : 'outline'}
-                  onClick={() => setMode('edit')}
-                  className="gap-2"
-                >
-                  Edit
-                </Button>
-                <Button
-                  variant={mode === 'preview' ? 'default' : 'outline'}
-                  onClick={() => setMode('preview')}
-                  className="gap-2"
-                >
-                  <Eye className="w-4 h-4" />
-                  Preview
-                </Button>
-                <Button
-                  variant={mode === 'branding' ? 'default' : 'outline'}
-                  onClick={() => setMode('branding')}
-                  className="gap-2"
-                >
-                  <Settings className="w-4 h-4" />
-                  Branding
-                </Button>
+          <div className="flex items-center gap-6">
+            {/* Status Indicator */}
+            {selectedPage && (
+              <div className="text-right">
+                {website?.subdomain && website.isPublished ? (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-green-500 bg-opacity-10 rounded-lg border border-green-400 border-opacity-30">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <p className="text-green-100 text-xs font-semibold">LIVE</p>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500 bg-opacity-10 rounded-lg border border-yellow-400 border-opacity-30">
+                    <div className="w-2 h-2 bg-yellow-400"></div>
+                    <p className="text-yellow-100 text-xs font-semibold">DRAFT</p>
+                  </div>
+                )}
               </div>
+            )}
+
+            {/* Mode Selection */}
+            <div className="flex gap-2 bg-white bg-opacity-10 rounded-lg p-1">
+              <Button
+                variant={mode === 'edit' ? 'default' : 'ghost'}
+                onClick={() => setMode('edit')}
+                className={mode === 'edit' ? 'bg-white text-blue-600 hover:bg-white' : 'text-white hover:bg-white hover:bg-opacity-10'}
+                size="sm"
+              >
+                ✏️ Edit
+              </Button>
+              <Button
+                variant={mode === 'preview' ? 'default' : 'ghost'}
+                onClick={() => setMode('preview')}
+                className={mode === 'preview' ? 'bg-white text-blue-600 hover:bg-white' : 'text-white hover:bg-white hover:bg-opacity-10'}
+                size="sm"
+              >
+                👁️ Preview
+              </Button>
+              <Button
+                variant={mode === 'branding' ? 'default' : 'ghost'}
+                onClick={() => setMode('branding')}
+                className={mode === 'branding' ? 'bg-white text-blue-600 hover:bg-white' : 'text-white hover:bg-white hover:bg-opacity-10'}
+                size="sm"
+              >
+                🎨 Branding
+              </Button>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 border-l border-gray-200 pl-4">
+            <div className="flex gap-2 border-l border-white border-opacity-20 pl-6">
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={undo}
-                title="Undo (Ctrl+Z)"
+                title="Undo"
+                className="text-white hover:bg-white hover:bg-opacity-10"
               >
                 <RotateCcw className="w-4 h-4" />
               </Button>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
                 onClick={redo}
-                title="Redo (Ctrl+Y)"
+                title="Redo"
+                className="text-white hover:bg-white hover:bg-opacity-10"
               >
                 <RotateCw className="w-4 h-4" />
               </Button>
 
               {isDirty && (
                 <Button
-                  variant="default"
                   size="sm"
-                  className="gap-2 bg-green-600 hover:bg-green-700"
+                  className="gap-2 bg-white text-blue-600 hover:bg-blue-50 font-semibold"
                 >
                   <Save className="w-4 h-4" />
                   Save
@@ -335,9 +338,8 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
               )}
 
               <Button
-                variant="outline"
                 size="sm"
-                className="gap-2"
+                className="gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold"
                 onClick={() => setShowPublishDialog(true)}
                 disabled={isLoading}
               >
@@ -350,54 +352,58 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
 
         {/* Error Message */}
         {error && (
-          <div className="px-6 py-3 bg-red-50 border-t border-red-200 text-red-700 text-sm">
-            {error}
+          <div className="px-8 py-3 bg-red-500 bg-opacity-90 text-white text-sm font-medium">
+            ⚠️ {error}
           </div>
         )}
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden gap-0">
         {/* Left Sidebar - Pages */}
-        <aside className="w-80 border-r border-gray-200 bg-white overflow-y-auto">
+        <aside className="w-80 border-r border-slate-200 bg-white overflow-y-auto shadow-sm">
           <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Pages</h2>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">Pages</h2>
+                <p className="text-xs text-slate-500 mt-1">Your website pages</p>
+              </div>
               <Button
                 size="sm"
-                variant="outline"
                 onClick={handleAddPage}
-                className="gap-2"
+                className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Plus className="w-4 h-4" />
                 Add
               </Button>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               {pages.map((page) => (
                 <div
                   key={page._id}
-                  className={`px-4 py-3 rounded-lg border-2 transition-colors group ${
+                  className={`px-4 py-4 rounded-lg border-2 transition-all group cursor-pointer ${
                     selectedPage?._id === page._id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-500 bg-blue-50 shadow-sm'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   <button
                     onClick={() => selectPage(page)}
-                    className="w-full text-left mb-2"
+                    className="w-full text-left mb-3"
                   >
-                    <div className="font-medium text-gray-900">{page.title}</div>
-                    <div className="text-sm text-gray-500">{page.slug}</div>
-                    {page.isHomePage && (
-                      <div className="text-xs font-semibold text-green-600 mt-1">
-                        HOME PAGE
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold text-slate-900">{page.title}</div>
+                        <div className="text-xs text-slate-500 font-mono mt-1">{page.slug}</div>
                       </div>
-                    )}
+                      {page.isHomePage && (
+                        <span className="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded">HOME</span>
+                      )}
+                    </div>
                     {page.isPublished && (
-                      <div className="text-xs font-semibold text-blue-600 mt-1">
-                        ✓ PUBLISHED
+                      <div className="text-xs font-semibold text-green-600 mt-2 flex items-center gap-1">
+                        ✓ Published
                       </div>
                     )}
                   </button>
@@ -414,7 +420,6 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
                             website?._id || websiteId,
                             page._id
                           );
-                          // Update page state
                           const updatedPage = { ...page, isPublished: !page.isPublished };
                           selectPage(updatedPage);
                           setPages(pages.map(p => p._id === page._id ? updatedPage : p));
@@ -428,7 +433,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
                       className="flex-1 text-xs gap-1"
                     >
                       <Upload className="w-3 h-3" />
-                      {page.isPublished ? 'Unpublish' : 'Publish'}
+                      {page.isPublished ? 'Unpub' : 'Pub'}
                     </Button>
                     <Button
                       size="sm"
@@ -464,7 +469,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
         </aside>
 
         {/* Center Canvas */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-gradient-to-br from-slate-50 to-slate-100">
           {selectedPage && mode === 'edit' && (
             <>
               <EditorCanvas
@@ -492,7 +497,13 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
         </main>
 
         {/* Right Sidebar - Properties */}
-        <aside className="w-80 border-l border-gray-200 bg-white overflow-y-auto">
+        <aside className="w-80 border-l border-slate-200 bg-white overflow-y-auto shadow-sm">
+          {selectedSection ? (
+            <div className="border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4">
+              <h3 className="font-bold text-slate-900">Section Properties</h3>
+              <p className="text-xs text-slate-600 mt-1">Edit section content below</p>
+            </div>
+          ) : null}
           <PropertiesPanel 
             section={selectedSection} 
             onUpdateSection={selectedSection ? (updates) => handleUpdateSection(selectedSection._id, updates) : undefined}
@@ -629,140 +640,182 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
   };
 
   return (
-    <div className="p-8">
-      <Card className="p-8">
-        <h2 className="text-2xl font-bold mb-6">Branding Settings</h2>
-        
-        {successMessage && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 rounded">
-            {successMessage}
-          </div>
-        )}
-
-        {errorMessage && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
-            {errorMessage}
-          </div>
-        )}
-
-        <div className="space-y-6">
-          {/* Site Name */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Site Name</label>
-            <Input
-              type="text"
-              value={siteName}
-              onChange={(e) => setSiteName(e.target.value)}
-              placeholder="My Creator Site"
-            />
-          </div>
-
-          {/* Tagline */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Tagline</label>
-            <Input
-              type="text"
-              value={tagline}
-              onChange={(e) => setTagline(e.target.value)}
-              placeholder="Welcome to my site"
-            />
-          </div>
-
-          {/* Logo Upload */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Logo</label>
-            <div className="space-y-3">
-              <div className="w-32 h-32 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
-                {logo ? (
-                  <img src={logo} alt="Logo" className="w-full h-full object-contain p-2" />
-                ) : (
-                  <span className="text-gray-400 text-center text-xs">No logo</span>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  {isUploading ? 'Uploading...' : 'Upload Logo'}
-                </Button>
-                {logo && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setLogo(null)}
-                    disabled={isUploading}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                )}
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleLogoUpload}
-                disabled={isUploading}
-                className="hidden"
-              />
-              <p className="text-xs text-gray-500">Max 5MB, PNG or JPG recommended</p>
+    <div className="min-h-screen p-8 bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-4xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-xl">
+              🎨
             </div>
-          </div>
-
-          {/* Primary Color */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Primary Color</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={primaryColor}
-                onChange={(e) => setPrimaryColor(e.target.value)}
-                className="w-16 h-10 rounded cursor-pointer"
-              />
-              <code className="text-sm text-gray-600 font-mono">{primaryColor}</code>
+            <div>
+              <h2 className="text-3xl font-bold text-slate-900">Branding Settings</h2>
+              <p className="text-slate-600 mt-1">Customize your website's appearance and identity</p>
             </div>
-          </div>
-
-          {/* Secondary Color */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Secondary Color</label>
-            <div className="flex items-center gap-3">
-              <input
-                type="color"
-                value={secondaryColor}
-                onChange={(e) => setSecondaryColor(e.target.value)}
-                className="w-16 h-10 rounded cursor-pointer"
-              />
-              <code className="text-sm text-gray-600 font-mono">{secondaryColor}</code>
-            </div>
-          </div>
-
-          {/* Save Button */}
-          <div className="border-t pt-6">
-            <Button
-              onClick={handleSaveBranding}
-              disabled={isSaving}
-              className="gap-2 bg-blue-600 hover:bg-blue-700"
-            >
-              {isSaving ? (
-                <>
-                  <Loader className="w-4 h-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Save Branding
-                </>
-              )}
-            </Button>
           </div>
         </div>
-      </Card>
+
+        {/* Content Card */}
+        <Card className="p-8 shadow-lg border border-slate-200">
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-300 text-green-700 rounded-lg flex items-center gap-3">
+              <span className="text-xl">✓</span>
+              <div>
+                <p className="font-semibold text-sm">Success</p>
+                <p className="text-xs mt-1">{successMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-300 text-red-700 rounded-lg flex items-center gap-3">
+              <span className="text-xl">⚠</span>
+              <div>
+                <p className="font-semibold text-sm">Error</p>
+                <p className="text-xs mt-1">{errorMessage}</p>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-8">
+            {/* Site Name Section */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-3">Site Name</label>
+              <Input
+                type="text"
+                value={siteName}
+                onChange={(e) => setSiteName(e.target.value)}
+                placeholder="My Creator Site"
+                className="border-slate-300 focus:border-blue-500"
+              />
+              <p className="text-xs text-slate-500 mt-2">The name displayed at the top of your website</p>
+            </div>
+
+            {/* Tagline Section */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-900 mb-3">Tagline</label>
+              <Input
+                type="text"
+                value={tagline}
+                onChange={(e) => setTagline(e.target.value)}
+                placeholder="Welcome to my site"
+                className="border-slate-300 focus:border-blue-500"
+              />
+              <p className="text-xs text-slate-500 mt-2">A short description or motto for your site</p>
+            </div>
+
+            {/* Logo Upload Section */}
+            <div className="border-t border-slate-200 pt-8">
+              <label className="block text-sm font-semibold text-slate-900 mb-4">Logo</label>
+              <div className="space-y-4">
+                <div className="w-40 h-40 bg-gradient-to-br from-slate-100 to-slate-200 rounded-xl flex items-center justify-center border-2 border-dashed border-slate-300 overflow-hidden">
+                  {logo ? (
+                    <img src={logo} alt="Logo" className="w-full h-full object-contain p-4" />
+                  ) : (
+                    <div className="text-center">
+                      <span className="text-4xl mb-2 block">📷</span>
+                      <span className="text-slate-400 text-xs">No logo</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    <Upload className="w-4 h-4" />
+                    {isUploading ? 'Uploading...' : 'Upload Logo'}
+                  </Button>
+                  {logo && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setLogo(null)}
+                      disabled={isUploading}
+                      className="gap-2 text-red-600 hover:text-red-700"
+                    >
+                      <X className="w-4 h-4" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  disabled={isUploading}
+                  className="hidden"
+                />
+                <p className="text-xs text-slate-500">Max 5MB • PNG or JPG recommended • Square format works best</p>
+              </div>
+            </div>
+
+            {/* Colors Section */}
+            <div className="border-t border-slate-200 pt-8">
+              <h3 className="font-semibold text-slate-900 mb-6">Color Theme</h3>
+              
+              <div className="grid grid-cols-2 gap-8">
+                {/* Primary Color */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-3">Primary Color</label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={primaryColor}
+                        onChange={(e) => setPrimaryColor(e.target.value)}
+                        className="w-20 h-20 rounded-lg cursor-pointer border border-slate-300"
+                      />
+                      <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{primaryColor}</code>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-3">Used for buttons, links, and accents</p>
+                </div>
+
+                {/* Secondary Color */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-3">Secondary Color</label>
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={secondaryColor}
+                        onChange={(e) => setSecondaryColor(e.target.value)}
+                        className="w-20 h-20 rounded-lg cursor-pointer border border-slate-300"
+                      />
+                      <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{secondaryColor}</code>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-3">Used for highlights and secondary elements</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <div className="border-t border-slate-200 pt-8 flex gap-4">
+              <Button
+                onClick={handleSaveBranding}
+                disabled={isSaving}
+                className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-2"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Save Branding
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-slate-500 flex items-center">All changes saved automatically</p>
+            </div>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 };
@@ -788,9 +841,10 @@ const PropertiesPanel: React.FC<{
 
   if (!section) {
     return (
-      <div className="p-6">
-        <h3 className="text-lg font-semibold mb-4 text-gray-700">Properties</h3>
-        <p className="text-gray-500 text-sm">Click on a section to edit its properties</p>
+      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+        <div className="text-5xl mb-4">📋</div>
+        <h3 className="text-lg font-bold text-slate-900 mb-2">Section Properties</h3>
+        <p className="text-slate-500 text-sm">Select a section on the canvas to edit its properties</p>
       </div>
     );
   }
