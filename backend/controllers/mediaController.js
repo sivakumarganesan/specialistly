@@ -153,6 +153,14 @@ export const uploadMedia = async (req, res) => {
 
     console.log(`🎯 Uploading ${fileType} (${mimeType}) to ${provider}`);
 
+    if (!req.file.buffer) {
+      console.error('❌ File buffer is missing');
+      return res.status(400).json({
+        success: false,
+        message: 'File buffer is missing. Check your request format.',
+      });
+    }
+
     // Upload to selected provider
     const uploadResult = await uploadMediaProvider(
       req.file,

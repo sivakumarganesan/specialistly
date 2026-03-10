@@ -53,6 +53,9 @@ export const uploadImageToR2 = async (file, fileName) => {
     if (!r2Client) {
       console.log('📷 R2 not configured, using data URL fallback');
       // Fallback: return data URL for development (works for images < ~1MB)
+      if (!file.buffer) {
+        throw new Error('No file buffer available for data URL conversion');
+      }
       const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
       return {
         success: true,
