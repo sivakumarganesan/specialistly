@@ -866,6 +866,44 @@ const PropertiesPanel: React.FC<{
           </div>
         )}
 
+        {section.type === 'about' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <Input
+                type="text"
+                value={content.title || ''}
+                onChange={(e) => setContent({ ...content, title: e.target.value })}
+                placeholder="About Us"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <Textarea
+                value={content.description || ''}
+                onChange={(e) => setContent({ ...content, description: e.target.value })}
+                placeholder="Tell your story..."
+                rows={5}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Image Position</label>
+              <select
+                value={content.imagePosition || 'right'}
+                onChange={(e) =>
+                  setContent({ ...content, imagePosition: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+              >
+                <option value="left">Left</option>
+                <option value="right">Right</option>
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+              </select>
+            </div>
+          </div>
+        )}
+
         {section.type === 'services' && (
           <div className="space-y-4">
             <div>
