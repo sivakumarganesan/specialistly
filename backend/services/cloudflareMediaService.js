@@ -339,7 +339,13 @@ export const uploadMedia = async (
   title = null
 ) => {
   try {
+    if (!file) {
+      throw new Error('No file object provided to uploadMedia');
+    }
+
     console.log(`\n🎯 Uploading ${mediaType} to ${provider}`);
+    console.log(`   File: ${title || file.originalname || 'unknown'}`);
+    console.log(`   Has buffer: ${!!file.buffer}`);
 
     // For images, use R2 regardless of provider
     if (mediaType === 'image') {
@@ -378,7 +384,7 @@ export const uploadMedia = async (
     console.error('❌ Upload error:', error);
     return {
       success: false,
-      error: error.message,
+      error: error.message || 'Upload failed',
     };
   }
 };

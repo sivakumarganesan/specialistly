@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
+import multer from 'multer';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { subdomainMiddleware } from './middleware/subdomainMiddleware.js';
@@ -298,6 +299,36 @@ app.get('*', (req, res, next) => {
 });
 
 // ============ ERROR HANDLING ============
+
+// Multer error handler (MUST come before generic error handler)
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.error('❌ Multer error:', err.message);
+    
+    if (err.code === 'FILE_TOO_LARGE') {
+      return res.status(413).json({
+        success: false,
+        message: 'File is too large. Maximum size is 5GB.',
+      });
+    }
+    
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({
+        success: false,
+        message: 'Only one file allowed per upload.',
+      });
+    }
+    
+    return res.status(400).json({
+      success: false,
+      message: `File upload error: ${err.message}`,
+    });
+  }
+  
+  // If not a multer error, pass to next handler
+  next(err);
+});
+
 // Error handler middleware (MUST be last)
 app.use((err, req, res, next) => {
   console.error('❌ Error caught by error handler:');

@@ -46,9 +46,23 @@ export const uploadMedia = async (req, res) => {
   try {
     const { websiteId } = req.params;
     const { provider = 'cloudflare', videoUrl, title } = req.body;
-    const specialistId = req.user.id;
+    const specialistId = req.user?.id;
 
-    console.log(`📤 Upload media request: mediaType, provider=${provider}, websiteId=${websiteId}`);
+    console.log(`📤 Upload media request: websiteId=${websiteId}, provider=${provider}`);
+    console.log(`📄 Request details:`, {
+      hasFile: !!req.file,
+      hasBody: !!req.body,
+      hasUser: !!req.user,
+      specialistId,
+    });
+
+    // Check authentication
+    if (!specialistId) {
+      return res.status(401).json({
+        success: false,
+        message: 'Unauthorized - User not authenticated',
+      });
+    }
 
     // Validate provider
     const allowedProviders = ['cloudflare', 'youtube'];
@@ -116,18 +130,41 @@ export const uploadMedia = async (req, res) => {
 
     // For file uploads (S3 or Cloudflare)
     if (!req.file) {
-      console.error('❌ No file received in request');
+      console.error('❌ No file in request');
+      console.log('Request keys:', Object.keys(req));
+      console.log('Body keys:', Object.keys(req.body || {}));
       return res.status(400).json({
         success: false,
-        message: 'No file provided. Make sure the request is multipart/form-data with a "file" field.',
+        message: 'No file provided. Please upload a file using multipart/form-data format.',
       });
     }
 
-    console.log('📤 File received:', {
+    // Validate file object structure
+    if (!req.file.buffer) {
+      console.error('❌ File buffer is missing', {
+        fileKeys: Object.keys(req.file),
+        fileSize: req.file.size,
+        originalname: req.file.originalname,
+      });
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file format - file buffer is missing.',
+      });
+    }
+
+    if (!req.file.mimetype) {
+      console.error('❌ File mimetype is missing');
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid file format - mimetype is missing.',
+      });
+    }
+
+    console.log('📄 File received:', {
       originalname: req.file.originalname,
       mimetype: req.file.mimetype,
       size: req.file.size,
-      hasBuffer: !!req.file.buffer,
+      bufferLength: req.file.buffer?.length,
     });
 
     // Verify website ownership
@@ -153,14 +190,6 @@ export const uploadMedia = async (req, res) => {
 
     console.log(`🎯 Uploading ${fileType} (${mimeType}) to ${provider}`);
 
-    if (!req.file.buffer) {
-      console.error('❌ File buffer is missing');
-      return res.status(400).json({
-        success: false,
-        message: 'File buffer is missing. Check your request format.',
-      });
-    }
-
     // Upload to selected provider
     const uploadResult = await uploadMediaProvider(
       req.file,
@@ -169,13 +198,18 @@ export const uploadMedia = async (req, res) => {
       title || req.file.originalname
     );
 
-    if (!uploadResult.success) {
-      console.error('❌ Upload provider error:', uploadResult.error);
+    if (!uploadResult?.success) {
+      console.error('❌ Upload provider failed:', uploadResult?.error || 'Unknown error');
       return res.status(500).json({
         success: false,
-        message: uploadResult.error || 'Upload failed',
+        message: uploadResult?.error || 'Upload failed',
       });
     }
+
+    console.log('✅ Upload successful:', {
+      provider: uploadResult.provider,
+      url: uploadResult.url,
+    });
 
     console.log('✅ Upload successful:', {
       provider: uploadResult.provider,

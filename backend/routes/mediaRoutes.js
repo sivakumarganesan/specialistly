@@ -54,26 +54,7 @@ router.get('/', getMediaLibrary);
 //    - provider: 'youtube'
 router.post(
   '/upload',
-  (req, res, next) => {
-    // For YouTube URL uploads, skip multer
-    if ((req.headers['content-type'] || '').includes('application/json')) {
-      console.log('📹 YouTube URL upload detected, skipping multer');
-      return next();
-    }
-    
-    // For file uploads, use multer
-    console.log('📤 File upload detected, processing with multer');
-    upload.single('file')(req, res, (err) => {
-      if (err) {
-        console.error('❌ Multer error:', err.message);
-        return res.status(400).json({
-          success: false,
-          message: err.message || 'File upload failed',
-        });
-      }
-      next();
-    });
-  },
+  upload.single('file'),
   uploadMedia
 );
 
