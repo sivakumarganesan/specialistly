@@ -975,9 +975,12 @@ export const deleteSection = async (req, res) => {
     const { websiteId, pageId, sectionId } = req.params;
     const userEmail = req.user.email;
 
+    console.log('Deleting section:', { websiteId, pageId, sectionId, userEmail });
+
     // Verify website ownership
     const website = await Website.findById(websiteId);
     if (!website) {
+      console.log('Website not found:', websiteId);
       return res.status(404).json({
         success: false,
         message: 'Website not found',
