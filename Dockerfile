@@ -8,14 +8,14 @@ WORKDIR /app
 COPY . .
 
 # Install all dependencies for frontend build
-RUN npm ci
+RUN npm install
 
 # Build frontend with Vite
 RUN npm run build
 
 # Install backend dependencies
 WORKDIR /app/backend
-RUN npm ci
+RUN npm install
 
 # Stage 2: Runtime image with just the app
 FROM node:20-slim
