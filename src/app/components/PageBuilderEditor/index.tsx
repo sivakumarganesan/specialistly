@@ -792,11 +792,22 @@ const PropertiesPanel: React.FC<{
 
   const handleSave = () => {
     if (onUpdateSection) {
-      onUpdateSection({
-        title,
-        description,
+      // For about sections, sync content fields with section-level fields
+      let updateData: Partial<PageSection> = {
         content,
-      });
+      };
+
+      if (section?.type === 'about') {
+        // Use about-specific content fields for the section title/description
+        updateData.title = content.title || '';
+        updateData.description = content.description || '';
+      } else {
+        // For other sections, use the general title/description fields
+        updateData.title = title;
+        updateData.description = description;
+      }
+
+      onUpdateSection(updateData);
     }
   };
 
@@ -810,25 +821,29 @@ const PropertiesPanel: React.FC<{
       </div>
 
       {/* Section Title */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
-        <Input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Section title"
-        />
-      </div>
+      {section.type !== 'about' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+          <Input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Section title"
+          />
+        </div>
+      )}
 
       {/* Section Description */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-        <Textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Section description"
-        />
-      </div>
+      {section.type !== 'about' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+          <Textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Section description"
+          />
+        </div>
+      )}
 
       {/* Section-specific content editors */}
       <div className="border-t pt-4">
