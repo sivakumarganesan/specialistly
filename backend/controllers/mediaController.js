@@ -46,18 +46,21 @@ export const uploadMedia = async (req, res) => {
   try {
     const { websiteId } = req.params;
     const { provider = 'cloudflare', videoUrl, title } = req.body;
-    const specialistId = req.user?.id;
+    
+    // Extract user ID - check both id and userId (different models use different property names)
+    const specialistId = req.user?.id || req.user?.userId || req.user?._id;
 
     console.log(`📤 Upload media request: websiteId=${websiteId}, provider=${provider}`);
-    console.log(`📄 Request details:`, {
-      hasFile: !!req.file,
-      hasBody: !!req.body,
+    console.log(`📄 Auth details:`, {
       hasUser: !!req.user,
+      userKeys: req.user ? Object.keys(req.user).join(', ') : 'no user',
       specialistId,
     });
 
     // Check authentication
     if (!specialistId) {
+      console.error('❌ Authentication failed - no user ID found');
+      console.error('   req.user:', req.user);
       return res.status(401).json({
         success: false,
         message: 'Unauthorized - User not authenticated',
@@ -169,10 +172,29 @@ export const uploadMedia = async (req, res) => {
 
     // Verify website ownership
     const website = await Website.findById(websiteId);
-    if (!website || website.specialistId.toString() !== specialistId) {
+    if (!website) {
+      console.error(`❌ Website not found: ${websiteId}`);
+      return res.status(404).json({
+        success: false,
+        message: 'Website not found',
+      });
+    }
+
+    // Compare specialist IDs - handle both string and ObjectId formats
+    const websiteSpecialistId = website.specialistId?.toString() || website.specialistId;
+    const userSpecialistId = specialistId?.toString ? specialistId.toString() : String(specialistId);
+
+    console.log('🔐 Ownership check:', {
+      websiteSpecialistId,
+      userSpecialistId,
+      match: websiteSpecialistId === userSpecialistId,
+    });
+
+    if (websiteSpecialistId !== userSpecialistId) {
+      console.error(`❌ Ownership check failed - specialist ID mismatch`);
       return res.status(403).json({
         success: false,
-        message: 'Unauthorized',
+        message: 'Unauthorized - You do not own this website',
       });
     }
 
