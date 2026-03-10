@@ -47,23 +47,35 @@ export const uploadMedia = async (req, res) => {
     const { websiteId } = req.params;
     const { provider = 'cloudflare', videoUrl, title } = req.body;
     
-    // Extract user ID - check both id and userId (different models use different property names)
-    const specialistId = req.user?.id || req.user?.userId || req.user?._id;
+    // Extract user ID - check all possible property names from JWT payload
+    const specialistId = req.user?.id || req.user?.userId || req.user?._id || req.user?.sub;
 
     console.log(`📤 Upload media request: websiteId=${websiteId}, provider=${provider}`);
     console.log(`📄 Auth details:`, {
       hasUser: !!req.user,
-      userKeys: req.user ? Object.keys(req.user).join(', ') : 'no user',
-      specialistId,
+      userObject: req.user ? JSON.stringify(req.user) : 'NO USER OBJECT',
+      userKeys: req.user ? Object.keys(req.user).join(', ') : 'no keys',
+      extractedIds: {
+        id: req.user?.id,
+        userId: req.user?.userId,
+        _id: req.user?._id,
+        sub: req.user?.sub,
+      },
+      finalSpecialistId: specialistId,
     });
 
     // Check authentication
     if (!specialistId) {
       console.error('❌ Authentication failed - no user ID found');
-      console.error('   req.user:', req.user);
+      console.error('   Full req.user object:', req.user);
+      console.error('   Authorization header:', req.headers.authorization?.substring(0, 50) + '...');
       return res.status(401).json({
         success: false,
-        message: 'Unauthorized - User not authenticated',
+        message: 'Unauthorized - User not authenticated. No valid user ID in token.',
+        debug: {
+          hasUser: !!req.user,
+          userKeys: req.user ? Object.keys(req.user) : [],
+        },
       });
     }
 

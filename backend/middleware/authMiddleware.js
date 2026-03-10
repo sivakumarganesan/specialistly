@@ -2,21 +2,42 @@ import jwt from 'jsonwebtoken';
 
 export const authMiddleware = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
 
     if (!token) {
       console.error('[authMiddleware] No token provided in Authorization header');
-      return res.status(401).json({ error: 'No token provided' });
+      console.error('[authMiddleware] Authorization header:', authHeader ? 'present but malformed' : 'missing');
+      return res.status(401).json({ 
+        error: 'No token provided',
+        debug: { hasAuthHeader: !!authHeader }
+      });
     }
 
     console.log('[authMiddleware] Verifying token...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    
+    console.log('[authMiddleware] Token verified successfully');
+    console.log('[authMiddleware] Decoded payload:', {
+      email: decoded.email,
+      userId: decoded.userId,
+      keys: Object.keys(decoded),
+    });
+    
     req.user = decoded;
-    console.log('[authMiddleware] Token verified for user:', decoded.email || decoded.userId);
+    console.log('[authMiddleware] User set on request:', decoded.email || decoded.userId);
     next();
   } catch (error) {
     console.error('[authMiddleware] Token verification failed:', error.message);
-    res.status(401).json({ error: 'Invalid token' });
+    console.error('[authMiddleware] Error details:', {
+      name: error.name,
+      message: error.message,
+      expiredAt: error.expiredAt,
+    });
+    res.status(401).json({ 
+      error: 'Invalid token',
+      debug: { errorType: error.name, errorMessage: error.message }
+    });
   }
 };
 // Optional auth middleware - validates token if present, but doesn't fail if missing

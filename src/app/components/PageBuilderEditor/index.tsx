@@ -578,6 +578,17 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
       const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
       const authToken = localStorage.getItem('authToken');
 
+      // Check if token exists
+      if (!authToken) {
+        console.error('❌ No auth token found in localStorage for logo upload');
+        setErrorMessage('Authentication token not found. Please log in again.');
+        setIsUploading(false);
+        return;
+      }
+
+      console.log('📤 Uploading logo to:', `${apiUrl}/page-builder/websites/${website._id}/media/upload`);
+      console.log('🔐 Auth token present:', !!authToken, `(length: ${authToken.length})`);
+
       // Upload to media endpoint
       const uploadResponse = await fetch(
         `${apiUrl}/page-builder/websites/${website._id}/media/upload`,
@@ -590,9 +601,12 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
         }
       );
 
+      console.log('📥 Upload response status:', uploadResponse.status);
+
       if (!uploadResponse.ok) {
         const error = await uploadResponse.json();
-        throw new Error(error.message || 'Upload failed');
+        console.error('❌ Upload request failed:', error);
+        throw new Error(error.message || `Upload failed with status ${uploadResponse.status}`);
       }
 
       const uploadData = await uploadResponse.json();
@@ -602,6 +616,7 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
         throw new Error('No URL returned from upload');
       }
 
+      console.log('✅ Logo uploaded successfully:', logoUrl);
       setLogo(logoUrl);
       setSuccessMessage('Logo uploaded successfully');
     } catch (error) {
@@ -876,6 +891,17 @@ const PropertiesPanel: React.FC<{
       const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
       const authToken = localStorage.getItem('authToken');
 
+      // Check if token exists
+      if (!authToken) {
+        console.error('❌ No auth token found in localStorage');
+        setUploadError('Authentication token not found. Please log in again.');
+        setIsUploadingAboutImage(false);
+        return;
+      }
+
+      console.log('📤 Uploading image to:', `${apiUrl}/page-builder/websites/${section.websiteId}/media/upload`);
+      console.log('🔐 Auth token present:', !!authToken, `(length: ${authToken.length})`);
+
       // Upload to media endpoint
       const uploadResponse = await fetch(
         `${apiUrl}/page-builder/websites/${section.websiteId}/media/upload`,
@@ -888,9 +914,12 @@ const PropertiesPanel: React.FC<{
         }
       );
 
+      console.log('📥 Upload response status:', uploadResponse.status);
+
       if (!uploadResponse.ok) {
         const error = await uploadResponse.json();
-        throw new Error(error.message || 'Upload failed');
+        console.error('❌ Upload request failed:', error);
+        throw new Error(error.message || `Upload failed with status ${uploadResponse.status}`);
       }
 
       const uploadData = await uploadResponse.json();
@@ -900,6 +929,7 @@ const PropertiesPanel: React.FC<{
         throw new Error('No URL returned from upload');
       }
 
+      console.log('✅ Image uploaded successfully:', imageUrl);
       setAboutImageUrl(imageUrl);
       setContent({ ...content, image: imageUrl });
     } catch (error) {
