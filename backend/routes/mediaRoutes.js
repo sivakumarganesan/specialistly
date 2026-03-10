@@ -49,18 +49,30 @@ router.get('/', getMediaLibrary);
 
 // Upload endpoint supports:
 // 1. File upload (multipart/form-data with 'file' field)
-//    - provider: 'cloudflare' (default, for HLS video)
+//    - For images and videos
 // 2. YouTube URL (JSON with 'videoUrl' field)
 //    - provider: 'youtube'
 router.post(
   '/upload',
   (req, res, next) => {
-    // Skip multer if it's a YouTube URL upload
-    if (req.body.provider === 'youtube' && req.body.videoUrl) {
+    // For YouTube URL uploads, skip multer
+    if ((req.headers['content-type'] || '').includes('application/json')) {
+      console.log('📹 YouTube URL upload detected, skipping multer');
       return next();
     }
-    // Otherwise process file upload (Cloudflare)
-    upload.single('file')(req, res, next);
+    
+    // For file uploads, use multer
+    console.log('📤 File upload detected, processing with multer');
+    upload.single('file')(req, res, (err) => {
+      if (err) {
+        console.error('❌ Multer error:', err.message);
+        return res.status(400).json({
+          success: false,
+          message: err.message || 'File upload failed',
+        });
+      }
+      next();
+    });
   },
   uploadMedia
 );

@@ -35,6 +35,21 @@ try {
 
 export const uploadImageToR2 = async (file, fileName) => {
   try {
+    // Validate file
+    if (!file) {
+      throw new Error('No file object provided');
+    }
+
+    if (!file.buffer) {
+      throw new Error('File buffer is missing. This may indicate an issue with multer configuration');
+    }
+
+    if (!fileName) {
+      fileName = file.originalname || 'image';
+    }
+
+    console.log(`📷 Processing image upload: fileName=${fileName}, size=${file.size}, type=${file.mimetype}`);
+
     if (!r2Client) {
       console.log('📷 R2 not configured, using data URL fallback');
       // Fallback: return data URL for development (works for images < ~1MB)
@@ -75,23 +90,31 @@ export const uploadImageToR2 = async (file, fileName) => {
       key,
     };
   } catch (error) {
-    console.error('❌ R2 upload error:', error);
+    console.error('❌ R2 upload error:', {
+      message: error.message,
+      stack: error.stack,
+    });
+    
     // Fallback to data URL on error
     try {
-      const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-      console.log('📷 Falling back to data URL');
-      return {
-        success: true,
-        provider: 'dataurl',
-        url: dataUrl,
-        filename: fileName,
-      };
+      if (file && file.buffer) {
+        const dataUrl = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+        console.log('📷 Falling back to data URL due to error');
+        return {
+          success: true,
+          provider: 'dataurl',
+          url: dataUrl,
+          filename: fileName,
+        };
+      }
     } catch (fallbackError) {
-      return {
-        success: false,
-        error: error.message || 'Failed to upload image',
-      };
+      console.error('❌ Data URL fallback also failed:', fallbackError.message);
     }
+
+    return {
+      success: false,
+      error: error.message || 'Failed to upload image',
+    };
   }
 };
 

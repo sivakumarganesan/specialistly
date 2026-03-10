@@ -116,11 +116,19 @@ export const uploadMedia = async (req, res) => {
 
     // For file uploads (S3 or Cloudflare)
     if (!req.file) {
+      console.error('❌ No file received in request');
       return res.status(400).json({
         success: false,
-        message: 'No file provided',
+        message: 'No file provided. Make sure the request is multipart/form-data with a "file" field.',
       });
     }
+
+    console.log('📤 File received:', {
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size,
+      hasBuffer: !!req.file.buffer,
+    });
 
     // Verify website ownership
     const website = await Website.findById(websiteId);
@@ -143,6 +151,8 @@ export const uploadMedia = async (req, res) => {
       fileType = 'audio';
     }
 
+    console.log(`🎯 Uploading ${fileType} (${mimeType}) to ${provider}`);
+
     // Upload to selected provider
     const uploadResult = await uploadMediaProvider(
       req.file,
@@ -152,11 +162,17 @@ export const uploadMedia = async (req, res) => {
     );
 
     if (!uploadResult.success) {
+      console.error('❌ Upload provider error:', uploadResult.error);
       return res.status(500).json({
         success: false,
         message: uploadResult.error || 'Upload failed',
       });
     }
+
+    console.log('✅ Upload successful:', {
+      provider: uploadResult.provider,
+      url: uploadResult.url,
+    });
 
     // Create media entry
     const media = new MediaLibrary({
