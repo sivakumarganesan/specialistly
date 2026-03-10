@@ -774,11 +774,16 @@ const PropertiesPanel: React.FC<{
   const [title, setTitle] = useState(section?.title || '');
   const [description, setDescription] = useState(section?.description || '');
   const [content, setContent] = useState<Record<string, any>>(section?.content || {});
+  const [aboutImageUrl, setAboutImageUrl] = useState(section?.content?.image || '');
+  const [isUploadingAboutImage, setIsUploadingAboutImage] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const aboutImageInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTitle(section?.title || '');
     setDescription(section?.description || '');
     setContent(section?.content || {});
+    setAboutImageUrl(section?.content?.image || '');
   }, [section]);
 
   if (!section) {
@@ -789,6 +794,67 @@ const PropertiesPanel: React.FC<{
       </div>
     );
   }
+
+  const handleAboutImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('File size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setIsUploadingAboutImage(true);
+      setUploadError('');
+
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+      const authToken = localStorage.getItem('authToken');
+
+      // Upload to media endpoint
+      const uploadResponse = await fetch(
+        `${apiUrl}/page-builder/websites/${section.websiteId}/media/upload`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json();
+        throw new Error(error.message || 'Upload failed');
+      }
+
+      const uploadData = await uploadResponse.json();
+      const imageUrl = uploadData.data?.url || uploadData.data?.media?.url;
+
+      if (!imageUrl) {
+        throw new Error('No URL returned from upload');
+      }
+
+      setAboutImageUrl(imageUrl);
+      setContent({ ...content, image: imageUrl });
+    } catch (error) {
+      console.error('About image upload error:', error);
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
+    } finally {
+      setIsUploadingAboutImage(false);
+    }
+  };
 
   const handleSave = () => {
     if (onUpdateSection) {
@@ -915,6 +981,55 @@ const PropertiesPanel: React.FC<{
                 <option value="top">Top</option>
                 <option value="bottom">Bottom</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Section Image</label>
+              <div className="space-y-3">
+                <div className="w-full h-40 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                  {aboutImageUrl ? (
+                    <img src={aboutImageUrl} alt="About section" className="w-full h-full object-cover rounded-lg" />
+                  ) : (
+                    <span className="text-gray-400 text-center text-xs">No image</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => aboutImageInputRef.current?.click()}
+                    disabled={isUploadingAboutImage}
+                    className="gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    {isUploadingAboutImage ? 'Uploading...' : 'Upload Image'}
+                  </Button>
+                  {aboutImageUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setAboutImageUrl('');
+                        setContent({ ...content, image: '' });
+                      }}
+                      disabled={isUploadingAboutImage}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                <input
+                  ref={aboutImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAboutImageUpload}
+                  disabled={isUploadingAboutImage}
+                  className="hidden"
+                />
+                {uploadError && (
+                  <p className="text-xs text-red-600">{uploadError}</p>
+                )}
+                <p className="text-xs text-gray-500">Max 5MB, PNG or JPG recommended</p>
+              </div>
             </div>
           </div>
         )}
