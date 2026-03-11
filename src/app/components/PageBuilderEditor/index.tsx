@@ -185,7 +185,36 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
         selectPage(pagesData.data[0]);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load website');
+      const errorMsg = err instanceof Error ? err.message : 'Failed to load website';
+      console.error('Load website error:', errorMsg);
+      
+      // If we get a 404 or "not found" error, try to fetch the first available website
+      if (errorMsg.includes('404') || errorMsg.includes('not found')) {
+        console.log('Website not found, attempting to fetch your websites...');
+        try {
+          const response = await fetch(
+            (import.meta.env.VITE_API_URL as string || '/api') + '/page-builder/websites',
+            {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+              },
+            }
+          );
+          
+          if (response.ok) {
+            const data = await response.json();
+            if (data.data && data.data.length > 0) {
+              console.log('Found available website, redirecting...');
+              window.location.href = `/page-builder/${data.data[0]._id}`;
+              return;
+            }
+          }
+        } catch (redirectErr) {
+          console.error('Error during redirect:', redirectErr);
+        }
+      }
+      
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
