@@ -198,7 +198,7 @@ export const updateBranding = async (req, res) => {
   try {
     const { websiteId } = req.params;
     const userEmail = req.user.email;
-    const branding = req.body;
+    let branding = req.body;
 
     const website = await Website.findById(websiteId);
 
@@ -215,6 +215,16 @@ export const updateBranding = async (req, res) => {
         success: false,
         message: 'Unauthorized',
       });
+    }
+
+    // Handle colors object if provided
+    if (branding.colors) {
+      branding = {
+        ...branding,
+        primaryColor: branding.colors.primary,
+        secondaryColor: branding.colors.secondary,
+      };
+      delete branding.colors;
     }
 
     website.branding = { ...website.branding, ...branding };
