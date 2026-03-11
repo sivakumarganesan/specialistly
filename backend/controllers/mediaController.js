@@ -196,19 +196,34 @@ export const uploadMedia = async (req, res) => {
     const websiteSpecialistId = website.specialistId?.toString() || website.specialistId;
     const userSpecialistId = specialistId?.toString ? specialistId.toString() : String(specialistId);
 
-    console.log('🔐 Ownership check:', {
-      websiteSpecialistId,
-      userSpecialistId,
+    console.log('🔐 Full Ownership check details:', {
+      websiteId,
+      websiteExists: !!website,
+      websiteSpecialistId: websiteSpecialistId,
+      websiteSpecialistIdType: typeof websiteSpecialistId,
+      userSpecialistId: userSpecialistId,
+      userSpecialistIdType: typeof userSpecialistId,
       match: websiteSpecialistId === userSpecialistId,
+      jwtUser: req.user,
     });
 
     if (websiteSpecialistId !== userSpecialistId) {
-      console.error(`❌ Ownership check failed - specialist ID mismatch`);
+      console.error(`❌ Ownership check FAILED`);
+      console.error(`   Website owned by: ${websiteSpecialistId}`);
+      console.error(`   Request from user: ${userSpecialistId}`);
+      console.error(`   ✅ SOLUTION: Log in with the account that created this website`);
       return res.status(403).json({
         success: false,
         message: 'Unauthorized - You do not own this website',
+        debug: {
+          websiteSpecialistId,
+          userSpecialistId,
+          websiteId,
+        },
       });
     }
+    
+    console.log('✅ Ownership check PASSED - User owns this website');
 
     // Determine file type
     const mimeType = req.file.mimetype;

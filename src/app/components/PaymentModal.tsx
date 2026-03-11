@@ -7,11 +7,19 @@ import { PaymentBreakdown } from './PaymentBreakdown';
 import { usePaymentContext } from '../context/PaymentContext';
 import { CreditCard } from 'lucide-react';
 
+// Load Stripe public key from environment
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+
+console.log('[PaymentModal] Checking Stripe config:', {
+  hasStripeKey: !!stripePublicKey,
+  keyLength: stripePublicKey?.length || 0,
+  envKeys: Object.keys(import.meta.env).filter(k => k.includes('STRIPE')),
+  allEnvVars: Object.keys(import.meta.env).slice(0, 15),
+});
 
 const stripePromise = stripePublicKey 
   ? loadStripe(stripePublicKey)
-  : Promise.reject(new Error('Stripe public key not found'));
+  : Promise.reject(new Error('Stripe public key not found in environment. Please set VITE_STRIPE_PUBLIC_KEY'));
 
 interface PaymentModalProps {
   isOpen?: boolean;
