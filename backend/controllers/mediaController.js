@@ -11,11 +11,24 @@ import {
 export const getMediaLibrary = async (req, res) => {
   try {
     const { websiteId } = req.params;
-    const specialistId = req.user.id;
+    const specialistId = req.user.id || req.user.userId || req.user._id || req.user.sub;
 
     // Verify website ownership
     const website = await Website.findById(websiteId);
-    if (!website || website.specialistId.toString() !== specialistId) {
+    if (!website) {
+      return res.status(404).json({
+        success: false,
+        message: 'Website not found',
+      });
+    }
+
+    // Check ownership: specialistId match OR email match (for legacy websites)
+    const websiteSpecialistId = website.specialistId?.toString() || website.specialistId;
+    const userSpecialistId = specialistId?.toString ? specialistId.toString() : String(specialistId);
+    const emailMatch = website.creatorEmail === req.user.email;
+    const idMatch = websiteSpecialistId === userSpecialistId;
+
+    if (!idMatch && !emailMatch) {
       return res.status(403).json({
         success: false,
         message: 'Unauthorized',
@@ -92,10 +105,23 @@ export const uploadMedia = async (req, res) => {
     if (provider === 'youtube' && videoUrl) {
       // Verify website ownership
       const website = await Website.findById(websiteId);
-      if (!website || website.specialistId.toString() !== specialistId) {
+      if (!website) {
+        return res.status(404).json({
+          success: false,
+          message: 'Website not found',
+        });
+      }
+
+      // Check ownership: specialistId match OR email match (for legacy websites)
+      const websiteSpecialistId = website.specialistId?.toString() || website.specialistId;
+      const userSpecialistId = specialistId?.toString ? specialistId.toString() : String(specialistId);
+      const emailMatch = website.creatorEmail === req.user.email;
+      const idMatch = websiteSpecialistId === userSpecialistId;
+
+      if (!idMatch && !emailMatch) {
         return res.status(403).json({
           success: false,
-          message: 'Unauthorized',
+          message: 'Unauthorized - You do not own this website',
         });
       }
 
@@ -207,22 +233,30 @@ export const uploadMedia = async (req, res) => {
     // Compare specialist IDs - handle both string and ObjectId formats
     const websiteSpecialistId = website.specialistId?.toString() || website.specialistId;
     const userSpecialistId = specialistId?.toString ? specialistId.toString() : String(specialistId);
+    
+    // Check for email match (fallback for legacy websites created before specialistId was added)
+    const emailMatch = website.creatorEmail === req.user.email;
+    const idMatch = websiteSpecialistId === userSpecialistId;
 
     console.log('🔐 Full Ownership check details:', {
       websiteId,
       websiteExists: !!website,
       websiteSpecialistId: websiteSpecialistId,
       websiteSpecialistIdType: typeof websiteSpecialistId,
+      websiteCreatorEmail: website.creatorEmail,
       userSpecialistId: userSpecialistId,
       userSpecialistIdType: typeof userSpecialistId,
-      match: websiteSpecialistId === userSpecialistId,
+      userEmail: req.user.email,
+      idMatch: idMatch,
+      emailMatch: emailMatch,
       jwtUser: req.user,
     });
 
-    if (websiteSpecialistId !== userSpecialistId) {
+    // Allow if either specialistId matches OR email matches (for legacy websites)
+    if (!idMatch && !emailMatch) {
       console.error(`❌ Ownership check FAILED`);
-      console.error(`   Website owned by: ${websiteSpecialistId}`);
-      console.error(`   Request from user: ${userSpecialistId}`);
+      console.error(`   Website ID match: ${idMatch}`);
+      console.error(`   Website email match: ${emailMatch}`);
       console.error(`   ✅ SOLUTION: Log in with the account that created this website`);
       return res.status(403).json({
         success: false,
@@ -230,12 +264,15 @@ export const uploadMedia = async (req, res) => {
         debug: {
           websiteSpecialistId,
           userSpecialistId,
+          websiteCreatorEmail: website.creatorEmail,
+          userEmail: req.user.email,
           websiteId,
         },
       });
     }
     
     console.log('✅ Ownership check PASSED - User owns this website');
+    console.log(`   Match type: ${idMatch ? 'specialistId' : 'email (legacy)'}`);
 
     // Determine file type
     const mimeType = req.file.mimetype;
