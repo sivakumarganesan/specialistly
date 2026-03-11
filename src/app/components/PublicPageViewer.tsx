@@ -240,26 +240,38 @@ export const PublicPageViewer: React.FC<PublicPageViewerProps> = ({ subdomain, p
   return (
     <div className="w-full bg-white">
       {/* Header with branding */}
-      <header className="bg-white border-b border-gray-200 py-4">
+      <header className="bg-white border-b border-gray-200 py-6">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex items-center justify-between">
-            <div>
+            {/* Logo and Site Info */}
+            <div className="flex items-center gap-4">
               {website.branding?.logo && (
                 <img 
                   src={website.branding.logo} 
-                  alt="Logo" 
-                  className="h-10"
+                  alt={website.branding.siteName || 'Logo'} 
+                  className="h-14 w-14 object-contain"
                 />
               )}
-              {website.branding?.siteName && (
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {website.branding.siteName}
-                </h1>
-              )}
+              <div>
+                {website.branding?.siteName && (
+                  <h1 className="text-xl font-bold text-gray-900">
+                    {website.branding.siteName}
+                  </h1>
+                )}
+                {website.branding?.tagline && (
+                  <p className="text-sm text-gray-600 mt-1">
+                    {website.branding.tagline}
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="text-sm text-gray-600">
-              <p>Page: <span className="font-semibold">{page.title}</span></p>
-            </div>
+            
+            {/* Navigation Links */}
+            <nav className="flex items-center gap-6">
+              <a href="#" className="text-blue-600 hover:text-blue-800 font-semibold">
+                {page.title}
+              </a>
+            </nav>
           </div>
         </div>
       </header>
