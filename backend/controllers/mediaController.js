@@ -349,7 +349,11 @@ export const uploadMedia = async (req, res) => {
 
     // For R2 images, update the URL to use the proxy endpoint
     if (uploadResult.provider === 'r2') {
-      media.url = `/api/media/serve/${media._id}`;
+      // Build the full URL with the proper domain
+      const protocol = req.protocol || 'https';
+      const host = req.get('host') || 'specialistly.com';
+      const baseUrl = `${protocol}://${host}`;
+      media.url = `${baseUrl}/api/media/serve/${media._id}`;
       await media.save();
       console.log(`✅ Updated media URL to proxy: ${media.url}`);
     }

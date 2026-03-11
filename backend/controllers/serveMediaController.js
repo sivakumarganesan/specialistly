@@ -24,28 +24,41 @@ export const serveMedia = async (req, res) => {
     }
 
     // For R2 stored images, download and serve them with proper auth
-    if (media.storageProvider === 'r2' && media.url) {
+    if (media.storageProvider === 'r2') {
       try {
-        // Extract the key from the full URL
-        // URL format: https://{bucket}.{accountId}.r2.cloudflarestorage.com/{key}
-        const urlParts = media.url.split('.r2.cloudflarestorage.com/');
-        if (urlParts.length !== 2) {
+        let key = media.storageKey;
+        
+        // If no storageKey, try to extract from metadata or URL
+        if (!key) {
+          console.log('📝 No storageKey found, attempting to extract from metadata or construct');
+          // Try to extract from original upload metadata if available
+          if (media.metadata?.key) {
+            key = media.metadata.key;
+          } else if (media.url && media.url.includes('.r2.cloudflarestorage.com/')) {
+            // Last resort: try to extract from the full URL
+            const urlParts = media.url.split('.r2.cloudflarestorage.com/');
+            if (urlParts.length === 2) {
+              key = urlParts[1];
+            }
+          }
+        }
+        
+        if (!key) {
           return res.status(400).json({
             success: false,
-            message: 'Invalid R2 URL format',
+            message: 'Cannot determine R2 storage key for this media',
           });
         }
-
-        const key = urlParts[1];
-        console.log(`📥 Downloading R2 media: ${key}`);
         
+        console.log(`📥 Downloading R2 media with key: ${key}`);
         const fileData = await downloadImageFromR2(key);
 
-        // Set proper headers
+        // Set proper headers for cross-origin access
         res.setHeader('Content-Type', media.mimeType || 'application/octet-stream');
         res.setHeader('Content-Disposition', `inline; filename="${media.originalName}"`);
         res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
         res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin access
+        res.setHeader('X-Content-Type-Options', 'nosniff');
 
         // Send the file
         console.log(`✅ Serving R2 media: ${key}`);
