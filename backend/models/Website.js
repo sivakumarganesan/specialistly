@@ -9,6 +9,11 @@ const websiteSchema = new mongoose.Schema(
       lowercase: true,
       trim: true,
     },
+    specialistId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
     subdomain: {
       type: String,
       lowercase: true,
