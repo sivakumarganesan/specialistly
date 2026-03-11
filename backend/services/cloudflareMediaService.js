@@ -427,7 +427,7 @@ export const downloadImageFromR2 = async (key) => {
       throw new Error('R2 client not initialized');
     }
 
-    console.log(`📥 Downloading from R2: ${key}`);
+    console.log(`📥 Downloading from Cloudflare R2: ${key}`);
 
     const command = new GetObjectCommand({
       Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME,
@@ -436,24 +436,42 @@ export const downloadImageFromR2 = async (key) => {
 
     const response = await r2Client.send(command);
     
-    // Convert the response body stream to a buffer
+    // Handle Cloudflare R2 response body
+    // R2 returns the Body as a stream, need to convert to buffer
+    const body = response.Body;
+    
+    if (!body) {
+      throw new Error('No body in R2 response');
+    }
+
     const chunks = [];
     
-    // Handle both stream and Uint8Array responses
-    if (response.Body[Symbol.asyncIterator]) {
-      // Async iterable (stream)
-      for await (const chunk of response.Body) {
+    // Check if it's readable stream
+    if (body.pipe) {
+      // It's a stream with pipe method
+      return await new Promise((resolve, reject) => {
+        body.on('data', chunk => chunks.push(Buffer.from(chunk)));
+        body.on('error', err => reject(err));
+        body.on('end', () => {
+          const buffer = Buffer.concat(chunks);
+          console.log(`✅ Downloaded from R2: ${key} (${buffer.length} bytes)`);
+          resolve(buffer);
+        });
+      });
+    } else if (body[Symbol.asyncIterator]) {
+      // It's an async iterable
+      for await (const chunk of body) {
         chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
       }
+      const buffer = Buffer.concat(chunks);
+      console.log(`✅ Downloaded from R2: ${key} (${buffer.length} bytes)`);
+      return buffer;
     } else {
-      // Already a buffer-like object
-      chunks.push(Buffer.isBuffer(response.Body) ? response.Body : Buffer.from(response.Body));
+      // It's already a buffer or buffer-like
+      const buffer = Buffer.isBuffer(body) ? body : Buffer.from(body);
+      console.log(`✅ Downloaded from R2: ${key} (${buffer.length} bytes)`);
+      return buffer;
     }
-    
-    const buffer = Buffer.concat(chunks);
-    console.log(`✅ Downloaded from R2: ${key} (${buffer.length} bytes)`);
-    
-    return buffer;
   } catch (error) {
     console.error('❌ R2 download error:', error);
     throw error;
