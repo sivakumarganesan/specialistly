@@ -238,7 +238,7 @@ export const PublicPageViewer: React.FC<PublicPageViewerProps> = ({ subdomain, p
   }
 
   return (
-    <div className="w-full bg-white">
+    <div className="w-full bg-white" style={{ fontFamily: "'Segoe UI', 'Trebuchet MS', system-ui, -apple-system, sans-serif" }}>
       {/* Page content - NO DUPLICATE HEADER (handled by PublicWebsite) */}
       <main className="min-h-screen">
         {page.sections && page.sections.length > 0 ? (

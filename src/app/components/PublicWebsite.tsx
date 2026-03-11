@@ -123,48 +123,37 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: website?.branding?.colors?.primary || '#f9fafb' }}>
       {/* Header Navigation */}
       <header
-        className="shadow-md sticky top-0 z-40 border-b-4"
+        className="shadow-lg sticky top-0 z-40"
         style={{ 
           backgroundColor: website?.branding?.primaryColor || website?.branding?.colors?.primary || '#ffffff',
-          borderBottomColor: website?.branding?.secondaryColor || website?.branding?.colors?.secondary || '#e5e7eb'
         }}
       >
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          {/* Logo/Brand */}
-          <div className="flex items-center gap-4">
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
+          {/* Logo/Brand - Left Side */}
+          <div className="flex items-center gap-4 flex-shrink-0">
             {website?.branding?.logo && (
               <img
                 src={website.branding.logo}
                 alt={website?.branding?.siteName}
-                className="h-12 w-auto object-contain"
+                className="h-14 w-auto object-contain"
               />
             )}
-            <div>
-              <h1 className="text-2xl font-bold" style={{ color: website?.branding?.primaryColor ? '#fff' : '#1f2937' }}>
-                {website?.branding?.siteName || 'Website'}
-              </h1>
-              {website?.branding?.tagline && (
-                <p className="text-sm opacity-90" style={{ color: website?.branding?.primaryColor ? 'rgba(255,255,255,0.9)' : '#666' }}>
-                  {website.branding.tagline}
-                </p>
-              )}
-            </div>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: website?.branding?.primaryColor ? '#fff' : '#1f2937', fontFamily: 'Georgia, serif' }}>
+              {website?.branding?.siteName || 'Website'}
+            </h1>
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
             {pages.map((page) => (
               <button
                 key={page._id}
                 onClick={() => handlePageClick(page)}
-                className={`font-medium px-4 py-2 rounded-lg transition-all ${
+                className={`font-semibold px-6 py-2 rounded-lg transition-all border-2 ${
                   currentPageSlug === page.slug
-                    ? 'text-white'
-                    : 'text-white hover:opacity-80'
+                    ? 'border-white bg-white text-gray-900'
+                    : 'border-white border-opacity-50 text-white hover:border-opacity-100 hover:bg-white hover:bg-opacity-10'
                 }`}
-                style={{
-                  backgroundColor: currentPageSlug === page.slug ? (website?.branding?.secondaryColor || '#ffffff33') : 'transparent',
-                }}
               >
                 {page.title}
               </button>
@@ -175,6 +164,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
           <button
             onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
             className="md:hidden text-white p-2"
+            style={{ color: website?.branding?.primaryColor ? '#fff' : '#000' }}
           >
             {isMobileNavOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -182,14 +172,16 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
 
         {/* Mobile Navigation Menu */}
         {isMobileNavOpen && (
-          <div className="md:hidden" style={{ backgroundColor: website?.branding?.primaryColor || '#1f2937' }}>
-            <div className="px-2 pt-2 pb-3 space-y-1">
+          <div className="md:hidden border-t border-white border-opacity-20" style={{ backgroundColor: website?.branding?.primaryColor || '#1f2937' }}>
+            <div className="px-4 py-3 space-y-2">
               {pages.map((page) => (
                 <button
                   key={page._id}
                   onClick={() => handlePageClick(page)}
-                  className={`w-full text-left px-4 py-2 rounded-lg font-medium transition-all text-white ${
-                    currentPageSlug === page.slug ? 'opacity-100' : 'opacity-75 hover:opacity-90'
+                  className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition-all text-white border-2 ${
+                    currentPageSlug === page.slug 
+                      ? 'bg-white text-gray-900 border-white' 
+                      : 'border-white border-opacity-30 hover:border-opacity-100'
                   }`}
                 >
                   {page.title}
