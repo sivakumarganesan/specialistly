@@ -97,6 +97,8 @@ export const serveMedia = async (req, res) => {
               });
             }
           });
+          // Return after streaming starts
+          return;
         } else if (response.Body) {
           // Handle as buffer or async iterable
           try {
@@ -113,19 +115,18 @@ export const serveMedia = async (req, res) => {
             const buffer = Buffer.concat(chunks);
             res.setHeader('Content-Length', buffer.length);
             res.end(buffer);
+            return;
           } catch (chunkError) {
             console.error('[serveMedia] Error reading response body:', chunkError);
             res.status(500).json({
               success: false,
               message: 'Error reading media from storage',
             });
+            return;
           }
         } else {
           throw new Error('No body in R2 response');
         }
-        
-        // Clean up R2 client
-        r2.destroy();
       } catch (error) {
         console.error('[serveMedia] Failed to download from R2:', error);
         // If download fails, return error
@@ -137,9 +138,9 @@ export const serveMedia = async (req, res) => {
       }
     }
 
-    // For other providers (Cloudflare Stream, etc.), redirect to the URL
-    console.log(`[serveMedia] Redirecting to URL: ${media.url}`);
-    res.redirect(media.url);
+    // For other providers (Cloudflare Stream, YouTube, etc.), redirect to the URL
+    console.log(`[serveMedia] Redirecting to URL for provider ${media.storageProvider}: ${media.url}`);
+    return res.redirect(media.url);
   } catch (error) {
     console.error('Serve media error:', error);
     res.status(500).json({
