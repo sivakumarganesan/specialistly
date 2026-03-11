@@ -142,6 +142,53 @@ export const AboutSectionEditor: React.FC<AboutSectionEditorProps> = ({
   );
 };
 
+// Helper function to render formatted text with markdown support
+const renderFormattedText = (text: string) => {
+  if (!text) return null;
+
+  return text.split('\n').map((line, lineIdx) => {
+    if (line.trim() === '') {
+      return <br key={lineIdx} />;
+    }
+
+    // Handle lists
+    if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+      return (
+        <div key={lineIdx} className="ml-4 my-2 flex">
+          <span className="mr-2">•</span>
+          <span>{line.replace(/^[\s]*[-*]\s/, '')}</span>
+        </div>
+      );
+    }
+
+    // Parse inline formatting: **bold**, *italic*
+    const parts = [];
+    let regex = /\*\*(.*?)\*\*|\*(.*?)\*|([^*]+)/g;
+    let match;
+    let lastIndex = 0;
+
+    while ((match = regex.exec(line)) !== null) {
+      const bold = match[1];
+      const italic = match[2];
+      const text = match[3];
+
+      if (bold) {
+        parts.push(<strong key={`${lineIdx}-${match.index}`}>{bold}</strong>);
+      } else if (italic) {
+        parts.push(<em key={`${lineIdx}-${match.index}`}>{italic}</em>);
+      } else if (text) {
+        parts.push(text);
+      }
+    }
+
+    return (
+      <div key={lineIdx} className="my-2">
+        {parts.length > 0 ? parts : line}
+      </div>
+    );
+  });
+};
+
 // Preview Component
 export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
   section,
@@ -174,9 +221,9 @@ export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
               <h2 className="text-3xl font-bold mb-4">{section.content.title}</h2>
             )}
             {section.content?.description && (
-              <p className="text-gray-600 text-lg leading-relaxed whitespace-pre-wrap">
-                {section.content.description}
-              </p>
+              <div className="text-gray-600 text-lg leading-relaxed">
+                {renderFormattedText(section.content.description)}
+              </div>
             )}
           </div>
         </div>

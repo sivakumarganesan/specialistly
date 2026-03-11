@@ -123,25 +123,28 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: website?.branding?.colors?.primary || '#f9fafb' }}>
       {/* Header Navigation */}
       <header
-        className="shadow-md sticky top-0 z-40"
-        style={{ backgroundColor: website?.branding?.colors?.primary || '#1f2937' }}
+        className="shadow-md sticky top-0 z-40 border-b-4"
+        style={{ 
+          backgroundColor: website?.branding?.primaryColor || website?.branding?.colors?.primary || '#ffffff',
+          borderBottomColor: website?.branding?.secondaryColor || website?.branding?.colors?.secondary || '#e5e7eb'
+        }}
       >
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           {/* Logo/Brand */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {website?.branding?.logo && (
               <img
                 src={website.branding.logo}
                 alt={website?.branding?.siteName}
-                className="h-10 w-auto"
+                className="h-12 w-auto object-contain"
               />
             )}
             <div>
-              <h1 className="text-xl font-bold text-white" style={{ color: website?.branding?.colors?.primary ? '#fff' : '#1f2937' }}>
+              <h1 className="text-2xl font-bold" style={{ color: website?.branding?.primaryColor ? '#fff' : '#1f2937' }}>
                 {website?.branding?.siteName || 'Website'}
               </h1>
               {website?.branding?.tagline && (
-                <p className="text-sm opacity-75 text-white">
+                <p className="text-sm opacity-90" style={{ color: website?.branding?.primaryColor ? 'rgba(255,255,255,0.9)' : '#666' }}>
                   {website.branding.tagline}
                 </p>
               )}
@@ -149,16 +152,19 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-2">
             {pages.map((page) => (
               <button
                 key={page._id}
                 onClick={() => handlePageClick(page)}
-                className={`font-medium px-4 py-2 rounded transition-all ${
+                className={`font-medium px-4 py-2 rounded-lg transition-all ${
                   currentPageSlug === page.slug
-                    ? 'bg-white text-indigo-600'
-                    : 'text-white hover:bg-white hover:bg-opacity-10'
+                    ? 'text-white'
+                    : 'text-white hover:opacity-80'
                 }`}
+                style={{
+                  backgroundColor: currentPageSlug === page.slug ? (website?.branding?.secondaryColor || '#ffffff33') : 'transparent',
+                }}
               >
                 {page.title}
               </button>
@@ -176,16 +182,14 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
 
         {/* Mobile Navigation Menu */}
         {isMobileNavOpen && (
-          <div className="md:hidden bg-opacity-95 bg-black">
+          <div className="md:hidden" style={{ backgroundColor: website?.branding?.primaryColor || '#1f2937' }}>
             <div className="px-2 pt-2 pb-3 space-y-1">
               {pages.map((page) => (
                 <button
                   key={page._id}
                   onClick={() => handlePageClick(page)}
-                  className={`w-full text-left px-4 py-2 rounded font-medium transition-all ${
-                    currentPageSlug === page.slug
-                      ? 'bg-white text-indigo-600'
-                      : 'text-white hover:bg-white hover:bg-opacity-10'
+                  className={`w-full text-left px-4 py-2 rounded-lg font-medium transition-all text-white ${
+                    currentPageSlug === page.slug ? 'opacity-100' : 'opacity-75 hover:opacity-90'
                   }`}
                 >
                   {page.title}
