@@ -183,7 +183,19 @@ export const uploadMedia = async (req, res) => {
     });
 
     // Verify website ownership
+    console.log(`🔑 Finding website with ID: ${websiteId} (type: ${typeof websiteId})`);
     const website = await Website.findById(websiteId);
+    
+    console.log(`📊 Website query result:`, {
+      found: !!website,
+      website: website ? {
+        _id: website._id,
+        creatorEmail: website.creatorEmail,
+        specialistId: website.specialistId,
+        name: website.name,
+      } : null,
+    });
+    
     if (!website) {
       console.error(`❌ Website not found: ${websiteId}`);
       return res.status(404).json({
