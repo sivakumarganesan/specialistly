@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Page, PageSection } from '@/app/hooks/usePageBuilder';
 import { HeroSectionPreview } from './PageBuilderEditor/sections/HeroSection';
 import { ServicesSectionPreview } from './PageBuilderEditor/sections/ServicesSection';
+import { AboutSectionPreview } from './PageBuilderEditor/sections/AboutSection';
 
 const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
   switch (section.type) {
     case 'hero':
       return <HeroSectionPreview section={section} />;
+    case 'about':
+      return <AboutSectionPreview section={section} />;
     case 'services':
       return <ServicesSectionPreview section={section} />;
     case 'cta':
