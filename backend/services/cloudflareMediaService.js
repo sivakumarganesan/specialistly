@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 import cloudflareConfig from '../config/cloudflareConfig.js';
 import axios from 'axios';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 
 dotenv.config();
 
@@ -429,7 +429,6 @@ export const downloadImageFromR2 = async (key) => {
 
     console.log(`📥 Downloading from R2: ${key}`);
 
-    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
     const command = new GetObjectCommand({
       Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME,
       Key: key,
