@@ -379,9 +379,10 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
                 title="Delete website"
                 onClick={handleDeleteWebsite}
                 disabled={isLoading}
-                className="text-red-300 hover:text-red-100 hover:bg-red-600 hover:bg-opacity-50 border border-red-400 border-opacity-30"
+                className="gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold"
               >
                 <Trash2 className="w-4 h-4" />
+                Delete
               </Button>
             </div>
           </div>
