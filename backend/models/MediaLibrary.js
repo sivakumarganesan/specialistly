@@ -70,7 +70,7 @@ const mediaLibrarySchema = new mongoose.Schema(
     // Storage provider
     storageProvider: {
       type: String,
-      enum: ['cloudflare', 'youtube'],
+      enum: ['cloudflare', 'youtube', 'r2'],
       default: 'cloudflare',
     },
     
