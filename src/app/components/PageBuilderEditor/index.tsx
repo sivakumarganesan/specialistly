@@ -18,6 +18,7 @@ import {
   Upload,
   Loader,
   X,
+  Trash2,
 } from 'lucide-react';
 
 interface PageBuilderEditorProps {
@@ -221,6 +222,32 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
     }
   };
 
+  const handleDeleteWebsite = async () => {
+    const confirmDelete = confirm(
+      `Are you absolutely sure you want to delete "${website?.displayName}"?\n\nThis action cannot be undone. All pages, sections, and content will be permanently deleted.`
+    );
+    
+    if (!confirmDelete) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+      console.log(`Deleting website ${websiteId}...`);
+      
+      await pageBuilderAPI.deleteWebsite(websiteId);
+      
+      console.log('Website deleted successfully');
+      // Redirect to dashboard
+      window.location.href = '/dashboard';
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to delete website';
+      console.error('Delete website error:', errorMsg);
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (isLoading && !website) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -345,6 +372,17 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
               >
                 <Upload className="w-4 h-4" />
                 Publish
+              </Button>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                title="Delete website"
+                onClick={handleDeleteWebsite}
+                disabled={isLoading}
+                className="text-red-500 hover:bg-red-50 hover:text-red-600"
+              >
+                <Trash2 className="w-4 h-4" />
               </Button>
             </div>
           </div>

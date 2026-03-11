@@ -287,38 +287,69 @@ export const publishWebsite = async (req, res) => {
 export const deleteWebsite = async (req, res) => {
   try {
     const { websiteId } = req.params;
+    const specialistId = req.user?.id || req.user?.userId || req.user?._id;
     const userEmail = req.user.email;
+
+    console.log(`Deleting website: ${websiteId}`);
+    console.log(`   Specialist ID: ${specialistId}`);
+    console.log(`   User Email: ${userEmail}`);
 
     const website = await Website.findById(websiteId);
 
     if (!website) {
+      console.error(`Website not found: ${websiteId}`);
       return res.status(404).json({
         success: false,
         message: 'Website not found',
       });
     }
 
-    // Verify ownership
-    if (website.creatorEmail !== userEmail) {
+    // Verify ownership - check both specialistId and creatorEmail for backward compatibility
+    const websiteSpecialistId = website.specialistId?.toString() || website.specialistId;
+    const userSpecialistId = specialistId?.toString ? specialistId.toString() : String(specialistId);
+    const ownershipMatchesBySpecialistId = websiteSpecialistId === userSpecialistId;
+    const ownershipMatchesByEmail = website.creatorEmail === userEmail;
+    const isOwner = ownershipMatchesBySpecialistId || ownershipMatchesByEmail;
+
+    console.log(`Ownership verification:`, {
+      websiteSpecialistId,
+      userSpecialistId,
+      specialistIdMatch: ownershipMatchesBySpecialistId,
+      emailMatch: ownershipMatchesByEmail,
+      isOwner,
+    });
+
+    if (!isOwner) {
+      console.error(`Ownership check failed for website ${websiteId}`);
       return res.status(403).json({
         success: false,
-        message: 'Unauthorized',
+        message: 'Unauthorized - You do not own this website',
       });
     }
 
+    console.log(`Ownership verified. Proceeding with deletion...`);
+
     // Delete all pages and sections for this website
     const pages = await Page.find({ websiteId });
+    console.log(`   Deleting ${pages.length} page(s)...`);
+    
     for (const page of pages) {
-      await PageSection.deleteMany({ pageId: page._id });
+      const deletedSections = await PageSection.deleteMany({ pageId: page._id });
+      console.log(`   - Deleted sections for page ${page._id}`);
     }
     await Page.deleteMany({ websiteId });
 
     // Delete website
     await Website.findByIdAndDelete(websiteId);
+    console.log(`Website ${websiteId} deleted successfully`);
 
     res.json({
       success: true,
       message: 'Website deleted successfully',
+      data: {
+        websiteId,
+        deletedPagesCount: pages.length,
+      },
     });
   } catch (error) {
     console.error('Delete website error:', error);
