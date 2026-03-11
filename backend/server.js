@@ -132,6 +132,10 @@ app.use('/api/page-builder/websites/:websiteId/media', mediaRoutes);
 app.use('/api/page-templates', pageTemplateRoutes);
 app.use('/api/public', publicRoutes);
 
+// Public media serving endpoint (for R2 images)
+import { serveMedia } from './controllers/serveMediaController.js';
+app.get('/api/media/serve/:mediaId', serveMedia);
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({

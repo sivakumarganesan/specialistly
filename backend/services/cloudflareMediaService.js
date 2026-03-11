@@ -419,6 +419,40 @@ export const deleteMedia = async (provider, storageKey, cloudflareId) => {
   }
 };
 
+// ============ Cloudflare R2 Image Download (for serving private images) ============
+
+export const downloadImageFromR2 = async (key) => {
+  try {
+    if (!r2Client) {
+      throw new Error('R2 client not initialized');
+    }
+
+    console.log(`📥 Downloading from R2: ${key}`);
+
+    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+    const command = new GetObjectCommand({
+      Bucket: process.env.CLOUDFLARE_R2_BUCKET_NAME,
+      Key: key,
+    });
+
+    const response = await r2Client.send(command);
+    
+    // Convert the response body stream to a buffer
+    const chunks = [];
+    for await (const chunk of response.Body) {
+      chunks.push(chunk);
+    }
+    
+    const buffer = Buffer.concat(chunks);
+    console.log(`✅ Downloaded from R2: ${key} (${buffer.length} bytes)`);
+    
+    return buffer;
+  } catch (error) {
+    console.error('❌ R2 download error:', error);
+    throw error;
+  }
+};
+
 export default {
   uploadVideoToCloudflare,
   deleteVideoFromCloudflare,
@@ -427,4 +461,5 @@ export default {
   validateYouTubeVideo,
   uploadMedia,
   deleteMedia,
+  downloadImageFromR2,
 };

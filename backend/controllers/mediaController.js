@@ -309,10 +309,8 @@ export const uploadMedia = async (req, res) => {
       url: uploadResult.url,
     });
 
-    console.log('✅ Upload successful:', {
-      provider: uploadResult.provider,
-      url: uploadResult.url,
-    });
+    // For R2 images, we'll set the public URL after saving (so we have the media ID)
+    let mediaUrl = uploadResult.url;
 
     // Create media entry
     const media = new MediaLibrary({
@@ -322,7 +320,7 @@ export const uploadMedia = async (req, res) => {
       originalName: req.file.originalname,
       fileType,
       mimeType,
-      url: uploadResult.url,
+      url: mediaUrl,
       thumbnailUrl: uploadResult.thumbnailUrl || null,
       size: req.file.size,
       storageProvider: uploadResult.provider,
@@ -348,6 +346,13 @@ export const uploadMedia = async (req, res) => {
     }
 
     await media.save();
+
+    // For R2 images, update the URL to use the proxy endpoint
+    if (uploadResult.provider === 'r2') {
+      media.url = `/api/media/serve/${media._id}`;
+      await media.save();
+      console.log(`✅ Updated media URL to proxy: ${media.url}`);
+    }
 
     res.status(201).json({
       success: true,

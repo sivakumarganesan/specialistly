@@ -7,6 +7,7 @@ import {
   updateMedia,
   deleteMedia,
 } from '../controllers/mediaController.js';
+import { serveMedia } from '../controllers/serveMediaController.js';
 
 const router = express.Router({ mergeParams: true });
 
