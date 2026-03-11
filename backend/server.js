@@ -33,6 +33,7 @@ import pageTemplateRoutes from './routes/pageTemplateRoutes.js';
 import pageRoutes from './routes/pageRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
+import { serveMedia } from './controllers/serveMediaController.js';
 
 dotenv.config();
 
@@ -133,7 +134,6 @@ app.use('/api/page-templates', pageTemplateRoutes);
 app.use('/api/public', publicRoutes);
 
 // Public media serving endpoint (for R2 images)
-import { serveMedia } from './controllers/serveMediaController.js';
 app.get('/api/media/serve/:mediaId', serveMedia);
 
 // Health check endpoint

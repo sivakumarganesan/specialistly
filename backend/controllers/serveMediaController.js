@@ -7,19 +7,24 @@ import { downloadImageFromR2 } from '../services/cloudflareMediaService.js';
  */
 export const serveMedia = async (req, res) => {
   try {
+    console.log(`[serveMedia] Request for media: ${req.params.mediaId}`);
     const { mediaId } = req.params;
 
     // Get media from database
     const media = await MediaLibrary.findById(mediaId);
     if (!media || media.isDeleted) {
+      console.error(`[serveMedia] Media not found: ${mediaId}`);
       return res.status(404).json({
         success: false,
         message: 'Media not found',
       });
     }
 
+    console.log(`[serveMedia] Found media: ${media._id}, provider: ${media.storageProvider}`);
+
     // If it's a YouTube video, redirect to the embed URL
     if (media.storageProvider === 'youtube' && media.embedUrl) {
+      console.log(`[serveMedia] Redirecting to YouTube embed URL`);
       return res.redirect(media.embedUrl);
     }
 
@@ -44,13 +49,14 @@ export const serveMedia = async (req, res) => {
         }
         
         if (!key) {
+          console.error('[serveMedia] Cannot determine R2 storage key');
           return res.status(400).json({
             success: false,
             message: 'Cannot determine R2 storage key for this media',
           });
         }
         
-        console.log(`📥 Downloading R2 media with key: ${key}`);
+        console.log(`[serveMedia] Downloading R2 media with key: ${key}`);
         const fileData = await downloadImageFromR2(key);
 
         // Set proper headers for cross-origin access
@@ -75,6 +81,7 @@ export const serveMedia = async (req, res) => {
     }
 
     // For other providers (Cloudflare Stream, etc.), redirect to the URL
+    console.log(`[serveMedia] Redirecting to URL: ${media.url}`);
     res.redirect(media.url);
   } catch (error) {
     console.error('Serve media error:', error);
