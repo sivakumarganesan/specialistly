@@ -61,14 +61,18 @@ export const serveMedia = async (req, res) => {
 
         // Set proper headers for cross-origin access
         res.setHeader('Content-Type', media.mimeType || 'application/octet-stream');
+        res.setHeader('Content-Length', fileData.length);
         res.setHeader('Content-Disposition', `inline; filename="${media.originalName}"`);
         res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
         res.setHeader('Access-Control-Allow-Origin', '*'); // Allow cross-origin access
         res.setHeader('X-Content-Type-Options', 'nosniff');
 
         // Send the file
-        console.log(`✅ Serving R2 media: ${key}`);
-        res.send(fileData);
+        console.log(`✅ Serving R2 media: ${key} (${fileData.length} bytes)`);
+        
+        // Use write/end instead of send to have more control
+        res.write(fileData);
+        res.end();
       } catch (error) {
         console.error('Failed to download from R2:', error);
         // If download fails, return error

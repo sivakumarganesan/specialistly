@@ -438,8 +438,16 @@ export const downloadImageFromR2 = async (key) => {
     
     // Convert the response body stream to a buffer
     const chunks = [];
-    for await (const chunk of response.Body) {
-      chunks.push(chunk);
+    
+    // Handle both stream and Uint8Array responses
+    if (response.Body[Symbol.asyncIterator]) {
+      // Async iterable (stream)
+      for await (const chunk of response.Body) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+    } else {
+      // Already a buffer-like object
+      chunks.push(Buffer.isBuffer(response.Body) ? response.Body : Buffer.from(response.Body));
     }
     
     const buffer = Buffer.concat(chunks);
