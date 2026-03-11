@@ -37,6 +37,7 @@ export const createWebsite = async (req, res) => {
 
     const website = new Website({
       creatorEmail: userEmail,
+      specialistId: specialistId, // Add specialist ID for ownership verification
       subdomain,
       isConfigured: true,
       branding: {
