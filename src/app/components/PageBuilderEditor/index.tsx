@@ -376,11 +376,10 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
 
               <Button
                 size="sm"
-                variant="ghost"
                 title="Delete website"
                 onClick={handleDeleteWebsite}
                 disabled={isLoading}
-                className="text-red-500 hover:bg-red-50 hover:text-red-600"
+                className="text-red-300 hover:text-red-100 hover:bg-red-600 hover:bg-opacity-50 border border-red-400 border-opacity-30"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
