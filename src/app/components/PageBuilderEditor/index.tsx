@@ -74,7 +74,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
           type: sectionType,
           title: sectionData.title || '',
           description: sectionData.description || '',
-          content: sectionData.content || {},
+          content: sectionData,
           styling: sectionData.styling || {},
         }
       );
