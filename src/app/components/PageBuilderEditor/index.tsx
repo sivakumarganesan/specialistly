@@ -1653,6 +1653,173 @@ const PropertiesPanel: React.FC<{
             </div>
           </div>
         )}
+
+        {section.type === 'courses' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Section Title</label>
+              <Input
+                type="text"
+                value={content.title || ''}
+                onChange={(e) => setContent({ ...content, title: e.target.value })}
+                placeholder="Our Courses"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Section Description</label>
+              <Textarea
+                value={content.description || ''}
+                onChange={(e) => setContent({ ...content, description: e.target.value })}
+                placeholder="Brief description of your courses"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
+              <div className="flex gap-2">
+                <Button
+                  variant={content.layout === 'grid' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'grid' })}
+                  className="flex-1 text-xs"
+                >
+                  Grid
+                </Button>
+                <Button
+                  variant={content.layout === 'list' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'list' })}
+                  className="flex-1 text-xs"
+                >
+                  List
+                </Button>
+                <Button
+                  variant={content.layout === 'carousel' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'carousel' })}
+                  className="flex-1 text-xs"
+                >
+                  Carousel
+                </Button>
+              </div>
+            </div>
+            
+            {/* Courses Management */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">Courses</h4>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const courses = content.courses || [];
+                    courses.push({
+                      id: Date.now().toString(),
+                      title: 'New Course',
+                      description: 'Course description',
+                      price: '$99',
+                      duration: '4 weeks',
+                      level: 'Beginner',
+                      thumbnail: '',
+                    });
+                    setContent({ ...content, courses });
+                  }}
+                  className="text-xs"
+                >
+                  + Add Course
+                </Button>
+              </div>
+              
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {(content.courses || []).map((course: any, idx: number) => (
+                  <div key={course.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-medium text-gray-600">Course {idx + 1}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const courses = content.courses.filter(
+                            (c: any) => c.id !== course.id
+                          );
+                          setContent({ ...content, courses });
+                        }}
+                        className="text-xs text-red-600 h-6 px-2"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <Input
+                      type="text"
+                      value={course.title}
+                      onChange={(e) => {
+                        const courses = content.courses.map((c: any) =>
+                          c.id === course.id
+                            ? { ...c, title: e.target.value }
+                            : c
+                        );
+                        setContent({ ...content, courses });
+                      }}
+                      placeholder="Course title"
+                      className="mb-2 text-xs"
+                    />
+                    <Textarea
+                      value={course.description}
+                      onChange={(e) => {
+                        const courses = content.courses.map((c: any) =>
+                          c.id === course.id
+                            ? { ...c, description: e.target.value }
+                            : c
+                        );
+                        setContent({ ...content, courses });
+                      }}
+                      placeholder="Course description"
+                      className="text-xs mb-2"
+                      rows={2}
+                    />
+                    <Input
+                      type="text"
+                      value={course.price}
+                      onChange={(e) => {
+                        const courses = content.courses.map((c: any) =>
+                          c.id === course.id
+                            ? { ...c, price: e.target.value }
+                            : c
+                        );
+                        setContent({ ...content, courses });
+                      }}
+                      placeholder="Price (e.g., $99)"
+                      className="mb-2 text-xs"
+                    />
+                    <Input
+                      type="text"
+                      value={course.duration}
+                      onChange={(e) => {
+                        const courses = content.courses.map((c: any) =>
+                          c.id === course.id
+                            ? { ...c, duration: e.target.value }
+                            : c
+                        );
+                        setContent({ ...content, courses });
+                      }}
+                      placeholder="Duration (e.g., 4 weeks)"
+                      className="mb-2 text-xs"
+                    />
+                    <Input
+                      type="text"
+                      value={course.level}
+                      onChange={(e) => {
+                        const courses = content.courses.map((c: any) =>
+                          c.id === course.id
+                            ? { ...c, level: e.target.value }
+                            : c
+                        );
+                        setContent({ ...content, courses });
+                      }}
+                      placeholder="Level (e.g., Beginner)"
+                      className="text-xs"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Save Button */}

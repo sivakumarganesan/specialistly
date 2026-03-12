@@ -13,6 +13,7 @@ import {
   Award,
   BookOpen,
   HelpCircle,
+  GraduationCap,
 } from 'lucide-react';
 
 interface SectionTemplate {
@@ -46,6 +47,18 @@ const SECTION_TEMPLATES: SectionTemplate[] = [
       description: 'What we offer',
       layout: 'grid',
       services: [],
+    },
+  },
+  {
+    type: 'courses',
+    name: 'Courses',
+    description: 'Showcase your courses and training programs',
+    icon: <GraduationCap className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Our Courses',
+      description: 'Learn from industry experts',
+      layout: 'grid',
+      courses: [],
     },
   },
   {

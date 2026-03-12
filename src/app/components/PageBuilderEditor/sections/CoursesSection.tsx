@@ -1,0 +1,339 @@
+import React, { useState } from 'react';
+import { PageSection } from '@/app/hooks/usePageBuilder';
+import { Card } from '@/app/components/ui/card';
+import { Button } from '@/app/components/ui/button';
+import { Input } from '@/app/components/ui/input';
+import { Textarea } from '@/app/components/ui/textarea';
+import { Plus, Trash2, LayoutGrid, List } from 'lucide-react';
+
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+  price?: string;
+  duration?: string;
+  level?: string;
+  thumbnail?: string;
+}
+
+interface CoursesSectionEditorProps {
+  section: PageSection;
+  onChange: (updates: Partial<PageSection>) => void;
+}
+
+export const CoursesSectionEditor: React.FC<CoursesSectionEditorProps> = ({
+  section,
+  onChange,
+}) => {
+  const courses = (section.content?.courses || []) as Course[];
+  const layout = section.content?.layout || 'grid'; // 'grid', 'list', 'carousel'
+
+  const handleAddCourse = () => {
+    const newCourse: Course = {
+      id: Date.now().toString(),
+      title: 'New Course',
+      description: 'Course description',
+      price: '$99',
+      duration: '4 weeks',
+      level: 'Beginner',
+    };
+
+    onChange({
+      content: {
+        ...section.content,
+        courses: [...courses, newCourse],
+      },
+    });
+  };
+
+  const handleUpdateCourse = (courseId: string, updates: Partial<Course>) => {
+    const updatedCourses = courses.map((course) =>
+      course.id === courseId ? { ...course, ...updates } : course
+    );
+
+    onChange({
+      content: {
+        ...section.content,
+        courses: updatedCourses,
+      },
+    });
+  };
+
+  const handleDeleteCourse = (courseId: string) => {
+    const updatedCourses = courses.filter((course) => course.id !== courseId);
+
+    onChange({
+      content: {
+        ...section.content,
+        courses: updatedCourses,
+      },
+    });
+  };
+
+  const handleLayoutChange = (newLayout: string) => {
+    onChange({
+      content: {
+        ...section.content,
+        layout: newLayout,
+      },
+    });
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6">
+        <h3 className="font-bold mb-4">Section Settings</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Title</label>
+            <Input
+              placeholder="e.g., Our Courses"
+              value={section.content?.title || ''}
+              onChange={(e) =>
+                onChange({
+                  content: {
+                    ...section.content,
+                    title: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Description</label>
+            <Textarea
+              placeholder="Section description"
+              value={section.content?.description || ''}
+              onChange={(e) =>
+                onChange({
+                  content: {
+                    ...section.content,
+                    description: e.target.value,
+                  },
+                })
+              }
+              rows={2}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-3">Layout</label>
+            <div className="flex gap-2">
+              <Button
+                variant={layout === 'grid' ? 'default' : 'outline'}
+                onClick={() => handleLayoutChange('grid')}
+                className="flex-1 gap-2"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                Grid
+              </Button>
+              <Button
+                variant={layout === 'list' ? 'default' : 'outline'}
+                onClick={() => handleLayoutChange('list')}
+                className="flex-1 gap-2"
+              >
+                <List className="w-4 h-4" />
+                List
+              </Button>
+              <Button
+                variant={layout === 'carousel' ? 'default' : 'outline'}
+                onClick={() => handleLayoutChange('carousel')}
+                className="flex-1"
+              >
+                Carousel
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-bold">Courses</h3>
+          <Button onClick={handleAddCourse} size="sm" className="gap-2">
+            <Plus className="w-4 h-4" />
+            Add Course
+          </Button>
+        </div>
+
+        <div className="space-y-4">
+          {courses.map((course, index) => (
+            <Card key={course.id} className="p-4 bg-gray-50">
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-sm font-medium text-gray-600">
+                  Course {index + 1}
+                </span>
+                <button
+                  onClick={() => handleDeleteCourse(course.id)}
+                  className="text-red-500 hover:text-red-600"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1">Title</label>
+                  <Input
+                    placeholder="Course title"
+                    value={course.title}
+                    onChange={(e) =>
+                      handleUpdateCourse(course.id, { title: e.target.value })
+                    }
+                    size="sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">
+                    Description
+                  </label>
+                  <Textarea
+                    placeholder="Course description"
+                    value={course.description}
+                    onChange={(e) =>
+                      handleUpdateCourse(course.id, {
+                        description: e.target.value,
+                      })
+                    }
+                    rows={2}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium mb-1">Price</label>
+                    <Input
+                      placeholder="$99"
+                      value={course.price || ''}
+                      onChange={(e) =>
+                        handleUpdateCourse(course.id, { price: e.target.value })
+                      }
+                      size="sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium mb-1">Duration</label>
+                    <Input
+                      placeholder="4 weeks"
+                      value={course.duration || ''}
+                      onChange={(e) =>
+                        handleUpdateCourse(course.id, { duration: e.target.value })
+                      }
+                      size="sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">Level</label>
+                  <Input
+                    placeholder="Beginner, Intermediate, Advanced"
+                    value={course.level || ''}
+                    onChange={(e) =>
+                      handleUpdateCourse(course.id, { level: e.target.value })
+                    }
+                    size="sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">Thumbnail URL</label>
+                  <Input
+                    placeholder="https://example.com/thumbnail.jpg"
+                    value={course.thumbnail || ''}
+                    onChange={(e) =>
+                      handleUpdateCourse(course.id, { thumbnail: e.target.value })
+                    }
+                    size="sm"
+                  />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// Preview Component
+export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
+  section,
+}) => {
+  const courses = (section.content?.courses || []) as Course[];
+  const layout = section.content?.layout || 'grid';
+
+  const gridClasses =
+    layout === 'grid'
+      ? 'grid grid-cols-3 gap-6'
+      : layout === 'list'
+        ? 'space-y-4'
+        : 'flex gap-6 overflow-x-auto pb-4';
+
+  return (
+    <div
+      className="py-16 px-4"
+      style={{
+        backgroundColor: section.styling?.backgroundColor || '#f9fafb',
+      }}
+    >
+      <div className="max-w-6xl mx-auto">
+        {section.content?.title && (
+          <h2 className="text-3xl font-bold mb-4">{section.content.title}</h2>
+        )}
+        {section.content?.description && (
+          <p className="text-gray-600 mb-12 text-lg">
+            {section.content.description}
+          </p>
+        )}
+
+        <div className={gridClasses}>
+          {courses.map((course) => (
+            <div
+              key={course.id}
+              className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow ${
+                layout === 'list' ? 'flex gap-4' : ''
+              }`}
+            >
+              {course.thumbnail && (
+                <div
+                  className={`bg-gradient-to-br from-blue-400 to-indigo-600 ${
+                    layout === 'list' ? 'w-32 h-32' : 'w-full h-40'
+                  }`}
+                  style={{
+                    backgroundImage: `url(${course.thumbnail})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                  }}
+                />
+              )}
+              <div className={`p-4 ${layout === 'list' ? 'flex-1' : ''}`}>
+                <h3 className="font-bold text-lg mb-2">{course.title}</h3>
+                <p className="text-gray-600 text-sm mb-3">{course.description}</p>
+                <div className="flex flex-wrap gap-2 mb-3 text-xs">
+                  {course.level && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                      {course.level}
+                    </span>
+                  )}
+                  {course.duration && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                      {course.duration}
+                    </span>
+                  )}
+                </div>
+                {course.price && (
+                  <div className="font-bold text-lg text-indigo-600">
+                    {course.price}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};

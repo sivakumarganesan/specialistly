@@ -11,6 +11,7 @@ import {
 } from 'react-beautiful-dnd';
 import { HeroSectionPreview } from './sections/HeroSection';
 import { ServicesSectionPreview } from './sections/ServicesSection';
+import { CoursesSectionPreview } from './sections/CoursesSection';
 
 interface EditorCanvasProps {
   page: Page;
@@ -63,6 +64,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
         return <HeroSectionPreview section={section} />;
       case 'services':
         return <ServicesSectionPreview section={section} />;
+      case 'courses':
+        return <CoursesSectionPreview section={section} />;
       default:
         return (
           <div className="p-8 bg-gray-100 text-center">
