@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { 
   LayoutDashboard, 
   Globe,
@@ -54,6 +55,16 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userTyp
 
   const menuItems = userType === "specialist" ? creatorMenuItems : customerMenuItems;
 
+  // Debug logging to ensure menu items are correct
+  useEffect(() => {
+    console.log("=== SIDEBAR DEBUG ===");
+    console.log("userType:", userType);
+    console.log("menuItems count:", menuItems.length);
+    console.log("menuItems array:", menuItems);
+    console.log("menu IDs:", menuItems.map(item => item.id));
+    console.log("==================");
+  }, [userType, menuItems]);
+
   return (
     <>
       {/* Mobile Overlay */}
@@ -66,39 +77,63 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userTyp
       
       {/* Sidebar */}
       <aside className={cn(
-        "fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r z-40 transition-transform duration-300",
+        "fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 bg-white border-r z-40 transition-transform duration-300 overflow-y-auto",
         "md:translate-x-0",
         isMobileOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <nav className="flex flex-col gap-1 p-4">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            const showBadge = item.id === "messages" && unreadMessageCount > 0;
-            
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleItemClick(item.id)}
-                className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left justify-between",
-                  isActive 
-                    ? "bg-indigo-50 text-indigo-600" 
-                    : "text-gray-700 hover:bg-gray-50"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <Icon className="h-5 w-5" />
-                  <span>{item.label}</span>
-                </div>
-                {showBadge && (
-                  <Badge className="bg-red-500 h-5 px-2 flex items-center justify-center text-xs font-semibold">
-                    {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
-                  </Badge>
-                )}
-              </button>
-            );
-          })}
+          {/* Debug: Show DEBUG INFO to user */}
+          <div style={{
+            backgroundColor: '#ffe4e1',
+            border: '2px solid red',
+            borderRadius: '4px',
+            padding: '8px',
+            marginBottom: '12px',
+            fontSize: '11px',
+            color: '#333'
+          }}>
+            <div><strong>DEBUG:</strong></div>
+            <div>UserType: {userType}</div>
+            <div>Items: {menuItems.length}</div>
+            <div>Has my-site: {menuItems.some(item => item.id === 'my-site') ? 'YES ✓' : 'NO ✗'}</div>
+            <div>IDs: {menuItems.map(item => item.id).join(', ')}</div>
+          </div>
+          
+          {menuItems && menuItems.length > 0 ? (
+            menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              const showBadge = item.id === "messages" && unreadMessageCount > 0;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleItemClick(item.id)}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left justify-between w-full",
+                    isActive 
+                      ? "bg-indigo-50 text-indigo-600 font-semibold" 
+                      : "text-gray-700 hover:bg-gray-50",
+                    item.id === 'my-site' && "border-2 border-red-500 bg-yellow-50" // Highlight my-site
+                  )}
+                  title={item.label}
+                >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <Icon className="h-5 w-5 flex-shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                    {item.id === 'my-site' && <span style={{color: 'red', fontWeight: 'bold'}}>★</span>}
+                  </div>
+                  {showBadge && (
+                    <Badge className="bg-red-500 h-5 px-2 flex items-center justify-center text-xs font-semibold flex-shrink-0 ml-2">
+                      {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                    </Badge>
+                  )}
+                </button>
+              );
+            })
+          ) : (
+            <div className="text-sm text-gray-500 p-4">No menu items available</div>
+          )}
         </nav>
       </aside>
     </>

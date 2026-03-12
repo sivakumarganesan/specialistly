@@ -842,12 +842,13 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
     try {
       setIsLoading(true);
       // Fetch courses for current user
-      const coursesResponse = await courseAPI.getAll();
+      const coursesResponse = await courseAPI.getAll({ specialistEmail: user?.email });
       const allCourses = Array.isArray(coursesResponse?.data) ? coursesResponse.data : [];
       
-      // Filter for active courses by the current user
+      // Filter for courses by the current user (accept draft, published, or any status)
       const userCourses = allCourses.filter(
-        (course: any) => course.creator === user?.email && course.status === "active"
+        (course: any) => (course.creator === user?.email || course.specialistEmail === user?.email) && 
+                         (course.status === "draft" || course.status === "published" || course.status === "active")
       );
       setCourses(userCourses);
 
@@ -855,11 +856,14 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
       const servicesResponse = await serviceAPI.getAll();
       const allServices = Array.isArray(servicesResponse?.data) ? servicesResponse.data : [];
       
-      // Filter for active services by the current user
+      // Filter for services by the current user (accept draft, published, or any status)
       const userServices = allServices.filter(
-        (service: any) => service.creator === user?.email && service.status === "active"
+        (service: any) => (service.creator === user?.email || service.specialistEmail === user?.email) && 
+                          (service.status === "draft" || service.status === "published" || service.status === "active")
       );
       setServices(userServices);
+      
+      console.log("MySite ContentSelection - Loaded", userCourses.length, "courses and", userServices.length, "services");
     } catch (error) {
       console.error("Failed to fetch content:", error);
     } finally {
@@ -919,8 +923,11 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
           {isLoading ? (
             <div className="text-center py-8 text-gray-500">Loading your courses...</div>
           ) : courses.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No active courses found. Create and activate courses to add them to your site.
+            <div className="text-center py-8 text-gray-500 space-y-4">
+              <p>No courses found. Create and manage courses to add them to your site.</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                <p className="text-blue-700"><strong>Tip:</strong> Go to "Manage Courses" in the sidebar to create your first course.</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -981,8 +988,11 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
           {isLoading ? (
             <div className="text-center py-8 text-gray-500">Loading your services...</div>
           ) : services.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No active services found. Create and activate services to add them to your site.
+            <div className="text-center py-8 text-gray-500 space-y-4">
+              <p>No services found. Create and manage services to add them to your site.</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                <p className="text-blue-700"><strong>Tip:</strong> Go to "Create / Edit Offerings" in the sidebar to create your first service.</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
