@@ -1844,6 +1844,36 @@ const PropertiesPanel: React.FC<{
         )}
       </div>
 
+      {/* Background Color */}
+      <div className="border-t pt-4">
+        <h4 className="text-sm font-semibold text-gray-900 mb-3">Background Color</h4>
+        <div className="flex gap-2 items-center">
+          <input
+            type="color"
+            value={content.backgroundColor || '#ffffff'}
+            onChange={(e) => setContent({ ...content, backgroundColor: e.target.value })}
+            className="w-12 h-10 rounded cursor-pointer border border-gray-300"
+          />
+          <Input
+            type="text"
+            value={content.backgroundColor || '#ffffff'}
+            onChange={(e) => setContent({ ...content, backgroundColor: e.target.value })}
+            placeholder="#ffffff"
+            className="flex-1"
+          />
+          {content.backgroundColor && content.backgroundColor !== '#ffffff' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setContent({ ...content, backgroundColor: '' })}
+              className="text-xs text-gray-500"
+            >
+              Reset
+            </Button>
+          )}
+        </div>
+      </div>
+
       {/* Save Button */}
       <Button
         onClick={handleSave}

@@ -38,7 +38,7 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       );
     case 'contact':
       return (
-        <div className="py-16 px-4 bg-gray-50">
+        <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#f9fafb' }}>
           <div className="max-w-2xl mx-auto">
             <h2 className="text-3xl font-bold mb-4">{section.title}</h2>
             {section.description && (
@@ -66,7 +66,7 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       );
     case 'testimonials':
       return (
-        <div className="py-16 px-4 bg-white">
+        <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#ffffff' }}>
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold mb-4 text-center">{section.title}</h2>
             {section.description && (
@@ -103,7 +103,7 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       );
     case 'pricing':
       return (
-        <div className="py-16 px-4 bg-gray-50">
+        <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#f9fafb' }}>
           <div className="max-w-6xl mx-auto">
             <h2 className="text-3xl font-bold mb-4 text-center">{section.title}</h2>
             {section.description && (
@@ -126,7 +126,7 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       );
     case 'faq':
       return (
-        <div className="py-16 px-4 bg-white">
+        <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#ffffff' }}>
           <div className="max-w-2xl mx-auto">
             <h2 className="text-3xl font-bold mb-4 text-center">{section.title}</h2>
             {section.description && (
@@ -145,7 +145,7 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       );
     case 'newsletter':
       return (
-        <div className="py-16 px-4 bg-blue-50">
+        <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#eff6ff' }}>
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-4">{section.title}</h2>
             {section.description && (
@@ -166,7 +166,7 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       );
     default:
       return (
-        <div className="py-16 px-4 bg-gray-100 text-center">
+        <div className="py-16 px-4 text-center" style={{ backgroundColor: section.content?.backgroundColor || '#f3f4f6' }}>
           <div className="max-w-2xl mx-auto">
             <h2 className="text-2xl font-bold mb-2">{section.title}</h2>
             {section.description && (
