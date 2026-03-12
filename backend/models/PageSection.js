@@ -21,6 +21,7 @@ const pageSectionSchema = new mongoose.Schema(
         'hero',
         'about',
         'services',
+        'courses',
         'video',
         'testimonials',
         'cta',
