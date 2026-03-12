@@ -86,6 +86,16 @@ const corsOptions = {
 // Middleware
 app.use(cors(corsOptions));
 
+// Redirect www to apex domain
+app.use((req, res, next) => {
+  const host = req.get('host') || '';
+  if (host.startsWith('www.')) {
+    const newHost = host.replace('www.', '');
+    return res.redirect(301, `${req.protocol}://${newHost}${req.originalUrl}`);
+  }
+  next();
+});
+
 // Add subdomain middleware to extract subdomain from hostname
 app.use(subdomainMiddleware);
 

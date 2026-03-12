@@ -24,8 +24,11 @@ export const getSubdomainInfo = (): SubdomainInfo => {
   
   if (!isLocalhost && parts.length > 2) {
     // Has subdomain (e.g., subdomain.specialistly.com)
-    subdomain = parts[0];
-    isSubdomain = true;
+    // Exclude 'www' — it's not a branded subdomain
+    if (parts[0] !== 'www') {
+      subdomain = parts[0];
+      isSubdomain = true;
+    }
   }
   
   return {
