@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Globe, Check, X, Eye, Settings as SettingsIcon, Palette, Layout, Share2, Copy, ExternalLink } from "lucide-react";
+import { Globe, Check, X, Eye, Settings as SettingsIcon, Palette, Share2, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { brandingAPI, courseAPI, serviceAPI } from "@/app/api/apiClient";
@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 
-type MySiteTab = "setup" | "customize" | "content" | "preview";
+type MySiteTab = "setup" | "customize" | "preview";
 
 interface WebsiteData {
   subdomain?: string;
@@ -68,7 +68,6 @@ export function MySite() {
   const tabs = [
     { id: "setup" as MySiteTab, label: "Setup", icon: Globe },
     { id: "customize" as MySiteTab, label: "Customize", icon: Palette },
-    { id: "content" as MySiteTab, label: "Content", icon: Layout },
     { id: "preview" as MySiteTab, label: "Preview", icon: Eye },
   ];
 
@@ -112,8 +111,14 @@ export function MySite() {
       <div>
         {activeTab === "setup" && <SubdomainSetup websiteData={websiteData} setWebsiteData={setWebsiteData} />}
         {activeTab === "customize" && <SiteCustomization websiteData={websiteData} setWebsiteData={setWebsiteData} />}
-        {activeTab === "content" && <ContentSelection websiteData={websiteData} setWebsiteData={setWebsiteData} />}
         {activeTab === "preview" && <SitePreview websiteData={websiteData} />}
+      </div>
+      
+      {/* Info: Courses and Services selection moved to Branded Page Builder */}
+      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-700">
+          <strong>📌 Adding Content:</strong> To showcase your courses and services on your public site, use the <strong>"Branded Page Builder"</strong> in the sidebar to add and configure sections for your offerings.
+        </p>
       </div>
     </div>
   );
