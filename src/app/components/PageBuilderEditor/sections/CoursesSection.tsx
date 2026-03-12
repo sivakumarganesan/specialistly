@@ -262,8 +262,46 @@ export const CoursesSectionEditor: React.FC<CoursesSectionEditorProps> = ({
 export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
   section,
 }) => {
+  const [fetchedCourses, setFetchedCourses] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
   const courses = (section.content?.courses || []) as Course[];
   const layout = section.content?.layout || 'grid';
+
+  // Fetch specialist's courses from API
+  React.useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const authToken = localStorage.getItem('authToken');
+        if (!authToken) {
+          setIsLoading(false);
+          return;
+        }
+
+        const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+        const response = await fetch(`${apiUrl}/courses/my-courses`, {
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.data)) {
+            setFetchedCourses(data.data);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch courses:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  // Use fetched courses if no manual courses, otherwise use manual courses
+  const displayCourses = courses.length > 0 ? courses : fetchedCourses;
 
   const gridClasses =
     layout === 'grid'
@@ -289,50 +327,64 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
           </p>
         )}
 
-        <div className={gridClasses}>
-          {courses.map((course) => (
-            <div
-              key={course.id}
-              className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow ${
-                layout === 'list' ? 'flex gap-4' : ''
-              }`}
-            >
-              {course.thumbnail && (
-                <div
-                  className={`bg-gradient-to-br from-blue-400 to-indigo-600 ${
-                    layout === 'list' ? 'w-32 h-32' : 'w-full h-40'
-                  }`}
-                  style={{
-                    backgroundImage: `url(${course.thumbnail})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                  }}
-                />
-              )}
-              <div className={`p-4 ${layout === 'list' ? 'flex-1' : ''}`}>
-                <h3 className="font-bold text-lg mb-2">{course.title}</h3>
-                <p className="text-gray-600 text-sm mb-3">{course.description}</p>
-                <div className="flex flex-wrap gap-2 mb-3 text-xs">
-                  {course.level && (
-                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                      {course.level}
-                    </span>
-                  )}
-                  {course.duration && (
-                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
-                      {course.duration}
-                    </span>
+        {isLoading && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">Loading courses...</p>
+          </div>
+        )}
+
+        {!isLoading && displayCourses.length === 0 && (
+          <div className="text-center py-12 bg-white rounded-lg border-2 border-dashed border-gray-300">
+            <p className="text-gray-500">No courses to display yet. Add courses in the properties panel.</p>
+          </div>
+        )}
+
+        {!isLoading && displayCourses.length > 0 && (
+          <div className={gridClasses}>
+            {displayCourses.map((course: any) => (
+              <div
+                key={course._id || course.id}
+                className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow ${
+                  layout === 'list' ? 'flex gap-4' : ''
+                }`}
+              >
+                {(course.thumbnail || course.courseImage) && (
+                  <div
+                    className={`bg-gradient-to-br from-blue-400 to-indigo-600 ${
+                      layout === 'list' ? 'w-32 h-32' : 'w-full h-40'
+                    }`}
+                    style={{
+                      backgroundImage: `url(${course.thumbnail || course.courseImage})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                    }}
+                  />
+                )}
+                <div className={`p-4 ${layout === 'list' ? 'flex-1' : ''}`}>
+                  <h3 className="font-bold text-lg mb-2">{course.title || course.name}</h3>
+                  <p className="text-gray-600 text-sm mb-3">{course.description || course.courseDescription}</p>
+                  <div className="flex flex-wrap gap-2 mb-3 text-xs">
+                    {course.level && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                        {course.level}
+                      </span>
+                    )}
+                    {course.duration && (
+                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                        {course.duration}
+                      </span>
+                    )}
+                  </div>
+                  {(course.price || course.coursePrice) && (
+                    <div className="font-bold text-lg text-indigo-600">
+                      ${course.price || course.coursePrice}
+                    </div>
                   )}
                 </div>
-                {course.price && (
-                  <div className="font-bold text-lg text-indigo-600">
-                    {course.price}
-                  </div>
-                )}
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
