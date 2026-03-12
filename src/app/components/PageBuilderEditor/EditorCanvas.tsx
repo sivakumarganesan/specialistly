@@ -2,7 +2,7 @@ import React from 'react';
 import { PageSection, Page } from '@/app/hooks/usePageBuilder';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
-import { Plus, Trash2, Copy } from 'lucide-react';
+import { Plus, Trash2, Copy, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import {
   DragDropContext,
   Droppable,
@@ -124,12 +124,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                               : ''
                           }`}
                         >
-                          {/* Drag handle */}
-                          <div
-                            {...provided.dragHandleProps}
-                            className={`absolute left-0 top-0 bottom-0 w-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing`}
-                          />
-
                           {/* Section card */}
                           <Card
                             className={`overflow-hidden transition-all ${
@@ -147,6 +141,14 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                             {/* Section toolbar */}
                             <div className="px-4 py-3 bg-gray-50 flex items-center justify-between">
                               <div className="flex items-center gap-2">
+                                {/* Drag handle */}
+                                <div
+                                  {...provided.dragHandleProps}
+                                  className="cursor-grab active:cursor-grabbing p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-600"
+                                  title="Drag to reorder"
+                                >
+                                  <GripVertical className="w-4 h-4" />
+                                </div>
                                 <div className="inline-flex items-center gap-2 bg-white px-3 py-1 rounded text-sm">
                                   <span className="text-gray-600 font-mono">
                                     {section.type}
@@ -162,7 +164,37 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
                                 </div>
                               </div>
 
-                              <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={index === 0}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const items = Array.from(page.sections);
+                                    const [moved] = items.splice(index, 1);
+                                    items.splice(index - 1, 0, moved);
+                                    onReorderSections(items.map((s, i) => ({ ...s, order: i })));
+                                  }}
+                                  title="Move up"
+                                >
+                                  <ChevronUp className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={index === page.sections.length - 1}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const items = Array.from(page.sections);
+                                    const [moved] = items.splice(index, 1);
+                                    items.splice(index + 1, 0, moved);
+                                    onReorderSections(items.map((s, i) => ({ ...s, order: i })));
+                                  }}
+                                  title="Move down"
+                                >
+                                  <ChevronDown className="w-4 h-4" />
+                                </Button>
                                 <Button
                                   variant="outline"
                                   size="sm"
