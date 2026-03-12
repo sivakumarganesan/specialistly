@@ -611,6 +611,14 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
   const [secondaryColor, setSecondaryColor] = useState(website?.branding?.colors?.secondary || '#ec4899');
   const [siteName, setSiteName] = useState(website?.branding?.siteName || '');
   const [tagline, setTagline] = useState(website?.branding?.tagline || '');
+  const [headerBgColor, setHeaderBgColor] = useState(website?.branding?.headerBgColor || '');
+  const [headerTextColor, setHeaderTextColor] = useState(website?.branding?.headerTextColor || '#ffffff');
+  const [footerBgColor, setFooterBgColor] = useState(website?.branding?.footerBgColor || '#111827');
+  const [footerTextColor, setFooterTextColor] = useState(website?.branding?.footerTextColor || '#ffffff');
+  const [accentColor, setAccentColor] = useState(website?.branding?.accentColor || '');
+  const [fontFamily, setFontFamily] = useState(website?.branding?.fontFamily || 'Inter');
+  const [buttonStyle, setButtonStyle] = useState(website?.branding?.buttonStyle || 'filled');
+  const [buttonRadius, setButtonRadius] = useState(website?.branding?.buttonRadius || '8px');
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
@@ -708,6 +716,14 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
         },
         siteName,
         tagline,
+        headerBgColor: headerBgColor || primaryColor,
+        headerTextColor,
+        footerBgColor,
+        footerTextColor,
+        accentColor: accentColor || primaryColor,
+        fontFamily,
+        buttonStyle,
+        buttonRadius,
       });
 
       setSuccessMessage('Branding settings saved successfully');
@@ -840,35 +856,202 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
                 {/* Primary Color */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-3">Primary Color</label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={primaryColor}
-                        onChange={(e) => setPrimaryColor(e.target.value)}
-                        className="w-20 h-20 rounded-lg cursor-pointer border border-slate-300"
-                      />
-                      <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{primaryColor}</code>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={primaryColor}
+                      onChange={(e) => setPrimaryColor(e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border border-slate-300"
+                    />
+                    <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{primaryColor}</code>
                   </div>
-                  <p className="text-xs text-slate-500 mt-3">Used for buttons, links, and accents</p>
+                  <p className="text-xs text-slate-500 mt-2">Buttons, links, and main accents</p>
                 </div>
 
                 {/* Secondary Color */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-900 mb-3">Secondary Color</label>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={secondaryColor}
-                        onChange={(e) => setSecondaryColor(e.target.value)}
-                        className="w-20 h-20 rounded-lg cursor-pointer border border-slate-300"
-                      />
-                      <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{secondaryColor}</code>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={secondaryColor}
+                      onChange={(e) => setSecondaryColor(e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border border-slate-300"
+                    />
+                    <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{secondaryColor}</code>
                   </div>
-                  <p className="text-xs text-slate-500 mt-3">Used for highlights and secondary elements</p>
+                  <p className="text-xs text-slate-500 mt-2">Highlights and secondary elements</p>
+                </div>
+
+                {/* Accent Color */}
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-3">Accent Color</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={accentColor || primaryColor}
+                      onChange={(e) => setAccentColor(e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border border-slate-300"
+                    />
+                    <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{accentColor || primaryColor}</code>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">Hover states and special highlights</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Header & Footer Styling */}
+            <div className="border-t border-slate-200 pt-8">
+              <h3 className="font-semibold text-slate-900 mb-6">Header & Footer</h3>
+              
+              {/* Header Preview */}
+              <div className="mb-6 rounded-lg overflow-hidden border border-slate-200">
+                <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: headerBgColor || primaryColor, color: headerTextColor }}>
+                  <span className="font-bold text-sm">{siteName || 'Your Site'}</span>
+                  <div className="flex gap-3 text-xs font-medium opacity-80">
+                    <span>Page 1</span><span>Page 2</span><span>Page 3</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8 mb-8">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-3">Header Background</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={headerBgColor || primaryColor}
+                      onChange={(e) => setHeaderBgColor(e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border border-slate-300"
+                    />
+                    <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{headerBgColor || primaryColor}</code>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-3">Header Text</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={headerTextColor}
+                      onChange={(e) => setHeaderTextColor(e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border border-slate-300"
+                    />
+                    <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{headerTextColor}</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer Preview */}
+              <div className="mb-6 rounded-lg overflow-hidden border border-slate-200">
+                <div className="px-4 py-3 text-center text-xs" style={{ backgroundColor: footerBgColor, color: footerTextColor }}>
+                  <span className="opacity-80">© {new Date().getFullYear()} {siteName || 'Your Site'}. All rights reserved.</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-3">Footer Background</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={footerBgColor}
+                      onChange={(e) => setFooterBgColor(e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border border-slate-300"
+                    />
+                    <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{footerBgColor}</code>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-900 mb-3">Footer Text</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={footerTextColor}
+                      onChange={(e) => setFooterTextColor(e.target.value)}
+                      className="w-14 h-14 rounded-lg cursor-pointer border border-slate-300"
+                    />
+                    <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded">{footerTextColor}</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Typography */}
+            <div className="border-t border-slate-200 pt-8">
+              <h3 className="font-semibold text-slate-900 mb-6">Typography</h3>
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-3">Font Family</label>
+                <select
+                  value={fontFamily}
+                  onChange={(e) => setFontFamily(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                >
+                  <option value="Inter">Inter (Modern & Clean)</option>
+                  <option value="Georgia">Georgia (Classic Serif)</option>
+                  <option value="Poppins">Poppins (Friendly)</option>
+                  <option value="Playfair Display">Playfair Display (Elegant)</option>
+                  <option value="Roboto">Roboto (Professional)</option>
+                  <option value="Montserrat">Montserrat (Bold & Modern)</option>
+                  <option value="Lato">Lato (Warm & Stable)</option>
+                  <option value="Open Sans">Open Sans (Neutral)</option>
+                  <option value="Raleway">Raleway (Stylish)</option>
+                  <option value="system-ui">System Default</option>
+                </select>
+                <p className="text-xs text-slate-500 mt-2" style={{ fontFamily }}>
+                  Preview: The quick brown fox jumps over the lazy dog
+                </p>
+              </div>
+            </div>
+
+            {/* Button Styling */}
+            <div className="border-t border-slate-200 pt-8">
+              <h3 className="font-semibold text-slate-900 mb-6">Button Style</h3>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {[
+                  { id: 'filled', label: 'Filled', style: { backgroundColor: primaryColor, color: '#fff', border: 'none' } },
+                  { id: 'outlined', label: 'Outlined', style: { backgroundColor: 'transparent', color: primaryColor, border: `2px solid ${primaryColor}` } },
+                  { id: 'rounded', label: 'Rounded', style: { backgroundColor: primaryColor, color: '#fff', border: 'none', borderRadius: '24px' } },
+                  { id: 'pill', label: 'Pill', style: { backgroundColor: primaryColor, color: '#fff', border: 'none', borderRadius: '9999px' } },
+                ].map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => setButtonStyle(option.id)}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      buttonStyle === option.id
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                      <span
+                        className="px-6 py-2 text-sm font-semibold"
+                        style={{ ...option.style, borderRadius: option.style.borderRadius || buttonRadius }}
+                      >
+                        Button
+                      </span>
+                      <span className="text-xs text-slate-600">{option.label}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-900 mb-3">Corner Radius</label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max="24"
+                    value={parseInt(buttonRadius)}
+                    onChange={(e) => setButtonRadius(`${e.target.value}px`)}
+                    className="flex-1"
+                  />
+                  <code className="text-sm text-slate-600 font-mono bg-slate-100 px-3 py-2 rounded w-16 text-center">{buttonRadius}</code>
+                </div>
+                <div className="mt-3 flex gap-3">
+                  <span className="px-5 py-2 text-sm font-semibold text-white" style={{ backgroundColor: primaryColor, borderRadius: buttonRadius }}>
+                    Preview Button
+                  </span>
                 </div>
               </div>
             </div>

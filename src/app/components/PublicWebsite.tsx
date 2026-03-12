@@ -120,12 +120,19 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: website?.branding?.colors?.primary || '#f9fafb' }}>
+    <div className="min-h-screen flex flex-col" style={{ fontFamily: `'${website?.branding?.fontFamily || 'Inter'}', system-ui, -apple-system, sans-serif` }}>
+      {/* Google Fonts */}
+      {website?.branding?.fontFamily && !['system-ui', 'Georgia'].includes(website.branding.fontFamily) && (
+        <link
+          href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(website.branding.fontFamily)}:wght@300;400;500;600;700&display=swap`}
+          rel="stylesheet"
+        />
+      )}
       {/* Header Navigation */}
       <header
         className="shadow-lg sticky top-0 z-40"
         style={{ 
-          backgroundColor: website?.branding?.primaryColor || website?.branding?.colors?.primary || '#ffffff',
+          backgroundColor: website?.branding?.headerBgColor || website?.branding?.primaryColor || '#3B82F6',
         }}
       >
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
@@ -138,33 +145,37 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                 className="h-14 w-auto object-contain"
               />
             )}
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: website?.branding?.primaryColor ? '#fff' : '#1f2937', fontFamily: 'Georgia, serif' }}>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: website?.branding?.headerTextColor || '#ffffff', fontFamily: `'${website?.branding?.fontFamily || 'Inter'}', system-ui, sans-serif` }}>
               {website?.branding?.siteName || 'Website'}
             </h1>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
-            {pages.map((page) => (
-              <button
-                key={page._id}
-                onClick={() => handlePageClick(page)}
-                className={`font-semibold px-6 py-2 rounded-lg transition-all border-2 ${
-                  currentPageSlug === page.slug
-                    ? 'border-white bg-white text-gray-900'
-                    : 'border-white border-opacity-50 text-white hover:border-opacity-100 hover:bg-white hover:bg-opacity-10'
-                }`}
-              >
-                {page.title}
-              </button>
-            ))}
+            {pages.map((page) => {
+              const headerText = website?.branding?.headerTextColor || '#ffffff';
+              const isActive = currentPageSlug === page.slug;
+              return (
+                <button
+                  key={page._id}
+                  onClick={() => handlePageClick(page)}
+                  className={`font-semibold px-6 py-2 rounded-lg transition-all border-2`}
+                  style={isActive
+                    ? { borderColor: headerText, backgroundColor: headerText, color: website?.branding?.headerBgColor || website?.branding?.primaryColor || '#3B82F6' }
+                    : { borderColor: headerText, borderWidth: '2px', color: headerText, backgroundColor: 'transparent', opacity: 0.85 }
+                  }
+                >
+                  {page.title}
+                </button>
+              );
+            })}
           </div>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
-            className="md:hidden text-white p-2"
-            style={{ color: website?.branding?.primaryColor ? '#fff' : '#000' }}
+            className="md:hidden p-2"
+            style={{ color: website?.branding?.headerTextColor || '#ffffff' }}
           >
             {isMobileNavOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -172,7 +183,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
 
         {/* Mobile Navigation Menu */}
         {isMobileNavOpen && (
-          <div className="md:hidden border-t border-white border-opacity-20" style={{ backgroundColor: website?.branding?.primaryColor || '#1f2937' }}>
+          <div className="md:hidden border-t border-white border-opacity-20" style={{ backgroundColor: website?.branding?.headerBgColor || website?.branding?.primaryColor || '#1f2937' }}>
             <div className="px-4 py-3 space-y-2">
               {pages.map((page) => (
                 <button
@@ -203,12 +214,12 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-8 mt-12">
+      <footer style={{ backgroundColor: website?.branding?.footerBgColor || '#111827', color: website?.branding?.footerTextColor || '#ffffff' }} className="py-8 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <h3 className="font-bold mb-2">{website?.branding?.siteName}</h3>
-              <p className="text-gray-400 text-sm">{website?.branding?.tagline}</p>
+              <p className="text-sm opacity-60">{website?.branding?.tagline}</p>
             </div>
             <div>
               <h4 className="font-bold mb-2">Pages</h4>
@@ -217,7 +228,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                   <li key={page._id}>
                     <button
                       onClick={() => handlePageClick(page)}
-                      className="text-gray-400 hover:text-white transition text-sm"
+                      className="opacity-60 hover:opacity-100 transition text-sm"
                     >
                       {page.title}
                     </button>
@@ -227,13 +238,13 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
             </div>
             <div>
               <h4 className="font-bold mb-2">About</h4>
-              <p className="text-gray-400 text-sm">
+              <p className="text-sm opacity-60">
                 Built with Specialistly Branded Page Builder
               </p>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-8 pt-8">
-            <p className="text-gray-400 text-sm text-center">
+          <div className="border-t mt-8 pt-8" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+            <p className="text-sm text-center opacity-60">
               © {new Date().getFullYear()} {website?.branding?.siteName}. All rights reserved.
             </p>
           </div>

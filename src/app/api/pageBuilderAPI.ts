@@ -24,11 +24,21 @@ export interface UpdateWebsiteRequest {
 export interface UpdateBrandingRequest {
   logo?: string;
   favicon?: string;
+  siteName?: string;
+  tagline?: string;
   colors?: {
     primary?: string;
     secondary?: string;
     accent?: string;
   };
+  headerBgColor?: string;
+  headerTextColor?: string;
+  footerBgColor?: string;
+  footerTextColor?: string;
+  accentColor?: string;
+  fontFamily?: string;
+  buttonStyle?: string;
+  buttonRadius?: string;
   typography?: {
     fontFamily?: string;
     fontSize?: string;
