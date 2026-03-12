@@ -2,6 +2,7 @@ import Website from '../models/Website.js';
 import Page from '../models/Page.js';
 import PageSection from '../models/PageSection.js';
 import User from '../models/User.js';
+import Course from '../models/Course.js';
 
 // ============ Website Operations ============
 
@@ -1136,7 +1137,6 @@ export const getPublicWebsite = async (req, res) => {
     }
 
     // Enrich courses sections with actual specialist course data
-    const Course = (await import('../models/Course.js')).default;
     const specialistCourses = await Course.find({
       specialistEmail: website.creatorEmail,
       status: 'published',

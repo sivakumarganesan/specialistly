@@ -1,6 +1,7 @@
 import Page from '../models/Page.js';
 import PageSection from '../models/PageSection.js';
 import Website from '../models/Website.js';
+import Course from '../models/Course.js';
 
 // ============ Page Operations ============
 
@@ -613,17 +614,20 @@ export const getPublicPageViaSubdomain = async (req, res) => {
     const sections = await PageSection.find({ pageId: page._id }).sort({ order: 1 });
 
     // Enrich courses sections with actual course data from the specialist
+    console.log('[Public Page] Enriching sections, creatorEmail:', website.creatorEmail);
     const enrichedSections = await Promise.all(
       sections.map(async (section) => {
         if (section.type === 'courses') {
           try {
-            const Course = (await import('../models/Course.js')).default;
+            console.log('[Public Page] Found courses section, fetching courses for:', website.creatorEmail);
             const specialistCourses = await Course.find({
               specialistEmail: website.creatorEmail,
               status: 'published',
             })
               .select('_id title description thumbnail courseType price currency lessons')
               .sort({ createdAt: -1 });
+
+            console.log('[Public Page] Found', specialistCourses.length, 'published courses');
 
             const sectionObj = section.toObject();
             sectionObj.content = {
