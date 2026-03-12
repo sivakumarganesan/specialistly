@@ -293,6 +293,28 @@ class PageBuilderAPI {
     }
   }
 
+  async getPageById(websiteId: string, pageId: string) {
+    try {
+      const response = await fetch(
+        `${this.baseURL}/websites/${websiteId}/pages/${pageId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch page');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching page:', error);
+      throw error;
+    }
+  }
+
   async updatePage(websiteId: string, pageId: string, data: UpdatePageRequest) {
     try {
       const response = await fetch(

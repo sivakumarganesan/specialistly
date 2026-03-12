@@ -67,7 +67,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
 
     try {
       setLoading(true);
-      const newSection = await pageBuilderAPI.createSection(
+      await pageBuilderAPI.createSection(
         websiteId,
         selectedPage._id,
         {
@@ -79,12 +79,11 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
         }
       );
 
-      // Update local state
-      const updatedPage = {
-        ...selectedPage,
-        sections: [...(selectedPage.sections || []), newSection.data],
-      };
-      selectPage(updatedPage);
+      // Refetch the page with populated sections to get the correct _id
+      const freshPage = await pageBuilderAPI.getPageById(websiteId, selectedPage._id);
+      if (freshPage.data) {
+        selectPage(freshPage.data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add section');
     } finally {

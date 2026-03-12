@@ -953,6 +953,8 @@ export const updateSection = async (req, res) => {
     const userEmail = req.user.email;
     const { type, title, description, content, styling, visibility, order } = req.body;
 
+    console.log('Updating section:', { websiteId, pageId, sectionId });
+
     // Verify website ownership
     const website = await Website.findById(websiteId);
     if (!website) {
@@ -980,18 +982,35 @@ export const updateSection = async (req, res) => {
 
     // Verify section exists and belongs to this page
     const section = await PageSection.findById(sectionId);
-    if (!section || section.pageId.toString() !== pageId) {
+    console.log('Section lookup result:', { found: !!section, sectionId, pageId, section_pageId: section?.pageId?.toString() });
+    
+    if (!section) {
+      console.log('Section not found in database:', sectionId);
       return res.status(404).json({
         success: false,
         message: 'Section not found',
       });
     }
 
-    // Update fields
+    if (section.pageId.toString() !== pageId) {
+      console.log('Section belongs to different page:', { section_pageId: section.pageId.toString(), expected_pageId: pageId });
+      return res.status(404).json({
+        success: false,
+        message: 'Section not found',
+      });
+    }
+
+    // Update fields - preserve existing content and merge new content
     if (type) section.type = type;
     if (title !== undefined) section.title = title;
     if (description !== undefined) section.description = description;
-    if (content) section.content = content;
+    if (content) {
+      // Merge content instead of replacing it completely
+      section.content = {
+        ...section.content,
+        ...content,
+      };
+    }
     if (styling) section.styling = styling;
     if (visibility) section.visibility = visibility;
     if (order !== undefined) section.order = order;
