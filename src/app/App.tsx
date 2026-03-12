@@ -27,6 +27,7 @@ import { Messages } from "@/app/components/Messages";
 import { CoursesBrowse } from "@/app/components/CoursesBrowse";
 import { MyLearning } from "@/app/components/MyLearning";
 import { CourseDetail } from "@/app/components/CourseDetail";
+import { MySite } from "@/app/components/MySite";
 import PaymentModal from "@/app/components/PaymentModal";
 
 type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
@@ -260,6 +261,7 @@ export function AppContent() {
           }} />
         )}
         {currentPage === "page-builder" && <PageBuilder />}
+        {currentPage === "my-site" && userType === "specialist" && <MySite />}
         {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} />}
         {currentPage === "courses" && userType === "specialist" && <Courses onUpdateSearchableItems={updateCourseItems} />}
         {currentPage === "browse-courses" && userType === "customer" && <CoursesBrowse />}
