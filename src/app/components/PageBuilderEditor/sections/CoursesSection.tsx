@@ -267,8 +267,17 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
   const courses = (section.content?.courses || []) as Course[];
   const layout = section.content?.layout || 'grid';
 
-  // Fetch specialist's courses from API
+  // Use backend-enriched courses (from public page) if available
+  const backendCourses = section.content?.fetchedCourses || [];
+
+  // Fetch specialist's courses from API (only in editor, when logged in)
   React.useEffect(() => {
+    // If backend already provided courses (public page), skip fetch
+    if (backendCourses.length > 0) {
+      setIsLoading(false);
+      return;
+    }
+
     const fetchCourses = async () => {
       try {
         const authToken = localStorage.getItem('authToken');
@@ -298,10 +307,10 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
     };
 
     fetchCourses();
-  }, []);
+  }, [backendCourses.length]);
 
-  // Use fetched courses if no manual courses, otherwise use manual courses
-  const displayCourses = courses.length > 0 ? courses : fetchedCourses;
+  // Priority: manual courses > backend-enriched courses > fetched courses
+  const displayCourses = courses.length > 0 ? courses : backendCourses.length > 0 ? backendCourses : fetchedCourses;
 
   const gridClasses =
     layout === 'grid'

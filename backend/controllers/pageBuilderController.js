@@ -1135,11 +1135,34 @@ export const getPublicWebsite = async (req, res) => {
       });
     }
 
+    // Enrich courses sections with actual specialist course data
+    const Course = (await import('../models/Course.js')).default;
+    const specialistCourses = await Course.find({
+      specialistEmail: website.creatorEmail,
+      status: 'published',
+    })
+      .select('_id title description thumbnail courseType price currency lessons')
+      .sort({ createdAt: -1 });
+
+    const enrichedPages = pages.map((page) => {
+      const pageObj = page.toObject();
+      pageObj.sections = pageObj.sections.map((section) => {
+        if (section.type === 'courses') {
+          section.content = {
+            ...section.content,
+            fetchedCourses: specialistCourses,
+          };
+        }
+        return section;
+      });
+      return pageObj;
+    });
+
     res.json({
       success: true,
       data: {
         website,
-        pages,
+        pages: enrichedPages,
       },
       message: 'Website and pages fetched successfully',
     });
