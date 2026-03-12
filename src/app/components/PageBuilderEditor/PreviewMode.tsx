@@ -76,7 +76,20 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {(section.content?.testimonials || []).map((testimonial: any) => (
                 <div key={testimonial.id} className="bg-gray-50 p-6 rounded-lg">
-                  <div className="flex items-center mb-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    {testimonial.image ? (
+                      <img
+                        src={testimonial.image}
+                        alt={testimonial.name}
+                        className="w-12 h-12 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                        <span className="text-blue-600 font-semibold text-lg">
+                          {testimonial.name?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
+                      </div>
+                    )}
                     <div>
                       <p className="font-semibold">{testimonial.name}</p>
                       <p className="text-sm text-gray-600">{testimonial.title}</p>

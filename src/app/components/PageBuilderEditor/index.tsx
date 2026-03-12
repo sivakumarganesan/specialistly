@@ -1559,6 +1559,29 @@ const PropertiesPanel: React.FC<{
                     placeholder="Title/Company"
                     className="mb-2 text-xs"
                   />
+                  <Input
+                    type="text"
+                    value={testimonial.image || ''}
+                    onChange={(e) => {
+                      const testimonials = content.testimonials.map((t: any) =>
+                        t.id === testimonial.id
+                          ? { ...t, image: e.target.value }
+                          : t
+                      );
+                      setContent({ ...content, testimonials });
+                    }}
+                    placeholder="Photo URL (https://...)"
+                    className="mb-2 text-xs"
+                  />
+                  {testimonial.image && (
+                    <div className="mb-2">
+                      <img
+                        src={testimonial.image}
+                        alt={testimonial.name}
+                        className="w-10 h-10 rounded-full object-cover border border-gray-300"
+                      />
+                    </div>
+                  )}
                   <Textarea
                     value={testimonial.text}
                     onChange={(e) => {
