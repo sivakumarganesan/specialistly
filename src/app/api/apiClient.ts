@@ -311,6 +311,9 @@ export const brandingAPI = {
   addSocialLink: (email: string, data: any) => apiCall(`/branding/${email}/social`, "POST", data),
   removeSocialLink: (email: string, platform: string) => 
     apiCall(`/branding/${email}/social/${platform}`, "DELETE"),
+  
+  // Content Selection (Courses & Services)
+  updateContent: (email: string, data: any) => apiCall(`/branding/${email}/content`, "PUT", data),
 };
 
 // Auth API calls

@@ -884,17 +884,14 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
     
     try {
       setIsSaving(true);
-      const response = await brandingAPI.updateBranding(user.email, {
-        services: {
-          title: "My Services",
-          displayMode: "grid",
-          enabled: true
-        }
+      const response = await brandingAPI.updateContent(user.email, {
+        selectedCourses,
+        selectedServices
       });
       if (response && response.data) {
         setWebsiteData(response.data);
-        setSuccessMessage("Content selection saved successfully!");
-        setTimeout(() => setSuccessMessage(""), 3000);
+        setSuccessMessage("Content selection saved successfully! Your courses and services are now published on your public site.");
+        setTimeout(() => setSuccessMessage(""), 5000);
       }
     } catch (error) {
       console.error("Failed to save content:", error);
