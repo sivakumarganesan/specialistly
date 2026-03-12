@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Page, PageSection } from '@/app/hooks/usePageBuilder';
 import { HeroSectionPreview } from './PageBuilderEditor/sections/HeroSection';
 import { ServicesSectionPreview } from './PageBuilderEditor/sections/ServicesSection';
+import { CoursesSectionPreview } from './PageBuilderEditor/sections/CoursesSection';
 import { AboutSectionPreview } from './PageBuilderEditor/sections/AboutSection';
 
 const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
@@ -12,6 +13,8 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       return <AboutSectionPreview section={section} />;
     case 'services':
       return <ServicesSectionPreview section={section} />;
+    case 'courses':
+      return <CoursesSectionPreview section={section} />;
     case 'cta':
       return (
         <div
