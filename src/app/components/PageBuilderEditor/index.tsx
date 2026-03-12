@@ -1559,29 +1559,82 @@ const PropertiesPanel: React.FC<{
                     placeholder="Title/Company"
                     className="mb-2 text-xs"
                   />
-                  <Input
-                    type="text"
-                    value={testimonial.image || ''}
-                    onChange={(e) => {
-                      const testimonials = content.testimonials.map((t: any) =>
-                        t.id === testimonial.id
-                          ? { ...t, image: e.target.value }
-                          : t
-                      );
-                      setContent({ ...content, testimonials });
-                    }}
-                    placeholder="Photo URL (https://...)"
-                    className="mb-2 text-xs"
-                  />
-                  {testimonial.image && (
-                    <div className="mb-2">
-                      <img
-                        src={testimonial.image}
-                        alt={testimonial.name}
-                        className="w-10 h-10 rounded-full object-cover border border-gray-300"
-                      />
-                    </div>
-                  )}
+                  <div className="mb-2">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Client Photo</label>
+                    {testimonial.image ? (
+                      <div className="flex items-center gap-2 mb-1">
+                        <img
+                          src={testimonial.image}
+                          alt={testimonial.name}
+                          className="w-10 h-10 rounded-full object-cover border border-gray-300"
+                        />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const testimonials = content.testimonials.map((t: any) =>
+                              t.id === testimonial.id ? { ...t, image: '' } : t
+                            );
+                            setContent({ ...content, testimonials });
+                          }}
+                          className="text-xs text-red-600 h-6 px-2"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs flex-1"
+                          onClick={() => {
+                            const input = document.createElement('input');
+                            input.type = 'file';
+                            input.accept = 'image/*';
+                            input.onchange = async (e) => {
+                              const file = (e.target as HTMLInputElement).files?.[0];
+                              if (!file) return;
+                              if (file.size > 5 * 1024 * 1024) {
+                                alert('File size must be less than 5MB');
+                                return;
+                              }
+                              try {
+                                const formData = new FormData();
+                                formData.append('file', file);
+                                const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+                                const authToken = localStorage.getItem('authToken');
+                                if (!authToken) return;
+                                const uploadResponse = await fetch(
+                                  `${apiUrl}/page-builder/websites/${section.websiteId}/media/upload`,
+                                  {
+                                    method: 'POST',
+                                    headers: { 'Authorization': `Bearer ${authToken}` },
+                                    body: formData,
+                                  }
+                                );
+                                if (!uploadResponse.ok) throw new Error('Upload failed');
+                                const uploadData = await uploadResponse.json();
+                                const imageUrl = uploadData.data?.url || uploadData.data?.media?.url;
+                                if (imageUrl) {
+                                  const testimonials = content.testimonials.map((t: any) =>
+                                    t.id === testimonial.id ? { ...t, image: imageUrl } : t
+                                  );
+                                  setContent({ ...content, testimonials });
+                                }
+                              } catch (err) {
+                                console.error('Photo upload error:', err);
+                                alert('Failed to upload photo. Please try again.');
+                              }
+                            };
+                            input.click();
+                          }}
+                        >
+                          Upload Photo
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                   <Textarea
                     value={testimonial.text}
                     onChange={(e) => {
