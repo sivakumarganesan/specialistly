@@ -526,6 +526,33 @@ export const getPublicPage = async (req, res) => {
     // Get all sections for the page
     const sections = await PageSection.find({ pageId: page._id }).sort({ order: 1 });
 
+    // Enrich courses sections with actual course data from the specialist
+    const enrichedSections = await Promise.all(
+      sections.map(async (section) => {
+        if (section.type === 'courses') {
+          try {
+            const specialistCourses = await Course.find({
+              specialistEmail: website.creatorEmail,
+              status: 'published',
+            })
+              .select('_id title description thumbnail courseType price currency lessons')
+              .sort({ createdAt: -1 });
+
+            const sectionObj = section.toObject();
+            sectionObj.content = {
+              ...sectionObj.content,
+              fetchedCourses: specialistCourses,
+            };
+            return sectionObj;
+          } catch (err) {
+            console.error('Error enriching courses section:', err);
+            return section;
+          }
+        }
+        return section;
+      })
+    );
+
     res.json({
       success: true,
       data: {
@@ -540,7 +567,7 @@ export const getPublicPage = async (req, res) => {
           title: page.title,
           slug: page.slug,
         },
-        sections,
+        sections: enrichedSections,
       },
       message: 'Public page retrieved successfully',
     });
