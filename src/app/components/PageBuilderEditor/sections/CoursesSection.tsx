@@ -4,7 +4,8 @@ import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Plus, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, ShoppingCart } from 'lucide-react';
+import { PublicCourseCheckout } from '@/app/components/PublicCourseCheckout';
 
 interface Course {
   id: string;
@@ -264,6 +265,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
 }) => {
   const [fetchedCourses, setFetchedCourses] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [checkoutCourse, setCheckoutCourse] = React.useState<any | null>(null);
   const courses = (section.content?.courses || []) as Course[];
   const layout = section.content?.layout || 'grid';
 
@@ -386,13 +388,45 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                   </div>
                   {(course.price || course.coursePrice) && (
                     <div className="font-bold text-lg text-indigo-600">
-                      ${course.price || course.coursePrice}
+                      {course.currency === 'INR' ? '₹' : '$'}{course.price || course.coursePrice}
                     </div>
+                  )}
+                  {!course.price && !course.coursePrice && (
+                    <div className="font-bold text-lg text-green-600">Free</div>
+                  )}
+                  {/* Buy/Enroll button - only on public pages (when backend courses are present) */}
+                  {backendCourses.length > 0 && (
+                    <button
+                      onClick={() => setCheckoutCourse(course)}
+                      className="mt-3 w-full py-2 px-4 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
+                        ? 'Enroll Free'
+                        : 'Buy Now'}
+                    </button>
                   )}
                 </div>
               </div>
             ))}
           </div>
+        )}
+
+        {/* Checkout Modal */}
+        {checkoutCourse && (
+          <PublicCourseCheckout
+            course={{
+              _id: checkoutCourse._id || checkoutCourse.id,
+              title: checkoutCourse.title || checkoutCourse.name,
+              description: checkoutCourse.description || checkoutCourse.courseDescription,
+              price: Number(checkoutCourse.price || checkoutCourse.coursePrice || 0),
+              currency: checkoutCourse.currency || 'USD',
+              thumbnail: checkoutCourse.thumbnail || checkoutCourse.courseImage,
+              specialistEmail: checkoutCourse.specialistEmail,
+            }}
+            isOpen={!!checkoutCourse}
+            onClose={() => setCheckoutCourse(null)}
+          />
         )}
       </div>
     </div>
