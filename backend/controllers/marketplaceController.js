@@ -71,7 +71,9 @@ export const createMarketplacePaymentIntent = async (req, res) => {
     let paymentGateway = 'stripe'; // Default to Stripe
     
     if (courseCurrency === 'INR') {
-      paymentGateway = 'razorpay';
+      // Use Razorpay only if it's a domestic account that supports INR
+      // International Razorpay accounts can't process INR, so use Stripe (which supports INR)
+      paymentGateway = razorpayService.isInternationalAccount() ? 'stripe' : 'razorpay';
     } else if (courseCurrency === 'USD') {
       paymentGateway = 'stripe';
     } else {
