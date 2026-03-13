@@ -338,7 +338,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
               <Button
                 variant={mode === 'edit' ? 'default' : 'ghost'}
                 onClick={() => setMode('edit')}
-                className={mode === 'edit' ? 'bg-white text-blue-600 hover:bg-white' : 'text-white hover:bg-white hover:bg-opacity-10'}
+                className={mode === 'edit' ? 'bg-white text-blue-600 hover:bg-white' : 'text-blue-100 hover:text-white hover:bg-white/10'}
                 size="sm"
               >
                 ✏️ Edit
@@ -346,7 +346,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
               <Button
                 variant={mode === 'preview' ? 'default' : 'ghost'}
                 onClick={() => setMode('preview')}
-                className={mode === 'preview' ? 'bg-white text-blue-600 hover:bg-white' : 'text-white hover:bg-white hover:bg-opacity-10'}
+                className={mode === 'preview' ? 'bg-white text-blue-600 hover:bg-white' : 'text-blue-100 hover:text-white hover:bg-white/10'}
                 size="sm"
               >
                 👁️ Preview
@@ -354,7 +354,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
               <Button
                 variant={mode === 'branding' ? 'default' : 'ghost'}
                 onClick={() => setMode('branding')}
-                className={mode === 'branding' ? 'bg-white text-blue-600 hover:bg-white' : 'text-white hover:bg-white hover:bg-opacity-10'}
+                className={mode === 'branding' ? 'bg-white text-blue-600 hover:bg-white' : 'text-blue-100 hover:text-white hover:bg-white/10'}
                 size="sm"
               >
                 🎨 Branding
@@ -558,7 +558,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
             <PreviewMode page={selectedPage} website={website} />
           )}
           {mode === 'branding' && (
-            <BrandingPanel website={website} />
+            <BrandingPanel website={website} onCancel={() => setMode('edit')} />
           )}
         </main>
 
@@ -605,7 +605,7 @@ const PreviewMode: React.FC<{ page: Page; website: Website | null }> = ({
   </div>
 );
 
-const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
+const BrandingPanel: React.FC<{ website: Website | null; onCancel?: () => void }> = ({ website, onCancel }) => {
   const [logo, setLogo] = useState<string | null>(website?.branding?.logo || null);
   const [primaryColor, setPrimaryColor] = useState(website?.branding?.colors?.primary || '#3B82F6');
   const [secondaryColor, setSecondaryColor] = useState(website?.branding?.colors?.secondary || '#ec4899');
@@ -1056,7 +1056,7 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
               </div>
             </div>
 
-            {/* Save Button */}
+            {/* Save & Cancel Buttons */}
             <div className="border-t border-slate-200 pt-8 flex gap-4">
               <Button
                 onClick={handleSaveBranding}
@@ -1075,7 +1075,15 @@ const BrandingPanel: React.FC<{ website: Website | null }> = ({ website }) => {
                   </>
                 )}
               </Button>
-              <p className="text-xs text-slate-500 flex items-center">All changes saved automatically</p>
+              {onCancel && (
+                <Button
+                  onClick={onCancel}
+                  variant="outline"
+                  className="gap-2 px-8 py-2"
+                >
+                  Cancel
+                </Button>
+              )}
             </div>
           </div>
         </Card>
