@@ -6,7 +6,7 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
-import { X, CreditCard, CheckCircle, Loader, AlertCircle } from 'lucide-react';
+import { X, CreditCard, CheckCircle, Loader, AlertCircle, LogIn, UserPlus } from 'lucide-react';
 import { API_BASE_URL } from '@/app/api/apiClient';
 import { RazorpayPaymentForm } from './RazorpayPaymentForm';
 
@@ -42,8 +42,15 @@ interface PublicCourseCheckoutProps {
   onClose: () => void;
 }
 
-type CheckoutStep = 'details' | 'payment' | 'success';
+type CheckoutStep = 'account' | 'payment' | 'success';
 type PaymentGateway = 'stripe' | 'razorpay';
+type AuthTab = 'login' | 'signup';
+
+interface AuthUser {
+  id: string;
+  name: string;
+  email: string;
+}
 
 interface RazorpayData {
   orderId: string;
@@ -52,15 +59,26 @@ interface RazorpayData {
   currency: string;
 }
 
+/** Build headers for API calls (includes auth token if available) */
+function buildHeaders(authToken: string | null): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
+  }
+  return headers;
+}
+
 /** Inner form that uses Stripe hooks (must be inside <Elements>) */
 function StripeCardForm({
   clientSecret,
   customerEmail,
+  authToken,
   onSuccess,
   onError,
 }: {
   clientSecret: string;
   customerEmail: string;
+  authToken: string | null;
   onSuccess: () => void;
   onError: (msg: string) => void;
 }) {
@@ -97,10 +115,9 @@ function StripeCardForm({
       }
 
       if (paymentIntent?.status === 'succeeded') {
-        // Confirm on backend (public endpoint)
         const confirmRes = await fetch(`${API_BASE_URL}/public/course-purchase/confirm-payment`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: buildHeaders(authToken),
           body: JSON.stringify({
             paymentIntentId: paymentIntent.id,
             customerEmail,
@@ -170,44 +187,79 @@ function StripeCardForm({
 }
 
 export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCheckoutProps) {
-  const [step, setStep] = useState<CheckoutStep>('details');
-  const [customerName, setCustomerName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
+  const [step, setStep] = useState<CheckoutStep>('account');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentGateway, setPaymentGateway] = useState<PaymentGateway>('stripe');
   const [razorpayData, setRazorpayData] = useState<RazorpayData | null>(null);
 
-  // Reset state when modal opens/closes
+  // Auth state
+  const [authTab, setAuthTab] = useState<AuthTab>('login');
+  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+
+  // Login fields
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Signup fields
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirm, setSignupConfirm] = useState('');
+
+  // Check for existing session on mount
+  useEffect(() => {
+    if (isOpen) {
+      const savedToken = localStorage.getItem('authToken');
+      const savedUser = localStorage.getItem('user');
+      if (savedToken && savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          setAuthToken(savedToken);
+          setAuthUser({ id: user.id, name: user.name, email: user.email });
+        } catch {
+          // Invalid saved data, ignore
+        }
+      }
+    }
+  }, [isOpen]);
+
+  // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setStep('details');
-      setCustomerName('');
-      setCustomerEmail('');
+      setStep('account');
       setError(null);
       setClientSecret(null);
       setRazorpayData(null);
       setLoading(false);
+      setLoginEmail('');
+      setLoginPassword('');
+      setSignupName('');
+      setSignupEmail('');
+      setSignupPassword('');
+      setSignupConfirm('');
+      setAuthTab('login');
     }
   }, [isOpen]);
 
   const isFree = !course.price || course.price === 0;
   const currencySymbol = course.currency === 'INR' ? '₹' : '$';
 
-  const handleDetailsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  /** Call create-intent and proceed to payment (or success for free) */
+  const initiatePayment = async (name: string, email: string, token: string | null) => {
     setError(null);
     setLoading(true);
 
     try {
       const res = await fetch(`${API_BASE_URL}/public/course-purchase/create-intent`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: buildHeaders(token),
         body: JSON.stringify({
           courseId: course._id,
-          customerEmail,
-          customerName,
+          customerEmail: email,
+          customerName: name,
         }),
       });
       const data = await res.json();
@@ -249,6 +301,138 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
     }
   };
 
+  /** Handle login */
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Login failed');
+        setLoading(false);
+        return;
+      }
+
+      // Store auth data
+      const user: AuthUser = { id: data.user.id, name: data.user.name, email: data.user.email };
+      setAuthToken(data.token);
+      setAuthUser(user);
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('userType', data.userType || 'customer');
+
+      // Proceed to payment
+      await initiatePayment(user.name, user.email, data.token);
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+      setLoading(false);
+    }
+  };
+
+  /** Handle signup */
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (signupPassword !== signupConfirm) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (signupPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: signupName,
+          email: signupEmail,
+          password: signupPassword,
+          confirmPassword: signupConfirm,
+          isSpecialist: false,
+          userType: 'customer',
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Signup failed');
+        setLoading(false);
+        return;
+      }
+
+      // Store auth data
+      const user: AuthUser = { id: data.user.id, name: data.user.name, email: data.user.email };
+      setAuthToken(data.token);
+      setAuthUser(user);
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('userType', data.userType || 'customer');
+
+      // Proceed to payment
+      await initiatePayment(user.name, user.email, data.token);
+    } catch (err: any) {
+      setError(err.message || 'Signup failed');
+      setLoading(false);
+    }
+  };
+
+  /** Continue as already-logged-in user */
+  const handleContinueLoggedIn = async () => {
+    if (!authUser) return;
+    await initiatePayment(authUser.name, authUser.email, authToken);
+  };
+
+  /** Switch to a different account */
+  const handleSwitchAccount = () => {
+    setAuthToken(null);
+    setAuthUser(null);
+    setAuthTab('login');
+    setError(null);
+  };
+
+  /** Handle Razorpay payment success — confirm on backend, then show success */
+  const handleRazorpaySuccess = async (paymentDetails: any) => {
+    try {
+      const confirmRes = await fetch(`${API_BASE_URL}/public/course-purchase/confirm-razorpay`, {
+        method: 'POST',
+        headers: buildHeaders(authToken),
+        body: JSON.stringify({
+          razorpayOrderId: paymentDetails.orderId,
+          razorpayPaymentId: paymentDetails.paymentId,
+          razorpaySignature: paymentDetails.signature,
+        }),
+      });
+      const confirmData = await confirmRes.json();
+      if (confirmData.success) {
+        setStep('success');
+      } else {
+        setError(confirmData.message || 'Enrollment confirmation failed. Your payment was received — please contact support.');
+      }
+    } catch {
+      setError('Enrollment confirmation failed. Your payment was received — please contact support.');
+    }
+  };
+
+  /** Navigate to My Learning (main app) */
+  const goToMyLearning = () => {
+    window.location.href = '/';
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -257,7 +441,11 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
         {/* Header */}
         <div className="flex justify-between items-center p-5 border-b">
           <h2 className="text-lg font-bold text-gray-900">
-            {step === 'success' ? 'Enrollment Confirmed!' : isFree ? 'Enroll in Course' : 'Purchase Course'}
+            {step === 'success'
+              ? 'Enrollment Confirmed!'
+              : step === 'account'
+                ? (isFree ? 'Enroll in Course' : 'Purchase Course')
+                : 'Complete Payment'}
           </h2>
           <button
             onClick={onClose}
@@ -281,58 +469,226 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
             </div>
           )}
 
-          {/* Step 1: Customer Details */}
-          {step === 'details' && (
-            <form onSubmit={handleDetailsSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  placeholder="Enter your name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  placeholder="Enter your email"
-                />
-              </div>
+          {/* Step 1: Account — Login or Sign Up */}
+          {step === 'account' && (
+            <>
+              {/* Already logged in */}
+              {authUser ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                    <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
+                      {authUser.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{authUser.name}</p>
+                      <p className="text-sm text-gray-500">{authUser.email}</p>
+                    </div>
+                  </div>
 
-              {error && (
-                <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                  <span>{error}</span>
+                  {error && (
+                    <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                      <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleContinueLoggedIn}
+                    disabled={loading}
+                    className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader className="h-4 w-4 animate-spin" />
+                        {isFree ? 'Enrolling...' : 'Initializing...'}
+                      </>
+                    ) : (
+                      isFree ? 'Enroll Now' : 'Continue to Payment'
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleSwitchAccount}
+                    className="w-full text-center text-sm text-gray-500 hover:text-gray-700"
+                  >
+                    Use a different account
+                  </button>
+                </div>
+              ) : (
+                /* Not logged in — show login/signup tabs */
+                <div className="space-y-4">
+                  {/* Tabs */}
+                  <div className="flex border-b">
+                    <button
+                      onClick={() => { setAuthTab('login'); setError(null); }}
+                      className={`flex-1 py-2.5 text-sm font-medium text-center border-b-2 transition-colors ${
+                        authTab === 'login'
+                          ? 'border-indigo-600 text-indigo-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <LogIn className="h-4 w-4 inline mr-1.5 -mt-0.5" />
+                      Log In
+                    </button>
+                    <button
+                      onClick={() => { setAuthTab('signup'); setError(null); }}
+                      className={`flex-1 py-2.5 text-sm font-medium text-center border-b-2 transition-colors ${
+                        authTab === 'signup'
+                          ? 'border-indigo-600 text-indigo-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700'
+                      }`}
+                    >
+                      <UserPlus className="h-4 w-4 inline mr-1.5 -mt-0.5" />
+                      Sign Up
+                    </button>
+                  </div>
+
+                  {/* Login Form */}
+                  {authTab === 'login' && (
+                    <form onSubmit={handleLogin} className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          required
+                          value={loginEmail}
+                          onChange={(e) => setLoginEmail(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          placeholder="Enter your email"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input
+                          type="password"
+                          required
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          placeholder="Enter your password"
+                        />
+                      </div>
+
+                      {error && (
+                        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                          <span>{error}</span>
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader className="h-4 w-4 animate-spin" />
+                            {isFree ? 'Logging in & Enrolling...' : 'Logging in...'}
+                          </>
+                        ) : (
+                          <>
+                            <LogIn className="h-4 w-4" />
+                            {isFree ? 'Log In & Enroll' : 'Log In & Continue'}
+                          </>
+                        )}
+                      </button>
+
+                      <p className="text-center text-sm text-gray-500">
+                        Don&apos;t have an account?{' '}
+                        <button type="button" onClick={() => { setAuthTab('signup'); setError(null); }} className="text-indigo-600 font-medium hover:underline">
+                          Sign up
+                        </button>
+                      </p>
+                    </form>
+                  )}
+
+                  {/* Signup Form */}
+                  {authTab === 'signup' && (
+                    <form onSubmit={handleSignup} className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input
+                          type="text"
+                          required
+                          value={signupName}
+                          onChange={(e) => setSignupName(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          placeholder="Enter your name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                          type="email"
+                          required
+                          value={signupEmail}
+                          onChange={(e) => setSignupEmail(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          placeholder="Enter your email"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                        <input
+                          type="password"
+                          required
+                          minLength={6}
+                          value={signupPassword}
+                          onChange={(e) => setSignupPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          placeholder="Create a password (min 6 chars)"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+                        <input
+                          type="password"
+                          required
+                          minLength={6}
+                          value={signupConfirm}
+                          onChange={(e) => setSignupConfirm(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          placeholder="Confirm your password"
+                        />
+                      </div>
+
+                      {error && (
+                        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                          <span>{error}</span>
+                        </div>
+                      )}
+
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader className="h-4 w-4 animate-spin" />
+                            {isFree ? 'Creating account & Enrolling...' : 'Creating account...'}
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="h-4 w-4" />
+                            {isFree ? 'Sign Up & Enroll' : 'Sign Up & Continue'}
+                          </>
+                        )}
+                      </button>
+
+                      <p className="text-center text-sm text-gray-500">
+                        Already have an account?{' '}
+                        <button type="button" onClick={() => { setAuthTab('login'); setError(null); }} className="text-indigo-600 font-medium hover:underline">
+                          Log in
+                        </button>
+                      </p>
+                    </form>
+                  )}
                 </div>
               )}
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <Loader className="h-4 w-4 animate-spin" />
-                    {isFree ? 'Enrolling...' : 'Initializing...'}
-                  </>
-                ) : (
-                  isFree ? 'Enroll Now' : 'Continue to Payment'
-                )}
-              </button>
-            </form>
+            </>
           )}
 
           {/* Step 2: Payment - Stripe */}
@@ -352,21 +708,29 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
               >
                 <StripeCardForm
                   clientSecret={clientSecret}
-                  customerEmail={customerEmail}
+                  customerEmail={authUser?.email || ''}
+                  authToken={authToken}
                   onSuccess={() => setStep('success')}
                   onError={(msg) => setError(msg)}
                 />
               </Elements>
 
+              {error && (
+                <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
               <button
                 onClick={() => {
-                  setStep('details');
+                  setStep('account');
                   setClientSecret(null);
                   setError(null);
                 }}
                 className="w-full text-center text-sm text-gray-500 hover:text-gray-700"
               >
-                &larr; Back to details
+                &larr; Back
               </button>
             </div>
           )}
@@ -379,9 +743,9 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                 keyId={razorpayData.keyId}
                 amount={razorpayData.amount}
                 currency={razorpayData.currency}
-                customerEmail={customerEmail}
-                customerName={customerName}
-                onSuccess={() => setStep('success')}
+                customerEmail={authUser?.email || ''}
+                customerName={authUser?.name}
+                onSuccess={handleRazorpaySuccess}
                 onError={(msg) => setError(msg)}
               />
 
@@ -394,13 +758,13 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
 
               <button
                 onClick={() => {
-                  setStep('details');
+                  setStep('account');
                   setRazorpayData(null);
                   setError(null);
                 }}
                 className="w-full text-center text-sm text-gray-500 hover:text-gray-700"
               >
-                &larr; Back to details
+                &larr; Back
               </button>
             </div>
           )}
@@ -415,15 +779,31 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
               <p className="text-gray-600 mb-2">
                 You are now enrolled in <strong>{course.title}</strong>.
               </p>
-              <p className="text-sm text-gray-500 mb-6">
-                A confirmation has been sent to <strong>{customerEmail}</strong>.
-              </p>
-              <button
-                onClick={onClose}
-                className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-              >
-                Done
-              </button>
+              {authUser && (
+                <p className="text-sm text-gray-500 mb-4">
+                  Logged in as <strong>{authUser.email}</strong>
+                </p>
+              )}
+
+              <div className="space-y-3">
+                {authUser && (
+                  <button
+                    onClick={goToMyLearning}
+                    className="w-full px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                  >
+                    Go to My Learning
+                  </button>
+                )}
+                <button
+                  onClick={onClose}
+                  className={authUser
+                    ? "w-full px-6 py-2 text-gray-600 hover:text-gray-800 text-sm"
+                    : "w-full px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                  }
+                >
+                  {authUser ? 'Continue Browsing' : 'Done'}
+                </button>
+              </div>
             </div>
           )}
         </div>

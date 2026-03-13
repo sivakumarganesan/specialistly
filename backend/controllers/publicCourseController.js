@@ -54,15 +54,15 @@ export const createPublicPaymentIntent = async (req, res) => {
       });
     }
 
-    // Use email as guest customer ID
-    const customerId = `guest_${customerEmail}`;
+    // Use real userId if authenticated, otherwise guest prefix
+    const customerId = req.user?.userId || `guest_${customerEmail}`;
+    const isAuthenticated = !!req.user?.userId;
 
-    // Check duplicate enrollment
-    const existingEnrollment = await SelfPacedEnrollment.findOne({
-      customerEmail,
-      courseId,
-      status: { $in: ['active', 'completed'] },
-    });
+    // Check duplicate enrollment (by userId if authenticated, or by email for guests)
+    const enrollmentQuery = isAuthenticated
+      ? { $or: [{ customerId, courseId }, { customerEmail, courseId }], status: { $in: ['active', 'completed'] } }
+      : { customerEmail, courseId, status: { $in: ['active', 'completed'] } };
+    const existingEnrollment = await SelfPacedEnrollment.findOne(enrollmentQuery);
 
     if (existingEnrollment) {
       return res.status(400).json({
@@ -372,6 +372,96 @@ export const confirmPublicPayment = async (req, res) => {
     }
   } catch (error) {
     console.error('Error confirming public payment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Confirm Razorpay public course payment and create enrollment
+ * POST /api/public/course-purchase/confirm-razorpay
+ */
+export const confirmRazorpayPublicPayment = async (req, res) => {
+  try {
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+    if (!razorpayOrderId || !razorpayPaymentId) {
+      return res.status(400).json({
+        success: false,
+        message: 'razorpayOrderId and razorpayPaymentId are required',
+      });
+    }
+
+    // Find commission record
+    const commission = await MarketplaceCommission.findOne({ razorpayOrderId });
+
+    if (!commission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Payment record not found',
+      });
+    }
+
+    // Verify signature if available
+    if (razorpaySignature) {
+      const verification = await razorpayService.verifyPaymentSignature(
+        razorpayOrderId,
+        razorpayPaymentId,
+        razorpaySignature,
+      );
+
+      if (!verification.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment signature verification failed',
+        });
+      }
+    }
+
+    // Update commission
+    commission.status = 'completed';
+    commission.paymentStatus = 'succeeded';
+    commission.paymentCompletedAt = new Date();
+    commission.razorpayPaymentId = razorpayPaymentId;
+    await commission.save();
+
+    // Create or find enrollment
+    let enrollment = await SelfPacedEnrollment.findOne({
+      customerEmail: commission.customerEmail,
+      courseId: commission.serviceId,
+    });
+
+    if (!enrollment) {
+      enrollment = await SelfPacedEnrollment.create({
+        customerId: commission.customerId,
+        customerEmail: commission.customerEmail,
+        specialistId: commission.specialistId,
+        specialistEmail: commission.specialistEmail,
+        courseId: commission.serviceId,
+        paymentStatus: 'completed',
+        status: 'active',
+        paymentGateway: 'razorpay',
+        razorpayOrderId,
+        razorpayPaymentId,
+      });
+    } else if (enrollment.status !== 'active') {
+      enrollment.paymentStatus = 'completed';
+      enrollment.status = 'active';
+      enrollment.razorpayOrderId = razorpayOrderId;
+      enrollment.razorpayPaymentId = razorpayPaymentId;
+      await enrollment.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Payment confirmed and enrollment created',
+      enrollmentId: enrollment._id,
+      status: 'succeeded',
+    });
+  } catch (error) {
+    console.error('Error confirming Razorpay public payment:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error',
