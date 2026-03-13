@@ -26,14 +26,16 @@ export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) 
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const tabs = [
+  const allTabs = [
     { id: "profile" as SettingsTab, label: "User Profile", icon: User },
-    { id: "payment" as SettingsTab, label: "Payment Settings", icon: CreditCard },
-    { id: "availability" as SettingsTab, label: "Manage Availability", icon: Clock },
-    { id: "slots" as SettingsTab, label: "Allotment Slots", icon: Clock },
-    { id: "subscriptions" as SettingsTab, label: "My Subscriptions", icon: Package },
+    { id: "payment" as SettingsTab, label: "Payment Settings", icon: CreditCard, specialistOnly: true },
+    { id: "availability" as SettingsTab, label: "Manage Availability", icon: Clock, specialistOnly: true },
+    { id: "slots" as SettingsTab, label: "Allotment Slots", icon: Clock, specialistOnly: true },
+    { id: "subscriptions" as SettingsTab, label: "My Subscriptions", icon: Package, specialistOnly: true },
     { id: "danger" as SettingsTab, label: "Danger Zone", icon: AlertCircle },
   ];
+
+  const tabs = allTabs.filter(tab => !tab.specialistOnly || userType === "specialist");
 
   const handleDeleteSuccess = () => {
     // Redirect to home page
