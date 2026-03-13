@@ -4,6 +4,7 @@ import MarketplaceCommission from '../models/MarketplaceCommission.js';
 import CreatorProfile from '../models/CreatorProfile.js';
 import Course from '../models/Course.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
+import mongoose from 'mongoose';
 
 /**
  * Create payment intent for public (guest) course purchase
@@ -33,6 +34,14 @@ export const createPublicPaymentIntent = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Invalid email address',
+      });
+    }
+
+    // Validate courseId format
+    if (!mongoose.Types.ObjectId.isValid(courseId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid course ID',
       });
     }
 
@@ -250,7 +259,7 @@ export const createPublicPaymentIntent = async (req, res) => {
     console.error('Error creating public payment intent:', error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error',
+      message: error.message || 'Internal server error',
     });
   }
 };
