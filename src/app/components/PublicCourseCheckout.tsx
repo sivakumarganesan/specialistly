@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
 import {
   Elements,
   CardElement,
@@ -9,8 +9,20 @@ import {
 import { X, CreditCard, CheckCircle, Loader, AlertCircle } from 'lucide-react';
 import { API_BASE_URL } from '@/app/api/apiClient';
 
-const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-const stripePromise = stripePublicKey ? loadStripe(stripePublicKey) : null;
+// Fetch Stripe public key from backend at runtime
+let stripePromiseCache: Promise<Stripe | null> | null = null;
+function getStripePromise(): Promise<Stripe | null> {
+  if (!stripePromiseCache) {
+    stripePromiseCache = fetch(`${API_BASE_URL}/config/stripe-key`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.stripePublicKey) return loadStripe(data.stripePublicKey);
+        return null;
+      })
+      .catch(() => null);
+  }
+  return stripePromiseCache;
+}
 
 interface CourseInfo {
   _id: string;
@@ -302,7 +314,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
           )}
 
           {/* Step 2: Payment */}
-          {step === 'payment' && clientSecret && stripePromise && (
+          {step === 'payment' && clientSecret && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                 <CreditCard className="h-4 w-4" />
@@ -310,7 +322,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
               </div>
 
               <Elements
-                stripe={stripePromise}
+                stripe={getStripePromise()}
                 options={{
                   clientSecret,
                   appearance: { theme: 'stripe' },

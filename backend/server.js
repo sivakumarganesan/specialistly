@@ -146,6 +146,12 @@ app.use('/api/public', publicRoutes);
 // Public media serving endpoint (for R2 images)
 app.get('/api/media/serve/:mediaId', serveMedia);
 
+// Public config endpoint - serves Stripe publishable key
+app.get('/api/config/stripe-key', (req, res) => {
+  const key = process.env.STRIPE_PUBLIC_KEY || process.env.STRIPE_PUBLISHABLE_KEY || '';
+  res.status(200).json({ success: true, stripePublicKey: key });
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({

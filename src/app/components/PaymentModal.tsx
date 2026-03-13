@@ -1,25 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { StripePaymentForm } from './StripePaymentForm';
 import { RazorpayPaymentForm } from './RazorpayPaymentForm';
 import { PaymentBreakdown } from './PaymentBreakdown';
 import { usePaymentContext } from '../context/PaymentContext';
 import { CreditCard } from 'lucide-react';
+import { API_BASE_URL } from '@/app/api/apiClient';
 
-// Load Stripe public key from environment
-const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
-
-console.log('[PaymentModal] Checking Stripe config:', {
-  hasStripeKey: !!stripePublicKey,
-  keyLength: stripePublicKey?.length || 0,
-  envKeys: Object.keys(import.meta.env).filter(k => k.includes('STRIPE')),
-  allEnvVars: Object.keys(import.meta.env).slice(0, 15),
-});
-
-const stripePromise = stripePublicKey 
-  ? loadStripe(stripePublicKey)
-  : Promise.reject(new Error('Stripe public key not found in environment. Please set VITE_STRIPE_PUBLIC_KEY'));
+// Fetch Stripe public key from backend at runtime
+let stripePromiseCache: Promise<Stripe | null> | null = null;
+function getStripePromise(): Promise<Stripe | null> {
+  if (!stripePromiseCache) {
+    stripePromiseCache = fetch(`${API_BASE_URL}/config/stripe-key`)
+      .then(r => r.json())
+      .then(data => {
+        if (data.stripePublicKey) return loadStripe(data.stripePublicKey);
+        console.error('[PaymentModal] No Stripe public key returned from server');
+        return null;
+      })
+      .catch(err => {
+        console.error('[PaymentModal] Failed to fetch Stripe key:', err);
+        return null;
+      });
+  }
+  return stripePromiseCache;
+}
 
 interface PaymentModalProps {
   isOpen?: boolean;
@@ -59,12 +65,15 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
   // Common state
   const [isLoading, setIsLoading] = useState(false);
   const [stripeError, setStripeError] = useState<string>('');
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
-  // Check if Stripe key is available
+  // Fetch Stripe key from backend on mount
   useEffect(() => {
-    if (!stripePublicKey) {
-      setStripeError('Stripe is not configured. Please add VITE_STRIPE_PUBLIC_KEY environment variable.');
-    }
+    const promise = getStripePromise();
+    setStripePromise(promise);
+    promise.then(s => {
+      if (!s) setStripeError('Stripe is not configured. Please contact the administrator.');
+    });
   }, []);
 
   // Check available payment gateways on mount
