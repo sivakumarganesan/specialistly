@@ -453,8 +453,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       }
 
       const lesson = lessons[lessonIndex];
-      if (!lesson || !lesson.title) {
-        throw new Error("Lesson title is required before uploading video");
+      if (!lesson || !lesson.title?.trim()) {
+        alert("Please enter a lesson title before uploading a video.");
+        return;
       }
 
       setUploadingVideoFor(lessonIndex);
