@@ -245,7 +245,13 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
   }, [isOpen]);
 
   const isFree = !course.price || course.price === 0;
-  const currencySymbol = course.currency === 'INR' ? '₹' : '$';
+  const courseCurrencySymbol = course.currency === 'INR' ? '₹' : '$';
+
+  // Determine the actual payment currency/amount (may differ from course currency for international Razorpay)
+  const actualPaymentCurrency = razorpayData?.currency || (clientSecret ? 'USD' : course.currency);
+  const actualPaymentSymbol = actualPaymentCurrency === 'INR' ? '₹' : '$';
+  const actualPaymentAmount = razorpayData?.amount ?? course.price;
+  const currencyConverted = actualPaymentCurrency !== course.currency && step === 'payment';
 
   /** Call create-intent and proceed to payment (or success for free) */
   const initiatePayment = async (name: string, email: string, token: string | null) => {
@@ -464,7 +470,10 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                 <p className="text-sm text-gray-500 mt-1 line-clamp-2">{course.description}</p>
               )}
               <div className="mt-2 font-bold text-lg text-indigo-600">
-                {isFree ? 'Free' : `${currencySymbol}${course.price}`}
+                {isFree ? 'Free' : currencyConverted
+                  ? `${actualPaymentSymbol}${actualPaymentAmount}`
+                  : `${courseCurrencySymbol}${course.price}`
+                }
               </div>
             </div>
           )}
