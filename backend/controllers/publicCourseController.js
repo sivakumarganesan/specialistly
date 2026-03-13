@@ -257,9 +257,14 @@ export const createPublicPaymentIntent = async (req, res) => {
     }
   } catch (error) {
     console.error('Error creating public payment intent:', error);
+    // Return friendly message for known errors
+    let friendlyMessage = 'Something went wrong. Please try again.';
+    if (error.code === 11000) {
+      friendlyMessage = 'A payment is already being processed. Please wait a moment and try again.';
+    }
     res.status(500).json({
       success: false,
-      message: error.message || 'Internal server error',
+      message: friendlyMessage,
     });
   }
 };

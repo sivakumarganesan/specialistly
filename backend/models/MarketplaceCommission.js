@@ -11,13 +11,11 @@ const marketplaceCommissionSchema = new mongoose.Schema({
   // Payment Reference
   paymentIntentId: {
     type: String,
-    unique: true,
-    sparse: true,
+    default: undefined,
   },
   razorpayOrderId: {
     type: String,
-    unique: true,
-    sparse: true,
+    default: undefined,
   },
   razorpayPaymentId: {
     type: String,
@@ -139,9 +137,20 @@ const marketplaceCommissionSchema = new mongoose.Schema({
 // Index for quick lookups
 marketplaceCommissionSchema.index({ specialistId: 1, status: 1 });
 marketplaceCommissionSchema.index({ customerId: 1, createdAt: -1 });
-marketplaceCommissionSchema.index({ paymentIntentId: 1 });
-marketplaceCommissionSchema.index({ razorpayOrderId: 1 });
+marketplaceCommissionSchema.index(
+  { paymentIntentId: 1 },
+  { unique: true, partialFilterExpression: { paymentIntentId: { $type: 'string' } } }
+);
+marketplaceCommissionSchema.index(
+  { razorpayOrderId: 1 },
+  { unique: true, partialFilterExpression: { razorpayOrderId: { $type: 'string' } } }
+);
 marketplaceCommissionSchema.index({ paymentGateway: 1 });
 marketplaceCommissionSchema.index({ payoutStatus: 1 });
 
-export default mongoose.model('MarketplaceCommission', marketplaceCommissionSchema);
+// Drop old problematic sparse indexes on startup
+const MarketplaceCommission = mongoose.model('MarketplaceCommission', marketplaceCommissionSchema);
+MarketplaceCommission.collection.dropIndex('paymentIntentId_1').catch(() => {});
+MarketplaceCommission.collection.dropIndex('razorpayOrderId_1').catch(() => {});
+
+export default MarketplaceCommission;
