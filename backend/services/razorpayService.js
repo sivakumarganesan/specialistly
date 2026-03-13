@@ -24,6 +24,24 @@ const initializeRazorpay = () => {
 
 export const razorpayService = {
   /**
+   * Check if the Razorpay account is an international (non-INR) account
+   * International keys contain '_us_' or similar country codes
+   */
+  isInternationalAccount: () => {
+    const keyId = process.env.RAZORPAY_KEY_ID || '';
+    return keyId.includes('_us_');
+  },
+
+  /**
+   * Get the supported currency for this Razorpay account
+   */
+  getSupportedCurrency: () => {
+    const keyId = process.env.RAZORPAY_KEY_ID || '';
+    if (keyId.includes('_us_')) return 'USD';
+    return 'INR';
+  },
+
+  /**
    * Create a Razorpay Order for payment processing
    * @param {Object} options - Configuration options
    * @param {number} options.amount - Amount in smallest unit (paise for INR)

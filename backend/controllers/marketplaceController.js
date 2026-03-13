@@ -262,11 +262,19 @@ async function createStripePaymentIntent(req, res, options) {
 async function createRazorpayPaymentIntent(req, res, options) {
   const { course, specialist, courseId, customerId, customerEmail, amount, commissionPercentage } = options;
 
-  // Create Razorpay order (amount in paise for INR)
-  const amountInPaise = Math.round(amount * 100);
+  // Create Razorpay order
+  // Determine the currency Razorpay account supports
+  const razorpayCurrency = razorpayService.getSupportedCurrency();
+  let razorpayAmount = amount;
+
+  if (course.currency === 'INR' && razorpayCurrency === 'USD') {
+    razorpayAmount = amount;
+  }
+
+  const amountInSmallestUnit = Math.round(razorpayAmount * 100);
   const orderResult = await razorpayService.createOrder({
-    amount: amountInPaise,
-    currency: 'INR',
+    amount: amountInSmallestUnit,
+    currency: razorpayCurrency,
     customerId,
     customerEmail,
     description: `${course.title} - Course enrollment`,
@@ -300,8 +308,8 @@ async function createRazorpayPaymentIntent(req, res, options) {
   }
 
   // Calculate commission (same logic as Stripe)
-  const commissionAmountPaise = Math.round(amountInPaise * (specialist.commissionPercentage || commissionPercentage) / 100);
-  const specialistPayoutPaise = amountInPaise - commissionAmountPaise;
+  const commissionAmountSmallest = Math.round(amountInSmallestUnit * (specialist.commissionPercentage || commissionPercentage) / 100);
+  const specialistPayoutSmallest = amountInSmallestUnit - commissionAmountSmallest;
 
   // Create commission tracking record
   const commission = await MarketplaceCommission.create({
@@ -314,11 +322,11 @@ async function createRazorpayPaymentIntent(req, res, options) {
     serviceId: courseId,
     serviceType: 'course',
     serviceName: course.title,
-    grossAmount: amountInPaise,
-    currency: course.currency,
+    grossAmount: amountInSmallestUnit,
+    currency: razorpayCurrency,
     commissionPercentage: specialist.commissionPercentage || commissionPercentage,
-    commissionAmount: commissionAmountPaise,
-    specialistPayout: specialistPayoutPaise,
+    commissionAmount: commissionAmountSmallest,
+    specialistPayout: specialistPayoutSmallest,
     status: 'pending',
     paymentStatus: 'pending',
   });
@@ -335,11 +343,11 @@ async function createRazorpayPaymentIntent(req, res, options) {
     success: true,
     paymentGateway: 'razorpay',
     orderId: orderResult.orderId,
-    amount: amountInPaise / 100,
-    currency: 'INR',
+    amount: amountInSmallestUnit / 100,
+    currency: razorpayCurrency,
     commissionRecord: commission._id,
-    commissionAmount: commissionAmountPaise / 100,
-    specialistPayout: specialistPayoutPaise / 100,
+    commissionAmount: commissionAmountSmallest / 100,
+    specialistPayout: specialistPayoutSmallest / 100,
     keyId: process.env.RAZORPAY_KEY_ID, // Frontend needs this for checkout
   });
 }

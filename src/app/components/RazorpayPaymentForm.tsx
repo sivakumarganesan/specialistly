@@ -143,7 +143,7 @@ export const RazorpayPaymentForm: React.FC<RazorpayPaymentFormProps> = ({
         <div className="flex justify-between items-center mt-2">
           <span className="text-gray-600">Amount:</span>
           <span className="font-semibold">
-            ₹{(amount).toFixed(2)}
+            {currency === 'INR' ? '₹' : '$'}{(amount).toFixed(2)}
           </span>
         </div>
       </div>
@@ -167,7 +167,7 @@ export const RazorpayPaymentForm: React.FC<RazorpayPaymentFormProps> = ({
             Processing...
           </>
         ) : (
-          `Pay ₹${(amount).toFixed(2)}`
+          `Pay ${currency === 'INR' ? '₹' : '$'}${(amount).toFixed(2)}`
         )}
       </Button>
 

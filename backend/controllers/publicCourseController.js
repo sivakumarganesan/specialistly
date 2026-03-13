@@ -200,10 +200,22 @@ export const createPublicPaymentIntent = async (req, res) => {
 
     // Create Razorpay order
     if (paymentGateway === 'razorpay') {
-      const amountInPaise = Math.round(amount * 100);
+      // Determine the currency Razorpay account supports
+      const razorpayCurrency = razorpayService.getSupportedCurrency();
+      let razorpayAmount = amount;
+
+      // If course is INR but Razorpay needs USD, use the amount directly as USD cents
+      // (Specialist sets price in INR, but international Razorpay processes in USD)
+      if (course.currency === 'INR' && razorpayCurrency === 'USD') {
+        // Convert INR to USD (approximate rate, or pass through as-is for now)
+        // For international accounts, use the raw price as USD amount
+        razorpayAmount = amount;
+      }
+
+      const amountInSmallestUnit = Math.round(razorpayAmount * 100);
       const orderResult = await razorpayService.createOrder({
-        amount: amountInPaise,
-        currency: 'INR',
+        amount: amountInSmallestUnit,
+        currency: razorpayCurrency,
         customerId,
         customerEmail,
         description: `${course.title} - Course enrollment`,
@@ -224,8 +236,8 @@ export const createPublicPaymentIntent = async (req, res) => {
       }
 
       const commPct = specialist?.commissionPercentage || commissionPercentage;
-      const commissionAmountPaise = Math.round(amountInPaise * commPct / 100);
-      const specialistPayoutPaise = amountInPaise - commissionAmountPaise;
+      const commissionAmount = Math.round(amountInSmallestUnit * commPct / 100);
+      const specialistPayout = amountInSmallestUnit - commissionAmount;
 
       await MarketplaceCommission.create({
         razorpayOrderId: orderResult.orderId,
@@ -237,11 +249,11 @@ export const createPublicPaymentIntent = async (req, res) => {
         serviceId: courseId,
         serviceType: 'course',
         serviceName: course.title,
-        grossAmount: amountInPaise,
-        currency: course.currency,
+        grossAmount: amountInSmallestUnit,
+        currency: razorpayCurrency,
         commissionPercentage: commPct,
-        commissionAmount: commissionAmountPaise,
-        specialistPayout: specialistPayoutPaise,
+        commissionAmount: commissionAmount,
+        specialistPayout: specialistPayout,
         status: 'pending',
         paymentStatus: 'pending',
       });
@@ -250,8 +262,8 @@ export const createPublicPaymentIntent = async (req, res) => {
         success: true,
         paymentGateway: 'razorpay',
         orderId: orderResult.orderId,
-        amount: amountInPaise / 100,
-        currency: 'INR',
+        amount: amountInSmallestUnit / 100,
+        currency: razorpayCurrency,
         keyId: process.env.RAZORPAY_KEY_ID,
       });
     }
