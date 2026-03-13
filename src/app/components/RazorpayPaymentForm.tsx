@@ -70,8 +70,6 @@ export const RazorpayPaymentForm: React.FC<RazorpayPaymentFormProps> = ({
       const options = {
         key: keyId,
         order_id: orderId,
-        amount: Math.round(amount * 100), // Convert to paise
-        currency: currency,
         name: 'Specialistly',
         description: 'Course Purchase',
         customer_details: {
