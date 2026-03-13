@@ -104,6 +104,19 @@ const creatorProfileSchema = new mongoose.Schema({
   },
   // Razorpay Bank Account (for automated payouts)
   bankAccount: bankAccountSchema,
+  // Specialist's own Razorpay credentials (for direct payments)
+  razorpayKeyId: {
+    type: String,
+    default: null,
+  },
+  razorpayKeySecret: {
+    type: String,
+    default: null,
+  },
+  razorpayConfigured: {
+    type: Boolean,
+    default: false,
+  },
   commissionPercentage: {
     type: Number,
     default: 15, // Specialistly takes 15% commission by default

@@ -11,6 +11,9 @@ import {
   disconnectStripeAccount,
   checkAvailablePaymentGateways,
   getPaymentGatewayDiagnostics,
+  saveSpecialistRazorpayConfig,
+  getSpecialistRazorpayConfig,
+  removeSpecialistRazorpayConfig,
 } from '../controllers/marketplaceController.js';
 
 const router = express.Router();
@@ -49,6 +52,19 @@ router.get('/specialist/commissions', authMiddleware, getSpecialistCommissions);
 
 // Disconnect Stripe account
 router.post('/specialist/disconnect', authMiddleware, disconnectStripeAccount);
+
+/**
+ * Specialist Razorpay Configuration Routes
+ */
+
+// Get specialist's Razorpay config status
+router.get('/specialist/razorpay-config', authMiddleware, getSpecialistRazorpayConfig);
+
+// Save specialist's Razorpay credentials
+router.post('/specialist/razorpay-config', authMiddleware, saveSpecialistRazorpayConfig);
+
+// Remove specialist's Razorpay credentials
+router.delete('/specialist/razorpay-config', authMiddleware, removeSpecialistRazorpayConfig);
 
 /**
  * Admin Diagnostics Route

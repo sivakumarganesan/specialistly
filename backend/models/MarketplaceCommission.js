@@ -21,6 +21,11 @@ const marketplaceCommissionSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  // Whether this Razorpay payment used the specialist's own credentials
+  useSpecialistRazorpay: {
+    type: Boolean,
+    default: false,
+  },
   chargeId: {
     type: String,
     default: null,

@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { SpecialistCategorySetup } from '@/app/components/SpecialistCategorySetup';
 import { creatorAPI } from '@/app/api/apiClient';
+import { specialistRazorpayAPI } from '@/app/api/paymentAPI';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 
 interface SpecialistSettingsProps {
   onBack?: () => void;
@@ -19,6 +20,16 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
   const [showCategoryEdit, setShowCategoryEdit] = useState(false);
   const [specialityCategories, setSpecialityCategories] = useState<string[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(true);
+
+  // Razorpay config state
+  const [razorpayConfigured, setRazorpayConfigured] = useState(false);
+  const [razorpayKeyIdMasked, setRazorpayKeyIdMasked] = useState<string | null>(null);
+  const [razorpayKeyId, setRazorpayKeyId] = useState('');
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState('');
+  const [showSecret, setShowSecret] = useState(false);
+  const [razorpayLoading, setRazorpayLoading] = useState(false);
+  const [razorpayMessage, setRazorpayMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [showRazorpayForm, setShowRazorpayForm] = useState(false);
 
   // Load specialist categories when component mounts
   useEffect(() => {
@@ -38,6 +49,22 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
 
     loadCategories();
   }, [user?.email]);
+
+  // Load Razorpay config
+  useEffect(() => {
+    const loadRazorpayConfig = async () => {
+      try {
+        const data = await specialistRazorpayAPI.getConfig();
+        if (data.success) {
+          setRazorpayConfigured(data.razorpayConfigured);
+          setRazorpayKeyIdMasked(data.keyIdMasked);
+        }
+      } catch (err) {
+        console.error('Failed to load Razorpay config:', err);
+      }
+    };
+    loadRazorpayConfig();
+  }, []);
 
   if (!user || !user.email) {
     return (
@@ -62,6 +89,48 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
       }
     };
     loadCategories();
+  };
+
+  const handleSaveRazorpay = async () => {
+    setRazorpayMessage(null);
+    setRazorpayLoading(true);
+    try {
+      const data = await specialistRazorpayAPI.saveConfig({
+        razorpayKeyId: razorpayKeyId.trim(),
+        razorpayKeySecret: razorpayKeySecret.trim(),
+      });
+      if (data.success) {
+        setRazorpayConfigured(true);
+        setRazorpayKeyIdMasked(data.keyIdMasked);
+        setRazorpayKeyId('');
+        setRazorpayKeySecret('');
+        setShowRazorpayForm(false);
+        setRazorpayMessage({ type: 'success', text: 'Razorpay credentials saved and verified!' });
+      } else {
+        setRazorpayMessage({ type: 'error', text: data.message || 'Failed to save credentials' });
+      }
+    } catch (err: any) {
+      setRazorpayMessage({ type: 'error', text: err.message || 'Something went wrong' });
+    } finally {
+      setRazorpayLoading(false);
+    }
+  };
+
+  const handleRemoveRazorpay = async () => {
+    setRazorpayMessage(null);
+    setRazorpayLoading(true);
+    try {
+      const data = await specialistRazorpayAPI.removeConfig();
+      if (data.success) {
+        setRazorpayConfigured(false);
+        setRazorpayKeyIdMasked(null);
+        setRazorpayMessage({ type: 'success', text: 'Razorpay credentials removed' });
+      }
+    } catch (err: any) {
+      setRazorpayMessage({ type: 'error', text: err.message || 'Something went wrong' });
+    } finally {
+      setRazorpayLoading(false);
+    }
   };
 
   return (
@@ -167,6 +236,140 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Razorpay Payment Configuration */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Razorpay Payment Setup</CardTitle>
+            <CardDescription>
+              Connect your Razorpay account so customers can pay you directly via Razorpay for INR courses
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {razorpayMessage && (
+              <div className={`mb-4 p-3 rounded-lg text-sm ${
+                razorpayMessage.type === 'success'
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}>
+                {razorpayMessage.text}
+              </div>
+            )}
+
+            {razorpayConfigured && !showRazorpayForm ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                  <div className="h-8 w-8 rounded-full bg-green-600 flex items-center justify-center text-white text-sm font-bold">✓</div>
+                  <div>
+                    <p className="font-medium text-green-800">Razorpay Connected</p>
+                    <p className="text-sm text-green-600">Key: {razorpayKeyIdMasked}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500">
+                  Customer payments for your INR courses will go directly to your Razorpay account.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowRazorpayForm(true)}
+                  >
+                    Update Credentials
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    onClick={handleRemoveRazorpay}
+                    disabled={razorpayLoading}
+                  >
+                    Disconnect
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {!showRazorpayForm && !razorpayConfigured && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600">
+                      Connect your Razorpay account to receive direct payments from customers who purchase your INR-priced courses.
+                    </p>
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={() => setShowRazorpayForm(true)}
+                    >
+                      Connect Razorpay Account
+                    </Button>
+                  </div>
+                )}
+
+                {showRazorpayForm && (
+                  <div className="space-y-4">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                      You can find your API keys in the{' '}
+                      <a href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                        Razorpay Dashboard → Settings → API Keys
+                      </a>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Razorpay Key ID
+                      </label>
+                      <input
+                        type="text"
+                        value={razorpayKeyId}
+                        onChange={(e) => setRazorpayKeyId(e.target.value)}
+                        placeholder="rzp_test_..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Razorpay Key Secret
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showSecret ? 'text' : 'password'}
+                          value={razorpayKeySecret}
+                          onChange={(e) => setRazorpayKeySecret(e.target.value)}
+                          placeholder="Enter your key secret"
+                          className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSecret(!showSecret)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        >
+                          {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        className="bg-blue-600 hover:bg-blue-700"
+                        onClick={handleSaveRazorpay}
+                        disabled={razorpayLoading || !razorpayKeyId.trim() || !razorpayKeySecret.trim()}
+                      >
+                        {razorpayLoading ? 'Verifying...' : 'Save & Verify'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowRazorpayForm(false);
+                          setRazorpayKeyId('');
+                          setRazorpayKeySecret('');
+                          setRazorpayMessage(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

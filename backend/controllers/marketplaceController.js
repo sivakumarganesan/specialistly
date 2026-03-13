@@ -69,11 +69,18 @@ export const createMarketplacePaymentIntent = async (req, res) => {
     // Auto-select payment gateway based on course currency
     const courseCurrency = course.currency || 'USD';
     let paymentGateway = 'stripe'; // Default to Stripe
+    let useSpecialistRazorpay = false;
     
     if (courseCurrency === 'INR') {
-      // Use Razorpay only if it's a domestic account that supports INR
-      // International Razorpay accounts can't process INR, so use Stripe (which supports INR)
-      paymentGateway = razorpayService.isInternationalAccount() ? 'stripe' : 'razorpay';
+      // Priority: specialist's own Razorpay > platform domestic Razorpay > Stripe
+      if (specialist?.razorpayConfigured && specialist.razorpayKeyId && specialist.razorpayKeySecret) {
+        paymentGateway = 'razorpay';
+        useSpecialistRazorpay = true;
+      } else if (!razorpayService.isInternationalAccount()) {
+        paymentGateway = 'razorpay';
+      } else {
+        paymentGateway = 'stripe';
+      }
     } else if (courseCurrency === 'USD') {
       paymentGateway = 'stripe';
     } else {
@@ -144,6 +151,7 @@ export const createMarketplacePaymentIntent = async (req, res) => {
         customerEmail,
         amount,
         commissionPercentage,
+        useSpecialistRazorpay,
       });
     }
   } catch (error) {
@@ -262,32 +270,45 @@ async function createStripePaymentIntent(req, res, options) {
  * Helper: Create Razorpay Order
  */
 async function createRazorpayPaymentIntent(req, res, options) {
-  const { course, specialist, courseId, customerId, customerEmail, amount, commissionPercentage } = options;
+  const { course, specialist, courseId, customerId, customerEmail, amount, commissionPercentage, useSpecialistRazorpay } = options;
 
-  // Create Razorpay order
-  // Determine the currency Razorpay account supports
-  const razorpayCurrency = razorpayService.getSupportedCurrency();
-  let razorpayAmount = amount;
+  const razorpayCurrency = useSpecialistRazorpay ? (course.currency || 'INR') : razorpayService.getSupportedCurrency();
+  const amountInSmallestUnit = Math.round(amount * 100);
 
-  if (course.currency === 'INR' && razorpayCurrency === 'USD') {
-    razorpayAmount = amount;
-  }
-
-  const amountInSmallestUnit = Math.round(razorpayAmount * 100);
-  const orderResult = await razorpayService.createOrder({
-    amount: amountInSmallestUnit,
-    currency: razorpayCurrency,
-    customerId,
-    customerEmail,
-    description: `${course.title} - Course enrollment`,
-    metadata: {
-      courseId: courseId.toString(),
-      courseName: course.title,
-      specialistEmail: course.specialistEmail,
+  let orderResult;
+  if (useSpecialistRazorpay) {
+    orderResult = await razorpayService.createOrderWithSpecialistKeys({
+      specialistKeyId: specialist.razorpayKeyId,
+      specialistKeySecret: specialist.razorpayKeySecret,
+      amount: amountInSmallestUnit,
+      currency: razorpayCurrency,
       customerId,
       customerEmail,
-    },
-  });
+      description: `${course.title} - Course enrollment`,
+      metadata: {
+        courseId: courseId.toString(),
+        courseName: course.title,
+        specialistEmail: course.specialistEmail,
+        customerId,
+        customerEmail,
+      },
+    });
+  } else {
+    orderResult = await razorpayService.createOrder({
+      amount: amountInSmallestUnit,
+      currency: razorpayCurrency,
+      customerId,
+      customerEmail,
+      description: `${course.title} - Course enrollment`,
+      metadata: {
+        courseId: courseId.toString(),
+        courseName: course.title,
+        specialistEmail: course.specialistEmail,
+        customerId,
+        customerEmail,
+      },
+    });
+  }
 
   if (!orderResult.success) {
     console.error('[Marketplace Payment - Razorpay] Order creation failed:', {
@@ -296,7 +317,7 @@ async function createRazorpayPaymentIntent(req, res, options) {
       statusCode: orderResult.statusCode,
       description: orderResult.description,
       courseId,
-      amount: amountInPaise,
+      amount: amountInSmallestUnit,
     });
     return res.status(400).json({
       success: false,
@@ -315,7 +336,7 @@ async function createRazorpayPaymentIntent(req, res, options) {
 
   // Create commission tracking record
   const commission = await MarketplaceCommission.create({
-    razorpayOrderId: orderResult.orderId, // Use razorpayOrderId instead of paymentIntentId
+    razorpayOrderId: orderResult.orderId,
     paymentGateway: 'razorpay',
     customerId,
     customerEmail,
@@ -331,6 +352,7 @@ async function createRazorpayPaymentIntent(req, res, options) {
     specialistPayout: specialistPayoutSmallest,
     status: 'pending',
     paymentStatus: 'pending',
+    useSpecialistRazorpay: useSpecialistRazorpay || false,
   });
 
   console.log('[Marketplace Payment - Razorpay] Order created:', {
@@ -338,7 +360,8 @@ async function createRazorpayPaymentIntent(req, res, options) {
     razorpayOrderId: orderResult.orderId,
     customerId: commission.customerId,
     courseId: commission.serviceId,
-    currency: course.currency,
+    currency: razorpayCurrency,
+    useSpecialistRazorpay,
   });
 
   return res.status(200).json({
@@ -350,7 +373,7 @@ async function createRazorpayPaymentIntent(req, res, options) {
     commissionRecord: commission._id,
     commissionAmount: commissionAmountSmallest / 100,
     specialistPayout: specialistPayoutSmallest / 100,
-    keyId: process.env.RAZORPAY_KEY_ID, // Frontend needs this for checkout
+    keyId: useSpecialistRazorpay ? specialist.razorpayKeyId : process.env.RAZORPAY_KEY_ID,
   });
 }
 
@@ -1136,5 +1159,137 @@ export const getPaymentGatewayDiagnostics = async (req, res) => {
       message: 'Diagnostic check failed',
       error: error.message,
     });
+  }
+};
+
+/**
+ * Save specialist's Razorpay credentials
+ * POST /api/marketplace/specialist/razorpay-config
+ */
+export const saveSpecialistRazorpayConfig = async (req, res) => {
+  try {
+    const specialistEmail = req.user?.email;
+    if (!specialistEmail) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    const { razorpayKeyId, razorpayKeySecret } = req.body;
+
+    if (!razorpayKeyId || !razorpayKeySecret) {
+      return res.status(400).json({
+        success: false,
+        message: 'Both Razorpay Key ID and Key Secret are required',
+      });
+    }
+
+    // Basic format validation
+    if (!razorpayKeyId.startsWith('rzp_test_') && !razorpayKeyId.startsWith('rzp_live_')) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Razorpay Key ID format. Must start with rzp_test_ or rzp_live_',
+      });
+    }
+
+    // Test the credentials by creating a temporary Razorpay instance
+    try {
+      const Razorpay = (await import('razorpay')).default;
+      const testRp = new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret });
+      // Attempt a lightweight API call to verify credentials
+      await testRp.orders.create({
+        amount: 100,
+        currency: 'INR',
+        notes: { test: 'credential_verification' },
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid Razorpay credentials. Please verify your Key ID and Key Secret.',
+      });
+    }
+
+    const specialist = await CreatorProfile.findOneAndUpdate(
+      { email: specialistEmail },
+      {
+        razorpayKeyId,
+        razorpayKeySecret,
+        razorpayConfigured: true,
+        updatedAt: Date.now(),
+      },
+      { new: true },
+    );
+
+    if (!specialist) {
+      return res.status(404).json({ success: false, message: 'Specialist profile not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Razorpay credentials saved and verified successfully',
+      razorpayConfigured: true,
+      keyIdMasked: razorpayKeyId.substring(0, 12) + '****',
+    });
+  } catch (error) {
+    console.error('Error saving specialist Razorpay config:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+/**
+ * Get specialist's Razorpay configuration status
+ * GET /api/marketplace/specialist/razorpay-config
+ */
+export const getSpecialistRazorpayConfig = async (req, res) => {
+  try {
+    const specialistEmail = req.user?.email;
+    if (!specialistEmail) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    const specialist = await CreatorProfile.findOne({ email: specialistEmail });
+    if (!specialist) {
+      return res.status(404).json({ success: false, message: 'Specialist profile not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      razorpayConfigured: specialist.razorpayConfigured || false,
+      keyIdMasked: specialist.razorpayKeyId
+        ? specialist.razorpayKeyId.substring(0, 12) + '****'
+        : null,
+    });
+  } catch (error) {
+    console.error('Error getting specialist Razorpay config:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+};
+
+/**
+ * Remove specialist's Razorpay credentials
+ * DELETE /api/marketplace/specialist/razorpay-config
+ */
+export const removeSpecialistRazorpayConfig = async (req, res) => {
+  try {
+    const specialistEmail = req.user?.email;
+    if (!specialistEmail) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
+
+    await CreatorProfile.findOneAndUpdate(
+      { email: specialistEmail },
+      {
+        razorpayKeyId: null,
+        razorpayKeySecret: null,
+        razorpayConfigured: false,
+        updatedAt: Date.now(),
+      },
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Razorpay credentials removed',
+    });
+  } catch (error) {
+    console.error('Error removing specialist Razorpay config:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };

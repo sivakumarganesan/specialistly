@@ -273,6 +273,90 @@ export const razorpayService = {
       };
     }
   },
+
+  /**
+   * Create a Razorpay order using the specialist's own credentials
+   * Payments go directly to the specialist's Razorpay account
+   */
+  createOrderWithSpecialistKeys: async ({
+    specialistKeyId,
+    specialistKeySecret,
+    amount,
+    currency = 'INR',
+    customerId,
+    customerEmail,
+    description,
+    metadata = {},
+  }) => {
+    try {
+      const rp = new Razorpay({
+        key_id: specialistKeyId,
+        key_secret: specialistKeySecret,
+      });
+
+      console.log('[RazorpayService] Creating order with specialist keys:', {
+        amount, currency, customerId, customerEmail, description,
+        keyIdPrefix: specialistKeyId.substring(0, 12),
+      });
+
+      if (amount < 100) {
+        throw new Error('Amount must be at least 100 paise (₹1 for INR)');
+      }
+
+      const order = await rp.orders.create({
+        amount,
+        currency,
+        description,
+        notes: { customerId, customerEmail, ...metadata },
+      });
+
+      console.log('[RazorpayService] Order created with specialist keys:', {
+        orderId: order.id, amount: order.amount, currency: order.currency,
+      });
+
+      return {
+        success: true,
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        status: order.status,
+      };
+    } catch (error) {
+      console.error('[RazorpayService] Error creating order with specialist keys:', error.message);
+      return {
+        success: false,
+        error: error.message || 'Failed to create order',
+        code: error.code,
+        statusCode: error.statusCode,
+        description: error.description,
+      };
+    }
+  },
+
+  /**
+   * Verify Razorpay payment signature using specialist's key secret
+   */
+  verifyPaymentSignatureWithSecret: (orderId, paymentId, signature, keySecret) => {
+    try {
+      const body = orderId + '|' + paymentId;
+      const expectedSignature = crypto
+        .createHmac('sha256', keySecret)
+        .update(body)
+        .digest('hex');
+
+      const isSignatureValid = expectedSignature === signature;
+
+      if (!isSignatureValid) {
+        console.warn('[RazorpayService] Specialist signature verification failed');
+        return { success: false, error: 'Invalid signature', isValid: false };
+      }
+
+      return { success: true, isValid: true, orderId, paymentId };
+    } catch (error) {
+      console.error('[RazorpayService] Error verifying specialist signature:', error);
+      return { success: false, error: error.message, isValid: false };
+    }
+  },
 };
 
 /**

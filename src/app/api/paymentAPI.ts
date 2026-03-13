@@ -235,3 +235,39 @@ export const marketplacePaymentAPI = {
     }
   },
 };
+
+/**
+ * Specialist Razorpay Configuration API
+ */
+export const specialistRazorpayAPI = {
+  getConfig: async () => {
+    const response = await fetch(`${API_BASE_URL}/marketplace/specialist/razorpay-config`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+      },
+    });
+    return response.json();
+  },
+
+  saveConfig: async (data: { razorpayKeyId: string; razorpayKeySecret: string }) => {
+    const response = await fetch(`${API_BASE_URL}/marketplace/specialist/razorpay-config`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+      },
+      body: JSON.stringify(data),
+    });
+    return response.json();
+  },
+
+  removeConfig: async () => {
+    const response = await fetch(`${API_BASE_URL}/marketplace/specialist/razorpay-config`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('authToken')}`,
+      },
+    });
+    return response.json();
+  },
+};

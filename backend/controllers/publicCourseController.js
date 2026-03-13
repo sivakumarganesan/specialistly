@@ -80,11 +80,18 @@ export const createPublicPaymentIntent = async (req, res) => {
     // Auto-select payment gateway based on course currency
     const courseCurrency = course.currency || 'USD';
     let paymentGateway = 'stripe';
+    let useSpecialistRazorpay = false;
 
     if (courseCurrency === 'INR') {
-      // Use Razorpay only if it's a domestic account that supports INR
-      // International Razorpay accounts can't process INR, so use Stripe (which supports INR)
-      paymentGateway = razorpayService.isInternationalAccount() ? 'stripe' : 'razorpay';
+      // Priority: specialist's own Razorpay > platform domestic Razorpay > Stripe
+      if (specialist?.razorpayConfigured && specialist.razorpayKeyId && specialist.razorpayKeySecret) {
+        paymentGateway = 'razorpay';
+        useSpecialistRazorpay = true;
+      } else if (!razorpayService.isInternationalAccount()) {
+        paymentGateway = 'razorpay';
+      } else {
+        paymentGateway = 'stripe';
+      }
     } else if (courseCurrency === 'USD') {
       paymentGateway = 'stripe';
     } else {
@@ -202,33 +209,45 @@ export const createPublicPaymentIntent = async (req, res) => {
 
     // Create Razorpay order
     if (paymentGateway === 'razorpay') {
-      // Determine the currency Razorpay account supports
-      const razorpayCurrency = razorpayService.getSupportedCurrency();
-      let razorpayAmount = amount;
+      const razorpayCurrency = useSpecialistRazorpay ? courseCurrency : razorpayService.getSupportedCurrency();
+      const amountInSmallestUnit = Math.round(amount * 100);
 
-      // If course is INR but Razorpay needs USD, use the amount directly as USD cents
-      // (Specialist sets price in INR, but international Razorpay processes in USD)
-      if (course.currency === 'INR' && razorpayCurrency === 'USD') {
-        // Convert INR to USD (approximate rate, or pass through as-is for now)
-        // For international accounts, use the raw price as USD amount
-        razorpayAmount = amount;
-      }
-
-      const amountInSmallestUnit = Math.round(razorpayAmount * 100);
-      const orderResult = await razorpayService.createOrder({
-        amount: amountInSmallestUnit,
-        currency: razorpayCurrency,
-        customerId,
-        customerEmail,
-        description: `${course.title} - Course enrollment`,
-        metadata: {
-          courseId: courseId.toString(),
-          courseName: course.title,
-          specialistEmail: course.specialistEmail,
-          guestPurchase: 'true',
+      let orderResult;
+      if (useSpecialistRazorpay) {
+        // Use specialist's own Razorpay credentials — payment goes directly to their account
+        orderResult = await razorpayService.createOrderWithSpecialistKeys({
+          specialistKeyId: specialist.razorpayKeyId,
+          specialistKeySecret: specialist.razorpayKeySecret,
+          amount: amountInSmallestUnit,
+          currency: razorpayCurrency,
+          customerId,
           customerEmail,
-        },
-      });
+          description: `${course.title} - Course enrollment`,
+          metadata: {
+            courseId: courseId.toString(),
+            courseName: course.title,
+            specialistEmail: course.specialistEmail,
+            guestPurchase: 'true',
+            customerEmail,
+          },
+        });
+      } else {
+        // Use platform's global Razorpay credentials
+        orderResult = await razorpayService.createOrder({
+          amount: amountInSmallestUnit,
+          currency: razorpayCurrency,
+          customerId,
+          customerEmail,
+          description: `${course.title} - Course enrollment`,
+          metadata: {
+            courseId: courseId.toString(),
+            courseName: course.title,
+            specialistEmail: course.specialistEmail,
+            guestPurchase: 'true',
+            customerEmail,
+          },
+        });
+      }
 
       if (!orderResult.success) {
         return res.status(400).json({
@@ -258,6 +277,7 @@ export const createPublicPaymentIntent = async (req, res) => {
         specialistPayout: specialistPayout,
         status: 'pending',
         paymentStatus: 'pending',
+        useSpecialistRazorpay: useSpecialistRazorpay || false,
       });
 
       return res.status(200).json({
@@ -266,7 +286,7 @@ export const createPublicPaymentIntent = async (req, res) => {
         orderId: orderResult.orderId,
         amount: amountInSmallestUnit / 100,
         currency: razorpayCurrency,
-        keyId: process.env.RAZORPAY_KEY_ID,
+        keyId: useSpecialistRazorpay ? specialist.razorpayKeyId : process.env.RAZORPAY_KEY_ID,
       });
     }
   } catch (error) {
@@ -408,11 +428,31 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
 
     // Verify signature if available
     if (razorpaySignature) {
-      const verification = await razorpayService.verifyPaymentSignature(
-        razorpayOrderId,
-        razorpayPaymentId,
-        razorpaySignature,
-      );
+      let verification;
+
+      // If this order used specialist's Razorpay keys, verify with their secret
+      if (commission.useSpecialistRazorpay) {
+        const specialist = await CreatorProfile.findOne({ email: commission.specialistEmail });
+        if (specialist?.razorpayKeySecret) {
+          verification = razorpayService.verifyPaymentSignatureWithSecret(
+            razorpayOrderId,
+            razorpayPaymentId,
+            razorpaySignature,
+            specialist.razorpayKeySecret,
+          );
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'Specialist Razorpay configuration not found for verification',
+          });
+        }
+      } else {
+        verification = await razorpayService.verifyPaymentSignature(
+          razorpayOrderId,
+          razorpayPaymentId,
+          razorpaySignature,
+        );
+      }
 
       if (!verification.isValid) {
         return res.status(400).json({
