@@ -8,6 +8,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { X, CreditCard, CheckCircle, Loader, AlertCircle } from 'lucide-react';
 import { API_BASE_URL } from '@/app/api/apiClient';
+import { RazorpayPaymentForm } from './RazorpayPaymentForm';
 
 // Fetch Stripe public key from backend at runtime
 let stripePromiseCache: Promise<Stripe | null> | null = null;
@@ -42,6 +43,14 @@ interface PublicCourseCheckoutProps {
 }
 
 type CheckoutStep = 'details' | 'payment' | 'success';
+type PaymentGateway = 'stripe' | 'razorpay';
+
+interface RazorpayData {
+  orderId: string;
+  keyId: string;
+  amount: number;
+  currency: string;
+}
 
 /** Inner form that uses Stripe hooks (must be inside <Elements>) */
 function StripeCardForm({
@@ -167,6 +176,8 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [paymentGateway, setPaymentGateway] = useState<PaymentGateway>('stripe');
+  const [razorpayData, setRazorpayData] = useState<RazorpayData | null>(null);
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -176,6 +187,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
       setCustomerEmail('');
       setError(null);
       setClientSecret(null);
+      setRazorpayData(null);
       setLoading(false);
     }
   }, [isOpen]);
@@ -214,8 +226,18 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
       }
 
       // Paid course: show payment form
-      if (data.clientSecret) {
+      if (data.paymentGateway === 'stripe' && data.clientSecret) {
         setClientSecret(data.clientSecret);
+        setPaymentGateway('stripe');
+        setStep('payment');
+      } else if (data.paymentGateway === 'razorpay' && data.orderId) {
+        setRazorpayData({
+          orderId: data.orderId,
+          keyId: data.keyId,
+          amount: data.amount,
+          currency: data.currency || 'INR',
+        });
+        setPaymentGateway('razorpay');
         setStep('payment');
       } else {
         setError('Payment initialization failed. Please try again.');
@@ -313,8 +335,8 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
             </form>
           )}
 
-          {/* Step 2: Payment */}
-          {step === 'payment' && clientSecret && (
+          {/* Step 2: Payment - Stripe */}
+          {step === 'payment' && paymentGateway === 'stripe' && clientSecret && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
                 <CreditCard className="h-4 w-4" />
@@ -340,6 +362,40 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                 onClick={() => {
                   setStep('details');
                   setClientSecret(null);
+                  setError(null);
+                }}
+                className="w-full text-center text-sm text-gray-500 hover:text-gray-700"
+              >
+                &larr; Back to details
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Payment - Razorpay */}
+          {step === 'payment' && paymentGateway === 'razorpay' && razorpayData && (
+            <div className="space-y-4">
+              <RazorpayPaymentForm
+                orderId={razorpayData.orderId}
+                keyId={razorpayData.keyId}
+                amount={razorpayData.amount}
+                currency={razorpayData.currency}
+                customerEmail={customerEmail}
+                customerName={customerName}
+                onSuccess={() => setStep('success')}
+                onError={(msg) => setError(msg)}
+              />
+
+              {error && (
+                <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setStep('details');
+                  setRazorpayData(null);
                   setError(null);
                 }}
                 className="w-full text-center text-sm text-gray-500 hover:text-gray-700"
