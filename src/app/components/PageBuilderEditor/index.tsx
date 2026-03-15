@@ -291,25 +291,25 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
         <div className="px-8 py-6 flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 bg-white bg-opacity-20 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">📄</span>
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}>
+                <span className="font-bold text-lg" style={{ color: '#ffffff' }}>📄</span>
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">
+                <h1 className="text-3xl font-bold" style={{ color: '#ffffff' }}>
                   {website?.displayName || 'Page Builder'}
                 </h1>
-                <p className="text-blue-100 text-sm mt-1">Professional Website Designer</p>
+                <p className="text-sm mt-1" style={{ color: '#bfdbfe' }}>Professional Website Designer</p>
               </div>
             </div>
             <div className="flex items-center gap-6 mt-4">
               <div className="flex items-center gap-2">
-                <span className="text-blue-100 text-sm">Domain:</span>
-                <span className="text-white text-sm font-mono font-semibold bg-white bg-opacity-10 px-3 py-1 rounded">{website?.domainName}</span>
+                <span className="text-sm" style={{ color: '#bfdbfe' }}>Domain:</span>
+                <span className="text-sm font-mono font-semibold px-3 py-1 rounded" style={{ color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.1)' }}>{website?.domainName}</span>
               </div>
               {website?.subdomain && (
-                <div className="flex items-center gap-2 pl-6 border-l border-white border-opacity-20">
-                  <span className="text-blue-100 text-sm">Subdomain:</span>
-                  <span className="text-white font-mono font-semibold bg-white bg-opacity-10 px-3 py-1 rounded">{website.subdomain}</span>
+                <div className="flex items-center gap-2 pl-6 border-l" style={{ borderColor: 'rgba(255,255,255,0.2)' }}>
+                  <span className="text-sm" style={{ color: '#bfdbfe' }}>Subdomain:</span>
+                  <span className="font-mono font-semibold px-3 py-1 rounded" style={{ color: '#ffffff', backgroundColor: 'rgba(255,255,255,0.1)' }}>{website.subdomain}</span>
                 </div>
               )}
             </div>
@@ -320,67 +320,68 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
             {selectedPage && (
               <div className="text-right">
                 {website?.subdomain && website.isPublished ? (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-green-500 bg-opacity-10 rounded-lg border border-green-400 border-opacity-30">
-                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                    <p className="text-green-100 text-xs font-semibold">LIVE</p>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ backgroundColor: 'rgba(34,197,94,0.1)', border: '1px solid rgba(74,222,128,0.3)' }}>
+                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: '#4ade80' }}></div>
+                    <p className="text-xs font-semibold" style={{ color: '#bbf7d0' }}>LIVE</p>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500 bg-opacity-10 rounded-lg border border-yellow-400 border-opacity-30">
-                    <div className="w-2 h-2 bg-yellow-400"></div>
-                    <p className="text-yellow-100 text-xs font-semibold">DRAFT</p>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-lg" style={{ backgroundColor: 'rgba(234,179,8,0.1)', border: '1px solid rgba(250,204,21,0.3)' }}>
+                    <div className="w-2 h-2" style={{ backgroundColor: '#facc15' }}></div>
+                    <p className="text-xs font-semibold" style={{ color: '#fef08a' }}>DRAFT</p>
                   </div>
                 )}
               </div>
             )}
 
             {/* Mode Selection */}
-            <div className="flex gap-2 bg-white bg-opacity-10 rounded-lg p-1">
-              <Button
-                variant={mode === 'edit' ? 'default' : 'ghost'}
+            <div className="flex gap-2 rounded-lg p-1" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}>
+              <button
                 onClick={() => setMode('edit')}
-                className={mode === 'edit' ? 'bg-white text-blue-600 hover:bg-white' : 'text-blue-100 hover:text-white hover:bg-white/10'}
-                size="sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
+                style={mode === 'edit'
+                  ? { backgroundColor: '#ffffff', color: '#2563eb' }
+                  : { backgroundColor: 'transparent', color: '#bfdbfe' }}
               >
                 ✏️ Edit
-              </Button>
-              <Button
-                variant={mode === 'preview' ? 'default' : 'ghost'}
+              </button>
+              <button
                 onClick={() => setMode('preview')}
-                className={mode === 'preview' ? 'bg-white text-blue-600 hover:bg-white' : 'text-blue-100 hover:text-white hover:bg-white/10'}
-                size="sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
+                style={mode === 'preview'
+                  ? { backgroundColor: '#ffffff', color: '#2563eb' }
+                  : { backgroundColor: 'transparent', color: '#bfdbfe' }}
               >
                 👁️ Preview
-              </Button>
-              <Button
-                variant={mode === 'branding' ? 'default' : 'ghost'}
+              </button>
+              <button
                 onClick={() => setMode('branding')}
-                className={mode === 'branding' ? 'bg-white text-blue-600 hover:bg-white' : 'text-blue-100 hover:text-white hover:bg-white/10'}
-                size="sm"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all"
+                style={mode === 'branding'
+                  ? { backgroundColor: '#ffffff', color: '#2563eb' }
+                  : { backgroundColor: 'transparent', color: '#bfdbfe' }}
               >
                 🎨 Branding
-              </Button>
+              </button>
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 border-l border-white border-opacity-20 pl-6">
-              <Button
-                variant="ghost"
-                size="sm"
+            <div className="flex gap-2 pl-6" style={{ borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
+              <button
                 onClick={undo}
                 title="Undo"
-                className="text-white hover:bg-white hover:bg-opacity-10"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-all hover:bg-white/10"
+                style={{ color: '#ffffff' }}
               >
                 <RotateCcw className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
+              </button>
+              <button
                 onClick={redo}
                 title="Redo"
-                className="text-white hover:bg-white hover:bg-opacity-10"
+                className="inline-flex items-center justify-center w-8 h-8 rounded-md transition-all hover:bg-white/10"
+                style={{ color: '#ffffff' }}
               >
                 <RotateCw className="w-4 h-4" />
-              </Button>
+              </button>
 
               {isDirty && (
                 <Button
