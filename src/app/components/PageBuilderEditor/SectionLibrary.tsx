@@ -169,13 +169,27 @@ const SECTION_TEMPLATES: SectionTemplate[] = [
   {
     type: 'newsletter',
     name: 'Newsletter',
-    description: 'Email subscription form',
+    description: 'Email subscription & news updates',
     icon: <BookOpen className="w-6 h-6" />,
     defaultContent: {
       title: 'Subscribe to Our Newsletter',
       description: 'Stay updated with our latest news',
       placeholder: 'Enter your email',
       buttonText: 'Subscribe',
+      showNewsUpdates: true,
+      newsUpdates: [],
+    },
+  },
+  {
+    type: 'blog',
+    name: 'Blog',
+    description: 'Share articles with images and content',
+    icon: <FileText className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Our Blog',
+      description: 'Latest insights and articles',
+      layout: 'grid',
+      posts: [],
     },
   },
 ];

@@ -34,6 +34,7 @@ const pageSectionSchema = new mongoose.Schema(
         'features',
         'faq',
         'newsletter',
+        'blog',
         'custom',
       ],
       required: true,

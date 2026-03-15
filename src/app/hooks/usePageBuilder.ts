@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export interface PageSection {
   _id?: string;
-  type: 'hero' | 'about' | 'services' | 'video' | 'testimonials' | 'cta' | 'text' | 'image' | 'gallery' | 'contact' | 'pricing' | 'team' | 'features' | 'faq' | 'newsletter' | 'custom';
+  type: 'hero' | 'about' | 'services' | 'video' | 'testimonials' | 'cta' | 'text' | 'image' | 'gallery' | 'contact' | 'pricing' | 'team' | 'features' | 'faq' | 'newsletter' | 'blog' | 'custom';
   order: number;
   title?: string;
   description?: string;

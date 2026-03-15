@@ -1659,7 +1659,7 @@ const PropertiesPanel: React.FC<{
         )}
 
         {section.type === 'newsletter' && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Placeholder</label>
               <Input
@@ -1677,6 +1677,156 @@ const PropertiesPanel: React.FC<{
                 onChange={(e) => setContent({ ...content, buttonText: e.target.value })}
                 placeholder="Subscribe"
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={content.showNewsUpdates !== false}
+                onChange={(e) => setContent({ ...content, showNewsUpdates: e.target.checked })}
+                className="rounded"
+              />
+              <label className="text-sm text-gray-700">Show news updates section</label>
+            </div>
+
+            {/* News Updates Management */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">News Updates</h4>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const newsUpdates = content.newsUpdates || [];
+                    newsUpdates.push({
+                      id: Date.now().toString(),
+                      title: 'New Update',
+                      content: 'Write your update content here...',
+                      date: new Date().toLocaleDateString(),
+                      image: '',
+                    });
+                    setContent({ ...content, newsUpdates });
+                  }}
+                  className="text-xs"
+                >
+                  + Add Update
+                </Button>
+              </div>
+              
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {(content.newsUpdates || []).map((update: any, idx: number) => (
+                  <div key={update.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-medium text-gray-600">Update {idx + 1}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const newsUpdates = content.newsUpdates.filter(
+                            (u: any) => u.id !== update.id
+                          );
+                          setContent({ ...content, newsUpdates });
+                        }}
+                        className="text-xs text-red-600 h-6 px-2"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <Input
+                      type="text"
+                      value={update.title}
+                      onChange={(e) => {
+                        const newsUpdates = content.newsUpdates.map((u: any) =>
+                          u.id === update.id ? { ...u, title: e.target.value } : u
+                        );
+                        setContent({ ...content, newsUpdates });
+                      }}
+                      placeholder="Update title"
+                      className="mb-2 text-xs"
+                    />
+                    <Textarea
+                      value={update.content}
+                      onChange={(e) => {
+                        const newsUpdates = content.newsUpdates.map((u: any) =>
+                          u.id === update.id ? { ...u, content: e.target.value } : u
+                        );
+                        setContent({ ...content, newsUpdates });
+                      }}
+                      placeholder="Update content"
+                      className="text-xs mb-2"
+                      rows={3}
+                    />
+                    <Input
+                      type="text"
+                      value={update.date}
+                      onChange={(e) => {
+                        const newsUpdates = content.newsUpdates.map((u: any) =>
+                          u.id === update.id ? { ...u, date: e.target.value } : u
+                        );
+                        setContent({ ...content, newsUpdates });
+                      }}
+                      placeholder="Date"
+                      className="mb-2 text-xs"
+                    />
+                    {/* News update image */}
+                    {update.image ? (
+                      <div className="flex items-center gap-2 mb-1">
+                        <img src={update.image} alt="" className="w-16 h-10 rounded object-cover border" />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const newsUpdates = content.newsUpdates.map((u: any) =>
+                              u.id === update.id ? { ...u, image: '' } : u
+                            );
+                            setContent({ ...content, newsUpdates });
+                          }}
+                          className="text-xs text-red-600 h-6 px-2"
+                        >
+                          Remove Image
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs w-full"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = async (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (!file) return;
+                            if (file.size > 5 * 1024 * 1024) { alert('Max 5MB'); return; }
+                            try {
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+                              const authToken = localStorage.getItem('authToken');
+                              if (!authToken) return;
+                              const resp = await fetch(
+                                `${apiUrl}/page-builder/websites/${section.websiteId}/media/upload`,
+                                { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData }
+                              );
+                              if (!resp.ok) throw new Error('Upload failed');
+                              const data = await resp.json();
+                              const imageUrl = data.data?.url || data.data?.media?.url;
+                              if (imageUrl) {
+                                const newsUpdates = content.newsUpdates.map((u: any) =>
+                                  u.id === update.id ? { ...u, image: imageUrl } : u
+                                );
+                                setContent({ ...content, newsUpdates });
+                              }
+                            } catch (err) { console.error('Upload error:', err); alert('Upload failed'); }
+                          };
+                          input.click();
+                        }}
+                      >
+                        Upload Image
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -2087,9 +2237,211 @@ const PropertiesPanel: React.FC<{
             </div>
           </div>
         )}
-      </div>
 
-      {/* Background Color */}
+        {section.type === 'blog' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
+              <div className="flex gap-2">
+                <Button
+                  variant={content.layout === 'grid' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'grid' })}
+                  className="flex-1 text-xs"
+                >
+                  Grid
+                </Button>
+                <Button
+                  variant={content.layout === 'list' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'list' })}
+                  className="flex-1 text-xs"
+                >
+                  List
+                </Button>
+              </div>
+            </div>
+
+            {/* Blog Posts Management */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">Blog Posts</h4>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const posts = content.posts || [];
+                    posts.push({
+                      id: Date.now().toString(),
+                      title: 'New Blog Post',
+                      excerpt: 'A brief summary of this post...',
+                      content: 'Full blog post content goes here...',
+                      image: '',
+                      author: '',
+                      date: new Date().toLocaleDateString(),
+                      category: '',
+                    });
+                    setContent({ ...content, posts });
+                  }}
+                  className="text-xs"
+                >
+                  + Add Post
+                </Button>
+              </div>
+              
+              <div className="space-y-3 max-h-80 overflow-y-auto">
+                {(content.posts || []).map((post: any, idx: number) => (
+                  <div key={post.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-medium text-gray-600">Post {idx + 1}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const posts = content.posts.filter((p: any) => p.id !== post.id);
+                          setContent({ ...content, posts });
+                        }}
+                        className="text-xs text-red-600 h-6 px-2"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                    <Input
+                      type="text"
+                      value={post.title}
+                      onChange={(e) => {
+                        const posts = content.posts.map((p: any) =>
+                          p.id === post.id ? { ...p, title: e.target.value } : p
+                        );
+                        setContent({ ...content, posts });
+                      }}
+                      placeholder="Post title"
+                      className="mb-2 text-xs"
+                    />
+                    <Input
+                      type="text"
+                      value={post.category}
+                      onChange={(e) => {
+                        const posts = content.posts.map((p: any) =>
+                          p.id === post.id ? { ...p, category: e.target.value } : p
+                        );
+                        setContent({ ...content, posts });
+                      }}
+                      placeholder="Category (e.g., Technology)"
+                      className="mb-2 text-xs"
+                    />
+                    <Textarea
+                      value={post.excerpt}
+                      onChange={(e) => {
+                        const posts = content.posts.map((p: any) =>
+                          p.id === post.id ? { ...p, excerpt: e.target.value } : p
+                        );
+                        setContent({ ...content, posts });
+                      }}
+                      placeholder="Brief excerpt/summary"
+                      className="text-xs mb-2"
+                      rows={2}
+                    />
+                    <Textarea
+                      value={post.content}
+                      onChange={(e) => {
+                        const posts = content.posts.map((p: any) =>
+                          p.id === post.id ? { ...p, content: e.target.value } : p
+                        );
+                        setContent({ ...content, posts });
+                      }}
+                      placeholder="Full blog post content"
+                      className="text-xs mb-2"
+                      rows={4}
+                    />
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <Input
+                        type="text"
+                        value={post.author}
+                        onChange={(e) => {
+                          const posts = content.posts.map((p: any) =>
+                            p.id === post.id ? { ...p, author: e.target.value } : p
+                          );
+                          setContent({ ...content, posts });
+                        }}
+                        placeholder="Author name"
+                        className="text-xs"
+                      />
+                      <Input
+                        type="text"
+                        value={post.date}
+                        onChange={(e) => {
+                          const posts = content.posts.map((p: any) =>
+                            p.id === post.id ? { ...p, date: e.target.value } : p
+                          );
+                          setContent({ ...content, posts });
+                        }}
+                        placeholder="Date"
+                        className="text-xs"
+                      />
+                    </div>
+                    {/* Blog post image */}
+                    {post.image ? (
+                      <div className="flex items-center gap-2">
+                        <img src={post.image} alt="" className="w-16 h-10 rounded object-cover border" />
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const posts = content.posts.map((p: any) =>
+                              p.id === post.id ? { ...p, image: '' } : p
+                            );
+                            setContent({ ...content, posts });
+                          }}
+                          className="text-xs text-red-600 h-6 px-2"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs w-full"
+                        onClick={() => {
+                          const input = document.createElement('input');
+                          input.type = 'file';
+                          input.accept = 'image/*';
+                          input.onchange = async (e) => {
+                            const file = (e.target as HTMLInputElement).files?.[0];
+                            if (!file) return;
+                            if (file.size > 5 * 1024 * 1024) { alert('Max 5MB'); return; }
+                            try {
+                              const formData = new FormData();
+                              formData.append('file', file);
+                              const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+                              const authToken = localStorage.getItem('authToken');
+                              if (!authToken) return;
+                              const resp = await fetch(
+                                `${apiUrl}/page-builder/websites/${section.websiteId}/media/upload`,
+                                { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData }
+                              );
+                              if (!resp.ok) throw new Error('Upload failed');
+                              const data = await resp.json();
+                              const imageUrl = data.data?.url || data.data?.media?.url;
+                              if (imageUrl) {
+                                const posts = content.posts.map((p: any) =>
+                                  p.id === post.id ? { ...p, image: imageUrl } : p
+                                );
+                                setContent({ ...content, posts });
+                              }
+                            } catch (err) { console.error('Upload error:', err); alert('Upload failed'); }
+                          };
+                          input.click();
+                        }}
+                      >
+                        Upload Image
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
       <div className="border-t pt-4">
         <h4 className="text-sm font-semibold text-gray-900 mb-3">Background Color</h4>
         <div className="flex gap-2 items-center">

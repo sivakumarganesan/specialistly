@@ -12,6 +12,8 @@ import {
 import { HeroSectionPreview } from './sections/HeroSection';
 import { ServicesSectionPreview } from './sections/ServicesSection';
 import { CoursesSectionPreview } from './sections/CoursesSection';
+import { BlogSectionPreview } from './sections/BlogSection';
+import { NewsletterSectionPreview } from './sections/NewsletterSection';
 
 interface EditorCanvasProps {
   page: Page;
@@ -66,6 +68,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
         return <ServicesSectionPreview section={section} />;
       case 'courses':
         return <CoursesSectionPreview section={section} />;
+      case 'blog':
+        return <BlogSectionPreview section={section} />;
+      case 'newsletter':
+        return <NewsletterSectionPreview section={section} />;
       default:
         return (
           <div className="p-8 bg-gray-100 text-center">

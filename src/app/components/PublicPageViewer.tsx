@@ -4,6 +4,8 @@ import { HeroSectionPreview } from './PageBuilderEditor/sections/HeroSection';
 import { ServicesSectionPreview } from './PageBuilderEditor/sections/ServicesSection';
 import { CoursesSectionPreview } from './PageBuilderEditor/sections/CoursesSection';
 import { AboutSectionPreview } from './PageBuilderEditor/sections/AboutSection';
+import { BlogSectionPreview } from './PageBuilderEditor/sections/BlogSection';
+import { NewsletterSectionPreview } from './PageBuilderEditor/sections/NewsletterSection';
 
 const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
   switch (section.type) {
@@ -144,26 +146,9 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
         </div>
       );
     case 'newsletter':
-      return (
-        <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#eff6ff' }}>
-          <div className="max-w-2xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-4">{section.title}</h2>
-            {section.description && (
-              <p className="text-gray-600 mb-8">{section.description}</p>
-            )}
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder={section.content?.placeholder || 'Enter your email'}
-                className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              />
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
-                {section.content?.buttonText || 'Subscribe'}
-              </button>
-            </div>
-          </div>
-        </div>
-      );
+      return <NewsletterSectionPreview section={section} />;
+    case 'blog':
+      return <BlogSectionPreview section={section} />;
     default:
       return (
         <div className="py-16 px-4 text-center" style={{ backgroundColor: section.content?.backgroundColor || '#f3f4f6' }}>

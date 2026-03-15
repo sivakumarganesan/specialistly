@@ -33,6 +33,7 @@ import pageTemplateRoutes from './routes/pageTemplateRoutes.js';
 import pageRoutes from './routes/pageRoutes.js';
 import mediaRoutes from './routes/mediaRoutes.js';
 import publicRoutes from './routes/publicRoutes.js';
+import newsletterRoutes from './routes/newsletterRoutes.js';
 import { serveMedia } from './controllers/serveMediaController.js';
 
 dotenv.config();
@@ -141,6 +142,7 @@ app.use('/api/specialist', payoutRoutes);
 app.use('/api/page-builder', pageBuilderRoutes);
 app.use('/api/page-builder/websites/:websiteId/media', mediaRoutes);
 app.use('/api/page-templates', pageTemplateRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/public', publicRoutes);
 
 // Public media serving endpoint (for R2 images)
