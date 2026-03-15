@@ -288,8 +288,12 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
           return;
         }
 
+        // Get specialist email to filter courses
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const specialistEmail = user.email || '';
+
         const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
-        const response = await fetch(`${apiUrl}/courses/my-courses`, {
+        const response = await fetch(`${apiUrl}/courses/my-courses?specialistEmail=${encodeURIComponent(specialistEmail)}`, {
           headers: {
             'Authorization': `Bearer ${authToken}`,
           },
