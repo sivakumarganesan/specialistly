@@ -547,7 +547,7 @@ function UserProfile() {
             <Video className="w-5 h-5" />
             Zoom Integration
           </CardTitle>
-          <CardDescription>Connect your Zoom account to create video meetings</CardDescription>
+          <CardDescription>Connect your Zoom account to automatically create video meetings for appointments and cohort courses</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -558,7 +558,7 @@ function UserProfile() {
                     <div className="w-3 h-3 bg-green-500 rounded-full" />
                     <span className="text-green-700 font-medium">✓ Zoom Account Connected</span>
                   </div>
-                  <p className="text-sm text-green-600 mt-2">Your Zoom account is connected and ready to use. Meetings will be automatically created when participants book appointments.</p>
+                  <p className="text-sm text-green-600 mt-2">Your Zoom account is connected and ready to use. Meetings will be automatically created when you publish cohort courses with Zoom as the meeting platform, or when participants book appointments.</p>
                 </div>
                 <div className="flex gap-3">
                   <Button
@@ -599,7 +599,7 @@ function UserProfile() {
               </div>
             ) : (
               <div className="p-4 bg-cyan-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-700 mb-4">Connect your Zoom account to enable video meeting creation for appointments and sessions.</p>
+                <p className="text-sm text-blue-700 mb-4">Connect your Zoom account to enable automatic video meeting creation for cohort courses and appointments.</p>
                 <Button
                   onClick={handleConnectZoom}
                   disabled={zoomConnecting}

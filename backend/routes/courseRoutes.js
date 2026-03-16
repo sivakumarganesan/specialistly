@@ -13,6 +13,7 @@ import {
   browseCourses,
   uploadFileToLesson,
   deleteFileFromLesson,
+  generateZoomMeeting,
 } from '../controllers/courseController.js';
 import {
   enrollSelfPaced,
@@ -161,6 +162,9 @@ router.post('/:id/lessons', addLesson);
 
 // Publish course (make available)
 router.post('/:id/publish', publishCourse);
+
+// Generate Zoom meeting for cohort course
+router.post('/:id/generate-zoom', generateZoomMeeting);
 
 // Archive course (remove from store)
 router.post('/:id/archive', archiveCourse);

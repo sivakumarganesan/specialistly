@@ -324,22 +324,52 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     if (course) {
       const newStatus = course.status === "published" ? "draft" : "published";
       try {
-        await courseAPI.update(id, { status: newStatus });
+        let result: any;
+        if (newStatus === "published") {
+          result = await courseAPI.publishCourse(id);
+        } else {
+          result = await courseAPI.update(id, { status: newStatus });
+        }
         setCourses(
           courses.map((c) =>
             c.id === id
               ? {
                   ...c,
                   status: newStatus,
+                  zoomLink: result?.data?.zoomLink || c.zoomLink,
                 }
               : c
           )
         );
-        alert(`✓ Course ${newStatus === 'published' ? 'published' : 'unpublished'} successfully!`);
+        const msg = newStatus === 'published' 
+          ? (result?.zoomMeetingCreated 
+              ? '✓ Course published! Zoom meeting link created automatically.' 
+              : '✓ Course published successfully!')
+          : '✓ Course unpublished.';
+        alert(msg);
       } catch (error) {
         console.error("Failed to update course status:", error);
         alert(`Failed to update course status: ${error instanceof Error ? error.message : "Please try again."}`);
       }
+    }
+  };
+
+  const handleGenerateZoom = async (id: string) => {
+    try {
+      const result = await courseAPI.generateZoomMeeting(id);
+      if (result?.success) {
+        setCourses(
+          courses.map((c) =>
+            c.id === id
+              ? { ...c, zoomLink: result.zoomLink, meetingPlatform: 'zoom' }
+              : c
+          )
+        );
+        alert('✓ Zoom meeting link created successfully!');
+      }
+    } catch (error) {
+      console.error("Failed to generate Zoom meeting:", error);
+      alert(`Failed to generate Zoom meeting: ${error instanceof Error ? error.message : "Please try again."}`);
     }
   };
 
@@ -1134,6 +1164,25 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                       Starts: {new Date(course.startDate).toLocaleDateString()}
                     </span>
                   </div>
+                )}
+
+                {course.type === "cohort-based" && course.zoomLink && (
+                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">
+                    <Video className="h-4 w-4" />
+                    <span className="font-medium">Zoom meeting link ready</span>
+                  </div>
+                )}
+
+                {course.type === "cohort-based" && !course.zoomLink && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
+                    onClick={() => handleGenerateZoom(course.id)}
+                  >
+                    <Video className="h-4 w-4 mr-1" />
+                    Generate Zoom Meeting Link
+                  </Button>
                 )}
 
                 {course.type === "self-paced" && course.status === "draft" && (

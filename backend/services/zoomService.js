@@ -329,6 +329,83 @@ export const createZoomMeeting = async (appointmentData) => {
 };
 
 /**
+ * Create a Zoom meeting for a cohort course
+ * Uses a recurring meeting with no fixed time (type 3) so the same link
+ * works for all sessions throughout the course duration.
+ * @param {Object} course - Course document with title, startDate, etc.
+ * @param {string} specialistId - Specialist user ID (MongoDB ObjectId string)
+ * @returns {Object} - { zoomMeetingId, joinUrl, startUrl }
+ */
+export const createCohortCourseMeeting = async (course, specialistId) => {
+  try {
+    console.log('🎓 Creating Zoom meeting for cohort course...');
+    console.log(`   Course: ${course.title}`);
+    console.log(`   Specialist ID: ${specialistId}`);
+
+    // Get specialist's Zoom access token
+    const accessToken = await getSpecialistZoomToken(specialistId);
+    if (!accessToken) {
+      throw new Error('Failed to obtain Zoom access token for specialist');
+    }
+
+    // Get specialist's Zoom user ID from OAuth token
+    const tokenRecord = await UserOAuthToken.findOne({ userId: specialistId });
+    if (!tokenRecord) {
+      throw new Error('Zoom OAuth token not found for specialist. Please connect your Zoom account in Settings.');
+    }
+    const zoomUserId = tokenRecord.zoomUserId;
+
+    // Build meeting payload - type 3 = recurring with no fixed time
+    // This creates a persistent link usable for all sessions
+    const meetingPayload = {
+      topic: course.title,
+      type: 3,
+      timezone: 'UTC',
+      agenda: `Live course: ${course.title}${course.schedule ? ` | Schedule: ${course.schedule}` : ''}`,
+      settings: {
+        host_video: true,
+        participant_video: true,
+        join_before_host: false,
+        mute_upon_entry: true,
+        approval_type: 0,
+        audio: 'both',
+        auto_recording: 'none',
+        waiting_room: true,
+        email_notification: false,
+      },
+    };
+
+    console.log('📋 Cohort meeting payload:', JSON.stringify(meetingPayload, null, 2));
+
+    const meetingResponse = await axios.post(
+      `${ZOOM_API_BASE}/users/${zoomUserId}/meetings`,
+      meetingPayload,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    console.log(`✅ Cohort course Zoom meeting created: ${meetingResponse.data.id}`);
+
+    return {
+      zoomMeetingId: meetingResponse.data.id,
+      joinUrl: meetingResponse.data.join_url,
+      startUrl: meetingResponse.data.start_url,
+    };
+  } catch (error) {
+    if (error.response?.data) {
+      console.error('❌ Zoom API Error (cohort course):', JSON.stringify(error.response.data, null, 2));
+    } else {
+      console.error('❌ Error creating cohort course Zoom meeting:', error.message);
+    }
+    throw error;
+  }
+};
+
+/**
  * Get meeting details from Zoom
  */
 export const getZoomMeetingDetails = async (specialistId, meetingId) => {
@@ -707,6 +784,7 @@ export const sendZoomReAuthNotification = async (specialistEmail, specialistName
 export default {
   getZoomAccessToken,
   createZoomMeeting,
+  createCohortCourseMeeting,
   getZoomMeetingDetails,
   getZoomRecordings,
   sendMeetingInvitation,

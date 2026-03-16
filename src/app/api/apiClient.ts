@@ -77,6 +77,8 @@ export const courseAPI = {
     apiCall(`/courses/${courseId}/publish`, "POST"),
   archiveCourse: (courseId: string) => 
     apiCall(`/courses/${courseId}/archive`, "POST"),
+  generateZoomMeeting: (courseId: string) =>
+    apiCall(`/courses/${courseId}/generate-zoom`, "POST"),
   delete: (id: string) => apiCall(`/courses/${id}`, "DELETE"),
   
   // Self-Paced Enrollment

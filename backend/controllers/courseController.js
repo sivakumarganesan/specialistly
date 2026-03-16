@@ -1,5 +1,6 @@
 import Course from '../models/Course.js';
 import cloudflareR2Service from '../services/cloudflareR2Service.js';
+import { createCohortCourseMeeting } from '../services/zoomService.js';
 
 // Create a new course (specialist only)
 export const createCourse = async (req, res) => {
@@ -272,18 +273,74 @@ export const publishCourse = async (req, res) => {
 
     course.status = 'published';
     course.publishedAt = new Date();
+
+    // Auto-create Zoom meeting for cohort courses with Zoom as meeting platform
+    let zoomMeetingCreated = false;
+    if (course.courseType === 'cohort' && course.meetingPlatform === 'zoom' && !course.zoomLink) {
+      try {
+        const specialistId = course.specialistId?.toString() || req.user?.id;
+        const meeting = await createCohortCourseMeeting(course, specialistId);
+        course.zoomLink = meeting.joinUrl;
+        zoomMeetingCreated = true;
+        console.log(`✅ Auto-created Zoom meeting for course "${course.title}": ${meeting.joinUrl}`);
+      } catch (zoomError) {
+        console.warn(`⚠️ Could not auto-create Zoom meeting for course "${course.title}": ${zoomError.message}`);
+        // Don't block publishing — specialist can add link manually
+      }
+    }
+
     await course.save();
 
     res.status(200).json({
       success: true,
-      message: 'Course published successfully',
+      message: zoomMeetingCreated 
+        ? 'Course published successfully. Zoom meeting link created automatically!'
+        : 'Course published successfully',
       status: 'published',
+      zoomMeetingCreated,
       data: course,
     });
   } catch (error) {
     res.status(400).json({
       success: false,
       message: error.message,
+    });
+  }
+};
+
+// Generate Zoom meeting link for a cohort course
+export const generateZoomMeeting = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    if (course.courseType !== 'cohort') {
+      return res.status(400).json({ success: false, message: 'Zoom meeting generation is only for cohort courses' });
+    }
+
+    const specialistId = course.specialistId?.toString() || req.user?.id;
+    const meeting = await createCohortCourseMeeting(course, specialistId);
+
+    course.zoomLink = meeting.joinUrl;
+    course.meetingPlatform = 'zoom';
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Zoom meeting created successfully',
+      zoomLink: meeting.joinUrl,
+      data: course,
+    });
+  } catch (error) {
+    console.error('Error generating Zoom meeting:', error.message);
+    res.status(400).json({
+      success: false,
+      message: error.message?.includes('No Zoom OAuth token')
+        ? 'Please connect your Zoom account in Settings first.'
+        : `Failed to create Zoom meeting: ${error.message}`,
     });
   }
 };
