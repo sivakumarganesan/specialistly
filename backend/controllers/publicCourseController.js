@@ -166,6 +166,11 @@ export const createPublicPaymentIntent = async (req, res) => {
           specialistName: course.specialistEmail.split('@')[0],
           enrollmentEmail: customerEmail,
           courseName: course.title,
+          courseType: course.courseType,
+          zoomLink: course.zoomLink,
+          meetingPlatform: course.meetingPlatform,
+          startDate: course.startDate,
+          schedule: course.schedule,
         });
       } catch (emailErr) {
         console.error('Email sending failed (non-blocking):', emailErr.message);
@@ -449,6 +454,11 @@ export const confirmPublicPayment = async (req, res) => {
             specialistName: commission.specialistEmail.split('@')[0],
             enrollmentEmail: commission.customerEmail,
             courseName: course.title,
+            courseType: course.courseType,
+            zoomLink: course.zoomLink,
+            meetingPlatform: course.meetingPlatform,
+            startDate: course.startDate,
+            schedule: course.schedule,
           });
         }
       } catch (emailErr) {
@@ -608,6 +618,11 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
           specialistName: commission.specialistEmail.split('@')[0],
           enrollmentEmail: commission.customerEmail,
           courseName: course.title,
+          courseType: course.courseType,
+          zoomLink: course.zoomLink,
+          meetingPlatform: course.meetingPlatform,
+          startDate: course.startDate,
+          schedule: course.schedule,
         });
       }
     } catch (emailErr) {

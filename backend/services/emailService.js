@@ -80,12 +80,15 @@ export const sendEnrollmentConfirmation = async (options) => {
  */
 export const sendSpecialistNotification = async (options) => {
   try {
-    const { specialistEmail, specialistName, enrollmentEmail, courseName } = options;
+    const { specialistEmail, specialistName, enrollmentEmail, courseName, courseType, zoomLink, meetingPlatform, startDate, schedule } = options;
 
     if (!specialistEmail || !enrollmentEmail || !courseName) {
       console.warn('⚠️  Missing required email parameters for specialist notification');
       return;
     }
+
+    const isCohort = courseType === 'cohort' || courseType === 'cohort-based';
+    const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : null;
 
     const html = `
       <html>
@@ -95,7 +98,7 @@ export const sendSpecialistNotification = async (options) => {
             
             <p>Hello ${specialistName || 'Specialist'},</p>
             
-            <p>Great news! A new student has enrolled in your course.</p>
+            <p>Great news! A new student has enrolled in your ${isCohort ? 'live cohort' : ''} course.</p>
             
             <div style="background-color: #f5f5f5; padding: 15px; margin: 20px 0; border-radius: 5px;">
               <p><strong>Enrollment Details:</strong></p>
@@ -104,10 +107,23 @@ export const sendSpecialistNotification = async (options) => {
                 <li>Student Email: ${enrollmentEmail}</li>
                 <li>Enrollment Date: ${new Date().toLocaleDateString()}</li>
                 <li>Status: Active</li>
+                ${isCohort && formattedStartDate ? `<li>Start Date: ${formattedStartDate}</li>` : ''}
+                ${isCohort && schedule ? `<li>Schedule: ${schedule}</li>` : ''}
               </ul>
             </div>
+
+            ${isCohort && zoomLink ? `
+            <div style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+              <h3 style="margin-top: 0; margin-bottom: 10px;">🔗 Your Host Meeting Link</h3>
+              <p style="margin: 0 0 15px 0; font-size: 14px; opacity: 0.9;">Use this link to host your live sessions:</p>
+              <a href="${zoomLink}" style="display: inline-block; background-color: white; color: #4F46E5; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">
+                Open ${meetingPlatform || 'Meeting'}
+              </a>
+              <p style="margin: 15px 0 0 0; font-size: 12px; opacity: 0.8; word-break: break-all;">${zoomLink}</p>
+            </div>
+            ` : ''}
             
-            <p>The student can now access your course materials and begin their learning journey.</p>
+            <p>${isCohort ? 'The student will join your live sessions using the meeting link.' : 'The student can now access your course materials and begin their learning journey.'}</p>
             
             <p style="margin-top: 30px;">If you have any questions or need to manage this enrollment, please log into your Specialistly dashboard.</p>
             
@@ -347,8 +363,9 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
       return;
     }
 
-    const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD';
-    const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'TBD';
+    const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'To be announced';
+    const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'To be announced';
+    const hasScheduledDates = !!startDate;
 
     const html = `
       <html>
@@ -357,12 +374,13 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
             
             <div style="text-align: center; margin-bottom: 30px;">
               <h1 style="color: #4CAF50; margin: 0;">Enrollment Confirmed! 🎓</h1>
-              <p style="color: #666; margin: 10px 0 0 0; font-size: 16px;">You're in! Get ready for your live course.</p>
+              <p style="color: #666; margin: 10px 0 0 0; font-size: 16px;">You're in! Get ready for your live sessions.</p>
             </div>
 
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
               <p style="margin-top: 0;">Hi <strong>${customerName}</strong>,</p>
               <p>Thank you for enrolling in <strong>${courseName}</strong>! Your payment has been processed successfully.</p>
+              <p>This is a <strong>live cohort course</strong> — you'll attend live sessions with your instructor${schedule ? ` (${schedule})` : ''}. There are no pre-recorded video lessons; all learning happens in real-time!</p>
             </div>
 
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
@@ -413,7 +431,7 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
             <div style="background-color: #eff6ff; padding: 15px; border-left: 4px solid #4F46E5; border-radius: 4px; margin-bottom: 20px;">
               <h4 style="color: #1e40af; margin-top: 0; margin-bottom: 10px;">📝 What's Next?</h4>
               <ul style="margin: 0; padding-left: 20px; color: #1e40af; font-size: 14px;">
-                <li style="margin-bottom: 8px;">Mark your calendar for <strong>${formattedStartDate}</strong></li>
+                ${hasScheduledDates ? `<li style="margin-bottom: 8px;">Mark your calendar for <strong>${formattedStartDate}</strong></li>` : `<li style="margin-bottom: 8px;">The instructor will announce the schedule soon — stay tuned!</li>`}
                 ${schedule ? `<li style="margin-bottom: 8px;">Sessions: ${schedule}</li>` : ''}
                 ${zoomLink ? `<li style="margin-bottom: 8px;">Save the meeting link — you'll use it for all sessions</li>` : ''}
                 <li style="margin-bottom: 8px;">Check your email for updates and reminders</li>
@@ -437,7 +455,7 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
 
     await gmailApiService.sendEmail({
       to: customerEmail,
-      subject: `✅ Enrollment Confirmed - ${courseName} (Starts ${formattedStartDate})`,
+      subject: `✅ Enrollment Confirmed - ${courseName}${hasScheduledDates ? ` (Starts ${formattedStartDate})` : ''}`,
       html: html,
     });
     console.log(`✓ Cohort enrollment confirmation email sent to ${customerEmail}`);
