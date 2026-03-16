@@ -4,7 +4,7 @@ import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Plus, Trash2, LayoutGrid, List, ShoppingCart } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, ShoppingCart, Calendar, Clock, Video, Users } from 'lucide-react';
 import { PublicCourseCheckout } from '@/app/components/PublicCourseCheckout';
 
 interface Course {
@@ -389,7 +389,46 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                         {course.duration}
                       </span>
                     )}
+                    {course.courseType === 'cohort' && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded font-semibold">
+                        Live Course
+                      </span>
+                    )}
                   </div>
+
+                  {/* Cohort course details */}
+                  {course.courseType === 'cohort' && (course.startDate || course.schedule || course.meetingPlatform) && (
+                    <div className="mb-3 p-2.5 bg-indigo-50 rounded-lg border border-indigo-100 text-xs space-y-1.5">
+                      {course.startDate && (
+                        <div className="flex items-center gap-1.5 text-indigo-700">
+                          <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          {course.endDate && (
+                            <span> — Ends: {new Date(course.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          )}
+                        </div>
+                      )}
+                      {course.schedule && (
+                        <div className="flex items-center gap-1.5 text-indigo-700">
+                          <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span>{course.schedule}</span>
+                        </div>
+                      )}
+                      {course.meetingPlatform && (
+                        <div className="flex items-center gap-1.5 text-indigo-700">
+                          <Video className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span>Via {course.meetingPlatform}</span>
+                        </div>
+                      )}
+                      {course.cohortSize && (
+                        <div className="flex items-center gap-1.5 text-indigo-700">
+                          <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                          <span>Max {course.cohortSize} students</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {(course.price || course.coursePrice) && (
                     <div className="font-bold text-lg text-indigo-600">
                       {course.currency === 'INR' ? '₹' : '$'}{course.price || course.coursePrice}
@@ -399,17 +438,24 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                     <div className="font-bold text-lg text-green-600">Free</div>
                   )}
                   {/* Buy/Enroll button - only on public pages (when backend courses are present) */}
-                  {backendCourses.length > 0 && (
-                    <button
-                      onClick={() => setCheckoutCourse(course)}
-                      className="mt-3 w-full py-2 px-4 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
-                        ? 'Enroll Free'
-                        : 'Buy Now'}
-                    </button>
-                  )}
+                  {backendCourses.length > 0 && (() => {
+                    const isCohortClosed = course.courseType === 'cohort' && course.startDate && new Date(course.startDate) <= new Date();
+                    return isCohortClosed ? (
+                      <div className="mt-3 w-full py-2 px-4 bg-gray-400 text-white text-sm font-semibold rounded-lg text-center">
+                        Enrollment Closed
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setCheckoutCourse(course)}
+                        className="mt-3 w-full py-2 px-4 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
+                          ? 'Enroll Free'
+                          : course.courseType === 'cohort' ? 'Enroll Now' : 'Buy Now'}
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -427,6 +473,12 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
               currency: checkoutCourse.currency || 'USD',
               thumbnail: checkoutCourse.thumbnail || checkoutCourse.courseImage,
               specialistEmail: checkoutCourse.specialistEmail,
+              courseType: checkoutCourse.courseType,
+              startDate: checkoutCourse.startDate,
+              endDate: checkoutCourse.endDate,
+              schedule: checkoutCourse.schedule,
+              meetingPlatform: checkoutCourse.meetingPlatform,
+              zoomLink: checkoutCourse.zoomLink,
             }}
             isOpen={!!checkoutCourse}
             onClose={() => setCheckoutCourse(null)}

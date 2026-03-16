@@ -34,6 +34,12 @@ interface CourseInfo {
   thumbnail?: string;
   courseImage?: string;
   specialistEmail?: string;
+  courseType?: string;
+  startDate?: string;
+  endDate?: string;
+  schedule?: string;
+  meetingPlatform?: string;
+  zoomLink?: string;
 }
 
 interface PublicCourseCheckoutProps {
@@ -783,6 +789,47 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                 <p className="text-sm text-gray-500 mb-4">
                   Logged in as <strong>{authUser.email}</strong>
                 </p>
+              )}
+
+              {/* Cohort course details on success */}
+              {course.courseType === 'cohort' && (course.startDate || course.schedule || course.zoomLink) && (
+                <div className="text-left mt-4 mb-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
+                  <h4 className="font-semibold text-indigo-900 mb-3 text-sm">Course Details</h4>
+                  <div className="space-y-2 text-sm">
+                    {course.startDate && (
+                      <div className="flex items-center gap-2 text-indigo-700">
+                        <span className="font-medium">Starts:</span>
+                        <span>{new Date(course.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    )}
+                    {course.schedule && (
+                      <div className="flex items-center gap-2 text-indigo-700">
+                        <span className="font-medium">Schedule:</span>
+                        <span>{course.schedule}</span>
+                      </div>
+                    )}
+                    {course.meetingPlatform && (
+                      <div className="flex items-center gap-2 text-indigo-700">
+                        <span className="font-medium">Platform:</span>
+                        <span>{course.meetingPlatform}</span>
+                      </div>
+                    )}
+                    {course.zoomLink && (
+                      <div className="mt-3 p-3 bg-white rounded-lg border border-indigo-200">
+                        <p className="font-semibold text-indigo-900 mb-1">Meeting Link</p>
+                        <a
+                          href={course.zoomLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-600 hover:text-indigo-800 underline break-all text-xs"
+                        >
+                          {course.zoomLink}
+                        </a>
+                        <p className="text-xs text-gray-500 mt-1">A confirmation email with the meeting link has been sent to your email.</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
 
               <div className="space-y-3">

@@ -4,6 +4,7 @@ import MarketplaceCommission from '../models/MarketplaceCommission.js';
 import CreatorProfile from '../models/CreatorProfile.js';
 import Course from '../models/Course.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
+import { sendEnrollmentConfirmation, sendCohortEnrollmentConfirmation, sendSpecialistNotification } from '../services/emailService.js';
 import mongoose from 'mongoose';
 
 /**
@@ -57,6 +58,19 @@ export const createPublicPaymentIntent = async (req, res) => {
     // Use real userId if authenticated, otherwise guest prefix
     const customerId = req.user?.userId || `guest_${customerEmail}`;
     const isAuthenticated = !!req.user?.userId;
+
+    // For cohort courses, block enrollment after start date
+    if (course.courseType === 'cohort' && course.startDate) {
+      const now = new Date();
+      const startDate = new Date(course.startDate);
+      if (now >= startDate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Enrollment for this course has closed. The course has already started.',
+          code: 'ENROLLMENT_CLOSED',
+        });
+      }
+    }
 
     // Check duplicate enrollment (by userId if authenticated, or by email for guests)
     const enrollmentQuery = isAuthenticated
@@ -124,6 +138,38 @@ export const createPublicPaymentIntent = async (req, res) => {
         paymentStatus: 'completed',
         status: 'active',
       });
+
+      // Send confirmation emails for free course
+      try {
+        if (course.courseType === 'cohort') {
+          await sendCohortEnrollmentConfirmation({
+            customerEmail,
+            customerName: customerName || customerEmail.split('@')[0],
+            courseName: course.title,
+            enrollmentId: enrollment._id.toString(),
+            startDate: course.startDate,
+            endDate: course.endDate,
+            schedule: course.schedule,
+            meetingPlatform: course.meetingPlatform,
+            zoomLink: course.zoomLink,
+          });
+        } else {
+          await sendEnrollmentConfirmation({
+            customerEmail,
+            customerName: customerName || customerEmail.split('@')[0],
+            courseName: course.title,
+            enrollmentId: enrollment._id.toString(),
+          });
+        }
+        await sendSpecialistNotification({
+          specialistEmail: course.specialistEmail,
+          specialistName: course.specialistEmail.split('@')[0],
+          enrollmentEmail: customerEmail,
+          courseName: course.title,
+        });
+      } catch (emailErr) {
+        console.error('Email sending failed (non-blocking):', emailErr.message);
+      }
 
       return res.status(200).json({
         success: true,
@@ -373,6 +419,42 @@ export const confirmPublicPayment = async (req, res) => {
         });
       }
 
+      // Send confirmation emails
+      try {
+        const course = await Course.findById(commission.serviceId);
+        if (course && course.courseType === 'cohort') {
+          await sendCohortEnrollmentConfirmation({
+            customerEmail: commission.customerEmail,
+            customerName: commission.customerEmail.split('@')[0],
+            courseName: course.title,
+            enrollmentId: enrollment._id.toString(),
+            startDate: course.startDate,
+            endDate: course.endDate,
+            schedule: course.schedule,
+            meetingPlatform: course.meetingPlatform,
+            zoomLink: course.zoomLink,
+          });
+        } else if (course) {
+          await sendEnrollmentConfirmation({
+            customerEmail: commission.customerEmail,
+            customerName: commission.customerEmail.split('@')[0],
+            courseName: course.title,
+            enrollmentId: enrollment._id.toString(),
+          });
+        }
+        // Notify specialist
+        if (course) {
+          await sendSpecialistNotification({
+            specialistEmail: commission.specialistEmail,
+            specialistName: commission.specialistEmail.split('@')[0],
+            enrollmentEmail: commission.customerEmail,
+            courseName: course.title,
+          });
+        }
+      } catch (emailErr) {
+        console.error('Email sending failed (non-blocking):', emailErr.message);
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Payment confirmed and enrollment created',
@@ -494,6 +576,42 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
       enrollment.razorpayOrderId = razorpayOrderId;
       enrollment.razorpayPaymentId = razorpayPaymentId;
       await enrollment.save();
+    }
+
+    // Send confirmation emails
+    try {
+      const course = await Course.findById(commission.serviceId);
+      if (course && course.courseType === 'cohort') {
+        await sendCohortEnrollmentConfirmation({
+          customerEmail: commission.customerEmail,
+          customerName: commission.customerEmail.split('@')[0],
+          courseName: course.title,
+          enrollmentId: enrollment._id.toString(),
+          startDate: course.startDate,
+          endDate: course.endDate,
+          schedule: course.schedule,
+          meetingPlatform: course.meetingPlatform,
+          zoomLink: course.zoomLink,
+        });
+      } else if (course) {
+        await sendEnrollmentConfirmation({
+          customerEmail: commission.customerEmail,
+          customerName: commission.customerEmail.split('@')[0],
+          courseName: course.title,
+          enrollmentId: enrollment._id.toString(),
+        });
+      }
+      // Notify specialist
+      if (course) {
+        await sendSpecialistNotification({
+          specialistEmail: commission.specialistEmail,
+          specialistName: commission.specialistEmail.split('@')[0],
+          enrollmentEmail: commission.customerEmail,
+          courseName: course.title,
+        });
+      }
+    } catch (emailErr) {
+      console.error('Email sending failed (non-blocking):', emailErr.message);
     }
 
     return res.status(200).json({

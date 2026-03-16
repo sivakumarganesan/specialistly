@@ -75,6 +75,7 @@ interface Course {
   endDate?: string;
   schedule?: string;
   meetingPlatform?: string;
+  zoomLink?: string;
   liveSessions?: number;
 }
 
@@ -207,6 +208,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     endDate: "",
     schedule: "",
     meetingPlatform: "Zoom",
+    zoomLink: "",
     liveSessions: "",
   });
 
@@ -233,6 +235,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           endDate: formData.endDate,
           schedule: formData.schedule,
           meetingPlatform: formData.meetingPlatform,
+          zoomLink: formData.zoomLink,
           liveSessions: parseInt(formData.liveSessions) || 0,
         }),
       };
@@ -275,6 +278,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           endDate: formData.endDate,
           schedule: formData.schedule,
           meetingPlatform: formData.meetingPlatform,
+          zoomLink: formData.zoomLink,
           liveSessions: parseInt(formData.liveSessions) || 0,
         }),
       };
@@ -368,6 +372,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       endDate: course.endDate || "",
       schedule: course.schedule || "",
       meetingPlatform: course.meetingPlatform || "Zoom",
+      zoomLink: course.zoomLink || "",
       liveSessions: course.liveSessions?.toString() || "",
     });
     if (course.modules && course.modules.length > 0) {
@@ -391,6 +396,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       endDate: "",
       schedule: "",
       meetingPlatform: "Zoom",
+      zoomLink: "",
       liveSessions: "",
     });
     setModules([{ id: "1", title: "Introduction to Course", duration: "2 hours", lessonsCount: 5 }]);
@@ -1334,7 +1340,89 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
               </div>
             </div>
 
-            {/* Cohort-Based Specific Fields removed - not needed during creation */}
+            {/* Cohort-Based Course Settings */}
+            {courseType === "cohort-based" && (
+              <>
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3">Cohort-Based Course Settings</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="cohortSize">Max Cohort Size</Label>
+                        <Input
+                          id="cohortSize"
+                          type="number"
+                          placeholder="e.g., 50"
+                          value={formData.cohortSize}
+                          onChange={(e) =>
+                            setFormData({ ...formData, cohortSize: e.target.value })
+                          }
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="liveSessions">Live Sessions</Label>
+                        <Input
+                          id="liveSessions"
+                          type="number"
+                          placeholder="e.g., 16"
+                          value={formData.liveSessions}
+                          onChange={(e) =>
+                            setFormData({ ...formData, liveSessions: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="schedule">Schedule</Label>
+                      <Input
+                        id="schedule"
+                        placeholder="e.g., Mon & Wed, 7:00 PM - 9:00 PM"
+                        value={formData.schedule}
+                        onChange={(e) =>
+                          setFormData({ ...formData, schedule: e.target.value })
+                        }
+                      />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="meetingPlatform">Meeting Platform</Label>
+                      <Select
+                        value={formData.meetingPlatform}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, meetingPlatform: value })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select platform" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Zoom">Zoom</SelectItem>
+                          <SelectItem value="Google Meet">Google Meet</SelectItem>
+                          <SelectItem value="Microsoft Teams">Microsoft Teams</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="zoomLink">Meeting Link (Zoom / Google Meet / Teams) *</Label>
+                      <Input
+                        id="zoomLink"
+                        placeholder="e.g., https://zoom.us/j/123456789"
+                        value={formData.zoomLink}
+                        onChange={(e) =>
+                          setFormData({ ...formData, zoomLink: e.target.value })
+                        }
+                      />
+                      <p className="text-xs text-gray-500 mt-1">This link will be sent to students after purchase</p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>
@@ -1584,6 +1672,19 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                           <SelectItem value="Other">Other</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="edit-zoomLink">Meeting Link (Zoom / Google Meet / Teams) *</Label>
+                      <Input
+                        id="edit-zoomLink"
+                        placeholder="e.g., https://zoom.us/j/123456789"
+                        value={formData.zoomLink}
+                        onChange={(e) =>
+                          setFormData({ ...formData, zoomLink: e.target.value })
+                        }
+                      />
+                      <p className="text-xs text-gray-500 mt-1">This link will be sent to students after purchase</p>
                     </div>
                   </div>
                 </div>

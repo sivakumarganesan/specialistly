@@ -1141,7 +1141,7 @@ export const getPublicWebsite = async (req, res) => {
       specialistEmail: website.creatorEmail,
       status: 'published',
     })
-      .select('_id title description thumbnail courseType price currency lessons')
+      .select('_id title description thumbnail courseType price currency lessons startDate endDate schedule meetingPlatform zoomLink cohortSize liveSessions')
       .sort({ createdAt: -1 });
 
     const enrichedPages = pages.map((page) => {

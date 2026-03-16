@@ -4,7 +4,9 @@ import cloudflareR2Service from '../services/cloudflareR2Service.js';
 // Create a new course (specialist only)
 export const createCourse = async (req, res) => {
   try {
-    const { title, description, courseType, price, currency = 'USD' } = req.body;
+    const { title, description, courseType, price, currency = 'USD',
+      cohortSize, startDate, endDate, schedule, meetingPlatform, zoomLink, liveSessions,
+    } = req.body;
     
     if (!title || !courseType) {
       return res.status(400).json({
@@ -21,7 +23,7 @@ export const createCourse = async (req, res) => {
       });
     }
 
-    const course = new Course({
+    const courseData = {
       specialistId: req.user?.userId || req.body.specialistId,
       specialistEmail: req.user?.email || req.body.specialistEmail,
       title,
@@ -31,7 +33,20 @@ export const createCourse = async (req, res) => {
       currency,
       lessons: [],
       status: 'draft',
-    });
+    };
+
+    // Add cohort-specific fields
+    if (courseType === 'cohort') {
+      if (cohortSize) courseData.cohortSize = cohortSize;
+      if (startDate) courseData.startDate = startDate;
+      if (endDate) courseData.endDate = endDate;
+      if (schedule) courseData.schedule = schedule;
+      if (meetingPlatform) courseData.meetingPlatform = meetingPlatform;
+      if (zoomLink) courseData.zoomLink = zoomLink;
+      if (liveSessions) courseData.liveSessions = liveSessions;
+    }
+
+    const course = new Course(courseData);
 
     await course.save();
     res.status(201).json({
@@ -82,7 +97,7 @@ export const browseCourses = async (req, res) => {
     if (courseType) filter.courseType = courseType;
 
     const courses = await Course.find(filter)
-      .select('_id title description thumbnail specialistEmail courseType price currency lessons')
+      .select('_id title description thumbnail specialistEmail courseType price currency lessons startDate endDate schedule meetingPlatform zoomLink cohortSize liveSessions')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
