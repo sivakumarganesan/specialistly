@@ -363,18 +363,26 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                   layout === 'list' ? 'flex gap-4' : ''
                 }`}
               >
-                {(course.thumbnail || course.courseImage) && (
-                  <div
-                    className={`bg-gradient-to-br from-blue-400 to-indigo-600 ${
-                      layout === 'list' ? 'w-32 h-32' : 'w-full h-40'
-                    }`}
-                    style={{
-                      backgroundImage: `url(${course.thumbnail || course.courseImage})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                    }}
-                  />
-                )}
+                <div
+                  className={`bg-gradient-to-br from-blue-400 to-indigo-600 ${
+                    layout === 'list' ? 'w-32 h-32' : 'w-full h-48'
+                  }`}
+                  style={{
+                    ...(course.thumbnail || course.courseImage
+                      ? {
+                          backgroundImage: `url(${course.thumbnail || course.courseImage})`,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                        }
+                      : {}),
+                  }}
+                >
+                  {!course.thumbnail && !course.courseImage && (
+                    <div className="w-full h-full flex items-center justify-center text-white/80">
+                      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+                    </div>
+                  )}
+                </div>
                 <div className={`p-4 ${layout === 'list' ? 'flex-1' : ''}`}>
                   <h3 className="font-bold text-lg mb-2">{course.title || course.name}</h3>
                   <p className="text-gray-600 text-sm mb-3">{course.description || course.courseDescription}</p>
@@ -389,7 +397,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                         {course.duration}
                       </span>
                     )}
-                    {course.courseType === 'cohort' && (
+                    {(course.courseType === 'cohort' || course.courseType === 'cohort-based') && (
                       <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded font-semibold">
                         Live Course
                       </span>
@@ -397,7 +405,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                   </div>
 
                   {/* Cohort course details */}
-                  {course.courseType === 'cohort' && (course.startDate || course.schedule || course.meetingPlatform) && (
+                  {(course.courseType === 'cohort' || course.courseType === 'cohort-based') && (course.startDate || course.schedule || course.meetingPlatform) && (
                     <div className="mb-3 p-2.5 bg-indigo-50 rounded-lg border border-indigo-100 text-xs space-y-1.5">
                       {course.startDate && (
                         <div className="flex items-center gap-1.5 text-indigo-700">
@@ -429,17 +437,16 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                     </div>
                   )}
 
-                  {(course.price || course.coursePrice) && (
+                  {Number(course.price || course.coursePrice || 0) > 0 ? (
                     <div className="font-bold text-lg text-indigo-600">
                       {course.currency === 'INR' ? '₹' : '$'}{course.price || course.coursePrice}
                     </div>
-                  )}
-                  {!course.price && !course.coursePrice && (
+                  ) : (
                     <div className="font-bold text-lg text-green-600">Free</div>
                   )}
                   {/* Buy/Enroll button - only on public pages (when backend courses are present) */}
                   {backendCourses.length > 0 && (() => {
-                    const isCohortClosed = course.courseType === 'cohort' && course.startDate && new Date(course.startDate) <= new Date();
+                    const isCohortClosed = (course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate && new Date(course.startDate) <= new Date();
                     return isCohortClosed ? (
                       <div className="mt-3 w-full py-2 px-4 bg-gray-400 text-white text-sm font-semibold rounded-lg text-center">
                         Enrollment Closed
@@ -452,7 +459,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                         <ShoppingCart className="h-4 w-4" />
                         {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
                           ? 'Enroll Free'
-                          : course.courseType === 'cohort' ? 'Enroll Now' : 'Buy Now'}
+                          : (course.courseType === 'cohort' || course.courseType === 'cohort-based') ? 'Enroll Now' : 'Buy Now'}
                       </button>
                     );
                   })()}
