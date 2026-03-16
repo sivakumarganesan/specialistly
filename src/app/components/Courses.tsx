@@ -87,9 +87,10 @@ interface SearchableItem {
 
 interface CoursesProps {
   onUpdateSearchableItems: (items: SearchableItem[]) => void;
+  embedded?: boolean;
 }
 
-export function Courses({ onUpdateSearchableItems }: CoursesProps) {
+export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -964,8 +965,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className={embedded ? "space-y-6" : "p-4 md:p-6 space-y-6"}>
       {/* Header */}
+      {!embedded && (
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-1">Courses</h1>
@@ -974,6 +976,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           </p>
         </div>
       </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

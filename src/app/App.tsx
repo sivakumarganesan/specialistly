@@ -8,7 +8,6 @@ import { Header } from "@/app/components/Header";
 import { Sidebar } from "@/app/components/Sidebar";
 import { Dashboard } from "@/app/components/Dashboard";
 import { Services } from "@/app/components/Services";
-import { Courses } from "@/app/components/Courses";
 import { Customers } from "@/app/components/Customers";
 import { Settings } from "@/app/components/Settings";
 import { SpecialistSettings } from "@/app/components/SpecialistSettings";
@@ -139,11 +138,7 @@ export function AppContent() {
   };
 
   const handleSearchItemClick = (type: "course" | "offering") => {
-    if (type === "course") {
-      setCurrentPage("courses");
-    } else {
-      setCurrentPage("services");
-    }
+    setCurrentPage("services");
   };
 
   const updateOfferingItems = (items: SearchableItem[]) => {
@@ -262,8 +257,7 @@ export function AppContent() {
         )}
         {currentPage === "page-builder" && <PageBuilder />}
         {currentPage === "my-site" && userType === "specialist" && <MySite />}
-        {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} onNavigateToCourses={() => setCurrentPage("courses")} />}
-        {currentPage === "courses" && userType === "specialist" && <Courses onUpdateSearchableItems={updateCourseItems} />}
+        {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} onUpdateCourseItems={updateCourseItems} />}
         {currentPage === "browse-courses" && userType === "customer" && <CoursesBrowse />}
         {currentPage === "my-learning" && userType === "customer" && <MyLearning />}
         {currentPage.startsWith("learn-course-") && userType === "customer" && (

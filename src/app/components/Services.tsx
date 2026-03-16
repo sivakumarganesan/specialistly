@@ -6,6 +6,7 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
 import { serviceAPI, appointmentAPI, customerAPI } from "@/app/api/apiClient";
+import { Courses } from "@/app/components/Courses";
 import { useAuth } from "@/app/context/AuthContext";
 import {
   Select,
@@ -35,7 +36,6 @@ import {
   Briefcase,
   X,
   CalendarClock,
-  PlayCircle,
   GraduationCap,
 } from "lucide-react";
 import { Checkbox } from "@/app/components/ui/checkbox";
@@ -96,11 +96,12 @@ interface Customer {
 
 interface ServicesProps {
   onUpdateSearchableItems: (items: SearchableItem[]) => void;
-  onNavigateToCourses?: (type?: string) => void;
+  onUpdateCourseItems?: (items: SearchableItem[]) => void;
 }
 
-export function Services({ onUpdateSearchableItems, onNavigateToCourses }: ServicesProps) {
+export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: ServicesProps) {
   const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<"courses" | "offerings">("courses");
   const [services, setServices] = useState<Service[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [bookedOfferings, setBookedOfferings] = useState<any[]>([]);
@@ -694,14 +695,14 @@ export function Services({ onUpdateSearchableItems, onNavigateToCourses }: Servi
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-1">Services</h1>
+          <h1 className="text-3xl font-bold mb-1">Offerings</h1>
           <p className="text-gray-600">
-            Create and manage your offerings
+            Create and manage your courses and services
           </p>
         </div>
         
         {/* Set Availability Button */}
-        {getTotalConsultingServices() > 0 && (
+        {activeTab === "offerings" && getTotalConsultingServices() > 0 && (
           <Button
             className="bg-cyan-600 hover:bg-cyan-700 gap-2"
             onClick={openAppointmentDialog}
@@ -714,6 +715,40 @@ export function Services({ onUpdateSearchableItems, onNavigateToCourses }: Servi
           </Button>
         )}
       </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 border-b">
+        <button
+          onClick={() => setActiveTab("courses")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "courses"
+              ? "border-indigo-600 text-indigo-600"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          }`}
+        >
+          <GraduationCap className="h-4 w-4 inline mr-1.5 -mt-0.5" />
+          Courses
+        </button>
+        <button
+          onClick={() => setActiveTab("offerings")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === "offerings"
+              ? "border-indigo-600 text-indigo-600"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+          }`}
+        >
+          <Briefcase className="h-4 w-4 inline mr-1.5 -mt-0.5" />
+          Offerings
+        </button>
+      </div>
+
+      {/* Courses Tab */}
+      {activeTab === "courses" && (
+        <Courses onUpdateSearchableItems={onUpdateCourseItems || (() => {})} embedded />
+      )}
+
+      {/* Offerings Tab */}
+      {activeTab === "offerings" && <>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -810,10 +845,10 @@ export function Services({ onUpdateSearchableItems, onNavigateToCourses }: Servi
         </Card>
       )}
 
-      {/* Create New Offering */}
+      {/* Create New Consulting Offering */}
       <div>
         <h2 className="text-lg font-semibold mb-3">Create New Offering</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card
             className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-green-500"
             onClick={() => openCreateDialog("consulting")}
@@ -829,44 +864,6 @@ export function Services({ onUpdateSearchableItems, onNavigateToCourses }: Servi
               <Button className="bg-green-600 hover:bg-green-700 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Consulting
-              </Button>
-            </div>
-          </Card>
-
-          <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-cyan-500"
-            onClick={() => onNavigateToCourses?.("self-paced")}
-          >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-cyan-100 rounded-full">
-                <PlayCircle className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-lg">Self-Paced Course</h3>
-              <p className="text-sm text-gray-600">
-                Create pre-recorded courses students take at their own pace
-              </p>
-              <Button className="bg-cyan-600 hover:bg-cyan-700 gap-2">
-                <Plus className="h-4 w-4" />
-                Create Self-Paced
-              </Button>
-            </div>
-          </Card>
-
-          <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-indigo-500"
-            onClick={() => onNavigateToCourses?.("cohort-based")}
-          >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-indigo-100 rounded-full">
-                <GraduationCap className="h-8 w-8 text-indigo-600" />
-              </div>
-              <h3 className="font-semibold text-lg">Cohort-Based Course</h3>
-              <p className="text-sm text-gray-600">
-                Create live courses with scheduled sessions and cohort learning
-              </p>
-              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2">
-                <Plus className="h-4 w-4" />
-                Create Cohort-Based
               </Button>
             </div>
           </Card>
@@ -1012,6 +1009,8 @@ export function Services({ onUpdateSearchableItems, onNavigateToCourses }: Servi
           </>
         )}
       </div>
+
+      </>}
 
       {/* Create Service Dialog */}
       <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
