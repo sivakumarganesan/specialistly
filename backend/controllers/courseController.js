@@ -37,7 +37,7 @@ export const createCourse = async (req, res) => {
     };
 
     // Add cohort-specific fields
-    if (courseType === 'cohort') {
+    if (courseType === 'cohort' || courseType === 'cohort-based') {
       if (cohortSize) courseData.cohortSize = cohortSize;
       if (startDate) courseData.startDate = startDate;
       if (endDate) courseData.endDate = endDate;
@@ -276,7 +276,7 @@ export const publishCourse = async (req, res) => {
 
     // Auto-create Zoom meeting for cohort courses with Zoom as meeting platform
     let zoomMeetingCreated = false;
-    if (course.courseType === 'cohort' && course.meetingPlatform === 'zoom' && !course.zoomLink) {
+    if ((course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.meetingPlatform === 'zoom' && !course.zoomLink) {
       try {
         const specialistId = course.specialistId?.toString() || req.user?.id;
         const meeting = await createCohortCourseMeeting(course, specialistId);
@@ -317,7 +317,7 @@ export const generateZoomMeeting = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Course not found' });
     }
 
-    if (course.courseType !== 'cohort') {
+    if (course.courseType !== 'cohort' && course.courseType !== 'cohort-based') {
       return res.status(400).json({ success: false, message: 'Zoom meeting generation is only for cohort courses' });
     }
 

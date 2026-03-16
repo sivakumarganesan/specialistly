@@ -60,7 +60,7 @@ export const createPublicPaymentIntent = async (req, res) => {
     const isAuthenticated = !!req.user?.userId;
 
     // For cohort courses, block enrollment after start date
-    if (course.courseType === 'cohort' && course.startDate) {
+    if ((course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate) {
       const now = new Date();
       const startDate = new Date(course.startDate);
       if (now >= startDate) {
@@ -141,7 +141,7 @@ export const createPublicPaymentIntent = async (req, res) => {
 
       // Send confirmation emails for free course
       try {
-        if (course.courseType === 'cohort') {
+        if (course.courseType === 'cohort' || course.courseType === 'cohort-based') {
           await sendCohortEnrollmentConfirmation({
             customerEmail,
             customerName: customerName || customerEmail.split('@')[0],
@@ -422,7 +422,7 @@ export const confirmPublicPayment = async (req, res) => {
       // Send confirmation emails
       try {
         const course = await Course.findById(commission.serviceId);
-        if (course && course.courseType === 'cohort') {
+        if (course && (course.courseType === 'cohort' || course.courseType === 'cohort-based')) {
           await sendCohortEnrollmentConfirmation({
             customerEmail: commission.customerEmail,
             customerName: commission.customerEmail.split('@')[0],
@@ -581,7 +581,7 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
     // Send confirmation emails
     try {
       const course = await Course.findById(commission.serviceId);
-      if (course && course.courseType === 'cohort') {
+      if (course && (course.courseType === 'cohort' || course.courseType === 'cohort-based')) {
         await sendCohortEnrollmentConfirmation({
           customerEmail: commission.customerEmail,
           customerName: commission.customerEmail.split('@')[0],

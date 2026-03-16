@@ -25,7 +25,7 @@ export const createCohort = async (req, res) => {
 
     // Validate course exists and is cohort type
     const course = await Course.findById(courseId);
-    if (!course || course.courseType !== 'cohort') {
+    if (!course || (course.courseType !== 'cohort' && course.courseType !== 'cohort-based')) {
       return res.status(404).json({
         success: false,
         message: 'Course not found or not cohort type',
