@@ -4,7 +4,7 @@ import { courseAPI, videoAPI } from "@/app/api/apiClient";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
-import { ChevronLeft, Play, CheckCircle, Award, AlertCircle } from "lucide-react";
+import { ChevronLeft, Play, CheckCircle, Award, AlertCircle, Video, Calendar, Clock } from "lucide-react";
 import { HLSVideoPlayer } from "@/app/components/HLSVideoPlayer";
 
 interface Lesson {
@@ -33,9 +33,15 @@ interface Lesson {
 
 interface EnrollmentDetails {
   enrollmentId: string;
-  courseId: string;  // Add the course ID
+  courseId: string;
   courseTitle: string;
   courseDescription?: string;
+  courseType?: string;
+  zoomLink?: string;
+  meetingPlatform?: string;
+  startDate?: string;
+  endDate?: string;
+  schedule?: string;
   lessons: Lesson[];
   percentComplete: number;
   completed: boolean;
@@ -245,6 +251,42 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                 {enrollment.courseDescription && (
                   <p className="text-gray-600 mb-4">{enrollment.courseDescription}</p>
                 )}
+
+                {/* Zoom Meeting Link for Cohort Courses */}
+                {(enrollment.courseType === 'cohort-based' || enrollment.courseType === 'cohort') && enrollment.zoomLink && (
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Video className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-semibold text-blue-900">Live Session</h3>
+                    </div>
+                    {(enrollment.startDate || enrollment.schedule) && (
+                      <div className="flex flex-wrap gap-4 text-sm text-blue-800 mb-3">
+                        {enrollment.startDate && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            Starts {new Date(enrollment.startDate).toLocaleDateString()}
+                          </span>
+                        )}
+                        {enrollment.schedule && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-4 h-4" />
+                            {enrollment.schedule}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <a
+                      href={enrollment.zoomLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                    >
+                      <Video className="w-4 h-4" />
+                      Join {enrollment.meetingPlatform || 'Zoom'} Meeting
+                    </a>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-4">
                   <div className="flex-1 max-w-xs">
                     <div className="flex justify-between items-center mb-2">
