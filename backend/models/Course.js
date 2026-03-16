@@ -117,7 +117,7 @@ const courseSchema = new mongoose.Schema({
   // Course Type
   courseType: {
     type: String,
-    enum: ['self-paced', 'cohort'],
+    enum: ['self-paced', 'cohort', 'cohort-based'],
     required: true,
   },
   
