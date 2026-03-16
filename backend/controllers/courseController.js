@@ -264,10 +264,10 @@ export const publishCourse = async (req, res) => {
     }
 
     const lessonsCount = course.lessons && course.lessons.length ? course.lessons.length : 0;
-    if (lessonsCount === 0) {
+    if (lessonsCount === 0 && course.courseType === 'self-paced') {
       return res.status(400).json({
         success: false,
-        message: 'Course must have at least 1 lesson',
+        message: 'Self-paced course must have at least 1 lesson',
       });
     }
 
