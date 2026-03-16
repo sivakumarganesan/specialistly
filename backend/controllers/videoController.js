@@ -44,8 +44,9 @@ export const getVideoUploadToken = async (req, res) => {
       });
     }
 
+    const { fileSize, fileName } = req.body;
     console.log('[Video Controller] Calling cloudflareStreamService.getUploadToken()');
-    const token = await cloudflareStreamService.getUploadToken({ title });
+    const token = await cloudflareStreamService.getUploadToken({ title, fileSize: fileSize || 0, fileName });
 
     console.log('[Video Controller] Successfully obtained upload token');
     res.json({

@@ -63,63 +63,76 @@ class CloudflareStreamService {
   }
 
   /**
-   * Get direct upload token (client-side upload)
-   * Allows frontend to upload directly to Cloudflare
+   * Get TUS upload URL for client-side resumable upload
+   * Allows frontend to upload directly to Cloudflare via TUS protocol
    */
   async getUploadToken(videoMetadata = {}) {
     try {
-      console.log('[Cloudflare] Requesting upload token...');
-      console.log('[Cloudflare] API Base URL:', this.baseUrl);
-      console.log('[Cloudflare] Account ID:', this.baseUrl.includes('accounts') ? 'Set' : 'Missing');
-      console.log('[Cloudflare] Authorization Header Present:', !!this.headers['Authorization']);
-      
-      // Cloudflare Stream direct_upload endpoint expects camelCase field names
-      // Required: maxDurationSeconds
-      const requestBody = {
-        maxDurationSeconds: 3600, // 1 hour max duration
+      console.log('[Cloudflare] Requesting TUS upload URL...');
+      const fileSize = videoMetadata.fileSize || 0;
+
+      // TUS: POST to stream endpoint with Tus-Resumable header
+      const tusHeaders = {
+        ...this.headers,
+        'Tus-Resumable': '1.0.0',
+        'Upload-Length': String(fileSize),
       };
-      
-      // Optional: add metadata if title is provided
+
+      // Add metadata as base64-encoded Upload-Metadata header
+      const metaParts = [];
       if (videoMetadata.title) {
-        requestBody.meta = { name: videoMetadata.title };
+        metaParts.push(`name ${Buffer.from(videoMetadata.title).toString('base64')}`);
       }
-      
-      console.log('[Cloudflare] Request Body:', JSON.stringify(requestBody));
-      console.log('[Cloudflare] Full URL:', `${this.baseUrl}/direct_upload`);
-      
+      if (videoMetadata.fileName) {
+        metaParts.push(`filename ${Buffer.from(videoMetadata.fileName).toString('base64')}`);
+      }
+      metaParts.push(`maxDurationSeconds ${Buffer.from('3600').toString('base64')}`);
+      if (metaParts.length > 0) {
+        tusHeaders['Upload-Metadata'] = metaParts.join(',');
+      }
+
+      console.log('[Cloudflare] TUS URL:', `${this.baseUrl}?direct_user=true`);
+
       const response = await axios.post(
-        `${this.baseUrl}/direct_upload`,
-        requestBody,
-        { 
-          headers: this.headers,
-          validateStatus: () => true // Accept any status to see full response
+        `${this.baseUrl}?direct_user=true`,
+        null,
+        {
+          headers: tusHeaders,
+          validateStatus: () => true,
+          maxRedirects: 0,
         }
       );
 
-      console.log('[Cloudflare] Response Status:', response.status);
-      console.log('[Cloudflare] Response Data:', JSON.stringify(response.data, null, 2));
-      
-      if (response.status !== 200) {
-        throw new Error(response.data?.errors?.[0]?.message || 'Upload token request failed');
+      console.log('[Cloudflare] TUS Response Status:', response.status);
+      console.log('[Cloudflare] TUS Location Header:', response.headers?.location);
+
+      // Cloudflare returns 201 with Location header for TUS
+      if (response.status !== 201 && response.status !== 200) {
+        console.error('[Cloudflare] TUS Response Data:', JSON.stringify(response.data, null, 2));
+        throw new Error(response.data?.errors?.[0]?.message || `TUS create failed with status ${response.status}`);
+      }
+
+      const tusUploadUrl = response.headers?.location;
+      // Extract stream ID from the location URL or response
+      const streamId = response.headers?.['stream-media-id'] || tusUploadUrl?.split('/').pop() || response.data?.result?.uid;
+
+      if (!tusUploadUrl) {
+        throw new Error('No TUS upload URL returned from Cloudflare');
       }
 
       return {
         success: true,
-        uploadUrl: response.data?.result?.uploadURL,
-        videoId: response.data?.result?.uid,
+        uploadUrl: tusUploadUrl,
+        videoId: streamId,
         expiresIn: 3600,
       };
     } catch (error) {
-      console.error('[Cloudflare] ERROR getting upload token:');
+      console.error('[Cloudflare] ERROR getting TUS upload URL:');
       console.error('  Status Code:', error.response?.status);
-      console.error('  Status Text:', error.response?.statusText);
-      console.error('  URL:', error.config?.url);
-      console.error('  Request Body:', error.config?.data);
-      console.error('  Cloudflare Response:', JSON.stringify(error.response?.data, null, 2));
       console.error('  Full Error:', error.message);
-      
+
       const errorDetails = error.response?.data?.errors?.[0]?.message || error.message;
-      throw new Error(`Failed to get upload token: ${errorDetails}`);
+      throw new Error(`Failed to get upload URL: ${errorDetails}`);
     }
   }
 

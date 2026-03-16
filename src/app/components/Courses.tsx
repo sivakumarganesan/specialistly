@@ -536,7 +536,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
 
       await new Promise<void>((resolve, reject) => {
         const upload = new TusUpload(file, {
-          endpoint: uploadUrl,
+          uploadUrl: uploadUrl,   // Use uploadUrl (not endpoint) since we already have the URL
           chunkSize: 50 * 1024 * 1024, // 50MB chunks
           retryDelays: [0, 1000, 3000, 5000],
           metadata: {
