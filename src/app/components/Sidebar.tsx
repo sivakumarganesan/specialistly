@@ -29,7 +29,6 @@ const creatorMenuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "page-builder", label: "Branded Page Builder", icon: Globe },
   { id: "services", label: "Create / Edit Offerings", icon: Briefcase },
-  { id: "courses", label: "Manage Courses", icon: GraduationCap },
   { id: "customers", label: "Customers", icon: Users },
   { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "settings", label: "Settings", icon: Settings },

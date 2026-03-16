@@ -35,6 +35,8 @@ import {
   Briefcase,
   X,
   CalendarClock,
+  PlayCircle,
+  GraduationCap,
 } from "lucide-react";
 import { Checkbox } from "@/app/components/ui/checkbox";
 
@@ -94,9 +96,10 @@ interface Customer {
 
 interface ServicesProps {
   onUpdateSearchableItems: (items: SearchableItem[]) => void;
+  onNavigateToCourses?: (type?: string) => void;
 }
 
-export function Services({ onUpdateSearchableItems }: ServicesProps) {
+export function Services({ onUpdateSearchableItems, onNavigateToCourses }: ServicesProps) {
   const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -919,29 +922,10 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
         </Card>
       )}
 
-      {/* Create Service Type Selection */}
+      {/* Create New Offering */}
       <div>
-        <h2 className="text-lg font-semibold mb-3">Create New Service</h2>
+        <h2 className="text-lg font-semibold mb-3">Create New Offering</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-cyan-500"
-            onClick={() => openCreateDialog("webinar")}
-          >
-            <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-cyan-100 rounded-full">
-                <Video className="h-8 w-8 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-lg">Live Webinar</h3>
-              <p className="text-sm text-gray-600">
-                Host live webinars for multiple participants
-              </p>
-              <Button className="bg-cyan-600 hover:bg-cyan-700 gap-2">
-                <Plus className="h-4 w-4" />
-                Create Webinar
-              </Button>
-            </div>
-          </Card>
-
           <Card
             className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-green-500"
             onClick={() => openCreateDialog("consulting")}
@@ -957,6 +941,44 @@ export function Services({ onUpdateSearchableItems }: ServicesProps) {
               <Button className="bg-green-600 hover:bg-green-700 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Consulting
+              </Button>
+            </div>
+          </Card>
+
+          <Card
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-cyan-500"
+            onClick={() => onNavigateToCourses?.("self-paced")}
+          >
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="p-4 bg-cyan-100 rounded-full">
+                <PlayCircle className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-lg">Self-Paced Course</h3>
+              <p className="text-sm text-gray-600">
+                Create pre-recorded courses students take at their own pace
+              </p>
+              <Button className="bg-cyan-600 hover:bg-cyan-700 gap-2">
+                <Plus className="h-4 w-4" />
+                Create Self-Paced
+              </Button>
+            </div>
+          </Card>
+
+          <Card
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-indigo-500"
+            onClick={() => onNavigateToCourses?.("cohort-based")}
+          >
+            <div className="flex flex-col items-center text-center gap-3">
+              <div className="p-4 bg-indigo-100 rounded-full">
+                <GraduationCap className="h-8 w-8 text-indigo-600" />
+              </div>
+              <h3 className="font-semibold text-lg">Cohort-Based Course</h3>
+              <p className="text-sm text-gray-600">
+                Create live courses with scheduled sessions and cohort learning
+              </p>
+              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+                <Plus className="h-4 w-4" />
+                Create Cohort-Based
               </Button>
             </div>
           </Card>

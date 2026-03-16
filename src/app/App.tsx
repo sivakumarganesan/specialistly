@@ -262,7 +262,7 @@ export function AppContent() {
         )}
         {currentPage === "page-builder" && <PageBuilder />}
         {currentPage === "my-site" && userType === "specialist" && <MySite />}
-        {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} />}
+        {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} onNavigateToCourses={() => setCurrentPage("courses")} />}
         {currentPage === "courses" && userType === "specialist" && <Courses onUpdateSearchableItems={updateCourseItems} />}
         {currentPage === "browse-courses" && userType === "customer" && <CoursesBrowse />}
         {currentPage === "my-learning" && userType === "customer" && <MyLearning />}
