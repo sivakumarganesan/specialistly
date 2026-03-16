@@ -531,10 +531,11 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       const { uploadUrl, streamId } = tokenResponse;
 
       // Step 2: Upload video using TUS resumable upload (supports large files)
-      const { default: tus } = await import("tus-js-client");
+      const tus = await import("tus-js-client");
+      const TusUpload = tus.Upload || tus.default?.Upload;
 
       await new Promise<void>((resolve, reject) => {
-        const upload = new tus.Upload(file, {
+        const upload = new TusUpload(file, {
           endpoint: uploadUrl,
           chunkSize: 50 * 1024 * 1024, // 50MB chunks
           retryDelays: [0, 1000, 3000, 5000],
