@@ -109,7 +109,9 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
             title: course.title,
             type: course.courseType || course.type,
             description: course.description,
+            thumbnail: course.thumbnail || "",
             price: course.price?.toString() || "",
+            currency: course.currency || "USD",
             duration: course.duration || "",
             studentsEnrolled: course.studentsEnrolled || 0,
             status: course.status || "draft",
@@ -125,6 +127,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
             endDate: course.endDate || "",
             schedule: course.schedule || "",
             meetingPlatform: course.meetingPlatform || "Zoom",
+            zoomLink: course.zoomLink || "",
             liveSessions: course.liveSessions,
           }));
           setCourses(transformedCourses);
@@ -1565,115 +1568,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               </div>
             </div>
 
-            {/* Cohort-Based Specific Fields */}
-            {selectedCourse?.type === "cohort-based" && (
-              <>
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-3">Cohort-Based Course Settings</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-cohortSize">Max Cohort Size</Label>
-                        <Input
-                          id="edit-cohortSize"
-                          type="number"
-                          placeholder="e.g., 50"
-                          value={formData.cohortSize}
-                          onChange={(e) =>
-                            setFormData({ ...formData, cohortSize: e.target.value })
-                          }
-                        />
-                      </div>
 
-                      <div>
-                        <Label htmlFor="edit-liveSessions">Live Sessions</Label>
-                        <Input
-                          id="edit-liveSessions"
-                          type="number"
-                          placeholder="e.g., 16"
-                          value={formData.liveSessions}
-                          onChange={(e) =>
-                            setFormData({ ...formData, liveSessions: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-startDate">Start Date</Label>
-                        <Input
-                          id="edit-startDate"
-                          type="date"
-                          value={formData.startDate}
-                          onChange={(e) =>
-                            setFormData({ ...formData, startDate: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-endDate">End Date</Label>
-                        <Input
-                          id="edit-endDate"
-                          type="date"
-                          value={formData.endDate}
-                          onChange={(e) =>
-                            setFormData({ ...formData, endDate: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="edit-schedule">Schedule</Label>
-                      <Input
-                        id="edit-schedule"
-                        placeholder="e.g., Mon & Wed, 7:00 PM - 9:00 PM"
-                        value={formData.schedule}
-                        onChange={(e) =>
-                          setFormData({ ...formData, schedule: e.target.value })
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="edit-meetingPlatform">Meeting Platform</Label>
-                      <Select
-                        value={formData.meetingPlatform}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, meetingPlatform: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select platform" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Zoom">Zoom</SelectItem>
-                          <SelectItem value="Google Meet">Google Meet</SelectItem>
-                          <SelectItem value="Microsoft Teams">Microsoft Teams</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="edit-zoomLink">Meeting Link (Zoom / Google Meet / Teams) *</Label>
-                      <Input
-                        id="edit-zoomLink"
-                        placeholder="e.g., https://zoom.us/j/123456789"
-                        value={formData.zoomLink}
-                        onChange={(e) =>
-                          setFormData({ ...formData, zoomLink: e.target.value })
-                        }
-                      />
-                      <p className="text-xs text-gray-500 mt-1">This link will be sent to students after purchase</p>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
           <DialogFooter>
