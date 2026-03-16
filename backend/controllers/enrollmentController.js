@@ -268,6 +268,7 @@ export const getEnrollmentDetails = async (req, res) => {
         startDate: course.startDate || null,
         endDate: course.endDate || null,
         schedule: course.schedule || null,
+        liveSessions: course.liveSessions || null,
         lessons,
         percentComplete,
         completed: enrollment.completed,

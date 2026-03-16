@@ -4,7 +4,7 @@ import { courseAPI, videoAPI } from "@/app/api/apiClient";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
-import { ChevronLeft, Play, CheckCircle, Award, AlertCircle, Video, Calendar, Clock } from "lucide-react";
+import { ChevronLeft, Play, CheckCircle, Award, AlertCircle, Video, Calendar, Clock, Users, ExternalLink } from "lucide-react";
 import { HLSVideoPlayer } from "@/app/components/HLSVideoPlayer";
 
 interface Lesson {
@@ -42,6 +42,7 @@ interface EnrollmentDetails {
   startDate?: string;
   endDate?: string;
   schedule?: string;
+  liveSessions?: number;
   lessons: Lesson[];
   percentComplete: number;
   completed: boolean;
@@ -227,6 +228,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
 
   const currentLesson = enrollment.lessons.find(l => l._id === currentLessonId);
   const completedLessons = enrollment.lessons.filter(l => l.completed).length;
+  const isCohort = enrollment.courseType === 'cohort-based' || enrollment.courseType === 'cohort';
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -245,66 +247,38 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
           <div className="bg-white rounded-lg p-6 mb-6">
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                  {enrollment.courseTitle}
-                </h1>
+                <div className="flex items-center gap-3 mb-2">
+                  <h1 className="text-3xl font-bold text-gray-900">
+                    {enrollment.courseTitle}
+                  </h1>
+                  {isCohort && (
+                    <Badge className="bg-purple-100 text-purple-700">Live Course</Badge>
+                  )}
+                </div>
                 {enrollment.courseDescription && (
                   <p className="text-gray-600 mb-4">{enrollment.courseDescription}</p>
                 )}
 
-                {/* Zoom Meeting Link for Cohort Courses */}
-                {(enrollment.courseType === 'cohort-based' || enrollment.courseType === 'cohort') && enrollment.zoomLink && (
-                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Video className="w-5 h-5 text-blue-600" />
-                      <h3 className="font-semibold text-blue-900">Live Session</h3>
-                    </div>
-                    {(enrollment.startDate || enrollment.schedule) && (
-                      <div className="flex flex-wrap gap-4 text-sm text-blue-800 mb-3">
-                        {enrollment.startDate && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            Starts {new Date(enrollment.startDate).toLocaleDateString()}
-                          </span>
-                        )}
-                        {enrollment.schedule && (
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {enrollment.schedule}
-                          </span>
-                        )}
+                {!isCohort && (
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 max-w-xs">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Progress: {completedLessons}/{enrollment.lessons.length} lessons
+                        </span>
+                        <span className="text-sm font-semibold text-indigo-600">
+                          {enrollment.percentComplete}%
+                        </span>
                       </div>
-                    )}
-                    <a
-                      href={enrollment.zoomLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                    >
-                      <Video className="w-4 h-4" />
-                      Join {enrollment.meetingPlatform || 'Zoom'} Meeting
-                    </a>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-indigo-600 h-2 rounded-full transition-all"
+                          style={{ width: `${enrollment.percentComplete}%` }}
+                        ></div>
+                      </div>
+                    </div>
                   </div>
                 )}
-
-                <div className="flex items-center gap-4">
-                  <div className="flex-1 max-w-xs">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm font-medium text-gray-700">
-                        Progress: {completedLessons}/{enrollment.lessons.length} lessons
-                      </span>
-                      <span className="text-sm font-semibold text-indigo-600">
-                        {enrollment.percentComplete}%
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-indigo-600 h-2 rounded-full transition-all"
-                        style={{ width: `${enrollment.percentComplete}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
               </div>
               {enrollment.completed && enrollment.certificate?.issued && (
                 <div className="text-right">
@@ -318,8 +292,99 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
           </div>
         </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Cohort Course: Session Details */}
+        {isCohort ? (
+          <div className="space-y-6">
+            {/* Join Session Card */}
+            {enrollment.zoomLink && (
+              <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="p-8 text-center">
+                  <Video className="w-14 h-14 text-blue-600 mx-auto mb-4" />
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Join Live Session</h2>
+                  <p className="text-gray-600 mb-6">Click the button below to join your live session on {enrollment.meetingPlatform || 'Zoom'}.</p>
+                  <a
+                    href={enrollment.zoomLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-lg shadow-md"
+                  >
+                    <Video className="w-5 h-5" />
+                    Join {enrollment.meetingPlatform || 'Zoom'} Meeting
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              </Card>
+            )}
+
+            {/* Session Details */}
+            <Card>
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Session Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {enrollment.startDate && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                      <Calendar className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-gray-500">Start Date</p>
+                        <p className="font-semibold text-gray-900">{new Date(enrollment.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      </div>
+                    </div>
+                  )}
+                  {enrollment.endDate && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                      <Calendar className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-gray-500">End Date</p>
+                        <p className="font-semibold text-gray-900">{new Date(enrollment.endDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                      </div>
+                    </div>
+                  )}
+                  {enrollment.schedule && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                      <Clock className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-gray-500">Schedule</p>
+                        <p className="font-semibold text-gray-900">{enrollment.schedule}</p>
+                      </div>
+                    </div>
+                  )}
+                  {enrollment.liveSessions && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                      <Users className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-gray-500">Live Sessions</p>
+                        <p className="font-semibold text-gray-900">{enrollment.liveSessions} sessions</p>
+                      </div>
+                    </div>
+                  )}
+                  {enrollment.meetingPlatform && (
+                    <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
+                      <Video className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <div>
+                        <p className="text-sm text-gray-500">Platform</p>
+                        <p className="font-semibold text-gray-900">{enrollment.meetingPlatform}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </Card>
+
+            {/* No Zoom Link Message */}
+            {!enrollment.zoomLink && (
+              <Card className="border-amber-200 bg-amber-50">
+                <div className="p-6 text-center">
+                  <AlertCircle className="w-10 h-10 text-amber-500 mx-auto mb-3" />
+                  <h3 className="font-semibold text-gray-900 mb-1">Meeting Link Not Available Yet</h3>
+                  <p className="text-gray-600 text-sm">The instructor will share the meeting link before the session starts. Please check back later.</p>
+                </div>
+              </Card>
+            )}
+          </div>
+        ) : (
+          /* Self-Paced Course: Lessons Layout */
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Video/Content Area */}
           <div className="lg:col-span-2">
             {currentLesson ? (
@@ -449,6 +514,8 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
             </Card>
           </div>
         </div>
+          </>
+        )}
 
         {/* Certificate Section */}
         {enrollment.completed && enrollment.certificate?.issued && (
