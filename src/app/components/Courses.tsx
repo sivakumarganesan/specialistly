@@ -530,18 +530,32 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
 
       const { uploadUrl, streamId } = tokenResponse;
 
-      // Step 2: Upload video to Cloudflare
-      const formData = new FormData();
-      formData.append("file", file);
+      // Step 2: Upload video using TUS resumable upload (supports large files)
+      const { default: tus } = await import("tus-js-client");
 
-      const uploadResponse = await fetch(uploadUrl, {
-        method: "POST",
-        body: formData,
+      await new Promise<void>((resolve, reject) => {
+        const upload = new tus.Upload(file, {
+          endpoint: uploadUrl,
+          chunkSize: 50 * 1024 * 1024, // 50MB chunks
+          retryDelays: [0, 1000, 3000, 5000],
+          metadata: {
+            filename: file.name,
+            filetype: file.type,
+          },
+          onError: (error: Error) => {
+            console.error("TUS upload error:", error);
+            reject(new Error(`Upload failed: ${error.message}`));
+          },
+          onProgress: (bytesUploaded: number, bytesTotal: number) => {
+            const pct = Math.round((bytesUploaded / bytesTotal) * 95);
+            setVideoUploadProgress((prev) => ({ ...prev, [lessonIndex]: pct }));
+          },
+          onSuccess: () => {
+            resolve();
+          },
+        });
+        upload.start();
       });
-
-      if (!uploadResponse.ok) {
-        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-      }
 
       setVideoUploadProgress({ ...videoUploadProgress, [lessonIndex]: 100 });
 
