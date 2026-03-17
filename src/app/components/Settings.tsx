@@ -79,7 +79,7 @@ export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) 
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? "border-indigo-600 text-indigo-600"
+                  ? "border-gray-900 text-gray-900"
                   : "border-transparent text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -357,11 +357,11 @@ function UserProfile() {
                 className="w-32 h-32 rounded-full object-cover border-4 border-purple-200"
               />
             ) : (
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center text-white text-4xl font-bold">
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white text-4xl font-bold">
                 {userInitials}
               </div>
             )}
-            <label className="absolute bottom-0 right-0 w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white hover:bg-indigo-700 cursor-pointer">
+            <label className="absolute bottom-0 right-0 w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white hover:bg-gray-800 cursor-pointer">
               <Camera className="w-5 h-5" />
               <input
                 type="file"
@@ -420,7 +420,7 @@ function UserProfile() {
                 type="text"
                 value={profileData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
@@ -432,7 +432,7 @@ function UserProfile() {
                 type="email"
                 value={profileData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
           </div>
@@ -447,7 +447,7 @@ function UserProfile() {
                 type="tel"
                 value={profileData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
@@ -459,7 +459,7 @@ function UserProfile() {
                 type="text"
                 value={profileData.location}
                 onChange={(e) => handleChange("location", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
           </div>
@@ -474,7 +474,7 @@ function UserProfile() {
                 type="text"
                 value={profileData.company}
                 onChange={(e) => handleChange("company", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
@@ -483,7 +483,7 @@ function UserProfile() {
                 type="url"
                 value={profileData.website}
                 onChange={(e) => handleChange("website", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
           </div>
@@ -494,7 +494,7 @@ function UserProfile() {
               value={profileData.bio}
               onChange={(e) => handleChange("bio", e.target.value)}
               rows={4}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
             />
           </div>
 
@@ -522,7 +522,7 @@ function UserProfile() {
             <Button
               onClick={handleSave}
               disabled={isSaving || uploadingPhoto}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gray-900 hover:bg-gray-800"
             >
               {isSaving ? (
                 <span className="flex items-center gap-2">
@@ -564,7 +564,7 @@ function UserProfile() {
                   <Button
                     onClick={handleConnectZoom}
                     disabled={zoomConnecting}
-                    className="bg-indigo-600 hover:bg-indigo-700"
+                    className="bg-gray-900 hover:bg-gray-800"
                   >
                     {zoomConnecting ? (
                       <span className="flex items-center gap-2">
@@ -875,7 +875,7 @@ function PaymentSettings() {
               </p>
               <Button
                 onClick={handleConnectStripe}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="bg-gray-900 hover:bg-gray-800"
               >
                 Connect with Stripe
               </Button>
@@ -915,7 +915,7 @@ function PaymentSettings() {
                 <select
                   value={payoutSchedule}
                   onChange={(e) => setPayoutSchedule(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
@@ -925,7 +925,7 @@ function PaymentSettings() {
 
               <div className="flex justify-end">
                 <Button 
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-gray-900 hover:bg-gray-800"
                   onClick={handleSavePaymentSettings}
                   disabled={isSaving}
                 >
@@ -1207,7 +1207,7 @@ function AllotmentSlots() {
               <select
                 value={slotDuration}
                 onChange={(e) => setSlotDuration(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 <option value="15">15 minutes</option>
                 <option value="30">30 minutes</option>
@@ -1221,7 +1221,7 @@ function AllotmentSlots() {
               <select
                 value={bufferTime}
                 onChange={(e) => setBufferTime(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 <option value="0">No buffer</option>
                 <option value="5">5 minutes</option>
@@ -1245,7 +1245,7 @@ function AllotmentSlots() {
                     type="checkbox"
                     checked={slot.enabled}
                     onChange={() => toggleSlot(slot.id)}
-                    className="w-5 h-5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                    className="w-5 h-5 text-gray-900 rounded focus:ring-2 focus:ring-gray-400"
                   />
                 </label>
                 <div className="flex-1 grid grid-cols-3 gap-4 items-center">
@@ -1256,7 +1256,7 @@ function AllotmentSlots() {
                       value={slot.startTime}
                       onChange={(e) => handleTimeChange(slot.id, "startTime", e.target.value)}
                       disabled={!slot.enabled}
-                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:bg-gray-100"
                     />
                     <span className="text-gray-500">to</span>
                     <input
@@ -1264,7 +1264,7 @@ function AllotmentSlots() {
                       value={slot.endTime}
                       onChange={(e) => handleTimeChange(slot.id, "endTime", e.target.value)}
                       disabled={!slot.enabled}
-                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100"
+                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:bg-gray-100"
                     />
                   </div>
                   <span className={`text-sm ${slot.enabled ? "text-green-600" : "text-gray-400"}`}>
@@ -1277,7 +1277,7 @@ function AllotmentSlots() {
 
           <div className="flex justify-end pt-4">
             <Button 
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gray-900 hover:bg-gray-800"
               onClick={handleSaveAvailability}
               disabled={isSaving}
             >
@@ -1408,7 +1408,7 @@ function MySubscriptions() {
                 key={plan.id}
                 className={`border rounded-lg p-6 ${
                   plan.status === "active"
-                    ? "border-indigo-500 bg-indigo-50"
+                    ? "border-gray-400 bg-gray-50"
                     : "border-gray-200"
                 }`}
               >
@@ -1437,7 +1437,7 @@ function MySubscriptions() {
                   <ul className="space-y-1">
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="text-sm flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full" />
+                        <span className="w-1.5 h-1.5 bg-gray-900 rounded-full" />
                         {feature}
                       </li>
                     ))}
@@ -1474,7 +1474,7 @@ function MySubscriptions() {
                       {plan.id === "free" && (
                         <Button
                           size="sm"
-                          className="w-full bg-indigo-600 hover:bg-indigo-700"
+                          className="w-full bg-gray-900 hover:bg-gray-800"
                           onClick={handleUpgrade}
                           disabled={isLoading}
                         >
@@ -1488,7 +1488,7 @@ function MySubscriptions() {
                     {plan.id === "free" && (
                       <Button
                         size="sm"
-                        className="w-full bg-indigo-600 hover:bg-indigo-700"
+                        className="w-full bg-gray-900 hover:bg-gray-800"
                         onClick={handleDowngrade}
                         disabled={isLoading}
                       >

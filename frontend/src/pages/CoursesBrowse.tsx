@@ -66,7 +66,7 @@ const CoursesBrowse: React.FC = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading courses...</p>
         </div>
       </div>
@@ -90,12 +90,12 @@ const CoursesBrowse: React.FC = () => {
               placeholder="Search courses..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
             />
             <select
               value={selectedCourseType}
               onChange={(e) => setSelectedCourseType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
             >
               <option value="all">All Course Types</option>
               <option value="self-paced">Self-Paced</option>
@@ -120,7 +120,7 @@ const CoursesBrowse: React.FC = () => {
                 className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
               >
                 {/* Thumbnail */}
-                <div className="relative h-48 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                <div className="relative h-48 bg-gradient-to-br from-gray-500 to-purple-600 flex items-center justify-center">
                   {course.thumbnail ? (
                     <img
                       src={course.thumbnail}
@@ -130,7 +130,7 @@ const CoursesBrowse: React.FC = () => {
                   ) : (
                     <Play className="w-12 h-12 text-white opacity-50" />
                   )}
-                  <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-semibold text-indigo-600">
+                  <div className="absolute top-3 right-3 bg-white px-3 py-1 rounded-full text-sm font-semibold text-gray-900">
                     {course.courseType === 'self-paced' ? '🎯 Self-Paced' : '👥 Cohort'}
                   </div>
                 </div>
@@ -169,7 +169,7 @@ const CoursesBrowse: React.FC = () => {
                     <button
                       onClick={() => handleEnroll(course._id, course.courseType)}
                       disabled={enrolling === course._id}
-                      className="w-full bg-indigo-600 text-white py-2 rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-400 transition"
+                      className="w-full bg-gray-900 text-white py-2 rounded-lg font-semibold hover:bg-gray-800 disabled:bg-gray-400 transition"
                     >
                       {enrolling === course._id ? 'Enrolling...' : 'Enroll Now'}
                     </button>

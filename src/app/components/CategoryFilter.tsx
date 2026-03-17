@@ -35,7 +35,7 @@ export function CategoryFilter({ selectedCategories, onCategoryChange, onClearAl
         <CardContent className="space-y-4">
           {/* Active Filters Display */}
           {selectedCategories.length > 0 && (
-            <div className="flex flex-wrap gap-2 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
+            <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
               {selectedCategories.map(category => (
                 <button
                   key={category}
@@ -51,7 +51,7 @@ export function CategoryFilter({ selectedCategories, onCategoryChange, onClearAl
                   variant="ghost"
                   size="sm"
                   onClick={onClearAll}
-                  className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100"
+                  className="text-gray-900 hover:text-gray-900 hover:bg-gray-100"
                 >
                   Clear All
                 </Button>
@@ -67,7 +67,7 @@ export function CategoryFilter({ selectedCategories, onCategoryChange, onClearAl
                 onClick={() => onCategoryChange(category)}
                 className={`p-2 rounded-lg border-2 text-sm font-medium transition-all text-center ${
                   selectedCategories.includes(category)
-                    ? `border-indigo-600 ${CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]}`
+                    ? `border-gray-900 ${CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]}`
                     : 'border-gray-200 bg-white hover:border-gray-300'
                 }`}
               >

@@ -81,9 +81,9 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
+      <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="text-center">
-          <Loader className="w-12 h-12 animate-spin text-indigo-600 mx-auto mb-4" />
+          <Loader className="w-12 h-12 animate-spin text-gray-900 mx-auto mb-4" />
           <p className="text-gray-600 text-lg">Loading website...</p>
         </div>
       </div>
@@ -92,7 +92,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
 
   if (error || !website) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
+      <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="text-center max-w-md">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">Website Not Found</h1>
           <p className="text-gray-600 mb-4">{error || 'This website is not available'}</p>
@@ -107,7 +107,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
   // Show empty state if no pages
   if (!pages || pages.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100">
+      <div className="flex items-center justify-center min-h-screen bg-white">
         <div className="text-center max-w-md">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">{website?.branding?.siteName || 'Welcome'}</h1>
           <p className="text-gray-600 mb-4">No pages published yet</p>

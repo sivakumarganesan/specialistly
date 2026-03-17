@@ -335,7 +335,7 @@ export function Messages() {
               </div>
               <Button
                 onClick={handleOpenNewConversation}
-                className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+                className="bg-gray-900 hover:bg-gray-800 gap-2"
                 size="sm"
               >
                 <Plus className="h-4 w-4" />
@@ -378,7 +378,7 @@ export function Messages() {
                     key={conversation._id}
                     onClick={() => setSelectedConversation(conversation)}
                     className={`w-full p-4 border-b text-left transition hover:bg-gray-50 ${
-                      selectedConversation?._id === conversation._id ? 'bg-indigo-50' : ''
+                      selectedConversation?._id === conversation._id ? 'bg-gray-50' : ''
                     } ${unreadCount > 0 ? 'bg-blue-50' : ''}`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
@@ -455,13 +455,13 @@ export function Messages() {
                         <div
                           className={`max-w-xs px-4 py-2 rounded-lg ${
                             message.senderId === user?.id
-                              ? 'bg-indigo-600 text-white'
+                              ? 'bg-gray-900 text-white'
                               : 'bg-white border'
                           }`}
                         >
                           <p className="text-sm break-words">{message.text}</p>
                           <p className={`text-xs mt-1 ${
-                            message.senderId === user?.id ? 'text-indigo-100' : 'text-gray-500'
+                            message.senderId === user?.id ? 'text-gray-300' : 'text-gray-500'
                           }`}>
                             {new Date(message.createdAt).toLocaleTimeString([], {
                               hour: '2-digit',
@@ -489,7 +489,7 @@ export function Messages() {
                   <Button
                     type="submit"
                     disabled={isSending || !messageText.trim()}
-                    className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+                    className="bg-gray-900 hover:bg-gray-800 gap-2"
                   >
                     <Send className="h-4 w-4" />
                     Send
@@ -550,7 +550,7 @@ export function Messages() {
                     <button
                       key={contact._id}
                       onClick={() => handleStartConversation(contact)}
-                      className="w-full p-3 text-left border rounded-lg hover:bg-indigo-50 hover:border-indigo-300 transition"
+                      className="w-full p-3 text-left border rounded-lg hover:bg-gray-50 hover:border-gray-300 transition"
                     >
                       <div className="font-semibold text-sm">{contact.name}</div>
                       <div className="text-xs text-gray-600">{contact.email}</div>

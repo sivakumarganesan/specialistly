@@ -131,7 +131,7 @@ export function WebinarBookingModal({
                 </p>
               </div>
 
-              <div className="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200 rounded-lg p-6 space-y-4">
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-lg p-6 space-y-4">
                 <h3 className="text-lg font-semibold text-gray-900">
                   Booking Summary
                 </h3>
@@ -164,7 +164,7 @@ export function WebinarBookingModal({
                   {/* Price */}
                   <div className="flex justify-between items-center pb-3 border-b">
                     <span className="text-gray-700">Price:</span>
-                    <span className="font-bold text-lg text-indigo-600">
+                    <span className="font-bold text-lg text-gray-900">
                       ₹{service.price}
                     </span>
                   </div>
@@ -181,7 +181,7 @@ export function WebinarBookingModal({
                 </div>
 
                 {/* Info Message */}
-                <div className="bg-white rounded-lg p-3 border border-indigo-100 mt-4">
+                <div className="bg-white rounded-lg p-3 border border-gray-200 mt-4">
                   <p className="text-xs text-gray-600">
                     ✓ You'll receive a confirmation email with the webinar link
                     and details.
@@ -269,7 +269,7 @@ export function WebinarBookingModal({
               </Button>
               <Button
                 onClick={handleConfirmBooking}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                className="flex-1 bg-gray-900 hover:bg-gray-800"
                 disabled={isLoading}
               >
                 {isLoading ? "Confirming..." : "Confirm Booking"}

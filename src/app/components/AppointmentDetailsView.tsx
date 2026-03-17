@@ -74,7 +74,7 @@ export function AppointmentDetailsView({ slotId, bookingIndex = 0, onClose }: Ap
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-2" />
+          <Loader className="w-8 h-8 animate-spin text-gray-900 mx-auto mb-2" />
           <p className="text-gray-600">Loading appointment details...</p>
         </div>
       </div>
@@ -122,7 +122,7 @@ export function AppointmentDetailsView({ slotId, bookingIndex = 0, onClose }: Ap
     <div className="space-y-4 max-w-2xl mx-auto">
       {/* Appointment Header */}
       <Card>
-        <CardHeader className="bg-gradient-to-r from-indigo-50 to-indigo-100">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100">
           <h2 className="text-2xl font-bold text-gray-900">📅 Your Appointment</h2>
         </CardHeader>
         <CardContent className="pt-6">

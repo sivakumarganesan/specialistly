@@ -84,8 +84,8 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userTyp
                   className={cn(
                     "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left justify-between w-full",
                     isActive 
-                      ? "bg-indigo-50 text-indigo-600 font-semibold" 
-                      : "text-gray-700 hover:bg-gray-50"
+                      ? "bg-gray-100 text-gray-900 font-semibold" 
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   )}
                   title={item.label}
                 >

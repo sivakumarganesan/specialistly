@@ -62,7 +62,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ certificateId }) => {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading certificate...</p>
         </div>
       </div>
@@ -83,13 +83,13 @@ const CertificateView: React.FC<CertificateViewProps> = ({ certificateId }) => {
   const issueDate = new Date(certificate.issueDate);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <div className="p-4 bg-indigo-100 rounded-full">
-              <Award className="w-12 h-12 text-indigo-600" />
+            <div className="p-4 bg-gray-100 rounded-full">
+              <Award className="w-12 h-12 text-gray-900" />
             </div>
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Certificate of Completion</h1>
@@ -99,7 +99,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ certificateId }) => {
         {/* Certificate Card */}
         <div className="bg-white rounded-lg shadow-2xl overflow-hidden mb-8">
           {/* Certificate Background */}
-          <div className="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-12 text-white">
+          <div className="bg-gradient-to-br from-gray-500 via-purple-500 to-pink-500 p-12 text-white">
             <div className="border-4 border-white rounded-lg p-12 text-center">
               <p className="text-sm tracking-widest uppercase mb-4 opacity-90">Certificate of Achievement</p>
               <h2 className="text-4xl font-bold mb-8">{certificate.customerName}</h2>
@@ -176,7 +176,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ certificateId }) => {
             <div className="flex flex-col sm:flex-row gap-4">
               <button
                 onClick={handleDownload}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg font-semibold transition flex-1 sm:flex-none"
+                className="flex items-center justify-center gap-2 px-6 py-3 bg-gray-900 text-white hover:bg-gray-800 rounded-lg font-semibold transition flex-1 sm:flex-none"
               >
                 <Download className="w-5 h-5" />
                 <span>Download PDF</span>
@@ -190,7 +190,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ certificateId }) => {
                     url: certificate.verifyUrl,
                   });
                 }}
-                className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-indigo-600 text-indigo-600 hover:bg-indigo-50 rounded-lg font-semibold transition flex-1 sm:flex-none"
+                className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-gray-900 text-gray-900 hover:bg-gray-50 rounded-lg font-semibold transition flex-1 sm:flex-none"
               >
                 <Share2 className="w-5 h-5" />
                 <span>Share</span>
@@ -226,7 +226,7 @@ const CertificateView: React.FC<CertificateViewProps> = ({ certificateId }) => {
         <div className="mt-8 text-center">
           <a
             href="/my-courses"
-            className="inline-block text-indigo-600 hover:text-indigo-700 font-semibold"
+            className="inline-block text-gray-900 hover:text-gray-900 font-semibold"
           >
             ← Back to My Courses
           </a>

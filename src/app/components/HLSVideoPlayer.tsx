@@ -184,14 +184,14 @@ export function HLSVideoPlayer({
         {/* Loading Spinner */}
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
           </div>
         )}
 
         {/* Video Title Overlay (when not playing) */}
         {!isPlaying && !isLoading && (
           <div className="absolute top-4 left-4 right-4 flex items-start">
-            <span className="bg-indigo-600 text-white px-2 py-1 rounded text-sm font-medium truncate">
+            <span className="bg-gray-900 text-white px-2 py-1 rounded text-sm font-medium truncate">
               {title}
             </span>
           </div>

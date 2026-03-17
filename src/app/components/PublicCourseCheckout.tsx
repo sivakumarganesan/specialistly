@@ -174,7 +174,7 @@ function StripeCardForm({
       <button
         type="submit"
         disabled={loading || !stripe}
-        className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="w-full py-3 px-4 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
           <>
@@ -469,7 +469,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
               {course.description && (
                 <p className="text-sm text-gray-500 mt-1 line-clamp-2">{course.description}</p>
               )}
-              <div className="mt-2 font-bold text-lg text-indigo-600">
+              <div className="mt-2 font-bold text-lg text-gray-900">
                 {isFree ? 'Free' : `${courseCurrencySymbol}${course.price}`}
               </div>
             </div>
@@ -481,8 +481,8 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
               {/* Already logged in */}
               {authUser ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-                    <div className="h-10 w-10 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
+                  <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="h-10 w-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-bold">
                       {authUser.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
@@ -501,7 +501,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                   <button
                     onClick={handleContinueLoggedIn}
                     disabled={loading}
-                    className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {loading ? (
                       <>
@@ -529,7 +529,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                       onClick={() => { setAuthTab('login'); setError(null); }}
                       className={`flex-1 py-2.5 text-sm font-medium text-center border-b-2 transition-colors ${
                         authTab === 'login'
-                          ? 'border-indigo-600 text-indigo-600'
+                          ? 'border-gray-900 text-gray-900'
                           : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
                     >
@@ -540,7 +540,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                       onClick={() => { setAuthTab('signup'); setError(null); }}
                       className={`flex-1 py-2.5 text-sm font-medium text-center border-b-2 transition-colors ${
                         authTab === 'signup'
-                          ? 'border-indigo-600 text-indigo-600'
+                          ? 'border-gray-900 text-gray-900'
                           : 'border-transparent text-gray-500 hover:text-gray-700'
                       }`}
                     >
@@ -559,7 +559,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                           required
                           value={loginEmail}
                           onChange={(e) => setLoginEmail(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
                           placeholder="Enter your email"
                         />
                       </div>
@@ -570,7 +570,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                           required
                           value={loginPassword}
                           onChange={(e) => setLoginPassword(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
                           placeholder="Enter your password"
                         />
                       </div>
@@ -585,7 +585,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full py-3 px-4 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {loading ? (
                           <>
@@ -602,7 +602,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
 
                       <p className="text-center text-sm text-gray-500">
                         Don&apos;t have an account?{' '}
-                        <button type="button" onClick={() => { setAuthTab('signup'); setError(null); }} className="text-indigo-600 font-medium hover:underline">
+                        <button type="button" onClick={() => { setAuthTab('signup'); setError(null); }} className="text-gray-900 font-medium hover:underline">
                           Sign up
                         </button>
                       </p>
@@ -619,7 +619,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                           required
                           value={signupName}
                           onChange={(e) => setSignupName(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
                           placeholder="Enter your name"
                         />
                       </div>
@@ -630,7 +630,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                           required
                           value={signupEmail}
                           onChange={(e) => setSignupEmail(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
                           placeholder="Enter your email"
                         />
                       </div>
@@ -642,7 +642,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                           minLength={6}
                           value={signupPassword}
                           onChange={(e) => setSignupPassword(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
                           placeholder="Create a password (min 6 chars)"
                         />
                       </div>
@@ -654,7 +654,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                           minLength={6}
                           value={signupConfirm}
                           onChange={(e) => setSignupConfirm(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
                           placeholder="Confirm your password"
                         />
                       </div>
@@ -669,7 +669,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        className="w-full py-3 px-4 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                       >
                         {loading ? (
                           <>
@@ -686,7 +686,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
 
                       <p className="text-center text-sm text-gray-500">
                         Already have an account?{' '}
-                        <button type="button" onClick={() => { setAuthTab('login'); setError(null); }} className="text-indigo-600 font-medium hover:underline">
+                        <button type="button" onClick={() => { setAuthTab('login'); setError(null); }} className="text-gray-900 font-medium hover:underline">
                           Log in
                         </button>
                       </p>
@@ -793,35 +793,35 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
 
               {/* Cohort course details on success */}
               {course.courseType === 'cohort' && (course.startDate || course.schedule || course.zoomLink) && (
-                <div className="text-left mt-4 mb-4 p-4 bg-indigo-50 rounded-lg border border-indigo-100">
-                  <h4 className="font-semibold text-indigo-900 mb-3 text-sm">Course Details</h4>
+                <div className="text-left mt-4 mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  <h4 className="font-semibold text-gray-900 mb-3 text-sm">Course Details</h4>
                   <div className="space-y-2 text-sm">
                     {course.startDate && (
-                      <div className="flex items-center gap-2 text-indigo-700">
+                      <div className="flex items-center gap-2 text-gray-900">
                         <span className="font-medium">Starts:</span>
                         <span>{new Date(course.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                     )}
                     {course.schedule && (
-                      <div className="flex items-center gap-2 text-indigo-700">
+                      <div className="flex items-center gap-2 text-gray-900">
                         <span className="font-medium">Schedule:</span>
                         <span>{course.schedule}</span>
                       </div>
                     )}
                     {course.meetingPlatform && (
-                      <div className="flex items-center gap-2 text-indigo-700">
+                      <div className="flex items-center gap-2 text-gray-900">
                         <span className="font-medium">Platform:</span>
                         <span>{course.meetingPlatform}</span>
                       </div>
                     )}
                     {course.zoomLink && (
-                      <div className="mt-3 p-3 bg-white rounded-lg border border-indigo-200">
-                        <p className="font-semibold text-indigo-900 mb-1">Meeting Link</p>
+                      <div className="mt-3 p-3 bg-white rounded-lg border border-gray-200">
+                        <p className="font-semibold text-gray-900 mb-1">Meeting Link</p>
                         <a
                           href={course.zoomLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-indigo-600 hover:text-indigo-800 underline break-all text-xs"
+                          className="text-gray-900 hover:text-gray-800 underline break-all text-xs"
                         >
                           {course.zoomLink}
                         </a>
@@ -836,7 +836,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                 {authUser && (
                   <button
                     onClick={goToMyLearning}
-                    className="w-full px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                    className="w-full px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
                   >
                     Go to My Learning
                   </button>
@@ -845,7 +845,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                   onClick={onClose}
                   className={authUser
                     ? "w-full px-6 py-2 text-gray-600 hover:text-gray-800 text-sm"
-                    : "w-full px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium"
+                    : "w-full px-6 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
                   }
                 >
                   {authUser ? 'Continue Browsing' : 'Done'}

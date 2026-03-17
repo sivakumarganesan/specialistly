@@ -444,7 +444,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
 
         {/* Multiple Day Event */}
         {formData.eventType === 'multiple' && (
-          <Card className="p-6 space-y-4 border-purple-200 bg-indigo-50">
+          <Card className="p-6 space-y-4 border-purple-200 bg-gray-50">
             <h3 className="text-xl font-bold flex items-center gap-2">
               <Clock className="h-5 w-5" />
               Multiple Sessions Setup
@@ -461,7 +461,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
                   onClick={() => setFormData(prev => ({ ...prev, sessionFrequency: 'selected' }))}
                   className={`p-3 rounded-lg border text-left transition ${
                     formData.sessionFrequency === 'selected'
-                      ? 'border-indigo-500 bg-white'
+                      ? 'border-gray-400 bg-white'
                       : 'border-gray-200'
                   }`}
                 >
@@ -474,7 +474,7 @@ export const WebinarManager: React.FC<Props> = ({ serviceId, initialData, onSave
                   onClick={() => setFormData(prev => ({ ...prev, sessionFrequency: 'repeat' }))}
                   className={`p-3 rounded-lg border text-left transition ${
                     formData.sessionFrequency === 'repeat'
-                      ? 'border-indigo-500 bg-white'
+                      ? 'border-gray-400 bg-white'
                       : 'border-gray-200'
                   }`}
                 >

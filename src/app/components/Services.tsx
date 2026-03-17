@@ -722,7 +722,7 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
           onClick={() => setActiveTab("courses")}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "courses"
-              ? "border-indigo-600 text-indigo-600"
+              ? "border-gray-900 text-gray-900"
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
@@ -733,7 +733,7 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
           onClick={() => setActiveTab("offerings")}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             activeTab === "offerings"
-              ? "border-indigo-600 text-indigo-600"
+              ? "border-gray-900 text-gray-900"
               : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
           }`}
         >
@@ -757,8 +757,8 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
           onClick={() => setFilterStatus("all")}
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 rounded-lg">
-              <Briefcase className="h-5 w-5 text-indigo-600" />
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <Briefcase className="h-5 w-5 text-gray-900" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Services</p>
@@ -815,7 +815,7 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
 
       {/* Appointment Availability Info - Show when consulting services exist */}
       {getTotalConsultingServices() > 0 && (
-        <Card className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <Card className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 border-blue-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-cyan-600 rounded-lg">
@@ -1308,7 +1308,7 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
               Cancel
             </Button>
             <Button
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gray-900 hover:bg-gray-800"
               onClick={handleCreateService}
             >
               Create Service
@@ -1611,7 +1611,7 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
               Cancel
             </Button>
             <Button
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gray-900 hover:bg-gray-800"
               onClick={handleEditService}
             >
               Save Changes

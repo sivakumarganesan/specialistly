@@ -218,7 +218,7 @@ export function SpecialistMeetingManager() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader className="w-8 h-8 animate-spin text-indigo-600 mx-auto mb-2" />
+          <Loader className="w-8 h-8 animate-spin text-gray-900 mx-auto mb-2" />
           <p className="text-gray-600">Loading your appointments...</p>
         </div>
       </div>
@@ -282,7 +282,7 @@ export function SpecialistMeetingManager() {
 
             return (
               <Card key={slot._id} className="overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-indigo-50 to-indigo-100 pb-4">
+                <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 pb-4">
                   <div className="flex items-start justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2 text-gray-700">
@@ -413,7 +413,7 @@ export function SpecialistMeetingManager() {
                             <button
                               onClick={() => handleCreateZoomMeeting(slot._id, bookingIndex)}
                               disabled={creatingZoomFor === `${slot._id}-${bookingIndex}`}
-                              className="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              className="w-full px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                             >
                               {creatingZoomFor === `${slot._id}-${bookingIndex}` ? (
                                 <>

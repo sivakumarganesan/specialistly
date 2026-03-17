@@ -89,7 +89,7 @@ const LearnSelfPaced: React.FC<LearnSelfPacedProps> = ({ enrollmentId }) => {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading course...</p>
         </div>
       </div>
@@ -120,7 +120,7 @@ const LearnSelfPaced: React.FC<LearnSelfPacedProps> = ({ enrollmentId }) => {
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
                 <div
-                  className="bg-indigo-600 h-2 rounded-full transition-all"
+                  className="bg-gray-900 h-2 rounded-full transition-all"
                   style={{ width: `${enrollment.percentComplete}%` }}
                 ></div>
               </div>
@@ -167,7 +167,7 @@ const LearnSelfPaced: React.FC<LearnSelfPacedProps> = ({ enrollmentId }) => {
                     <button
                       onClick={() => handleMarkComplete(currentLesson._id)}
                       disabled={completing}
-                      className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-400 transition mb-4"
+                      className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-800 disabled:bg-gray-400 transition mb-4"
                     >
                       {completing ? 'Marking complete...' : 'Mark Lesson Complete'}
                     </button>
@@ -235,7 +235,7 @@ const LearnSelfPaced: React.FC<LearnSelfPacedProps> = ({ enrollmentId }) => {
                     key={lesson._id}
                     onClick={() => setCurrentLessonId(lesson._id)}
                     className={`w-full p-4 text-left hover:bg-gray-50 transition ${
-                      currentLessonId === lesson._id ? 'bg-indigo-50 border-l-4 border-indigo-600' : ''
+                      currentLessonId === lesson._id ? 'bg-gray-50 border-l-4 border-gray-900' : ''
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -261,7 +261,7 @@ const LearnSelfPaced: React.FC<LearnSelfPacedProps> = ({ enrollmentId }) => {
                         </p>
                       </div>
                       {currentLessonId === lesson._id && (
-                        <ChevronRight className="w-5 h-5 text-indigo-600 flex-shrink-0" />
+                        <ChevronRight className="w-5 h-5 text-gray-900 flex-shrink-0" />
                       )}
                     </div>
                   </button>

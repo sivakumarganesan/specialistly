@@ -193,7 +193,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading course...</p>
         </div>
       </div>
@@ -202,7 +202,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
 
   if (error || !enrollment) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="min-h-screen bg-white py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <Button 
             onClick={() => setCurrentPage("my-learning")}
@@ -231,7 +231,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
   const isCohort = enrollment.courseType === 'cohort-based' || enrollment.courseType === 'cohort';
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="min-h-screen bg-white py-8 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -266,13 +266,13 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                         <span className="text-sm font-medium text-gray-700">
                           Progress: {completedLessons}/{enrollment.lessons.length} lessons
                         </span>
-                        <span className="text-sm font-semibold text-indigo-600">
+                        <span className="text-sm font-semibold text-gray-900">
                           {enrollment.percentComplete}%
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-indigo-600 h-2 rounded-full transition-all"
+                          className="bg-gray-900 h-2 rounded-full transition-all"
                           style={{ width: `${enrollment.percentComplete}%` }}
                         ></div>
                       </div>
@@ -297,7 +297,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
           <div className="space-y-6">
             {/* Join Session Card */}
             {enrollment.zoomLink && (
-              <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+              <Card className="border-blue-200 bg-gradient-to-r from-gray-50 to-gray-100">
                 <div className="p-8 text-center">
                   <Video className="w-14 h-14 text-blue-600 mx-auto mb-4" />
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Join Live Session</h2>
@@ -323,7 +323,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {enrollment.startDate && (
                     <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                      <Calendar className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <Calendar className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">Start Date</p>
                         <p className="font-semibold text-gray-900">{new Date(enrollment.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
@@ -332,7 +332,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                   )}
                   {enrollment.endDate && (
                     <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                      <Calendar className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <Calendar className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">End Date</p>
                         <p className="font-semibold text-gray-900">{new Date(enrollment.endDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
@@ -341,7 +341,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                   )}
                   {enrollment.schedule && (
                     <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                      <Clock className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <Clock className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">Schedule</p>
                         <p className="font-semibold text-gray-900">{enrollment.schedule}</p>
@@ -350,7 +350,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                   )}
                   {enrollment.liveSessions && (
                     <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                      <Users className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <Users className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">Live Sessions</p>
                         <p className="font-semibold text-gray-900">{enrollment.liveSessions} sessions</p>
@@ -359,7 +359,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                   )}
                   {enrollment.meetingPlatform && (
                     <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                      <Video className="w-5 h-5 text-indigo-600 mt-0.5" />
+                      <Video className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">Platform</p>
                         <p className="font-semibold text-gray-900">{enrollment.meetingPlatform}</p>
@@ -415,7 +415,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                       <Button
                         onClick={() => handleMarkComplete(currentLesson._id)}
                         disabled={completing}
-                        className="bg-indigo-600 hover:bg-indigo-700 gap-2"
+                        className="bg-gray-900 hover:bg-gray-800 gap-2"
                       >
                         <CheckCircle className="w-4 h-4" />
                         {completing ? "Marking complete..." : "Mark as Complete"}
@@ -490,7 +490,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                     onClick={() => setCurrentLessonId(lesson._id)}
                     className={`w-full p-4 text-left transition ${
                       currentLessonId === lesson._id
-                        ? "bg-indigo-50"
+                        ? "bg-gray-50"
                         : "hover:bg-gray-50"
                     }`}
                   >

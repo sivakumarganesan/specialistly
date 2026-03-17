@@ -47,7 +47,7 @@ export function ServiceDetail({ serviceId, onBack, onEdit, onDelete }: ServiceDe
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-4 pb-8">
+      <div className="min-h-screen bg-white pt-4 pb-8">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex items-center gap-2 mb-6">
             <Button
@@ -73,7 +73,7 @@ export function ServiceDetail({ serviceId, onBack, onEdit, onDelete }: ServiceDe
 
   if (error || !service) {
     return (
-      <div className="min-h-screen bg-gray-50 pt-4 pb-8">
+      <div className="min-h-screen bg-white pt-4 pb-8">
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex items-center gap-2 mb-6">
             <Button
@@ -102,7 +102,7 @@ export function ServiceDetail({ serviceId, onBack, onEdit, onDelete }: ServiceDe
   const isRecurring = service.sessionFrequency === "repeat";
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-4 pb-8">
+    <div className="min-h-screen bg-white pt-4 pb-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -181,7 +181,7 @@ export function ServiceDetail({ serviceId, onBack, onEdit, onDelete }: ServiceDe
                       className={
                         isSingleDay
                           ? "bg-cyan-100 text-blue-800"
-                          : "bg-indigo-100 text-purple-800"
+                          : "bg-gray-100 text-purple-800"
                       }
                     >
                       {isSingleDay ? "Single Day" : "Multiple Sessions"}
@@ -334,8 +334,8 @@ export function ServiceDetail({ serviceId, onBack, onEdit, onDelete }: ServiceDe
                   </div>
                 )}
                 {service.bookings !== undefined && (
-                  <div className="text-center p-4 bg-indigo-50 rounded">
-                    <p className="text-2xl font-bold text-indigo-600">
+                  <div className="text-center p-4 bg-gray-50 rounded">
+                    <p className="text-2xl font-bold text-gray-900">
                       {service.bookings || 0}
                     </p>
                     <p className="text-sm text-gray-600">Bookings</p>

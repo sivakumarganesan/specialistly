@@ -148,11 +148,11 @@ export function Signup() {
 
       {/* Show signup form normally */}
       {!showOnboarding && (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 py-12 px-4">
+    <div className="min-h-screen bg-white py-12 px-4">
       <div className="max-w-6xl mx-auto">
         <button
           onClick={() => setCurrentPage('homepage')}
-          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-6 font-medium text-sm"
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 mb-6 font-medium text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Home
@@ -167,7 +167,7 @@ export function Signup() {
             {/* Signup Form */}
             <div>
               <Card className="shadow-xl">
-                <CardHeader className="bg-gradient-to-r from-indigo-50 to-indigo-50">
+                <CardHeader className="bg-gray-50">
                   <CardTitle>Create Your Account</CardTitle>
                   <CardDescription>Sign up to get started on Specialistly</CardDescription>
                 </CardHeader>
@@ -236,7 +236,7 @@ export function Signup() {
                         name="isSpecialist"
                         checked={formData.isSpecialist}
                         onChange={handleChange}
-                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 cursor-pointer"
+                        className="w-4 h-4 rounded border-gray-300 text-gray-900 cursor-pointer"
                       />
                       <Label htmlFor="isSpecialist" className="cursor-pointer text-gray-700">
                         I want to be a Specialist and earn by sharing my expertise
@@ -251,7 +251,7 @@ export function Signup() {
 
                     <Button
                       type="submit"
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2.5 text-base"
+                      className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2.5 text-base"
                       disabled={isLoading}
                     >
                       {isLoading ? 'Creating Account...' : 'Create Account'}
@@ -262,7 +262,7 @@ export function Signup() {
                       <button
                         type="button"
                         onClick={() => setCurrentPage('login')}
-                        className="text-indigo-600 hover:underline font-semibold"
+                        className="text-gray-900 hover:underline font-semibold"
                       >
                         Login here
                       </button>
@@ -274,10 +274,10 @@ export function Signup() {
 
             {/* Why Specialist Benefits */}
             <div className="space-y-6">
-              <Card className="border-2 border-purple-200 bg-indigo-50">
+              <Card className="border-2 border-gray-200 bg-gray-50">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-indigo-600" />
+                    <Zap className="h-5 w-5 text-gray-900" />
                     Why Become a Specialist?
                   </CardTitle>
                 </CardHeader>
@@ -315,22 +315,22 @@ export function Signup() {
                   key={plan.id}
                   className={`relative cursor-pointer transition-all transform hover:scale-105 ${
                     selectedPlan === plan.id
-                      ? 'border-indigo-600 ring-2 ring-indigo-600 shadow-xl'
-                      : 'border-gray-200 hover:border-indigo-300 shadow-lg'
+                      ? 'border-gray-900 ring-2 ring-gray-900 shadow-xl'
+                      : 'border-gray-200 hover:border-gray-400 shadow-lg'
                   } ${plan.id === 'pro' && selectedPlan !== plan.id ? 'md:scale-105' : ''}`}
                   onClick={() => setSelectedPlan(plan.id as 'free' | 'pro')}
                 >
                   {plan.badge && (
-                    <Badge className="absolute -top-3 left-4 bg-indigo-600 px-4 py-1">
+                    <Badge className="absolute -top-3 left-4 bg-gray-900 px-4 py-1">
                       {plan.badge}
                     </Badge>
                   )}
                   
-                  <CardHeader className={plan.id === 'pro' ? 'bg-gradient-to-r from-indigo-600 to-indigo-600 text-white' : ''}>
+                  <CardHeader className={plan.id === 'pro' ? 'bg-gray-900 text-white' : ''}>
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className={plan.id === 'pro' ? 'text-white' : ''}>{plan.name}</CardTitle>
-                        <CardDescription className={plan.id === 'pro' ? 'text-indigo-100' : ''}>
+                        <CardDescription className={plan.id === 'pro' ? 'text-gray-300' : ''}>
                           {plan.description}
                         </CardDescription>
                       </div>
@@ -440,13 +440,13 @@ export function Signup() {
                     <button
                       type="button"
                       onClick={() => setShowCategorySelection(!showCategorySelection)}
-                      className="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center gap-2 mb-3"
+                      className="text-gray-700 hover:text-gray-900 font-medium text-sm flex items-center gap-2 mb-3"
                     >
                       {showCategorySelection ? '▼' : '▶'} Add your speciality categories (Optional)
                     </button>
                     
                     {showCategorySelection && (
-                      <div className="space-y-3 p-3 bg-indigo-50 rounded-lg">
+                      <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
                         <div className="flex gap-2 mb-2">
                           <Button
                             type="button"
@@ -484,13 +484,13 @@ export function Signup() {
                               />
                               <span className="text-sm text-gray-700">{category}</span>
                               {selectedCategories.includes(category) && (
-                                <Check className="w-3 h-3 text-indigo-600 ml-auto" />
+                                <Check className="w-3 h-3 text-gray-900 ml-auto" />
                               )}
                             </label>
                           ))}
                         </div>
                         {selectedCategories.length > 0 && (
-                          <p className="text-xs text-indigo-600 mt-2">
+                          <p className="text-xs text-gray-600 mt-2">
                             {selectedCategories.length} categor{selectedCategories.length === 1 ? 'y' : 'ies'} selected
                           </p>
                         )}
@@ -517,7 +517,7 @@ export function Signup() {
 
                     <Button
                       type="submit"
-                      className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6"
+                      className="bg-gray-900 hover:bg-gray-800 text-white font-semibold px-6"
                       disabled={isLoading}
                     >
                       {isLoading ? 'Creating Account...' : `Continue with ${selectedPlan === 'pro' ? 'Pro' : 'Free'} Plan`}

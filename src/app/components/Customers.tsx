@@ -328,7 +328,7 @@ export function Customers() {
                   {/* Customer Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold">
+                      <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center text-white font-semibold">
                         {getInitials(customer.name)}
                       </div>
                       <div>
@@ -432,7 +432,7 @@ export function Customers() {
             <div className="space-y-6 py-4">
               {/* Customer Info */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-xl">
+                <div className="w-16 h-16 bg-gradient-to-br from-gray-700 to-gray-900 rounded-full flex items-center justify-center text-white font-semibold text-xl">
                   {getInitials(selectedCustomer.name)}
                 </div>
                 <div className="flex-1">
@@ -477,7 +477,7 @@ export function Customers() {
                 <div className="grid grid-cols-2 gap-4">
                   <Card className="p-3">
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-indigo-600" />
+                      <DollarSign className="h-5 w-5 text-gray-900" />
                       <div>
                         <p className="text-xs text-gray-600">Total Spent</p>
                         <p className="text-xl font-bold">

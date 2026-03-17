@@ -162,7 +162,7 @@ export function ManageSlots({
             onClick={handleGenerateFromAvailability}
             disabled={generating || loading}
             variant="outline"
-            className="border-indigo-600 text-indigo-600 hover:bg-indigo-50"
+            className="border-gray-900 text-gray-900 hover:bg-gray-50"
           >
             <Zap className="h-4 w-4 mr-2" />
             {generating ? 'Generating...' : 'Auto-Generate from Availability'}

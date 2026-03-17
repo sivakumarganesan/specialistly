@@ -244,7 +244,7 @@ export const WebinarsSection: React.FC<Props> = ({ specialistEmail, specialistId
                     {webinar.eventType === 'single' ? (
                       <Badge className="bg-cyan-100 text-blue-800">Single Day</Badge>
                     ) : (
-                      <Badge className="bg-indigo-100 text-purple-800">Multiple Sessions</Badge>
+                      <Badge className="bg-gray-100 text-purple-800">Multiple Sessions</Badge>
                     )}
                   </div>
 

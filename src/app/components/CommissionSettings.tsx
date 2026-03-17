@@ -108,7 +108,7 @@ export const CommissionSettings: React.FC<CommissionStatsProps> = ({ onSaved }) 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
@@ -142,9 +142,9 @@ export const CommissionSettings: React.FC<CommissionStatsProps> = ({ onSaved }) 
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-lg border border-indigo-200">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-lg border border-gray-200">
             <div className="flex items-baseline gap-2 mb-4">
-              <span className="text-5xl font-bold text-indigo-600">{rates?.platform || 0}</span>
+              <span className="text-5xl font-bold text-gray-900">{rates?.platform || 0}</span>
               <span className="text-xl text-gray-600">%</span>
             </div>
             <p className="text-sm text-gray-600 mb-6">
@@ -188,7 +188,7 @@ export const CommissionSettings: React.FC<CommissionStatsProps> = ({ onSaved }) 
                 📚 Courses
               </label>
               <div className="flex items-baseline gap-2 mb-4">
-                <span className="text-3xl font-bold text-indigo-600">
+                <span className="text-3xl font-bold text-gray-900">
                   {rates?.byServiceType?.course || 15}
                 </span>
                 <span className="text-lg text-gray-600">%</span>
@@ -216,7 +216,7 @@ export const CommissionSettings: React.FC<CommissionStatsProps> = ({ onSaved }) 
                 💼 Consulting
               </label>
               <div className="flex items-baseline gap-2 mb-4">
-                <span className="text-3xl font-bold text-indigo-600">
+                <span className="text-3xl font-bold text-gray-900">
                   {rates?.byServiceType?.consulting || 20}
                 </span>
                 <span className="text-lg text-gray-600">%</span>
@@ -244,7 +244,7 @@ export const CommissionSettings: React.FC<CommissionStatsProps> = ({ onSaved }) 
                 🎥 Webinars
               </label>
               <div className="flex items-baseline gap-2 mb-4">
-                <span className="text-3xl font-bold text-indigo-600">
+                <span className="text-3xl font-bold text-gray-900">
                   {rates?.byServiceType?.webinar || 15}
                 </span>
                 <span className="text-lg text-gray-600">%</span>

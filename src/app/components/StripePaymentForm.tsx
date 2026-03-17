@@ -192,7 +192,7 @@ export function StripePaymentForm({
     return (
       <Card className="w-full max-w-md mx-auto">
         <CardContent className="pt-6 text-center">
-          <Loader className="w-8 h-8 mx-auto animate-spin text-indigo-600 mb-4" />
+          <Loader className="w-8 h-8 mx-auto animate-spin text-gray-900 mb-4" />
           <p className="text-gray-600">Initializing payment...</p>
         </CardContent>
       </Card>
@@ -284,7 +284,7 @@ export function StripePaymentForm({
               <Button
                 type="submit"
                 disabled={loading || !clientSecret || paymentStatus === 'success'}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700"
+                className="flex-1 bg-gray-900 hover:bg-gray-800"
               >
                 {loading ? (
                   <>

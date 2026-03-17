@@ -118,7 +118,7 @@ export const PayoutHistory: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
       </div>
     );
   }
@@ -160,10 +160,10 @@ export const PayoutHistory: React.FC = () => {
           {/* Total Earnings */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingUp className="h-4 w-4 text-indigo-600" />
+              <TrendingUp className="h-4 w-4 text-gray-900" />
               <p className="text-sm text-gray-600">Total Earnings</p>
             </div>
-            <p className="text-2xl font-bold text-indigo-600">₹{stats.allTime.totalEarnings.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-gray-900">₹{stats.allTime.totalEarnings.toFixed(2)}</p>
             <p className="text-xs text-gray-500 mt-2">All time</p>
           </div>
         </div>
@@ -216,7 +216,7 @@ export const PayoutHistory: React.FC = () => {
           onClick={() => setFilterStatus('')}
           className={`px-4 py-2 rounded-lg font-medium transition ${
             filterStatus === ''
-              ? 'bg-indigo-600 text-white'
+              ? 'bg-gray-900 text-white'
               : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
           }`}
         >

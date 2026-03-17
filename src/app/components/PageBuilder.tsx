@@ -79,7 +79,7 @@ export function PageBuilder() {
   if (selectedWebsiteId) {
     const selectedWebsite = websites.find(w => w._id === selectedWebsiteId);
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-white">
         <div className="bg-white border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <button
@@ -105,7 +105,7 @@ export function PageBuilder() {
     return (
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex justify-center items-center min-h-96">
-          <Loader className="h-8 w-8 animate-spin text-indigo-600" />
+          <Loader className="h-8 w-8 animate-spin text-gray-900" />
         </div>
       </div>
     );
@@ -127,8 +127,8 @@ export function PageBuilder() {
       {websites.length === 0 ? (
         <Card className="p-12 text-center">
           <div className="mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 rounded-full mb-4">
-              <Plus className="h-8 w-8 text-indigo-600" />
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mb-4">
+              <Plus className="h-8 w-8 text-gray-900" />
             </div>
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">No websites yet</h2>
@@ -136,7 +136,7 @@ export function PageBuilder() {
           <Button
             onClick={handleCreateWebsite}
             disabled={isCreating}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="bg-gray-900 hover:bg-gray-800 text-white"
           >
             {isCreating ? 'Creating...' : 'Create Your First Website'}
           </Button>
@@ -148,7 +148,7 @@ export function PageBuilder() {
             <Button
               onClick={handleCreateWebsite}
               disabled={isCreating}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-gray-900 hover:bg-gray-800 text-white"
             >
               <Plus className="h-4 w-4 mr-2" />
               {isCreating ? 'Creating...' : 'Create New Website'}
@@ -194,7 +194,7 @@ export function PageBuilder() {
                     e.stopPropagation();
                     setSelectedWebsiteId(website._id);
                   }}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="w-full bg-gray-900 hover:bg-gray-800 text-white"
                 >
                   Edit Website
                 </Button>

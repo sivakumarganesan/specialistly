@@ -287,7 +287,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
   return (
     <div className="h-screen flex flex-col bg-slate-50">
       {/* Professional Header */}
-      <header className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 shadow-lg">
+      <header className="bg-gradient-to-r from-blue-600 via-blue-700 to-gray-800 shadow-lg">
         <div className="px-8 py-6 flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
@@ -566,7 +566,7 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
         {/* Right Sidebar - Properties */}
         <aside className="w-80 border-l border-slate-200 bg-white overflow-y-auto shadow-sm">
           {selectedSection ? (
-            <div className="border-b border-slate-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4">
+            <div className="border-b border-slate-200 bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4">
               <h3 className="font-bold text-slate-900">Section Properties</h3>
               <p className="text-xs text-slate-600 mt-1">Edit section content below</p>
             </div>
@@ -743,7 +743,7 @@ const BrandingPanel: React.FC<{ website: Website | null; onCancel?: () => void }
         {/* Header Section */}
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-white text-xl">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-gray-900 rounded-lg flex items-center justify-center text-white text-xl">
               🎨
             </div>
             <div>

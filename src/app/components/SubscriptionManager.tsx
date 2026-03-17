@@ -53,7 +53,7 @@ export function SubscriptionManager({
               <CardTitle className="flex items-center gap-2">
                 {currentPlan === 'pro' ? (
                   <>
-                    <Zap className="h-5 w-5 text-indigo-600" />
+                    <Zap className="h-5 w-5 text-gray-900" />
                     Pro Plan
                   </>
                 ) : (
@@ -68,7 +68,7 @@ export function SubscriptionManager({
               </CardDescription>
             </div>
             {currentPlan === 'free' && (
-              <Badge className="bg-indigo-100 text-purple-800">Upgrade Available</Badge>
+              <Badge className="bg-gray-100 text-purple-800">Upgrade Available</Badge>
             )}
             {currentPlan === 'pro' && (
               <Badge className="bg-green-100 text-green-800">Active</Badge>
@@ -103,14 +103,14 @@ export function SubscriptionManager({
                 <Button
                   onClick={handleUpgrade}
                   disabled={isLoading}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  className="w-full bg-gray-900 hover:bg-gray-800"
                 >
                   {isLoading ? 'Upgrading...' : `Upgrade to Pro - ₹${PLAN_FEATURES.pro.price}/month`}
                 </Button>
                 {onUpgradeStart && (
                   <button
                     onClick={onUpgradeStart}
-                    className="w-full mt-2 text-sm text-indigo-600 hover:underline"
+                    className="w-full mt-2 text-sm text-gray-900 hover:underline"
                   >
                     Contact Sales
                   </button>

@@ -220,7 +220,7 @@ export function ConsultingSlotCalendar({
                           day === null
                             ? ''
                             : hasSlots
-                            ? `bg-indigo-100 text-indigo-900 font-semibold cursor-pointer hover:bg-indigo-200 ${selectedDate === dateStr ? 'ring-2 ring-indigo-600' : ''}`
+                            ? `bg-gray-100 text-gray-900 font-semibold cursor-pointer hover:bg-gray-200 ${selectedDate === dateStr ? 'ring-2 ring-gray-900' : ''}`
                             : 'bg-gray-100 text-gray-600'
                         }`}
                       >
@@ -254,8 +254,8 @@ export function ConsultingSlotCalendar({
                               onClick={() => handleSelectSlot(slot)}
                               className={`p-2 rounded-md text-xs font-medium transition-colors ${
                                 selectedSlot?._id === slot._id
-                                  ? 'bg-indigo-600 text-white'
-                                  : 'bg-gray-100 text-gray-900 hover:bg-indigo-100'
+                                  ? 'bg-gray-900 text-white'
+                                  : 'bg-gray-100 text-gray-900 hover:bg-gray-100'
                               }`}
                               title={`${slot.startTime} - ${slot.endTime} (${slot.duration} min)`}
                             >
@@ -271,7 +271,7 @@ export function ConsultingSlotCalendar({
 
               {/* Selected slot details */}
               {selectedSlot && (
-                <Card className="mt-4 border-indigo-200 bg-indigo-50">
+                <Card className="mt-4 border-gray-200 bg-gray-50">
                   <CardContent className="pt-6">
                     <h3 className="font-semibold text-gray-900 mb-4">Selected Slot:</h3>
                     <div className="space-y-1 text-sm mb-4">
@@ -305,7 +305,7 @@ export function ConsultingSlotCalendar({
                     </div>
                     <Button
                       onClick={() => setShowBookingModal(true)}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                      className="w-full bg-gray-900 hover:bg-gray-800 text-white"
                     >
                       Proceed to Book
                     </Button>

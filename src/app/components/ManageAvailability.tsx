@@ -179,7 +179,7 @@ export function ManageAvailability() {
                 onChange={(e) =>
                   setSlotConfig({ ...slotConfig, defaultDuration: parseInt(e.target.value) })
                 }
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 <option value="15">15 minutes</option>
                 <option value="30">30 minutes</option>
@@ -196,7 +196,7 @@ export function ManageAvailability() {
                 onChange={(e) =>
                   setSlotConfig({ ...slotConfig, buffer: parseInt(e.target.value) })
                 }
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 <option value="0">No buffer</option>
                 <option value="5">5 minutes</option>
@@ -229,7 +229,7 @@ export function ManageAvailability() {
                     minBookingNotice: parseInt(e.target.value) || 0,
                   })
                 }
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
@@ -244,7 +244,7 @@ export function ManageAvailability() {
                     maxAdvanceBooking: parseInt(e.target.value) || 1,
                   })
                 }
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
@@ -259,7 +259,7 @@ export function ManageAvailability() {
                     cancellationDeadline: parseInt(e.target.value) || 0,
                   })
                 }
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
           </div>
@@ -281,7 +281,7 @@ export function ManageAvailability() {
                     type="checkbox"
                     checked={weeklyPattern[day].enabled}
                     onChange={() => handleDayToggle(day)}
-                    className="w-5 h-5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500"
+                    className="w-5 h-5 text-gray-900 rounded focus:ring-2 focus:ring-gray-400"
                   />
                   <span className="font-semibold text-lg">{dayLabels[day]}</span>
                 </label>
@@ -297,7 +297,7 @@ export function ManageAvailability() {
                         onChange={(e) =>
                           handleTimeChange(day, slotIndex, 'startTime', e.target.value)
                         }
-                        className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
                       />
                       <span className="text-gray-500">to</span>
                       <input
@@ -306,7 +306,7 @@ export function ManageAvailability() {
                         onChange={(e) =>
                           handleTimeChange(day, slotIndex, 'endTime', e.target.value)
                         }
-                        className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400"
                       />
                       {weeklyPattern[day].slots.length > 1 && (
                         <button
@@ -322,7 +322,7 @@ export function ManageAvailability() {
 
                   <button
                     onClick={() => handleAddTimeSlot(day)}
-                    className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 text-sm font-medium mt-2"
+                    className="flex items-center gap-2 text-gray-900 hover:text-gray-900 text-sm font-medium mt-2"
                   >
                     <Plus className="w-4 h-4" />
                     Add another time slot
@@ -339,7 +339,7 @@ export function ManageAvailability() {
         <Button
           onClick={handleSave}
           disabled={isSaving || loading}
-          className="bg-indigo-600 hover:bg-indigo-700"
+          className="bg-gray-900 hover:bg-gray-800"
         >
           {isSaving ? 'Saving...' : 'Save Availability Settings'}
         </Button>

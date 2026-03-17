@@ -44,7 +44,7 @@ export function OnboardingWizard({ userEmail, userRole, onComplete }: Onboarding
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl shadow-xl">
         {/* Progress Bar */}
         <div className="px-6 pt-6">
@@ -67,9 +67,9 @@ export function OnboardingWizard({ userEmail, userRole, onComplete }: Onboarding
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
-                <h4 className="font-semibold text-indigo-900 mb-2">Account Type</h4>
-                <p className="text-indigo-700">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h4 className="font-semibold text-gray-900 mb-2">Account Type</h4>
+                <p className="text-gray-900">
                   {userRole === 'specialist' 
                     ? 'You\'re signing up as a Specialist' 
                     : 'You\'re signing up as a Customer'}
@@ -80,7 +80,7 @@ export function OnboardingWizard({ userEmail, userRole, onComplete }: Onboarding
                 <h4 className="font-semibold">What's Next?</h4>
                 <ol className="space-y-2 text-sm text-gray-600">
                   <li className="flex gap-3">
-                    <span className="font-semibold text-indigo-600 flex-shrink-0">1</span>
+                    <span className="font-semibold text-gray-900 flex-shrink-0">1</span>
                     <span>
                       {userRole === 'specialist' 
                         ? 'Set up your speciality categories' 
@@ -88,11 +88,11 @@ export function OnboardingWizard({ userEmail, userRole, onComplete }: Onboarding
                     </span>
                   </li>
                   <li className="flex gap-3">
-                    <span className="font-semibold text-indigo-600 flex-shrink-0">2</span>
+                    <span className="font-semibold text-gray-900 flex-shrink-0">2</span>
                     <span>Complete your profile (optional for now)</span>
                   </li>
                   <li className="flex gap-3">
-                    <span className="font-semibold text-indigo-600 flex-shrink-0">3</span>
+                    <span className="font-semibold text-gray-900 flex-shrink-0">3</span>
                     <span>Start exploring the platform!</span>
                   </li>
                 </ol>
@@ -101,7 +101,7 @@ export function OnboardingWizard({ userEmail, userRole, onComplete }: Onboarding
               <div className="pt-4 flex justify-end gap-2">
                 <Button
                   onClick={() => setCurrentStep(2)}
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-gray-900 hover:bg-gray-800"
                 >
                   Let's Get Started
                   <ChevronRight className="w-4 h-4 ml-2" />

@@ -476,14 +476,14 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                   className="w-32 h-32 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-indigo-400 to-cyan-400 flex items-center justify-center text-white font-bold text-4xl">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center text-white font-bold text-4xl">
                   {specialist.name[0]}
                 </div>
               )}
             </div>
             <div className="flex-1">
               <h1 className="text-4xl font-bold mb-2">{specialist.name}</h1>
-              <p className="text-lg text-indigo-600 font-semibold mb-3">{specialist.specialization}</p>
+              <p className="text-lg text-gray-900 font-semibold mb-3">{specialist.specialization}</p>
               
               {/* Speciality Categories */}
               {specialist.specialityCategories && specialist.specialityCategories.length > 0 && (
@@ -527,7 +527,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
             onClick={() => setActiveTab(tab as any)}
             className={`px-6 py-3 font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab
-                ? "border-indigo-600 text-indigo-600"
+                ? "border-gray-900 text-gray-900"
                 : "border-transparent text-gray-600 hover:text-gray-900"
             }`}
           >
@@ -556,15 +556,15 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
             )}
             <div className="grid grid-cols-3 gap-4 py-4 border-t border-b">
               <div className="text-center">
-                <p className="text-2xl font-bold text-indigo-600">{coursesCount}</p>
+                <p className="text-2xl font-bold text-gray-900">{coursesCount}</p>
                 <p className="text-sm text-gray-600">Courses Offered</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-indigo-600">{servicesCount}</p>
+                <p className="text-2xl font-bold text-gray-900">{servicesCount}</p>
                 <p className="text-sm text-gray-600">Services Offered</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-indigo-600">{specialist.totalStudents || 0}</p>
+                <p className="text-2xl font-bold text-gray-900">{specialist.totalStudents || 0}</p>
                 <p className="text-sm text-gray-600">Total Students</p>
               </div>
             </div>
@@ -583,7 +583,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                     <CardHeader>
                       <CardTitle className="flex items-start gap-2 justify-between">
                         <div className="flex items-start gap-2 flex-1">
-                          <BookOpen className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-1" />
+                          <BookOpen className="w-5 h-5 text-gray-900 flex-shrink-0 mt-1" />
                           <span className="line-clamp-2">{course.title}</span>
                         </div>
                         {isEnrolled && (
@@ -599,7 +599,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                       <p className="text-gray-600 text-sm line-clamp-2">{course.description}</p>
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-2xl font-bold text-indigo-600">₹{course.price}</p>
+                          <p className="text-2xl font-bold text-gray-900">₹{course.price}</p>
                           <p className="text-xs text-gray-600">{course.duration || "Self-paced"}</p>
                         </div>
                         <p className="text-sm text-gray-600">{course.enrollments || 0} enrolled</p>
@@ -626,7 +626,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                         className={`w-full transition-all ${
                           isEnrolled
                             ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed"
-                            : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+                            : "bg-gray-900 hover:bg-gray-800 text-white cursor-pointer"
                         }`}
                       >
                         {isEnrolled ? "Already Enrolled" : "Enroll Now"}
@@ -655,7 +655,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                   <Card key={service._id}>
                     <CardHeader>
                       <CardTitle className="flex items-start gap-2">
-                        <Briefcase className="w-5 h-5 text-indigo-600 flex-shrink-0 mt-1" />
+                        <Briefcase className="w-5 h-5 text-gray-900 flex-shrink-0 mt-1" />
                         <span className="line-clamp-2">{service.title}</span>
                       </CardTitle>
                       <CardDescription>{service.type}</CardDescription>
@@ -664,7 +664,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                       <p className="text-gray-600 text-sm line-clamp-2">{service.description}</p>
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className="text-2xl font-bold text-indigo-600">₹{service.price}</p>
+                          <p className="text-2xl font-bold text-gray-900">₹{service.price}</p>
                           <p className="text-xs text-gray-600">{service.duration} min</p>
                         </div>
                       </div>
@@ -716,7 +716,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                             setSelectedWebinarService(service);
                             setWebinarModalOpen(true);
                           }}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700"
+                          className="w-full bg-gray-900 hover:bg-gray-800"
                         >
                           Join Webinar
                         </Button>
@@ -746,8 +746,8 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
               const hasAppointmentSlots = !isWebinar && appointmentSlots.length > 0;
 
               return hasAppointmentSlots ? (
-            <Card className="border-2 border-purple-300 bg-indigo-50 shadow-lg">
-              <CardHeader className="bg-indigo-100 rounded-t-lg">
+            <Card className="border-2 border-purple-300 bg-gray-50 shadow-lg">
+              <CardHeader className="bg-gray-100 rounded-t-lg">
                 <CardTitle className="text-purple-800 text-lg">
                   {bookingService?.title || "Book Service"}
                 </CardTitle>
@@ -781,7 +781,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
                               return (
                                 <div key={date} className="border-2 border-purple-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
                                   <p className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-indigo-600" />
+                                    <Calendar className="w-4 h-4 text-gray-900" />
                                     {new Date(date).toLocaleDateString("en-US", {
                                       weekday: "long",
                                       year: "numeric",
@@ -896,7 +896,7 @@ export function SpecialistProfile({ specialistId, specialistEmail, onBack }: Spe
             <div className="bg-gray-50 px-6 py-4 border-t flex justify-end">
               <Button
                 onClick={() => setShowZoomReAuthModal(false)}
-                className="bg-indigo-600 hover:bg-indigo-700"
+                className="bg-gray-900 hover:bg-gray-800"
               >
                 Got it, Thanks
               </Button>

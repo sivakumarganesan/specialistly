@@ -140,7 +140,7 @@ export function Dashboard({
       <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
         <button
           onClick={() => setActiveSection("overview")}
-          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
@@ -159,7 +159,7 @@ export function Dashboard({
       <div className="px-4 md:px-6 pt-0 pb-4 md:pb-6 space-y-6 -mt-4">
         <button
           onClick={() => setActiveSection("overview")}
-          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 font-medium text-sm"
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Dashboard
@@ -179,11 +179,11 @@ export function Dashboard({
 
       {/* Membership Banner */}
       {user && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4">
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
               <span className="text-sm font-medium text-gray-700">Current Plan: </span>
-              <Badge className={user.subscription?.planType === 'pro' ? 'bg-indigo-600' : 'bg-gray-600'}>
+              <Badge className={user.subscription?.planType === 'pro' ? 'bg-gray-900' : 'bg-gray-600'}>
                 {user.subscription?.planType?.toUpperCase() || 'FREE'}
               </Badge>
             </div>
@@ -192,7 +192,7 @@ export function Dashboard({
                 <Button 
                   onClick={handleUpgradeToPro}
                   disabled={isUpgrading}
-                  className="bg-indigo-600 hover:bg-indigo-700" 
+                  className="bg-gray-900 hover:bg-gray-800" 
                   size="sm"
                 >
                   {isUpgrading ? 'Upgrading...' : 'Upgrade to Pro'}
@@ -262,18 +262,18 @@ export function Dashboard({
         <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           <Card
-            className="p-4 cursor-pointer hover:shadow-md transition-all hover:border-indigo-300 group"
+            className="p-4 cursor-pointer hover:shadow-md transition-all hover:border-gray-300 group"
             onClick={onNavigateToServices}
           >
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Briefcase className="h-5 w-5 text-indigo-600" />
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <Briefcase className="h-5 w-5 text-gray-900" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium text-sm">Manage Offerings</p>
                 <p className="text-xs text-gray-500">Courses & consulting</p>
               </div>
-              <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-indigo-600 transition-colors" />
+              <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
             </div>
           </Card>
 

@@ -42,11 +42,11 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
         <button
           onClick={() => setCurrentPage('homepage')}
-          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-4 font-medium text-sm"
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 mb-4 font-medium text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Home
@@ -92,7 +92,7 @@ export function Login() {
 
               <Button
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700"
+                className="w-full bg-gray-900 hover:bg-gray-800"
                 disabled={isLoading}
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
@@ -103,7 +103,7 @@ export function Login() {
                 <button
                   type="button"
                   onClick={() => setCurrentPage('signup')}
-                  className="text-indigo-600 hover:underline font-medium"
+                  className="text-gray-900 hover:underline font-medium"
                 >
                   Sign up here
                 </button>
@@ -113,7 +113,7 @@ export function Login() {
                 <button
                   type="button"
                   onClick={() => setCurrentPage('forgotPassword')}
-                  className="text-indigo-600 hover:text-indigo-700 hover:underline font-medium"
+                  className="text-gray-700 hover:text-gray-900 hover:underline font-medium"
                 >
                   Forgot password?
                 </button>

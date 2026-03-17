@@ -134,7 +134,7 @@ export const SpecialistBankSetup: React.FC = () => {
     <div className="w-full max-w-2xl">
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex items-center gap-2 mb-6">
-          <CreditCard className="h-6 w-6 text-indigo-600" />
+          <CreditCard className="h-6 w-6 text-gray-900" />
           <h2 className="text-2xl font-bold text-gray-900">Bank Account Details</h2>
         </div>
 
@@ -155,7 +155,7 @@ export const SpecialistBankSetup: React.FC = () => {
 
         {/* Bank Account Status Info */}
         {bankAccount && !isEditing && (
-          <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-gray-600">Account Holder Name</p>
@@ -202,7 +202,7 @@ export const SpecialistBankSetup: React.FC = () => {
                 value={formData.accountHolderName}
                 onChange={handleInputChange}
                 placeholder="Enter your full name as on bank account"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-gray-400 focus:border-gray-400"
               />
             </div>
 
@@ -217,7 +217,7 @@ export const SpecialistBankSetup: React.FC = () => {
                 onChange={handleInputChange}
                 placeholder="8-18 digit account number"
                 maxLength={18}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-gray-400 focus:border-gray-400"
               />
               <p className="text-xs text-gray-500 mt-1">Your account number will be securely encrypted</p>
             </div>
@@ -234,7 +234,7 @@ export const SpecialistBankSetup: React.FC = () => {
                   onChange={handleInputChange}
                   placeholder="e.g., AXIS0000123"
                   maxLength={11}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 uppercase"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-gray-400 focus:border-gray-400 uppercase"
                 />
               </div>
 
@@ -246,7 +246,7 @@ export const SpecialistBankSetup: React.FC = () => {
                   name="accountType"
                   value={formData.accountType}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-gray-400 focus:border-gray-400"
                 >
                   <option value="savings">Savings</option>
                   <option value="current">Current</option>
@@ -264,7 +264,7 @@ export const SpecialistBankSetup: React.FC = () => {
                 value={formData.bankName}
                 onChange={handleInputChange}
                 placeholder="e.g., Axis Bank, HDFC Bank"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-gray-400 focus:border-gray-400"
               />
             </div>
 
@@ -272,7 +272,7 @@ export const SpecialistBankSetup: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSaving}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition"
+                className="flex-1 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg transition"
               >
                 {isSaving ? 'Saving...' : 'Save Bank Account'}
               </button>
@@ -291,7 +291,7 @@ export const SpecialistBankSetup: React.FC = () => {
         {!isEditing && (
           <button
             onClick={() => setIsEditing(true)}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg transition"
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2 px-4 rounded-lg transition"
           >
             {bankAccount ? 'Update Bank Account' : 'Add Bank Account'}
           </button>

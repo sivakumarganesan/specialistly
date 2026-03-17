@@ -213,7 +213,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
                 icon: LayoutDashboard,
                 title: 'Dashboard & Analytics',
                 description: 'See bookings, enrollments, and revenue at a glance. Know what\'s working and grow smarter.',
-                color: 'bg-indigo-100 text-indigo-700',
+                color: 'bg-gray-100 text-gray-900',
               },
             ].map((feature, idx) => (
               <div

@@ -77,7 +77,7 @@ export function MyLearning() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading your courses...</p>
         </div>
       </div>
@@ -87,7 +87,7 @@ export function MyLearning() {
   const allCourses = selfPacedCourses.length + cohortCourses.length;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -128,7 +128,7 @@ export function MyLearning() {
             <p className="text-gray-600 mb-6">Start learning by browsing our course catalog</p>
             <Button 
               onClick={() => setCurrentPage("browse-courses")}
-              className="bg-indigo-600 hover:bg-indigo-700"
+              className="bg-gray-900 hover:bg-gray-800"
             >
               Browse Courses
             </Button>
@@ -142,7 +142,7 @@ export function MyLearning() {
                   onClick={() => setSelectedTab("self-paced")}
                   className={`py-3 px-1 border-b-2 font-semibold transition ${
                     selectedTab === "self-paced"
-                      ? "border-indigo-600 text-indigo-600"
+                      ? "border-gray-900 text-gray-900"
                       : "border-transparent text-gray-600 hover:text-gray-900"
                   }`}
                 >
@@ -152,7 +152,7 @@ export function MyLearning() {
                   onClick={() => setSelectedTab("cohort")}
                   className={`py-3 px-1 border-b-2 font-semibold transition ${
                     selectedTab === "cohort"
-                      ? "border-indigo-600 text-indigo-600"
+                      ? "border-gray-900 text-gray-900"
                       : "border-transparent text-gray-600 hover:text-gray-900"
                   }`}
                 >
@@ -187,7 +187,7 @@ export function MyLearning() {
                     >
                       <div className="flex gap-6 p-6">
                         {/* Thumbnail */}
-                        <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                        <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center">
                           <Play className="w-8 h-8 text-white opacity-50" />
                         </div>
 
@@ -208,7 +208,7 @@ export function MyLearning() {
                                 </Badge>
                               )}
                               {!course.completed && (
-                                <div className="text-2xl font-bold text-indigo-600">
+                                <div className="text-2xl font-bold text-gray-900">
                                   {course.percentComplete}%
                                 </div>
                               )}
@@ -219,7 +219,7 @@ export function MyLearning() {
                           <div className="mb-4">
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
-                                className="bg-indigo-600 h-2 rounded-full transition-all"
+                                className="bg-gray-900 h-2 rounded-full transition-all"
                                 style={{ width: `${course.percentComplete}%` }}
                               ></div>
                             </div>

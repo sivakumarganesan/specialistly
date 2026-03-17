@@ -98,11 +98,11 @@ export function ConsultingSlotBookingModal({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <CardHeader className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-t-lg">
+        <CardHeader className="bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-t-lg">
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-white">Confirm Your Booking</CardTitle>
-              <CardDescription className="text-indigo-100">
+              <CardDescription className="text-gray-300">
                 Review and complete your consulting slot booking
               </CardDescription>
             </div>
@@ -147,9 +147,9 @@ export function ConsultingSlotBookingModal({
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Date */}
-                  <div className="p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+                  <div className="p-4 rounded-lg bg-gray-50 border border-gray-200">
                     <div className="flex items-center gap-3 mb-2">
-                      <Calendar className="w-5 h-5 text-indigo-600" />
+                      <Calendar className="w-5 h-5 text-gray-900" />
                       <span className="text-sm font-medium text-gray-600">Date</span>
                     </div>
                     <p className="text-lg font-semibold text-gray-900">{dateLabel}</p>
@@ -212,7 +212,7 @@ export function ConsultingSlotBookingModal({
                     value={additionalNotes}
                     onChange={(e) => setAdditionalNotes(e.target.value)}
                     placeholder="Share any specific topics you'd like to discuss, questions you have, or any other relevant information..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
                     rows={4}
                   />
                 </div>
@@ -264,7 +264,7 @@ export function ConsultingSlotBookingModal({
               <button
                 onClick={handleCompleteBooking}
                 disabled={isLoading || !user?.email}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (
                   <>
@@ -283,7 +283,7 @@ export function ConsultingSlotBookingModal({
             {bookingStatus === 'error' && (
               <button
                 onClick={() => setBookingStatus('idle')}
-                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors"
               >
                 Try Again
               </button>

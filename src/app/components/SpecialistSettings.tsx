@@ -134,7 +134,7 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
@@ -179,7 +179,7 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
                         {specialityCategories.map(category => (
                           <span
                             key={category}
-                            className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-medium"
+                            className="px-3 py-1 bg-gray-100 text-gray-900 rounded-full text-sm font-medium"
                           >
                             {category}
                           </span>
@@ -194,7 +194,7 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
                 </div>
                 <Button
                   onClick={() => setShowCategoryEdit(true)}
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-gray-900 hover:bg-gray-800"
                 >
                   Edit Specialities
                 </Button>
@@ -382,11 +382,11 @@ export function SpecialistSettings({ onBack }: SpecialistSettingsProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="bg-indigo-50 p-4 rounded-lg">
-              <p className="font-semibold text-indigo-900 capitalize">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="font-semibold text-gray-900 capitalize">
                 {user.membership || 'Free'} Plan
               </p>
-              <p className="text-sm text-indigo-700 mt-1">
+              <p className="text-sm text-gray-900 mt-1">
                 {user.membership === 'pro'
                   ? 'You have unlimited access to all features'
                   : 'Upgrade to Pro for unlimited features'}

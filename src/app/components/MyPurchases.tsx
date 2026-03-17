@@ -189,7 +189,7 @@ export function MyPurchases() {
           onClick={() => setActiveTab("courses")}
           className={`px-6 py-3 font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === "courses"
-              ? "border-indigo-600 text-indigo-600"
+              ? "border-gray-900 text-gray-900"
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
@@ -200,7 +200,7 @@ export function MyPurchases() {
           onClick={() => setActiveTab("services")}
           className={`px-6 py-3 font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === "services"
-              ? "border-indigo-600 text-indigo-600"
+              ? "border-gray-900 text-gray-900"
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
@@ -211,7 +211,7 @@ export function MyPurchases() {
           onClick={() => setActiveTab("appointments")}
           className={`px-6 py-3 font-medium border-b-2 transition-colors flex items-center gap-2 ${
             activeTab === "appointments"
-              ? "border-indigo-600 text-indigo-600"
+              ? "border-gray-900 text-gray-900"
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
@@ -236,7 +236,7 @@ export function MyPurchases() {
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <BookOpen className="w-5 h-5 text-indigo-600" />
+                        <BookOpen className="w-5 h-5 text-gray-900" />
                         <h3 className="text-lg font-bold">{enrollment.courseName}</h3>
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
@@ -250,7 +250,7 @@ export function MyPurchases() {
                       {/* Progress Bar */}
                       <div className="mt-4 w-full bg-gray-200 rounded-full h-2">
                         <div
-                          className="bg-indigo-600 h-2 rounded-full transition-all"
+                          className="bg-gray-900 h-2 rounded-full transition-all"
                           style={{ width: `${enrollment.progress}%` }}
                         ></div>
                       </div>
@@ -269,7 +269,7 @@ export function MyPurchases() {
                         <span className="capitalize">{enrollment.status}</span>
                       </div>
                       <Button
-                        className="bg-indigo-600 hover:bg-indigo-700"
+                        className="bg-gray-900 hover:bg-gray-800"
                         disabled
                         title="View in My Learning section"
                       >
@@ -285,7 +285,7 @@ export function MyPurchases() {
               <CardContent className="pt-6 text-center">
                 <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-600 mb-4">No enrolled courses yet</p>
-                <Button className="bg-indigo-600 hover:bg-indigo-700">
+                <Button className="bg-gray-900 hover:bg-gray-800">
                   Browse Courses
                 </Button>
               </CardContent>
@@ -305,7 +305,7 @@ export function MyPurchases() {
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <Briefcase className="w-5 h-5 text-indigo-600" />
+                          <Briefcase className="w-5 h-5 text-gray-900" />
                           <h3 className="text-lg font-bold">{booking.serviceName}</h3>
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm text-gray-600">
@@ -357,7 +357,7 @@ export function MyPurchases() {
                       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <Briefcase className="w-5 h-5 text-indigo-600" />
+                            <Briefcase className="w-5 h-5 text-gray-900" />
                             <h3 className="text-lg font-bold">{appointment.serviceTitle}</h3>
                           </div>
                           <div className="space-y-2 ml-8 text-sm text-gray-600">
@@ -409,7 +409,7 @@ export function MyPurchases() {
                           </div>
                           {appointmentDate > new Date() && appointment.zoomJoinUrl && (
                             <Button
-                              className="bg-indigo-600 hover:bg-indigo-700"
+                              className="bg-gray-900 hover:bg-gray-800"
                               onClick={() =>
                                 window.open(appointment.zoomJoinUrl, "_blank")
                               }
@@ -429,7 +429,7 @@ export function MyPurchases() {
               <CardContent className="pt-6 text-center">
                 <Briefcase className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                 <p className="text-gray-600 mb-4">No booked services yet</p>
-                <Button className="bg-indigo-600 hover:bg-indigo-700">
+                <Button className="bg-gray-900 hover:bg-gray-800">
                   Browse Services
                 </Button>
               </CardContent>
@@ -450,7 +450,7 @@ export function MyPurchases() {
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <Calendar className="w-5 h-5 text-indigo-600" />
+                          <Calendar className="w-5 h-5 text-gray-900" />
                           <h3 className="text-lg font-bold">{appointment.serviceTitle}</h3>
                         </div>
                         <div className="space-y-2 ml-8 text-sm text-gray-600">
@@ -499,14 +499,14 @@ export function MyPurchases() {
                         <div className="flex flex-col gap-2 w-full">
                           <Button
                             variant="outline"
-                            className="text-indigo-600 border-indigo-600 hover:bg-indigo-50"
+                            className="text-gray-900 border-gray-900 hover:bg-gray-50"
                             onClick={() => setSelectedAppointment(appointment)}
                           >
                             View Details
                           </Button>
                           {isUpcoming && appointment.zoomJoinUrl && (
                             <Button
-                              className="bg-indigo-600 hover:bg-indigo-700"
+                              className="bg-gray-900 hover:bg-gray-800"
                               onClick={() =>
                                 window.open(appointment.zoomJoinUrl, "_blank")
                               }
@@ -539,7 +539,7 @@ export function MyPurchases() {
       {selectedAppointment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <CardHeader className="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white">
+            <CardHeader className="bg-gradient-to-r from-gray-900 to-gray-800 text-white">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white">Appointment Details</CardTitle>
                 <button
@@ -602,7 +602,7 @@ export function MyPurchases() {
 
               {/* Zoom Meeting Info */}
               {selectedAppointment.zoomJoinUrl ? (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+                <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <Video className="w-5 h-5 text-blue-600 flex-shrink-0 mt-1" />
                     <div className="flex-1">

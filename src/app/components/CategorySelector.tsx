@@ -137,7 +137,7 @@ export function CategorySelector({ specialistEmail, onSave }: CategorySelectorPr
               onClick={() => handleCategoryToggle(category)}
               className={`p-3 rounded-lg border-2 transition-all text-left ${
                 selectedCategories.includes(category)
-                  ? `border-indigo-600 ${CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]}`
+                  ? `border-gray-900 ${CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]}`
                   : 'border-gray-200 bg-white hover:border-gray-300'
               }`}
             >
@@ -161,7 +161,7 @@ export function CategorySelector({ specialistEmail, onSave }: CategorySelectorPr
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="bg-indigo-600 hover:bg-indigo-700"
+            className="bg-gray-900 hover:bg-gray-800"
           >
             {saving ? 'Saving...' : 'Save Categories'}
           </Button>

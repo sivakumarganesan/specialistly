@@ -112,7 +112,7 @@ const CohortSessions: React.FC<CohortSessionsProps> = ({ cohortId, enrollmentId 
             </div>
             <div>
               <p className="text-sm text-gray-600 mb-1">Attendance</p>
-              <p className="text-3xl font-bold text-indigo-600">{attendancePercentage}%</p>
+              <p className="text-3xl font-bold text-gray-900">{attendancePercentage}%</p>
             </div>
           </div>
           {attendancePercentage === 100 && (

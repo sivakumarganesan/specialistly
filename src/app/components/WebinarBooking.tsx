@@ -220,7 +220,7 @@ export const WebinarBooking: React.FC<Props> = ({ specialistEmail, onBook }) => 
                       <Badge className="bg-cyan-100 text-blue-800">Single Day</Badge>
                     )}
                     {webinar.eventType === 'multiple' && (
-                      <Badge className="bg-indigo-100 text-purple-800">Multiple</Badge>
+                      <Badge className="bg-gray-100 text-purple-800">Multiple</Badge>
                     )}
                   </div>
 

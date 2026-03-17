@@ -218,7 +218,7 @@ export function CoursesBrowse() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading courses...</p>
         </div>
       </div>
@@ -226,7 +226,7 @@ export function CoursesBrowse() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -246,7 +246,7 @@ export function CoursesBrowse() {
           <select
             value={courseTypeFilter}
             onChange={(e) => setCourseTypeFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
           >
             <option value="all">All Types</option>
             <option value="self-paced">Self-Paced</option>
@@ -271,7 +271,7 @@ export function CoursesBrowse() {
               return (
               <Card key={course._id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 {/* Thumbnail */}
-                <div className="relative h-48 bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center overflow-hidden">
+                <div className="relative h-48 bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center overflow-hidden">
                   {course.thumbnail ? (
                     <img
                       src={course.thumbnail}
@@ -281,7 +281,7 @@ export function CoursesBrowse() {
                   ) : (
                     <Play className="w-12 h-12 text-white opacity-50" />
                   )}
-                  <Badge className="absolute top-3 right-3 bg-white text-indigo-600">
+                  <Badge className="absolute top-3 right-3 bg-white text-gray-900">
                     {course.courseType === "self-paced" ? "Self-Paced" : "Cohort"}
                   </Badge>
                   {isEnrolled && (
@@ -329,7 +329,7 @@ export function CoursesBrowse() {
                       className={`w-full transition-all ${
                         isButtonDisabled
                           ? "bg-gray-300 hover:bg-gray-300 text-gray-600 cursor-not-allowed" 
-                          : "bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer"
+                          : "bg-gray-900 hover:bg-gray-800 text-white cursor-pointer"
                       }`}
                     >
                       {isEnrolling ? "Enrolling..." : isEnrolled ? "Already Enrolled" : "Enroll Now"}

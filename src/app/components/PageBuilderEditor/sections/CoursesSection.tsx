@@ -364,7 +364,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                 }`}
               >
                 <div
-                  className={`bg-gradient-to-br from-blue-400 to-indigo-600 ${
+                  className={`bg-gradient-to-br from-blue-400 to-gray-900 ${
                     layout === 'list' ? 'w-32 h-32' : 'w-full h-48'
                   }`}
                   style={{
@@ -406,9 +406,9 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
 
                   {/* Cohort course details */}
                   {(course.courseType === 'cohort' || course.courseType === 'cohort-based') && (course.startDate || course.schedule || course.meetingPlatform) && (
-                    <div className="mb-3 p-2.5 bg-indigo-50 rounded-lg border border-indigo-100 text-xs space-y-1.5">
+                    <div className="mb-3 p-2.5 bg-gray-50 rounded-lg border border-gray-200 text-xs space-y-1.5">
                       {course.startDate && (
-                        <div className="flex items-center gap-1.5 text-indigo-700">
+                        <div className="flex items-center gap-1.5 text-gray-900">
                           <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
                           <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                           {course.endDate && (
@@ -417,19 +417,19 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                         </div>
                       )}
                       {course.schedule && (
-                        <div className="flex items-center gap-1.5 text-indigo-700">
+                        <div className="flex items-center gap-1.5 text-gray-900">
                           <Clock className="h-3.5 w-3.5 flex-shrink-0" />
                           <span>{course.schedule}</span>
                         </div>
                       )}
                       {course.meetingPlatform && (
-                        <div className="flex items-center gap-1.5 text-indigo-700">
+                        <div className="flex items-center gap-1.5 text-gray-900">
                           <Video className="h-3.5 w-3.5 flex-shrink-0" />
                           <span>Via {course.meetingPlatform}</span>
                         </div>
                       )}
                       {course.cohortSize && (
-                        <div className="flex items-center gap-1.5 text-indigo-700">
+                        <div className="flex items-center gap-1.5 text-gray-900">
                           <Users className="h-3.5 w-3.5 flex-shrink-0" />
                           <span>Max {course.cohortSize} students</span>
                         </div>
@@ -438,7 +438,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                   )}
 
                   {Number(course.price || course.coursePrice || 0) > 0 ? (
-                    <div className="font-bold text-lg text-indigo-600">
+                    <div className="font-bold text-lg text-gray-900">
                       {course.currency === 'INR' ? '₹' : '$'}{course.price || course.coursePrice}
                     </div>
                   ) : (
@@ -454,7 +454,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                     ) : (
                       <button
                         onClick={() => setCheckoutCourse(course)}
-                        className="mt-3 w-full py-2 px-4 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2"
+                        className="mt-3 w-full py-2 px-4 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
                       >
                         <ShoppingCart className="h-4 w-4" />
                         {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0

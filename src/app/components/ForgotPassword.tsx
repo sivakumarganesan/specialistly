@@ -40,7 +40,7 @@ export function ForgotPassword() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center py-12 px-4">
+      <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4">
         <div className="w-full max-w-md">
           <Card className="shadow-lg border-green-200">
             <CardHeader className="text-center">
@@ -74,7 +74,7 @@ export function ForgotPassword() {
                   setSuccess(false);
                   setCurrentPage('login');
                 }}
-                className="w-full bg-indigo-600 hover:bg-indigo-700"
+                className="w-full bg-gray-900 hover:bg-gray-800"
               >
                 Back to Login
               </Button>
@@ -86,11 +86,11 @@ export function ForgotPassword() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 to-indigo-100 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
         <button
           onClick={() => setCurrentPage('login')}
-          className="flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-4 font-medium text-sm"
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 mb-4 font-medium text-sm"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Login
@@ -98,8 +98,8 @@ export function ForgotPassword() {
         <Card className="shadow-lg">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-4">
-              <div className="bg-indigo-100 rounded-full p-3">
-                <Mail className="h-6 w-6 text-indigo-600" />
+              <div className="bg-gray-100 rounded-full p-3">
+                <Mail className="h-6 w-6 text-gray-900" />
               </div>
             </div>
             <CardTitle className="text-2xl">Reset Password</CardTitle>
@@ -131,7 +131,7 @@ export function ForgotPassword() {
 
               <Button
                 type="submit"
-                className="w-full bg-indigo-600 hover:bg-indigo-700"
+                className="w-full bg-gray-900 hover:bg-gray-800"
                 disabled={isLoading}
               >
                 {isLoading ? 'Sending...' : 'Send Reset Link'}
@@ -142,7 +142,7 @@ export function ForgotPassword() {
                 <button
                   type="button"
                   onClick={() => setCurrentPage('login')}
-                  className="text-indigo-600 hover:underline font-medium"
+                  className="text-gray-900 hover:underline font-medium"
                 >
                   Sign in
                 </button>

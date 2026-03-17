@@ -182,7 +182,7 @@ export function SpecialistCategorySetup({
               onClick={() => handleCategoryToggle(category)}
               className={`p-3 rounded-lg border-2 transition-all text-left ${
                 selectedCategories.includes(category)
-                  ? `border-indigo-600 ${CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]}`
+                  ? `border-gray-900 ${CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]}`
                   : 'border-gray-200 bg-white hover:border-gray-300'
               }`}
             >
@@ -213,7 +213,7 @@ export function SpecialistCategorySetup({
           <Button
             onClick={handleSave}
             disabled={loading || selectedCategories.length === 0}
-            className="bg-indigo-600 hover:bg-indigo-700"
+            className="bg-gray-900 hover:bg-gray-800"
           >
             {loading ? 'Saving...' : 'Save Categories'}
           </Button>

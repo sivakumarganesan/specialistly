@@ -95,7 +95,7 @@ export const RazorpayPaymentForm: React.FC<RazorpayPaymentFormProps> = ({
           name: customerName,
         },
         theme: {
-          color: '#4F46E5', // Indigo color to match your theme
+          color: '#111827', // Gray-900 to match theme
         },
         modal: {
           ondismiss: function () {
@@ -126,7 +126,7 @@ export const RazorpayPaymentForm: React.FC<RazorpayPaymentFormProps> = ({
   if (!razorpayLoaded) {
     return (
       <div className="p-6 bg-gray-50 rounded-lg text-center">
-        <Loader className="h-6 w-6 animate-spin mx-auto mb-2 text-indigo-600" />
+        <Loader className="h-6 w-6 animate-spin mx-auto mb-2 text-gray-900" />
         <p className="text-sm text-gray-600">Loading payment provider...</p>
       </div>
     );
@@ -159,7 +159,7 @@ export const RazorpayPaymentForm: React.FC<RazorpayPaymentFormProps> = ({
       <Button
         onClick={handlePayment}
         disabled={isProcessing || isLoading}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 text-base font-semibold"
+        className="w-full bg-gray-900 hover:bg-gray-800 h-12 text-base font-semibold"
       >
         {isProcessing || isLoading ? (
           <>

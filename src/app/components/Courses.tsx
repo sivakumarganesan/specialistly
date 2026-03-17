@@ -969,7 +969,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       case "self-paced":
         return "bg-cyan-100 text-blue-700";
       case "cohort-based":
-        return "bg-indigo-100 text-indigo-700";
+        return "bg-gray-100 text-gray-900";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -1008,8 +1008,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-indigo-100 rounded-lg">
-              <GraduationCap className="h-5 w-5 text-indigo-600" />
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <GraduationCap className="h-5 w-5 text-gray-900" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Courses</p>
@@ -1069,12 +1069,12 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
           </Card>
 
           <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-indigo-500"
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-gray-400"
             onClick={() => openCreateDialog("cohort-based")}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-indigo-100 rounded-full">
-                <Users className="h-8 w-8 text-indigo-600" />
+              <div className="p-4 bg-gray-100 rounded-full">
+                <Users className="h-8 w-8 text-gray-900" />
               </div>
               <h3 className="font-semibold text-lg">Cohort-Based Course</h3>
               <p className="text-sm text-gray-600">
@@ -1094,7 +1094,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   Interactive
                 </Badge>
               </div>
-              <Button className="bg-indigo-600 hover:bg-indigo-700 gap-2">
+              <Button className="bg-gray-900 hover:bg-gray-800 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Cohort-Based
               </Button>
@@ -1647,7 +1647,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                     {/* Lesson Header */}
                     <div className="flex items-center justify-between mb-6 pb-4 border-b">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-indigo-100 text-indigo-700 rounded-full flex items-center justify-center font-semibold text-sm">
+                        <div className="w-8 h-8 bg-gray-100 text-gray-900 rounded-full flex items-center justify-center font-semibold text-sm">
                           {index + 1}
                         </div>
                         <div className="flex-1">
@@ -1760,7 +1760,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                               size="sm"
                               onClick={() => document.getElementById(`video-upload-${index}`)?.click()}
                               disabled={uploadingVideoFor === index}
-                              className="bg-indigo-600 hover:bg-indigo-700"
+                              className="bg-gray-900 hover:bg-gray-800"
                             >
                               {uploadingVideoFor === index ? "Uploading..." : "Upload Video"}
                             </Button>
@@ -2065,7 +2065,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
           {enrollmentsLoading ? (
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
                 <p className="text-gray-600">Loading enrollments...</p>
               </div>
             </div>

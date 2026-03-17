@@ -172,8 +172,8 @@ export function MonthCalendarSlots({
                   ? "bg-transparent cursor-default"
                   : available
                   ? isSelected
-                    ? "bg-indigo-600 text-white"
-                    : "bg-indigo-100 text-indigo-700 hover:bg-indigo-200 cursor-pointer"
+                    ? "bg-gray-900 text-white"
+                    : "bg-gray-100 text-gray-900 hover:bg-gray-200 cursor-pointer"
                   : "bg-gray-100 text-gray-400 cursor-not-allowed"
               }`}
             >
@@ -196,7 +196,7 @@ export function MonthCalendarSlots({
                 <button
                   key={slot._id}
                   onClick={() => onSelectSlot(slot)}
-                  className="p-3 border-2 border-indigo-200 rounded-lg hover:border-indigo-600 hover:bg-indigo-50 text-sm font-medium text-indigo-700 transition-all"
+                  className="p-3 border-2 border-gray-200 rounded-lg hover:border-gray-900 hover:bg-gray-50 text-sm font-medium text-gray-900 transition-all"
                 >
                   {slot.startTime}
                 </button>
