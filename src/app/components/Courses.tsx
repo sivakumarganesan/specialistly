@@ -278,7 +278,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         duration: formData.duration,
         specialistId: user?.id,
         specialistEmail: user?.email,
-        ...(selectedCourse.type === "cohort-based" && {
+        ...((selectedCourse.type === "cohort-based" || selectedCourse.type === "cohort") && {
           cohortSize: formData.cohortSize,
           startDate: formData.startDate,
           endDate: formData.endDate,
@@ -397,6 +397,11 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
 
   const openEditDialog = (course: Course) => {
     setSelectedCourse(course);
+    // Convert ISO dates to YYYY-MM-DD for date inputs
+    const formatDate = (d: string) => {
+      if (!d) return "";
+      try { return new Date(d).toISOString().split('T')[0]; } catch { return ""; }
+    };
     setFormData({
       title: course.title || "",
       description: course.description || "",
@@ -405,8 +410,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       currency: course.currency || "USD",
       duration: course.duration || "",
       cohortSize: course.cohortSize || "",
-      startDate: course.startDate || "",
-      endDate: course.endDate || "",
+      startDate: formatDate(course.startDate || ""),
+      endDate: formatDate(course.endDate || ""),
       schedule: course.schedule || "",
       meetingPlatform: course.meetingPlatform || "Zoom",
       zoomLink: course.zoomLink || "",
