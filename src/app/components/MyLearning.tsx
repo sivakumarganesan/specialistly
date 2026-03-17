@@ -4,12 +4,14 @@ import { courseAPI } from "@/app/api/apiClient";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
-import { Play, Users, Award, ArrowRight } from "lucide-react";
+import { Award, ArrowRight, BookOpen, Video } from "lucide-react";
 
-interface SelfPacedCourse {
+interface EnrolledCourse {
   enrollmentId: string;
   courseId: string;
   title: string;
+  thumbnail?: string | null;
+  courseType?: string;
   lessonsTotal: number;
   lessonsCompleted: number;
   percentComplete: number;
@@ -20,28 +22,21 @@ interface SelfPacedCourse {
   };
 }
 
-interface CohortCourse {
-  enrollmentId: string;
-  cohortId: string;
-  batchName: string;
-  sessionsTotal: number;
-  sessionsAttended: number;
-  percentComplete: number;
-  completed: boolean;
-  certificate?: {
-    issued: boolean;
-    certificateId: string;
-  };
-}
-
 export function MyLearning() {
   const { user, setCurrentPage } = useAuth();
-  const [selfPacedCourses, setSelfPacedCourses] = useState<SelfPacedCourse[]>([]);
-  const [cohortCourses, setCohortCourses] = useState<CohortCourse[]>([]);
+  const [allEnrollments, setAllEnrollments] = useState<EnrolledCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<"self-paced" | "cohort">("self-paced");
   const [viewingEnrollmentId, setViewingEnrollmentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Derive self-paced and cohort lists from the single enrollment list
+  const selfPacedCourses = allEnrollments.filter(
+    (c) => !c.courseType || c.courseType === "self-paced"
+  );
+  const cohortCourses = allEnrollments.filter(
+    (c) => c.courseType === "cohort" || c.courseType === "cohort-based"
+  );
 
   useEffect(() => {
     fetchCourses();
@@ -51,20 +46,12 @@ export function MyLearning() {
     try {
       setLoading(true);
       setError(null);
-      const [selfPaced, cohorts] = await Promise.all([
-        courseAPI.getMySelfPacedCourses(user?.id).catch((err) => {
-          console.error("Error fetching self-paced courses:", err);
-          return { data: [] };
-        }),
-        courseAPI.getMyCohorts(user?.id).catch((err) => {
-          console.error("Error fetching cohort courses:", err);
-          return { data: [] };
-        }),
-      ]);
-      const selfPacedData = Array.isArray(selfPaced) ? selfPaced : (selfPaced?.data || []);
-      const cohortsData = Array.isArray(cohorts) ? cohorts : (cohorts?.data || []);
-      setSelfPacedCourses(selfPacedData);
-      setCohortCourses(cohortsData);
+      const result = await courseAPI.getMySelfPacedCourses(user?.id).catch((err) => {
+        console.error("Error fetching courses:", err);
+        return { data: [] };
+      });
+      const coursesData = Array.isArray(result) ? result : (result?.data || []);
+      setAllEnrollments(coursesData);
     } catch (err) {
       console.error("Error fetching courses:", err);
       setError("Failed to load courses. Please try again.");
@@ -84,7 +71,7 @@ export function MyLearning() {
     );
   }
 
-  const allCourses = selfPacedCourses.length + cohortCourses.length;
+  const allCourses = allEnrollments.length;
 
   return (
     <div className="min-h-screen bg-white py-8 px-4 sm:px-6 lg:px-8">
@@ -187,8 +174,18 @@ export function MyLearning() {
                     >
                       <div className="flex gap-6 p-6">
                         {/* Thumbnail */}
-                        <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-gray-700 to-gray-900 rounded-lg flex items-center justify-center">
-                          <Play className="w-8 h-8 text-white opacity-50" />
+                        <div className="flex-shrink-0 w-36 h-28 rounded-xl overflow-hidden bg-gray-100">
+                          {course.thumbnail ? (
+                            <img
+                              src={course.thumbnail}
+                              alt={course.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                              <BookOpen className="w-8 h-8 text-gray-400" />
+                            </div>
+                          )}
                         </div>
 
                         {/* Content */}
@@ -229,7 +226,8 @@ export function MyLearning() {
                           <Button 
                             className="gap-2" 
                             variant="outline"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setViewingEnrollmentId(course.enrollmentId);
                               setCurrentPage(`learn-course-${course.enrollmentId}`);
                             }}
@@ -259,22 +257,32 @@ export function MyLearning() {
                       className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
                       onClick={() => {
                         setViewingEnrollmentId(course.enrollmentId);
-                        setCurrentPage(`learn-cohort-${course.enrollmentId}`);
+                        setCurrentPage(`learn-course-${course.enrollmentId}`);
                       }}
                     >
                       <div className="flex gap-6 p-6">
-                        {/* Icon */}
-                        <div className="flex-shrink-0 w-32 h-32 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg flex items-center justify-center">
-                          <Users className="w-8 h-8 text-white" />
+                        {/* Thumbnail */}
+                        <div className="flex-shrink-0 w-36 h-28 rounded-xl overflow-hidden bg-gray-100">
+                          {course.thumbnail ? (
+                            <img
+                              src={course.thumbnail}
+                              alt={course.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-teal-100 flex items-center justify-center">
+                              <Video className="w-8 h-8 text-emerald-500" />
+                            </div>
+                          )}
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <h3 className="text-lg font-bold text-gray-900">{course.batchName}</h3>
+                              <h3 className="text-lg font-bold text-gray-900">{course.title}</h3>
                               <p className="text-sm text-gray-500 mt-1">
-                                {course.sessionsAttended} of {course.sessionsTotal} sessions attended
+                                {course.lessonsCompleted} of {course.lessonsTotal} lessons completed
                               </p>
                             </div>
                             <div className="text-right">
@@ -285,7 +293,7 @@ export function MyLearning() {
                                 </Badge>
                               )}
                               {!course.completed && (
-                                <div className="text-2xl font-bold text-emerald-600">
+                                <div className="text-2xl font-bold text-gray-900">
                                   {course.percentComplete}%
                                 </div>
                               )}
@@ -296,15 +304,23 @@ export function MyLearning() {
                           <div className="mb-4">
                             <div className="w-full bg-gray-200 rounded-full h-2">
                               <div
-                                className="bg-emerald-600 h-2 rounded-full transition-all"
+                                className="bg-gray-900 h-2 rounded-full transition-all"
                                 style={{ width: `${course.percentComplete}%` }}
                               ></div>
                             </div>
                           </div>
 
                           {/* Actions */}
-                          <Button className="gap-2" variant="outline">
-                            <span>View Sessions</span>
+                          <Button 
+                            className="gap-2" 
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewingEnrollmentId(course.enrollmentId);
+                              setCurrentPage(`learn-course-${course.enrollmentId}`);
+                            }}
+                          >
+                            <span>Continue Learning</span>
                             <ArrowRight className="w-4 h-4" />
                           </Button>
                         </div>

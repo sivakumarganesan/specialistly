@@ -141,6 +141,7 @@ export const getMyCourses = async (req, res) => {
           courseId: e.courseId._id,
           title: e.courseId.title || 'Untitled Course',
           thumbnail: e.courseId.thumbnail || null,
+          courseType: e.courseId.courseType || 'self-paced',
           lessonsTotal: lessonsTotal,
           lessonsCompleted: lessonsCompleted,
           percentComplete: lessonsTotal > 0 ? Math.round((lessonsCompleted / lessonsTotal) * 100) : 0,
