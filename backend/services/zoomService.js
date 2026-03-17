@@ -1,10 +1,17 @@
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import gmailApiService from './gmailApiService.js';
 import UserOAuthToken from '../models/UserOAuthToken.js';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const backendDir = path.resolve(__dirname, '..');
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: path.join(backendDir, '.env.production') });
+}
+dotenv.config({ path: path.join(backendDir, '.env') });
 
 // Zoom API base URL
 const ZOOM_API_BASE = 'https://api.zoom.us/v2';

@@ -1,15 +1,27 @@
 import axios from 'axios';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import UserOAuthToken from '../models/UserOAuthToken.js';
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const backendDir = path.resolve(__dirname, '..');
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: path.join(backendDir, '.env.production') });
+}
+dotenv.config({ path: path.join(backendDir, '.env') });
 
 const ZOOM_API_BASE = 'https://api.zoom.us/v2';
 const ZOOM_OAUTH_BASE = 'https://zoom.us/oauth';
 const ZOOM_CLIENT_ID = process.env.ZOOM_USER_MANAGED_CLIENT_ID;
 const ZOOM_CLIENT_SECRET = process.env.ZOOM_USER_MANAGED_CLIENT_SECRET;
-const REDIRECT_URI = process.env.ZOOM_REDIRECT_URI || 'http://localhost:5001/api/zoom/oauth/user-callback';
+
+// Derive redirect URI: explicit env var > FRONTEND_URL-based > localhost fallback
+const REDIRECT_URI = process.env.ZOOM_REDIRECT_URI || 
+  (process.env.FRONTEND_URL 
+    ? `${process.env.FRONTEND_URL}/api/zoom/oauth/user-callback` 
+    : 'http://localhost:5001/api/zoom/oauth/user-callback');
 
 /**
  * Generate OAuth authorization URL for user
@@ -56,6 +68,10 @@ export const generateAuthorizationUrl = async (userId) => {
     const authUrl = `${ZOOM_OAUTH_BASE}/authorize?client_id=${ZOOM_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(
       REDIRECT_URI
     )}&scope=${encodeURIComponent(scopes)}&state=${state}`;
+
+    console.log('🔗 Zoom OAuth Authorization URL generated');
+    console.log(`   Redirect URI: ${REDIRECT_URI}`);
+    console.log(`   Client ID: ${ZOOM_CLIENT_ID?.substring(0, 8)}...`);
 
     return {
       success: true,

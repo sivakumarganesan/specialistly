@@ -36,7 +36,13 @@ import publicRoutes from './routes/publicRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
 import { serveMedia } from './controllers/serveMediaController.js';
 
-dotenv.config();
+// Load environment-specific .env file
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
+dotenv.config({ path: path.resolve(__dirname, envFile) });
+// Also load base .env as fallback for any missing vars
+if (process.env.NODE_ENV === 'production') {
+  dotenv.config({ path: path.resolve(__dirname, '.env') });
+}
 
 const app = express();
 
