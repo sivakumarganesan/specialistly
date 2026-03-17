@@ -159,6 +159,10 @@ const courseSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  zoomStartUrl: {
+    type: String,
+    default: null,
+  },
   liveSessions: Number,
   
   // Status

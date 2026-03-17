@@ -281,6 +281,7 @@ export const publishCourse = async (req, res) => {
         const specialistId = course.specialistId?.toString() || req.user?.id;
         const meeting = await createCohortCourseMeeting(course, specialistId);
         course.zoomLink = meeting.joinUrl;
+        course.zoomStartUrl = meeting.startUrl;
         zoomMeetingCreated = true;
         console.log(`✅ Auto-created Zoom meeting for course "${course.title}": ${meeting.joinUrl}`);
       } catch (zoomError) {
@@ -325,6 +326,7 @@ export const generateZoomMeeting = async (req, res) => {
     const meeting = await createCohortCourseMeeting(course, specialistId);
 
     course.zoomLink = meeting.joinUrl;
+    course.zoomStartUrl = meeting.startUrl;
     course.meetingPlatform = 'zoom';
     await course.save();
 
@@ -332,6 +334,7 @@ export const generateZoomMeeting = async (req, res) => {
       success: true,
       message: 'Zoom meeting created successfully',
       zoomLink: meeting.joinUrl,
+      zoomStartUrl: meeting.startUrl,
       data: course,
     });
   } catch (error) {

@@ -76,6 +76,7 @@ interface Course {
   schedule?: string;
   meetingPlatform?: string;
   zoomLink?: string;
+  zoomStartUrl?: string;
   liveSessions?: number;
 }
 
@@ -128,6 +129,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
             schedule: course.schedule || "",
             meetingPlatform: course.meetingPlatform || "Zoom",
             zoomLink: course.zoomLink || "",
+            zoomStartUrl: course.zoomStartUrl || "",
             liveSessions: course.liveSessions,
           }));
           setCourses(transformedCourses);
@@ -341,6 +343,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   ...c,
                   status: newStatus,
                   zoomLink: result?.data?.zoomLink || c.zoomLink,
+                  zoomStartUrl: result?.data?.zoomStartUrl || c.zoomStartUrl,
                 }
               : c
           )
@@ -365,7 +368,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         setCourses(
           courses.map((c) =>
             c.id === id
-              ? { ...c, zoomLink: result.zoomLink, meetingPlatform: 'zoom' }
+              ? { ...c, zoomLink: result.zoomLink, zoomStartUrl: result.zoomStartUrl, meetingPlatform: 'zoom' }
               : c
           )
         );
@@ -1188,9 +1191,19 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                 )}
 
                 {course.type === "cohort-based" && course.zoomLink && (
-                  <div className="flex items-center gap-2 text-sm text-green-600 bg-green-50 px-2 py-1 rounded border border-green-100">
-                    <Video className="h-4 w-4" />
-                    <span className="font-medium">Zoom meeting link ready</span>
+                  <div className="space-y-2">
+                    <a
+                      href={course.zoomStartUrl || course.zoomLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded transition font-medium w-full justify-center"
+                    >
+                      <Video className="h-4 w-4" />
+                      Start / Host Zoom Meeting
+                    </a>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                      <span className="truncate">Join link: {course.zoomLink}</span>
+                    </div>
                   </div>
                 )}
 
