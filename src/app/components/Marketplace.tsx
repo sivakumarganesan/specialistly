@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { creatorAPI } from "@/app/api/apiClient";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
-import { Search, MapPin, Star, Users } from "lucide-react";
+import { Search, ChevronRight } from "lucide-react";
 import { CategoryFilter } from "@/app/components/CategoryFilter";
 import { CATEGORY_COLORS } from "@/app/constants/specialityCategories";
 
@@ -100,23 +99,35 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
     setSelectedCategories([]);
   };
 
+  // Rotating background colors for specialist cards (Podia-style)
+  const cardColors = [
+    'bg-amber-300',
+    'bg-sky-200',
+    'bg-purple-300',
+    'bg-stone-200',
+    'bg-rose-200',
+    'bg-teal-200',
+    'bg-orange-300',
+    'bg-lime-200',
+  ];
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Marketplace</h1>
-        <p className="text-gray-600">Discover and book sessions with top specialists</p>
+      <div className="mb-10">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 tracking-tight mb-3">Browse Specialists</h1>
+        <p className="text-lg text-gray-600">Discover experts and book sessions with top creators.</p>
       </div>
 
       {/* Search Bar */}
       <div className="mb-8">
-        <div className="relative">
-          <Search className="absolute left-4 top-3 w-5 h-5 text-gray-400" />
+        <div className="relative max-w-xl">
+          <Search className="absolute left-4 top-3.5 w-5 h-5 text-gray-400" />
           <input
             type="text"
             placeholder="Search specialists by name or expertise..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
           />
         </div>
       </div>
@@ -129,106 +140,76 @@ export function Marketplace({ onViewSpecialist }: MarketplaceProps) {
       />
 
       {/* Specialists Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {isLoading ? (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            <p>Loading specialists...</p>
-          </div>
-        ) : filteredSpecialists.length > 0 ? (
-          filteredSpecialists.map((specialist) => (
-            <Card key={specialist._id} className="hover:shadow-lg transition-shadow overflow-hidden">
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0">
-                    {specialist.profilePicture ? (
-                      <img
-                        src={specialist.profilePicture}
-                        alt={specialist.name}
-                        className="w-16 h-16 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 flex items-center justify-center text-white font-bold text-xl">
-                        {specialist.name ? specialist.name[0] : "S"}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="truncate">{specialist.name}</CardTitle>
-                    <CardDescription className="text-sm">{specialist.specialization}</CardDescription>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">{specialist.rating.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-gray-600 line-clamp-2">{specialist.bio}</p>
-
-                {/* Category Badges */}
-                {specialist.specialityCategories && specialist.specialityCategories.length > 0 && (
-                  <div className="flex flex-wrap gap-2">
-                    {specialist.specialityCategories.slice(0, 3).map(category => (
-                      <span
-                        key={category}
-                        className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                          CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]
-                        }`}
-                      >
-                        {category}
-                      </span>
-                    ))}
-                    {specialist.specialityCategories.length > 3 && (
-                      <span className="inline-block px-2 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-full">
-                        +{specialist.specialityCategories.length - 3} more
-                      </span>
-                    )}
+      {isLoading ? (
+        <div className="text-center py-20">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-500 text-sm">Loading specialists...</p>
+        </div>
+      ) : filteredSpecialists.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {filteredSpecialists.map((specialist, index) => (
+            <div
+              key={specialist._id}
+              className="group cursor-pointer"
+              onClick={() => onViewSpecialist(specialist._id, specialist.email)}
+            >
+              {/* Photo Card */}
+              <div className={`${cardColors[index % cardColors.length]} rounded-2xl h-72 flex items-end justify-center overflow-hidden mb-5 group-hover:shadow-xl transition-shadow duration-300`}>
+                {specialist.profilePicture ? (
+                  <img
+                    src={specialist.profilePicture}
+                    alt={specialist.name}
+                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                  />
+                ) : (
+                  <div className="flex items-center justify-center w-full h-full">
+                    <span className="text-8xl font-bold text-white/60 group-hover:scale-110 transition-transform duration-300">
+                      {specialist.name ? specialist.name[0].toUpperCase() : "S"}
+                    </span>
                   </div>
                 )}
+              </div>
 
-                <div className="grid grid-cols-3 gap-3 text-center py-3 border-y">
-                  <div>
-                    <p className="text-lg font-bold text-gray-900">{specialist.coursesCount}</p>
-                    <p className="text-xs text-gray-600">Courses</p>
-                  </div>
-                  <div>
-                    <p className="text-lg font-bold text-gray-900">{specialist.servicesCount}</p>
-                    <p className="text-xs text-gray-600">Services</p>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1">
-                      <Users className="w-4 h-4 text-gray-600" />
-                      <p className="text-lg font-bold text-gray-900">{specialist.totalStudents}</p>
-                    </div>
-                    <p className="text-xs text-gray-600">Students</p>
-                  </div>
+              {/* Category Badges */}
+              {specialist.specialityCategories && specialist.specialityCategories.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {specialist.specialityCategories.slice(0, 2).map(category => (
+                    <span
+                      key={category}
+                      className={`inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full ${
+                        CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] || 'bg-gray-100 text-gray-600'
+                      }`}
+                    >
+                      {category}
+                    </span>
+                  ))}
                 </div>
+              )}
 
-                <Button
-                  onClick={() => onViewSpecialist(specialist._id, specialist.email)}
-                  className="w-full bg-gray-900 hover:bg-gray-800"
-                >
-                  View Profile
-                </Button>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <div className="col-span-full text-center py-12">
-            <p className="text-gray-500 mb-4">
-              {selectedCategories.length > 0 ? "No specialists found in selected categories" : "No specialists found matching your search"}
-            </p>
-            {selectedCategories.length > 0 && (
-              <Button
-                onClick={handleClearAllCategories}
-                variant="outline"
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
+              {/* Specialist Info */}
+              <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Specialist</p>
+              <h3 className="text-lg font-bold text-gray-900 mb-1.5 flex items-center gap-1 group-hover:gap-2 transition-all">
+                {specialist.name}
+                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-900 transition-colors" />
+              </h3>
+              <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">
+                {specialist.bio || specialist.specialization}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-20">
+          <p className="text-gray-500 mb-4">
+            {selectedCategories.length > 0 ? "No specialists found in selected categories" : "No specialists found matching your search"}
+          </p>
+          {selectedCategories.length > 0 && (
+            <Button onClick={handleClearAllCategories} variant="outline">
+              Clear Filters
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
