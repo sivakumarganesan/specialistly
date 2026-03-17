@@ -140,7 +140,7 @@ export function CoursesBrowse() {
       }, 30000); // 30 second timeout
       
       try {
-        if (courseType === "self-paced") {
+        if (courseType === "self-paced" || courseType === "cohort-based" || courseType === "cohort") {
           // Check if course is FREE or PAID
           const courseData = course || courses.find(c => c._id === courseId);
           
@@ -203,11 +203,6 @@ export function CoursesBrowse() {
             setEnrolling(null);
             clearTimeout(timeoutId);
           }
-        } else {
-          console.log('[CoursesBrowse] Non self-paced course type:', courseType);
-          setEnrolling(null);
-          clearTimeout(timeoutId);
-          alert("Please select a cohort to enroll");
         }
       } finally {
         clearTimeout(timeoutId);
