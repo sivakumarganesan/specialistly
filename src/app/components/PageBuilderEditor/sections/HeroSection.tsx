@@ -136,6 +136,23 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
               onChange={(e) => handleCTATextChange(e.target.value)}
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">CTA Button Link</label>
+            <Input
+              placeholder="e.g., /services or https://example.com"
+              value={section.content?.ctaLink || ''}
+              onChange={(e) =>
+                onChange({
+                  content: {
+                    ...section.content,
+                    ctaLink: e.target.value,
+                  },
+                })
+              }
+            />
+            <p className="text-xs text-gray-500 mt-1">Use /page-slug for site pages, or a full URL for external links</p>
+          </div>
         </div>
       </Card>
 
@@ -192,31 +209,46 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   const minHeight = section.styling?.minHeight || '500px';
   const backgroundImage = section.content?.backgroundImage;
   const overlayOpacity = section.content?.overlayOpacity || 0.3;
+  const bgColor = section.content?.backgroundColor || section.styling?.backgroundColor || '#1e3a5f';
 
   return (
     <div
       className="relative flex items-center justify-center text-white text-center"
       style={{
         minHeight,
+        backgroundColor: bgColor,
         backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black"
-        style={{ opacity: overlayOpacity }}
-      />
+      {backgroundImage && (
+        <div
+          className="absolute inset-0 bg-black"
+          style={{ opacity: overlayOpacity }}
+        />
+      )}
 
       {/* Content */}
       <div className="relative z-10 max-w-2xl mx-auto px-4">
         <h1 className="text-5xl font-bold mb-4">{section.content?.title}</h1>
         <p className="text-xl mb-8">{section.content?.subtitle}</p>
         {section.content?.ctaText && (
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
-            {section.content.ctaText}
-          </button>
+          section.content?.ctaLink ? (
+            <a
+              href={section.content.ctaLink}
+              target={section.content.ctaLink.startsWith('http') ? '_blank' : undefined}
+              rel={section.content.ctaLink.startsWith('http') ? 'noopener noreferrer' : undefined}
+              className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+            >
+              {section.content.ctaText}
+            </a>
+          ) : (
+            <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
+              {section.content.ctaText}
+            </button>
+          )
         )}
       </div>
     </div>

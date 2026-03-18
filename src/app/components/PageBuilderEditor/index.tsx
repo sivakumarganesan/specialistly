@@ -1286,6 +1286,16 @@ const PropertiesPanel: React.FC<{
                 placeholder="Call to action text"
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CTA Button Link</label>
+              <Input
+                type="text"
+                value={content.ctaLink || ''}
+                onChange={(e) => setContent({ ...content, ctaLink: e.target.value })}
+                placeholder="/services or https://example.com"
+              />
+              <p className="text-xs text-gray-500 mt-1">Use /page-slug for site pages, or a full URL for external links</p>
+            </div>
           </div>
         )}
 
