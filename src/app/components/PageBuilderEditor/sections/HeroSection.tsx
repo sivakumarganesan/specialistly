@@ -15,17 +15,20 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
   section,
   onChange,
 }) => {
-  const [imagePreview, setImagePreview] = useState<string | null>(
+  const [bgImagePreview, setBgImagePreview] = useState<string | null>(
     section.content?.backgroundImage || null
   );
+  const [overlayImagePreview, setOverlayImagePreview] = useState<string | null>(
+    section.content?.overlayImage || null
+  );
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBgImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const imageUrl = event.target?.result as string;
-        setImagePreview(imageUrl);
+        setBgImagePreview(imageUrl);
         onChange({
           content: {
             ...section.content,
@@ -37,53 +40,40 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
     }
   };
 
-  const handleTitleChange = (value: string) => {
-    onChange({
-      content: {
-        ...section.content,
-        title: value,
-      },
-    });
-  };
-
-  const handleSubtitleChange = (value: string) => {
-    onChange({
-      content: {
-        ...section.content,
-        subtitle: value,
-      },
-    });
-  };
-
-  const handleCTATextChange = (value: string) => {
-    onChange({
-      content: {
-        ...section.content,
-        ctaText: value,
-      },
-    });
+  const handleOverlayImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setOverlayImagePreview(imageUrl);
+        onChange({
+          content: {
+            ...section.content,
+            overlayImage: imageUrl,
+          },
+        });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
     <div className="space-y-6">
       <Card className="p-6">
         <h3 className="font-bold mb-4">Background Image</h3>
-        {imagePreview && (
+        <p className="text-xs text-gray-500 mb-3">This image appears blurred behind the entire hero section</p>
+        {bgImagePreview && (
           <div className="relative mb-4">
             <img
-              src={imagePreview}
+              src={bgImagePreview}
               alt="Hero background"
-              className="w-full h-48 object-cover rounded-lg"
+              className="w-full h-32 object-cover rounded-lg"
             />
             <button
               onClick={() => {
-                setImagePreview(null);
-                onChange({
-                  content: {
-                    ...section.content,
-                    backgroundImage: null,
-                  },
-                });
+                setBgImagePreview(null);
+                onChange({ content: { ...section.content, backgroundImage: null } });
               }}
               className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded"
             >
@@ -91,17 +81,42 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
             </button>
           </div>
         )}
-        <label className="flex items-center justify-center w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+        <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
           <div className="text-center">
-            <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
+            <Upload className="w-5 h-5 mx-auto mb-1 text-gray-400" />
             <span className="text-sm text-gray-600">Upload background image</span>
           </div>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-          />
+          <input type="file" accept="image/*" onChange={handleBgImageUpload} className="hidden" />
+        </label>
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="font-bold mb-4">Overlay Image</h3>
+        <p className="text-xs text-gray-500 mb-3">This image appears on the right side of the hero, overlaid on the background</p>
+        {overlayImagePreview && (
+          <div className="relative mb-4">
+            <img
+              src={overlayImagePreview}
+              alt="Hero overlay"
+              className="w-full h-32 object-cover rounded-lg"
+            />
+            <button
+              onClick={() => {
+                setOverlayImagePreview(null);
+                onChange({ content: { ...section.content, overlayImage: null } });
+              }}
+              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+          <div className="text-center">
+            <Upload className="w-5 h-5 mx-auto mb-1 text-gray-400" />
+            <span className="text-sm text-gray-600">Upload overlay image</span>
+          </div>
+          <input type="file" accept="image/*" onChange={handleOverlayImageUpload} className="hidden" />
         </label>
       </Card>
 
@@ -113,9 +128,23 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
             <Input
               placeholder="Enter hero title"
               value={section.content?.title || ''}
-              onChange={(e) => handleTitleChange(e.target.value)}
+              onChange={(e) =>
+                onChange({ content: { ...section.content, title: e.target.value } })
+              }
               className="text-lg"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Accent Text</label>
+            <Input
+              placeholder="e.g., highlighted phrase"
+              value={section.content?.accentText || ''}
+              onChange={(e) =>
+                onChange({ content: { ...section.content, accentText: e.target.value } })
+              }
+            />
+            <p className="text-xs text-gray-500 mt-1">Displayed in accent color within the title area</p>
           </div>
 
           <div>
@@ -123,7 +152,9 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
             <Textarea
               placeholder="Enter hero subtitle"
               value={section.content?.subtitle || ''}
-              onChange={(e) => handleSubtitleChange(e.target.value)}
+              onChange={(e) =>
+                onChange({ content: { ...section.content, subtitle: e.target.value } })
+              }
               rows={3}
             />
           </div>
@@ -133,7 +164,9 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
             <Input
               placeholder="e.g., Get Started"
               value={section.content?.ctaText || ''}
-              onChange={(e) => handleCTATextChange(e.target.value)}
+              onChange={(e) =>
+                onChange({ content: { ...section.content, ctaText: e.target.value } })
+              }
             />
           </div>
 
@@ -143,12 +176,7 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
               placeholder="e.g., /services or https://example.com"
               value={section.content?.ctaLink || ''}
               onChange={(e) =>
-                onChange({
-                  content: {
-                    ...section.content,
-                    ctaLink: e.target.value,
-                  },
-                })
+                onChange({ content: { ...section.content, ctaLink: e.target.value } })
               }
             />
             <p className="text-xs text-gray-500 mt-1">Use /page-slug for site pages, or a full URL for external links</p>
@@ -160,40 +188,34 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
         <h3 className="font-bold mb-4">Styling</h3>
         <div className="space-y-4">
           <div>
+            <label className="block text-sm font-medium mb-2">Accent Color</label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                value={section.content?.accentColor || '#00b4d8'}
+                onChange={(e) =>
+                  onChange({ content: { ...section.content, accentColor: e.target.value } })
+                }
+                className="w-12 h-10 rounded cursor-pointer border border-gray-300"
+              />
+              <Input
+                value={section.content?.accentColor || '#00b4d8'}
+                onChange={(e) =>
+                  onChange({ content: { ...section.content, accentColor: e.target.value } })
+                }
+                className="flex-1"
+              />
+            </div>
+          </div>
+
+          <div>
             <label className="block text-sm font-medium mb-2">Min Height</label>
             <Input
               placeholder="e.g., 500px"
               value={section.styling?.minHeight || ''}
               onChange={(e) =>
-                onChange({
-                  styling: {
-                    ...section.styling,
-                    minHeight: e.target.value,
-                  },
-                })
+                onChange({ styling: { ...section.styling, minHeight: e.target.value } })
               }
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Overlay Opacity (0-1)
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={section.content?.overlayOpacity || 0.3}
-              onChange={(e) =>
-                onChange({
-                  content: {
-                    ...section.content,
-                    overlayOpacity: parseFloat(e.target.value),
-                  },
-                })
-              }
-              className="w-full"
             />
           </div>
         </div>
@@ -202,54 +224,102 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
   );
 };
 
-// Preview Component
+// Preview Component — split layout with text left, overlay image right
 export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   section,
 }) => {
-  const minHeight = section.styling?.minHeight || '500px';
+  const minHeight = section.styling?.minHeight || '550px';
   const backgroundImage = section.content?.backgroundImage;
-  const overlayOpacity = section.content?.overlayOpacity || 0.3;
-  const bgColor = section.content?.backgroundColor || section.styling?.backgroundColor || '#1e3a5f';
+  const overlayImage = section.content?.overlayImage;
+  const bgColor = section.content?.backgroundColor || section.styling?.backgroundColor || '#f0f4f8';
+  const accentColor = section.content?.accentColor || '#00b4d8';
 
   return (
     <div
-      className="relative flex items-center justify-center text-white text-center"
-      style={{
-        minHeight,
-        backgroundColor: bgColor,
-        backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }}
+      className="relative overflow-hidden"
+      style={{ minHeight, backgroundColor: bgColor }}
     >
-      {/* Overlay */}
+      {/* Background image with blur */}
       {backgroundImage && (
         <div
-          className="absolute inset-0 bg-black"
-          style={{ opacity: overlayOpacity }}
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `url(${backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            filter: 'blur(6px) brightness(0.95)',
+            transform: 'scale(1.05)',
+          }}
         />
       )}
 
-      {/* Content */}
-      <div className="relative z-10 max-w-2xl mx-auto px-4">
-        <h1 className="text-5xl font-bold mb-4">{section.content?.title}</h1>
-        <p className="text-xl mb-8">{section.content?.subtitle}</p>
-        {section.content?.ctaText && (
-          section.content?.ctaLink ? (
-            <a
-              href={section.content.ctaLink}
-              target={section.content.ctaLink.startsWith('http') ? '_blank' : undefined}
-              rel={section.content.ctaLink.startsWith('http') ? 'noopener noreferrer' : undefined}
-              className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors"
-            >
-              {section.content.ctaText}
-            </a>
-          ) : (
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors">
-              {section.content.ctaText}
-            </button>
-          )
-        )}
+      {/* Light overlay for readability */}
+      {backgroundImage && (
+        <div className="absolute inset-0 bg-white/60" />
+      )}
+
+      {/* Content grid: text left, image right */}
+      <div className="relative z-10 flex items-center h-full" style={{ minHeight }}>
+        <div className="w-full max-w-7xl mx-auto px-8 lg:px-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+          {/* Left — Text content */}
+          <div className="py-12">
+            {section.content?.title && (
+              <h1 className="text-4xl lg:text-5xl font-bold leading-tight mb-2 text-gray-900">
+                {section.content.title}
+              </h1>
+            )}
+            {section.content?.accentText && (
+              <p
+                className="text-3xl lg:text-4xl font-bold mb-6"
+                style={{ color: accentColor }}
+              >
+                {section.content.accentText}
+              </p>
+            )}
+            {section.content?.subtitle && (
+              <p className="text-base lg:text-lg text-gray-600 mb-8 max-w-lg leading-relaxed">
+                »&nbsp; {section.content.subtitle}
+              </p>
+            )}
+            {section.content?.ctaText && (
+              section.content?.ctaLink ? (
+                <a
+                  href={section.content.ctaLink}
+                  target={section.content.ctaLink.startsWith('http') ? '_blank' : undefined}
+                  rel={section.content.ctaLink.startsWith('http') ? 'noopener noreferrer' : undefined}
+                  className="inline-block px-8 py-3 rounded-lg font-semibold text-white transition-all hover:opacity-90 shadow-lg"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  {section.content.ctaText}
+                </a>
+              ) : (
+                <button
+                  className="px-8 py-3 rounded-lg font-semibold text-white transition-all hover:opacity-90 shadow-lg"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  {section.content.ctaText}
+                </button>
+              )
+            )}
+          </div>
+
+          {/* Right — Overlay image */}
+          {overlayImage && (
+            <div className="hidden lg:flex justify-end">
+              <img
+                src={overlayImage}
+                alt="Hero"
+                className="max-h-[480px] w-auto object-contain drop-shadow-2xl rounded-lg"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Dot indicators (decorative, like the screenshot) */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+        <span className="w-3 h-3 rounded-full border-2 border-gray-400 bg-transparent" />
+        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />
       </div>
     </div>
   );

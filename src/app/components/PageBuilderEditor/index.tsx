@@ -1269,6 +1269,15 @@ const PropertiesPanel: React.FC<{
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Accent Text</label>
+              <Input
+                type="text"
+                value={content.accentText || ''}
+                onChange={(e) => setContent({ ...content, accentText: e.target.value })}
+                placeholder="Highlighted phrase in accent color"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Subheadline</label>
               <Input
                 type="text"
@@ -1295,6 +1304,23 @@ const PropertiesPanel: React.FC<{
                 placeholder="/services or https://example.com"
               />
               <p className="text-xs text-gray-500 mt-1">Use /page-slug for site pages, or a full URL for external links</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Accent Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.accentColor || '#00b4d8'}
+                  onChange={(e) => setContent({ ...content, accentColor: e.target.value })}
+                  className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+                />
+                <Input
+                  type="text"
+                  value={content.accentColor || '#00b4d8'}
+                  onChange={(e) => setContent({ ...content, accentColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
             </div>
           </div>
         )}
