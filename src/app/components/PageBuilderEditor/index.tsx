@@ -1102,8 +1102,11 @@ const PropertiesPanel: React.FC<{
   const [content, setContent] = useState<Record<string, any>>(section?.content || {});
   const [aboutImageUrl, setAboutImageUrl] = useState(section?.content?.image || '');
   const [isUploadingAboutImage, setIsUploadingAboutImage] = useState(false);
+  const [isUploadingHeroImage, setIsUploadingHeroImage] = useState<'bg' | 'overlay' | null>(null);
   const [uploadError, setUploadError] = useState('');
   const aboutImageInputRef = React.useRef<HTMLInputElement>(null);
+  const heroBgImageRef = React.useRef<HTMLInputElement>(null);
+  const heroOverlayImageRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setTitle(section?.title || '');
@@ -1195,6 +1198,42 @@ const PropertiesPanel: React.FC<{
       setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
     } finally {
       setIsUploadingAboutImage(false);
+    }
+  };
+
+  const handleHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'backgroundImage' | 'overlayImage') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { setUploadError('Please upload an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { setUploadError('File size must be less than 5MB'); return; }
+
+    try {
+      setIsUploadingHeroImage(field === 'backgroundImage' ? 'bg' : 'overlay');
+      setUploadError('');
+      const formData = new FormData();
+      formData.append('file', file);
+      const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+      const authToken = localStorage.getItem('authToken');
+      if (!authToken) { setUploadError('Authentication token not found.'); return; }
+
+      const uploadResponse = await fetch(
+        `${apiUrl}/page-builder/websites/${section?.websiteId}/media/upload`,
+        { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData }
+      );
+      if (!uploadResponse.ok) {
+        const error = await uploadResponse.json();
+        throw new Error(error.message || `Upload failed with status ${uploadResponse.status}`);
+      }
+      const uploadData = await uploadResponse.json();
+      const imageUrl = uploadData.data?.url || uploadData.data?.media?.url;
+      if (!imageUrl) throw new Error('No URL returned from upload');
+
+      setContent({ ...content, [field]: imageUrl });
+    } catch (error) {
+      console.error('Hero image upload error:', error);
+      setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
+    } finally {
+      setIsUploadingHeroImage(null);
     }
   };
 
@@ -1322,6 +1361,60 @@ const PropertiesPanel: React.FC<{
                 />
               </div>
             </div>
+
+            {/* Background Image Upload */}
+            <div className="border-t pt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Background Image</label>
+              <p className="text-xs text-gray-500 mb-2">Appears blurred behind the entire hero</p>
+              {content.backgroundImage && (
+                <div className="relative mb-2">
+                  <img src={content.backgroundImage} alt="Background" className="w-full h-24 object-cover rounded-lg" />
+                  <button
+                    onClick={() => setContent({ ...content, backgroundImage: null })}
+                    className="absolute top-1 right-1 bg-red-500 text-white p-0.5 rounded text-xs"
+                  >✕</button>
+                </div>
+              )}
+              <input ref={heroBgImageRef} type="file" accept="image/*" onChange={(e) => handleHeroImageUpload(e, 'backgroundImage')} className="hidden" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={isUploadingHeroImage === 'bg'}
+                onClick={() => heroBgImageRef.current?.click()}
+              >
+                {isUploadingHeroImage === 'bg' ? 'Uploading...' : content.backgroundImage ? 'Change Background' : 'Upload Background'}
+              </Button>
+            </div>
+
+            {/* Overlay Image Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Overlay Image</label>
+              <p className="text-xs text-gray-500 mb-2">Appears on the right side of the hero</p>
+              {content.overlayImage && (
+                <div className="relative mb-2">
+                  <img src={content.overlayImage} alt="Overlay" className="w-full h-24 object-cover rounded-lg" />
+                  <button
+                    onClick={() => setContent({ ...content, overlayImage: null })}
+                    className="absolute top-1 right-1 bg-red-500 text-white p-0.5 rounded text-xs"
+                  >✕</button>
+                </div>
+              )}
+              <input ref={heroOverlayImageRef} type="file" accept="image/*" onChange={(e) => handleHeroImageUpload(e, 'overlayImage')} className="hidden" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={isUploadingHeroImage === 'overlay'}
+                onClick={() => heroOverlayImageRef.current?.click()}
+              >
+                {isUploadingHeroImage === 'overlay' ? 'Uploading...' : content.overlayImage ? 'Change Overlay' : 'Upload Overlay'}
+              </Button>
+            </div>
+
+            {uploadError && (
+              <p className="text-xs text-red-600">{uploadError}</p>
+            )}
           </div>
         )}
 
