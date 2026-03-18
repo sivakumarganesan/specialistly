@@ -1011,8 +1011,12 @@ export const updateSection = async (req, res) => {
         ...section.content,
         ...content,
       };
+      section.markModified('content');
     }
-    if (styling) section.styling = styling;
+    if (styling) {
+      section.styling = { ...section.styling, ...styling };
+      section.markModified('styling');
+    }
     if (visibility) section.visibility = visibility;
     if (order !== undefined) section.order = order;
 

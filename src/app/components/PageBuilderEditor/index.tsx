@@ -1228,7 +1228,13 @@ const PropertiesPanel: React.FC<{
       const imageUrl = uploadData.data?.url || uploadData.data?.media?.url;
       if (!imageUrl) throw new Error('No URL returned from upload');
 
-      setContent({ ...content, [field]: imageUrl });
+      const updatedContent = { ...content, [field]: imageUrl };
+      setContent(updatedContent);
+
+      // Auto-save so the image persists immediately
+      if (onUpdateSection) {
+        onUpdateSection({ content: updatedContent });
+      }
     } catch (error) {
       console.error('Hero image upload error:', error);
       setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
