@@ -401,9 +401,8 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
             <div>
               <h4 className="font-semibold text-gray-900 mb-4 text-sm">Legal</h4>
               <ul className="space-y-3 text-sm">
-                <li><a href="#" className="text-gray-600 hover:text-gray-900 transition">Privacy Policy</a></li>
-                <li><a href="#" className="text-gray-600 hover:text-gray-900 transition">Terms of Service</a></li>
-                <li><a href="#" className="text-gray-600 hover:text-gray-900 transition">Cookie Policy</a></li>
+                <li><a href="/?page=privacy" className="text-gray-600 hover:text-gray-900 transition">Privacy Policy</a></li>
+                <li><a href="/?page=terms" className="text-gray-600 hover:text-gray-900 transition">Terms of Service</a></li>
               </ul>
             </div>
           </div>

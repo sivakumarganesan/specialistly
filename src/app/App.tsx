@@ -28,6 +28,8 @@ import { MyLearning } from "@/app/components/MyLearning";
 import { CourseDetail } from "@/app/components/CourseDetail";
 import { MySite } from "@/app/components/MySite";
 import PaymentModal from "@/app/components/PaymentModal";
+import { PrivacyPolicy } from "@/app/components/PrivacyPolicy";
+import { TermsOfUse } from "@/app/components/TermsOfUse";
 
 type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
 type UserType = "specialist" | "customer";
@@ -103,6 +105,12 @@ export function AppContent() {
 
   // If user is not authenticated, show appropriate page
   if (!isAuthenticated) {
+    if (currentPage === "privacy") {
+      return <PrivacyPolicy onBack={() => setCurrentPage("homepage")} />;
+    }
+    if (currentPage === "terms") {
+      return <TermsOfUse onBack={() => setCurrentPage("homepage")} />;
+    }
     if (currentPage === "signup") {
       return <Signup />;
     }
@@ -198,6 +206,14 @@ export function AppContent() {
         </main>
       </div>
     );
+  }
+
+  // Legal pages - shown without sidebar/header for both auth and unauth users
+  if (currentPage === "privacy") {
+    return <PrivacyPolicy onBack={() => setCurrentPage("dashboard")} />;
+  }
+  if (currentPage === "terms") {
+    return <TermsOfUse onBack={() => setCurrentPage("dashboard")} />;
   }
 
   // Handle viewing specialist
