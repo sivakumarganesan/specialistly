@@ -395,7 +395,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
                 <li><a href="#" className="text-gray-600 hover:text-gray-900 transition">About</a></li>
                 <li><a href="#creators" className="text-gray-600 hover:text-gray-900 transition">Creator Stories</a></li>
                 <li><a href="#" className="text-gray-600 hover:text-gray-900 transition">Blog</a></li>
-                <li><a href="#" className="text-gray-600 hover:text-gray-900 transition">Contact</a></li>
+                <li><a href="/?page=support" className="text-gray-600 hover:text-gray-900 transition">Support</a></li>
               </ul>
             </div>
             <div>
