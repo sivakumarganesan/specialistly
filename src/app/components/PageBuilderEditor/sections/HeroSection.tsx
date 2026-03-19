@@ -305,7 +305,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
             <img
               src={overlayImage}
               alt="Hero"
-              className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-auto lg:h-auto lg:max-h-[480px] object-contain rounded-xl shadow-2xl bg-white/80"
+              className="max-w-[70%] sm:max-w-[60%] lg:max-w-none lg:max-h-[480px] w-auto object-contain drop-shadow-2xl rounded-lg"
             />
           </div>
         )}
