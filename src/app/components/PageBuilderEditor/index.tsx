@@ -19,6 +19,7 @@ import {
   Loader,
   X,
   Trash2,
+  Pencil,
 } from 'lucide-react';
 
 interface PageBuilderEditorProps {
@@ -477,6 +478,35 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
                   
                   {/* Page Actions */}
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        const newTitle = prompt('Rename page:', page.title);
+                        if (!newTitle || newTitle === page.title) return;
+                        const newSlug = newTitle.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+                        try {
+                          setLoading(true);
+                          await pageBuilderAPI.updatePage(
+                            website?._id || websiteId,
+                            page._id,
+                            { title: newTitle, slug: newSlug }
+                          );
+                          const updatedPage = { ...page, title: newTitle, slug: newSlug };
+                          setPages(pages.map(p => p._id === page._id ? updatedPage : p));
+                          if (selectedPage?._id === page._id) selectPage(updatedPage);
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : 'Failed to rename page');
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      disabled={isLoading}
+                      className="text-xs px-2"
+                      title="Rename page"
+                    >
+                      <Pencil className="w-3 h-3" />
+                    </Button>
                     <Button
                       size="sm"
                       variant={page.isPublished ? "default" : "outline"}
