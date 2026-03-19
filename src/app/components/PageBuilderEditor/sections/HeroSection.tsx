@@ -228,7 +228,6 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
 export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   section,
 }) => {
-  const minHeight = section.styling?.minHeight || '550px';
   const backgroundImage = section.content?.backgroundImage;
   const overlayImage = section.content?.overlayImage;
   const bgColor = section.content?.backgroundColor || section.styling?.backgroundColor || '#f0f4f8';
@@ -237,89 +236,85 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   return (
     <div
       className="relative overflow-hidden"
-      style={{ minHeight, backgroundColor: bgColor }}
+      style={{ backgroundColor: bgColor }}
     >
-      {/* Background image with blur */}
+      {/* Background image — uses an <img> for reliable mobile rendering */}
       {backgroundImage && (
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(${backgroundImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            filter: 'blur(6px) brightness(0.95)',
-            transform: 'scale(1.05)',
-          }}
-        />
-      )}
-
-      {/* Light overlay for readability */}
-      {backgroundImage && (
-        <div className="absolute inset-0 bg-white/60" />
+        <>
+          <img
+            src={backgroundImage}
+            alt=""
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{
+              filter: 'blur(6px) brightness(0.92)',
+              transform: 'scale(1.05)',
+            }}
+          />
+          {/* Light overlay for readability */}
+          <div className="absolute inset-0 bg-white/50" />
+        </>
       )}
 
       {/* Content grid: text left, image right */}
-      <div className="relative z-10 flex items-center h-full" style={{ minHeight }}>
-        <div className="w-full max-w-7xl mx-auto px-8 lg:px-16 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          {/* Left — Text content */}
-          <div className="py-12">
-            {section.content?.title && (
-              <h1 className="text-4xl lg:text-5xl font-bold leading-tight mb-2 text-gray-900">
-                {section.content.title}
-              </h1>
-            )}
-            {section.content?.accentText && (
-              <p
-                className="text-3xl lg:text-4xl font-bold mb-6"
-                style={{ color: accentColor }}
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 py-12 sm:py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
+        {/* Left — Text content */}
+        <div className="order-2 lg:order-1">
+          {section.content?.title && (
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2 text-gray-900">
+              {section.content.title}
+            </h1>
+          )}
+          {section.content?.accentText && (
+            <p
+              className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6"
+              style={{ color: accentColor }}
+            >
+              {section.content.accentText}
+            </p>
+          )}
+          {section.content?.subtitle && (
+            <p className="text-sm sm:text-base lg:text-lg text-gray-600 mb-6 sm:mb-8 max-w-lg leading-relaxed">
+              »&nbsp; {section.content.subtitle}
+            </p>
+          )}
+          {section.content?.ctaText && (
+            section.content?.ctaLink ? (
+              <a
+                href={section.content.ctaLink}
+                target={section.content.ctaLink.startsWith('http') ? '_blank' : undefined}
+                rel={section.content.ctaLink.startsWith('http') ? 'noopener noreferrer' : undefined}
+                className="inline-block px-6 sm:px-8 py-3 rounded-lg font-semibold text-white transition-all hover:opacity-90 shadow-lg text-sm sm:text-base"
+                style={{ backgroundColor: accentColor }}
               >
-                {section.content.accentText}
-              </p>
-            )}
-            {section.content?.subtitle && (
-              <p className="text-base lg:text-lg text-gray-600 mb-8 max-w-lg leading-relaxed">
-                »&nbsp; {section.content.subtitle}
-              </p>
-            )}
-            {section.content?.ctaText && (
-              section.content?.ctaLink ? (
-                <a
-                  href={section.content.ctaLink}
-                  target={section.content.ctaLink.startsWith('http') ? '_blank' : undefined}
-                  rel={section.content.ctaLink.startsWith('http') ? 'noopener noreferrer' : undefined}
-                  className="inline-block px-8 py-3 rounded-lg font-semibold text-white transition-all hover:opacity-90 shadow-lg"
-                  style={{ backgroundColor: accentColor }}
-                >
-                  {section.content.ctaText}
-                </a>
-              ) : (
-                <button
-                  className="px-8 py-3 rounded-lg font-semibold text-white transition-all hover:opacity-90 shadow-lg"
-                  style={{ backgroundColor: accentColor }}
-                >
-                  {section.content.ctaText}
-                </button>
-              )
-            )}
-          </div>
-
-          {/* Right — Overlay image */}
-          {overlayImage && (
-            <div className="hidden lg:flex justify-end">
-              <img
-                src={overlayImage}
-                alt="Hero"
-                className="max-h-[480px] w-auto object-contain drop-shadow-2xl rounded-lg"
-              />
-            </div>
+                {section.content.ctaText}
+              </a>
+            ) : (
+              <button
+                className="px-6 sm:px-8 py-3 rounded-lg font-semibold text-white transition-all hover:opacity-90 shadow-lg text-sm sm:text-base"
+                style={{ backgroundColor: accentColor }}
+              >
+                {section.content.ctaText}
+              </button>
+            )
           )}
         </div>
+
+        {/* Right — Overlay image (visible on all screens) */}
+        {overlayImage && (
+          <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
+            <img
+              src={overlayImage}
+              alt="Hero"
+              className="w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 lg:w-auto lg:h-auto lg:max-h-[480px] object-contain rounded-xl shadow-2xl bg-white/80"
+            />
+          </div>
+        )}
       </div>
 
-      {/* Dot indicators (decorative, like the screenshot) */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-        <span className="w-3 h-3 rounded-full border-2 border-gray-400 bg-transparent" />
-        <span className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />
+      {/* Dot indicators */}
+      <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border-2 border-gray-400 bg-transparent" />
+        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full" style={{ backgroundColor: accentColor }} />
       </div>
     </div>
   );
