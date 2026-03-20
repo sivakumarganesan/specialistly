@@ -177,21 +177,25 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
 
     try {
       setLoading(true);
-      const pageA = sorted[idx];
-      const pageB = sorted[swapIdx];
-      const orderA = pageA.order ?? idx;
-      const orderB = pageB.order ?? swapIdx;
 
-      await Promise.all([
-        pageBuilderAPI.updatePage(websiteId, pageA._id, { order: orderB }),
-        pageBuilderAPI.updatePage(websiteId, pageB._id, { order: orderA }),
-      ]);
+      // Normalize orders first (in case all pages have the same order value)
+      const updates: Promise<any>[] = [];
+      const newPages = sorted.map((p, i) => ({ ...p, order: i }));
+      // Swap the two target pages
+      const tmp = newPages[idx].order;
+      newPages[idx] = { ...newPages[idx], order: newPages[swapIdx].order };
+      newPages[swapIdx] = { ...newPages[swapIdx], order: tmp };
 
-      setPages(pages.map(p => {
-        if (p._id === pageA._id) return { ...p, order: orderB };
-        if (p._id === pageB._id) return { ...p, order: orderA };
-        return p;
-      }));
+      // Update all pages that changed
+      for (const p of newPages) {
+        const original = pages.find(op => op._id === p._id);
+        if (!original || (original.order ?? 0) !== p.order) {
+          updates.push(pageBuilderAPI.updatePage(websiteId, p._id, { order: p.order }));
+        }
+      }
+      await Promise.all(updates);
+
+      setPages(newPages);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reorder pages');
     } finally {
@@ -492,52 +496,50 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
                       : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
-                  <button
-                    onClick={() => selectPage(page)}
-                    className="w-full text-left mb-3"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-semibold text-slate-900">{page.title}</div>
-                        <div className="text-xs text-slate-500 font-mono mt-1">{page.slug}</div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {page.isHomePage && (
-                          <span className="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded">HOME</span>
-                        )}
-                        {/* Reorder arrows */}
-                        <div className="flex flex-col">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReorderPage(page._id, 'up');
-                            }}
-                            disabled={idx === 0 || isLoading}
-                            className="p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move up"
-                          >
-                            <ChevronUp className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReorderPage(page._id, 'down');
-                            }}
-                            disabled={idx === sortedPages.length - 1 || isLoading}
-                            className="p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Move down"
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </button>
+                  <div className="flex items-start justify-between mb-3">
+                    <button
+                      onClick={() => selectPage(page)}
+                      className="flex-1 text-left"
+                    >
+                      <div className="font-semibold text-slate-900">{page.title}</div>
+                      <div className="text-xs text-slate-500 font-mono mt-1">{page.slug}</div>
+                      {page.isPublished && (
+                        <div className="text-xs font-semibold text-green-600 mt-2 flex items-center gap-1">
+                          ✓ Published
                         </div>
+                      )}
+                    </button>
+                    <div className="flex items-center gap-1 ml-2">
+                      {page.isHomePage && (
+                        <span className="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded">HOME</span>
+                      )}
+                      {/* Reorder arrows */}
+                      <div className="flex flex-col">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReorderPage(page._id, 'up');
+                          }}
+                          disabled={idx === 0 || isLoading}
+                          className="p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move up"
+                        >
+                          <ChevronUp className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleReorderPage(page._id, 'down');
+                          }}
+                          disabled={idx === sortedPages.length - 1 || isLoading}
+                          className="p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Move down"
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                    {page.isPublished && (
-                      <div className="text-xs font-semibold text-green-600 mt-2 flex items-center gap-1">
-                        ✓ Published
-                      </div>
-                    )}
-                  </button>
+                  </div>
                   
                   {/* Page Actions */}
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
