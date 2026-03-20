@@ -139,6 +139,38 @@ export const ServicesSectionEditor: React.FC<ServicesSectionEditorProps> = ({
               </Button>
             </div>
           </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Accent Color</label>
+            <div className="flex gap-2">
+              <input
+                type="color"
+                value={section.content?.accentColor || '#00acc1'}
+                onChange={(e) =>
+                  onChange({
+                    content: {
+                      ...section.content,
+                      accentColor: e.target.value,
+                    },
+                  })
+                }
+                className="w-12 h-10 rounded cursor-pointer border border-gray-300"
+              />
+              <Input
+                value={section.content?.accentColor || '#00acc1'}
+                onChange={(e) =>
+                  onChange({
+                    content: {
+                      ...section.content,
+                      accentColor: e.target.value,
+                    },
+                  })
+                }
+                className="flex-1"
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Used for card accents, icons, and highlights</p>
+          </div>
         </div>
       </Card>
 
@@ -221,49 +253,124 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
 }) => {
   const services = (section.content?.services || []) as Service[];
   const layout = section.content?.layout || 'grid';
+  const accentColor = section.content?.accentColor || '#00acc1';
+  const bgColor = section.styling?.backgroundColor || '#ffffff';
 
-  const gridClasses =
-    layout === 'grid'
-      ? 'grid grid-cols-3 gap-6'
-      : layout === 'list'
-        ? 'space-y-4'
-        : 'flex gap-6 overflow-x-auto pb-4';
+  // Determine if background is dark for text contrast
+  const isDark = (() => {
+    const c = bgColor.replace('#', '');
+    if (c.length < 6) return false;
+    const r = parseInt(c.substring(0, 2), 16) / 255;
+    const g = parseInt(c.substring(2, 4), 16) / 255;
+    const b = parseInt(c.substring(4, 6), 16) / 255;
+    return 0.299 * r + 0.587 * g + 0.114 * b < 0.4;
+  })();
+
+  const titleColor = isDark ? '#ffffff' : '#111827';
+  const subtitleColor = isDark ? 'rgba(255,255,255,0.7)' : '#6b7280';
+  const cardBg = isDark ? 'rgba(255,255,255,0.08)' : '#ffffff';
+  const cardBorder = isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb';
+  const cardTextColor = isDark ? '#ffffff' : '#111827';
+  const cardDescColor = isDark ? 'rgba(255,255,255,0.7)' : '#4b5563';
 
   return (
     <div
       className="py-16 px-4"
-      style={{
-        backgroundColor: section.styling?.backgroundColor || 'white',
-      }}
+      style={{ backgroundColor: bgColor }}
     >
       <div className="max-w-6xl mx-auto">
         {section.content?.title && (
-          <h2 className="text-3xl font-bold mb-4">{section.content.title}</h2>
+          <h2
+            className="text-3xl sm:text-4xl font-bold mb-3 text-center"
+            style={{ color: titleColor }}
+          >
+            {section.content.title}
+          </h2>
         )}
         {section.content?.description && (
-          <p className="text-gray-600 mb-12 text-lg">
+          <p
+            className="text-lg mb-12 text-center max-w-2xl mx-auto"
+            style={{ color: subtitleColor }}
+          >
             {section.content.description}
           </p>
         )}
 
-        <div className={gridClasses}>
-          {services.map((service) => (
-            <div
-              key={service.id}
-              className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow"
-            >
-              {service.icon && (
-                <img
-                  src={service.icon}
-                  alt={service.title}
-                  className="w-12 h-12 mb-4"
+        {layout === 'list' ? (
+          <div className="space-y-5 max-w-3xl mx-auto">
+            {services.map((service) => (
+              <div
+                key={service.id}
+                className="flex gap-5 p-6 rounded-xl transition-all duration-300 hover:-translate-y-0.5"
+                style={{
+                  backgroundColor: cardBg,
+                  border: `1px solid ${cardBorder}`,
+                  borderLeft: `4px solid ${accentColor}`,
+                  boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                }}
+              >
+                {service.icon ? (
+                  <img src={service.icon} alt={service.title} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                ) : (
+                  <div
+                    className="w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 text-white text-xl font-bold"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    {service.title?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                )}
+                <div>
+                  <h3 className="font-bold text-lg mb-1" style={{ color: cardTextColor }}>{service.title}</h3>
+                  <p className="text-sm leading-relaxed" style={{ color: cardDescColor }}>{service.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={layout === 'carousel' ? 'flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory' : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6`}>
+            {services.map((service, idx) => (
+              <div
+                key={service.id}
+                className={`group relative p-6 rounded-xl transition-all duration-300 hover:-translate-y-1 ${layout === 'carousel' ? 'min-w-[280px] snap-start' : ''}`}
+                style={{
+                  backgroundColor: cardBg,
+                  border: `1px solid ${cardBorder}`,
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+                }}
+              >
+                {/* Top accent bar */}
+                <div
+                  className="absolute top-0 left-6 right-6 h-1 rounded-b-full"
+                  style={{ backgroundColor: accentColor }}
                 />
-              )}
-              <h3 className="font-bold text-lg mb-2">{service.title}</h3>
-              <p className="text-gray-600">{service.description}</p>
-            </div>
-          ))}
-        </div>
+
+                {service.icon ? (
+                  <img src={service.icon} alt={service.title} className="w-16 h-16 rounded-xl object-cover mb-5" />
+                ) : (
+                  <div
+                    className="w-16 h-16 rounded-xl flex items-center justify-center mb-5 text-white text-2xl font-bold shadow-lg"
+                    style={{ backgroundColor: accentColor, boxShadow: `0 4px 14px ${accentColor}40` }}
+                  >
+                    {service.title?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                )}
+
+                <h3 className="font-bold text-lg mb-2 group-hover:translate-x-0.5 transition-transform" style={{ color: cardTextColor }}>
+                  {service.title}
+                </h3>
+                <p className="text-sm leading-relaxed" style={{ color: cardDescColor }}>
+                  {service.description}
+                </p>
+
+                {/* Bottom hover accent line */}
+                <div
+                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ backgroundColor: accentColor }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
