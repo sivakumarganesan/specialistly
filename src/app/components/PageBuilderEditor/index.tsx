@@ -20,6 +20,8 @@ import {
   X,
   Trash2,
   Pencil,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 
 interface PageBuilderEditorProps {
@@ -161,6 +163,37 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
       selectPage(updatedPage);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reorder sections');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReorderPage = async (pageId: string, direction: 'up' | 'down') => {
+    const sorted = pages.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const idx = sorted.findIndex(p => p._id === pageId);
+    if (idx < 0) return;
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= sorted.length) return;
+
+    try {
+      setLoading(true);
+      const pageA = sorted[idx];
+      const pageB = sorted[swapIdx];
+      const orderA = pageA.order ?? idx;
+      const orderB = pageB.order ?? swapIdx;
+
+      await Promise.all([
+        pageBuilderAPI.updatePage(websiteId, pageA._id, { order: orderB }),
+        pageBuilderAPI.updatePage(websiteId, pageB._id, { order: orderA }),
+      ]);
+
+      setPages(pages.map(p => {
+        if (p._id === pageA._id) return { ...p, order: orderB };
+        if (p._id === pageB._id) return { ...p, order: orderA };
+        return p;
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reorder pages');
     } finally {
       setLoading(false);
     }
@@ -447,7 +480,10 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
             </div>
 
             <div className="space-y-3">
-              {pages.map((page) => (
+              {pages
+                .slice()
+                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+                .map((page, idx, sortedPages) => (
                 <div
                   key={page._id}
                   className={`px-4 py-4 rounded-lg border-2 transition-all group cursor-pointer ${
@@ -465,9 +501,36 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
                         <div className="font-semibold text-slate-900">{page.title}</div>
                         <div className="text-xs text-slate-500 font-mono mt-1">{page.slug}</div>
                       </div>
-                      {page.isHomePage && (
-                        <span className="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded">HOME</span>
-                      )}
+                      <div className="flex items-center gap-1">
+                        {page.isHomePage && (
+                          <span className="text-xs font-bold text-white bg-green-600 px-2 py-1 rounded">HOME</span>
+                        )}
+                        {/* Reorder arrows */}
+                        <div className="flex flex-col">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReorderPage(page._id, 'up');
+                            }}
+                            disabled={idx === 0 || isLoading}
+                            className="p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move up"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReorderPage(page._id, 'down');
+                            }}
+                            disabled={idx === sortedPages.length - 1 || isLoading}
+                            className="p-0.5 text-slate-400 hover:text-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Move down"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     {page.isPublished && (
                       <div className="text-xs font-semibold text-green-600 mt-2 flex items-center gap-1">
