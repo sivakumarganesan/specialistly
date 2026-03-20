@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Loader, Menu, X } from 'lucide-react';
+import { Loader, Menu, X, MapPin, Phone, Facebook, Instagram, Youtube, Twitter, Linkedin } from 'lucide-react';
 import { pageBuilderAPI } from '@/app/api/pageBuilderAPI';
 import { PublicPageViewer } from './PublicPageViewer';
 import { getSubdomainInfo } from '@/app/utils/subdomainUtils';
@@ -119,6 +119,21 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
     );
   }
 
+  // Extract topbar and navbar sections from the home page (or first page)
+  const homePage = pages.find((p: any) => p.isHomePage) || pages[0];
+  const homePageSections = homePage?.sections || [];
+  const topBarSection = homePageSections.find((s: any) => s.type === 'topbar');
+  const navBarSection = homePageSections.find((s: any) => s.type === 'navbar');
+  const hasCustomHeader = !!(topBarSection || navBarSection);
+
+  const socialIcons: Record<string, React.ReactNode> = {
+    facebook: <Facebook className="w-3.5 h-3.5" />,
+    instagram: <Instagram className="w-3.5 h-3.5" />,
+    youtube: <Youtube className="w-3.5 h-3.5" />,
+    twitter: <Twitter className="w-3.5 h-3.5" />,
+    linkedin: <Linkedin className="w-3.5 h-3.5" />,
+  };
+
   return (
     <div className="min-h-screen flex flex-col" style={{ fontFamily: `'${website?.branding?.fontFamily || 'Inter'}', system-ui, -apple-system, sans-serif` }}>
       {/* Google Fonts */}
@@ -128,29 +143,138 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
           rel="stylesheet"
         />
       )}
-      {/* Header Navigation */}
+
+      {/* ─── Custom Header (TopBar + NavBar sections) ─── */}
+      {hasCustomHeader ? (
+        <header className="sticky top-0 z-40">
+          {/* Top Bar */}
+          {topBarSection && (() => {
+            const tc = topBarSection.content || {};
+            const bgColor = tc.backgroundColor || '#00acc1';
+            const textColor = tc.textColor || '#ffffff';
+            const socialLinks: { platform: string; url: string }[] = tc.socialLinks || [];
+            return (
+              <div style={{ backgroundColor: bgColor, color: textColor }} className="py-2 px-4 text-xs sm:text-sm">
+                <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {tc.address && (
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{tc.address}</span>
+                      </span>
+                    )}
+                    {tc.phone && (
+                      <a href={`tel:${tc.phone.replace(/\s/g, '')}`} className="flex items-center gap-1.5 hover:opacity-80" style={{ color: textColor }}>
+                        <Phone className="w-3.5 h-3.5 flex-shrink-0" />
+                        <span>{tc.phone}</span>
+                      </a>
+                    )}
+                  </div>
+                  {socialLinks.length > 0 && (
+                    <div className="flex items-center gap-3">
+                      {socialLinks.map((link, i) => (
+                        <a key={i} href={link.url || '#'} target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity" style={{ color: textColor }}>
+                          {socialIcons[link.platform] || <span className="text-xs">{link.platform}</span>}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Nav Bar */}
+          {(() => {
+            const nc = navBarSection?.content || {};
+            const navBgColor = nc.backgroundColor || website?.branding?.headerBgColor || '#ffffff';
+            const navTextColor = nc.textColor || '#333333';
+            const brandColor = nc.brandColor || website?.branding?.primaryColor || '#00acc1';
+            const brandName = nc.brandName || website?.branding?.siteName || 'Website';
+            const logoUrl = nc.logoUrl || website?.branding?.logo || '';
+            // Merge section-defined menu items with page links
+            const sectionMenuItems: { label: string; url: string }[] = nc.menuItems || [];
+            const hasMenuItems = sectionMenuItems.length > 0;
+
+            return (
+              <nav style={{ backgroundColor: navBgColor }} className="border-b border-gray-200 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {logoUrl && <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" />}
+                    <span className="text-lg sm:text-xl font-bold tracking-tight" style={{ color: brandColor }}>{brandName}</span>
+                  </div>
+
+                  {/* Desktop nav */}
+                  <div className="hidden md:flex items-center gap-6">
+                    {/* Section-defined menu items */}
+                    {sectionMenuItems.map((item, i) => (
+                      <a key={`menu-${i}`} href={item.url || '#'} className="text-sm font-medium hover:opacity-70 transition-opacity" style={{ color: navTextColor }}>
+                        {item.label}
+                      </a>
+                    ))}
+                    {/* Page links as text menu */}
+                    {pages.map((page) => (
+                      <button
+                        key={page._id}
+                        onClick={() => handlePageClick(page)}
+                        className={`text-sm font-medium transition-opacity ${currentPageSlug === page.slug ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+                        style={{ color: currentPageSlug === page.slug ? brandColor : navTextColor }}
+                      >
+                        {page.title}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Mobile hamburger */}
+                  {(pages.length > 0 || hasMenuItems) && (
+                    <button className="md:hidden p-1" style={{ color: navTextColor }} onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}>
+                      {isMobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+                    </button>
+                  )}
+                </div>
+
+                {/* Mobile menu */}
+                {isMobileNavOpen && (
+                  <div className="md:hidden border-t border-gray-200 px-4 py-3 space-y-1" style={{ backgroundColor: navBgColor }}>
+                    {sectionMenuItems.map((item, i) => (
+                      <a key={`mob-menu-${i}`} href={item.url || '#'} className="block text-sm font-medium py-2 hover:opacity-70" style={{ color: navTextColor }}>
+                        {item.label}
+                      </a>
+                    ))}
+                    {pages.map((page) => (
+                      <button
+                        key={page._id}
+                        onClick={() => handlePageClick(page)}
+                        className={`block w-full text-left text-sm font-medium py-2 ${currentPageSlug === page.slug ? '' : 'opacity-70'}`}
+                        style={{ color: currentPageSlug === page.slug ? brandColor : navTextColor }}
+                      >
+                        {page.title}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </nav>
+            );
+          })()}
+        </header>
+      ) : (
+      /* ─── Fallback Header (original branded header with text menu) ─── */
       <header
-        className="shadow-lg sticky top-0 z-40"
+        className="shadow-sm sticky top-0 z-40"
         style={{ 
           backgroundColor: website?.branding?.headerBgColor || website?.branding?.primaryColor || '#3B82F6',
         }}
       >
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between">
-          {/* Logo/Brand - Left Side */}
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4 flex-shrink-0">
             {website?.branding?.logo && (
-              <img
-                src={website.branding.logo}
-                alt={website?.branding?.siteName}
-                className="h-14 w-auto object-contain"
-              />
+              <img src={website.branding.logo} alt={website?.branding?.siteName} className="h-12 w-auto object-contain" />
             )}
-            <h1 className="text-2xl font-bold tracking-tight" style={{ color: website?.branding?.headerTextColor || '#ffffff', fontFamily: `'${website?.branding?.fontFamily || 'Inter'}', system-ui, sans-serif` }}>
+            <h1 className="text-2xl font-bold tracking-tight" style={{ color: website?.branding?.headerTextColor || '#ffffff' }}>
               {website?.branding?.siteName || 'Website'}
             </h1>
           </div>
 
-          {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
             {pages.map((page) => {
               const headerText = website?.branding?.headerTextColor || '#ffffff';
@@ -159,11 +283,13 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                 <button
                   key={page._id}
                   onClick={() => handlePageClick(page)}
-                  className={`font-semibold px-6 py-2 rounded-lg transition-all border-2`}
-                  style={isActive
-                    ? { borderColor: headerText, backgroundColor: headerText, color: website?.branding?.headerBgColor || website?.branding?.primaryColor || '#3B82F6' }
-                    : { borderColor: headerText, borderWidth: '2px', color: headerText, backgroundColor: 'transparent', opacity: 0.85 }
-                  }
+                  className="text-sm font-medium transition-opacity"
+                  style={{
+                    color: headerText,
+                    opacity: isActive ? 1 : 0.75,
+                    borderBottom: isActive ? `2px solid ${headerText}` : '2px solid transparent',
+                    paddingBottom: '2px',
+                  }}
                 >
                   {page.title}
                 </button>
@@ -171,7 +297,6 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
             })}
           </div>
 
-          {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
             className="md:hidden p-2"
@@ -181,27 +306,25 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
           </button>
         </nav>
 
-        {/* Mobile Navigation Menu */}
         {isMobileNavOpen && (
-          <div className="md:hidden border-t border-white border-opacity-20" style={{ backgroundColor: website?.branding?.headerBgColor || website?.branding?.primaryColor || '#1f2937' }}>
-            <div className="px-4 py-3 space-y-2">
-              {pages.map((page) => (
-                <button
-                  key={page._id}
-                  onClick={() => handlePageClick(page)}
-                  className={`w-full text-left px-4 py-3 rounded-lg font-semibold transition-all text-white border-2 ${
-                    currentPageSlug === page.slug 
-                      ? 'bg-white text-gray-900 border-white' 
-                      : 'border-white border-opacity-30 hover:border-opacity-100'
-                  }`}
-                >
-                  {page.title}
-                </button>
-              ))}
-            </div>
+          <div className="md:hidden border-t border-white border-opacity-20 px-4 py-3 space-y-1" style={{ backgroundColor: website?.branding?.headerBgColor || website?.branding?.primaryColor || '#1f2937' }}>
+            {pages.map((page) => (
+              <button
+                key={page._id}
+                onClick={() => handlePageClick(page)}
+                className="block w-full text-left px-4 py-2 text-sm font-medium transition-opacity"
+                style={{
+                  color: website?.branding?.headerTextColor || '#ffffff',
+                  opacity: currentPageSlug === page.slug ? 1 : 0.7,
+                }}
+              >
+                {page.title}
+              </button>
+            ))}
           </div>
         )}
       </header>
+      )}
 
       {/* Page Content */}
       <main className="flex-1">

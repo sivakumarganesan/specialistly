@@ -8,6 +8,9 @@ import { BlogSectionPreview } from './PageBuilderEditor/sections/BlogSection';
 import { NewsletterSectionPreview } from './PageBuilderEditor/sections/NewsletterSection';
 
 const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
+  // TopBar and NavBar are rendered by the parent PublicWebsite header — skip here
+  if (section.type === 'topbar' || section.type === 'navbar') return null;
+
   switch (section.type) {
     case 'hero':
       return <HeroSectionPreview section={section} />;
