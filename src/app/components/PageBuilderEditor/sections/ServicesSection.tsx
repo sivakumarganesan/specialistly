@@ -213,29 +213,13 @@ export const ServicesSectionEditor: React.FC<ServicesSectionEditorProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium mb-1">
-                    Description
-                  </label>
-                  <Textarea
-                    placeholder="Service description"
-                    value={service.description}
-                    onChange={(e) =>
-                      handleUpdateService(service.id, {
-                        description: e.target.value,
-                      })
-                    }
-                    rows={2}
-                  />
-                </div>
-
-                <div>
                   <label className="block text-xs font-medium mb-1">Service Image</label>
                   {service.image ? (
-                    <div className="relative mb-2">
+                    <div className="relative">
                       <img
                         src={service.image}
                         alt="Service"
-                        className="w-full h-32 object-cover rounded-lg border"
+                        className="w-full h-28 object-cover rounded-lg border"
                       />
                       <button
                         onClick={() => handleUpdateService(service.id, { image: '' })}
@@ -245,9 +229,9 @@ export const ServicesSectionEditor: React.FC<ServicesSectionEditorProps> = ({
                       </button>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors mb-2">
+                    <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
                       <div className="flex flex-col items-center">
-                        <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                        <Upload className="w-5 h-5 text-gray-400 mb-1" />
                         <span className="text-xs text-gray-500">Click to upload image</span>
                       </div>
                       <input
@@ -274,6 +258,23 @@ export const ServicesSectionEditor: React.FC<ServicesSectionEditorProps> = ({
                       handleUpdateService(service.id, { image: e.target.value })
                     }
                     size="sm"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">
+                    Description
+                  </label>
+                  <Textarea
+                    placeholder="Service description (shown when user clicks the card)"
+                    value={service.description}
+                    onChange={(e) =>
+                      handleUpdateService(service.id, {
+                        description: e.target.value,
+                      })
+                    }
+                    rows={2}
                   />
                 </div>
               </div>
