@@ -376,7 +376,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
 
       {/* Overlay image — positioned absolutely to span full hero height on the right */}
       {overlayImage && (
-        <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:flex items-end justify-center z-10 pointer-events-none">
+        <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:flex items-start justify-center z-10 pointer-events-none">
           <img
             src={overlayImage}
             alt="Hero"
