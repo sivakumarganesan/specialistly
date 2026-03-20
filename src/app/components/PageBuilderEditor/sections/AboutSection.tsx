@@ -205,7 +205,7 @@ export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
   return (
     <div className="py-16 px-4 bg-white">
       <div className="max-w-6xl mx-auto">
-        <div className={`flex gap-12 items-center ${contentClasses}`}>
+        <div className={`flex gap-12 items-start ${contentClasses}`}>
           {section.content?.image && (
             <div className="flex-1">
               <img
