@@ -273,9 +273,9 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   return (
     <div
       className="relative overflow-hidden"
-      style={{ backgroundColor: bgColor }}
+      style={{ backgroundColor: bgColor, minHeight: '420px' }}
     >
-      {/* Background image — uses an <img> for reliable mobile rendering */}
+      {/* Background image — full-cover with gentle treatment */}
       {backgroundImage && (
         <>
           <img
@@ -283,12 +283,28 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
             alt=""
             className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
             style={{
-              filter: 'blur(6px) brightness(0.92)',
-              transform: 'scale(1.05)',
+              filter: 'blur(2px) brightness(0.85)',
+              transform: 'scale(1.02)',
             }}
           />
-          <div className="absolute inset-0 bg-white/50" />
+          {/* Gradient overlay: solid on text side, transparent on image side */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `linear-gradient(to right, ${bgColor}ee 0%, ${bgColor}cc 40%, ${bgColor}44 70%, transparent 100%)`,
+            }}
+          />
         </>
+      )}
+
+      {/* When no background image, add a subtle gradient for depth */}
+      {!backgroundImage && (
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(135deg, ${bgColor} 0%, ${bgColor} 50%, ${accentColor}10 100%)`,
+          }}
+        />
       )}
 
       {/* Content grid: text left, image right */}
@@ -296,7 +312,10 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
         {/* Left — Text content */}
         <div className="order-2 lg:order-1">
           {slide?.title && (
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2 text-gray-900">
+            <h1
+              className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2"
+              style={{ color: backgroundImage ? '#ffffff' : '#111827' }}
+            >
               {slide.title}
             </h1>
           )}
@@ -309,7 +328,10 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
             </p>
           )}
           {slide?.subtitle && (
-            <p className="text-sm sm:text-base lg:text-lg text-gray-600 mb-6 sm:mb-8 max-w-lg leading-relaxed">
+            <p
+              className="text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg leading-relaxed"
+              style={{ color: backgroundImage ? 'rgba(255,255,255,0.85)' : '#4b5563' }}
+            >
               {slide.subtitle}
             </p>
           )}
@@ -335,14 +357,28 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
           )}
         </div>
 
-        {/* Right — Overlay image */}
+        {/* Right — Overlay image with professional presentation */}
         {overlayImage && (
-          <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
-            <img
-              src={overlayImage}
-              alt="Hero"
-              className="max-w-[70%] sm:max-w-[60%] lg:max-w-none lg:max-h-[480px] w-auto object-contain drop-shadow-2xl rounded-lg"
-            />
+          <div className="order-1 lg:order-2 flex justify-center lg:justify-end relative">
+            <div className="relative">
+              <img
+                src={overlayImage}
+                alt="Hero"
+                className="max-w-[75%] sm:max-w-[65%] lg:max-w-none lg:max-h-[500px] w-auto object-contain mx-auto"
+                style={{
+                  filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.25))',
+                }}
+              />
+              {/* Soft gradient fade at the bottom of the overlay */}
+              <div
+                className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
+                style={{
+                  background: backgroundImage
+                    ? 'linear-gradient(to top, rgba(0,0,0,0.15), transparent)'
+                    : `linear-gradient(to top, ${bgColor}, transparent)`,
+                }}
+              />
+            </div>
           </div>
         )}
       </div>
