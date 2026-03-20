@@ -321,9 +321,9 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
       )}
 
       {/* Content grid: text left, image right */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 py-12 sm:py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 py-12 sm:py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-end">
         {/* Left — Text content */}
-        <div className="order-2 lg:order-1">
+        <div className="order-2 lg:order-1 self-center">
           {slide?.title && (
             <h1
               className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2"
@@ -372,7 +372,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
 
         {/* Right — Overlay image with professional presentation */}
         {overlayImage && (
-          <div className="order-1 lg:order-2 flex justify-center lg:justify-end relative">
+          <div className="order-1 lg:order-2 flex justify-center lg:justify-end items-end relative">
             <div className="relative">
               <img
                 src={overlayImage}
