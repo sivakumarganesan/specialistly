@@ -1593,6 +1593,18 @@ const PropertiesPanel: React.FC<{
                 onChange={(e) => setContent({ ...content, autoplaySeconds: parseInt(e.target.value) || 5 })}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Overlay Image Max Height (px)</label>
+              <Input
+                type="number"
+                min={200}
+                max={1000}
+                step={50}
+                value={content.overlayMaxHeight || 500}
+                onChange={(e) => setContent({ ...content, overlayMaxHeight: parseInt(e.target.value) || 500 })}
+              />
+              <p className="text-xs text-gray-500 mt-1">Default: 500px. Increase for a larger overlay image.</p>
+            </div>
 
             {/* Slides */}
             <div className="border-t pt-3">

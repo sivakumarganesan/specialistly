@@ -281,6 +281,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   const slide = slides[currentSlide] || slides[0];
   const backgroundImage = slide?.backgroundImage;
   const overlayImage = slide?.overlayImage;
+  const overlayMaxHeight = section.content?.overlayMaxHeight || 500;
 
   return (
     <div
@@ -376,8 +377,9 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
               <img
                 src={overlayImage}
                 alt="Hero"
-                className="max-w-[75%] sm:max-w-[65%] lg:max-w-none lg:max-h-[500px] w-auto object-contain mx-auto"
+                className="max-w-[75%] sm:max-w-[65%] lg:max-w-none w-auto object-contain mx-auto"
                 style={{
+                  maxHeight: `${overlayMaxHeight}px`,
                   filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.25))',
                 }}
               />
