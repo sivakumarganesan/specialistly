@@ -286,7 +286,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   return (
     <div
       className="relative overflow-hidden"
-      style={{ backgroundColor: bgColor, minHeight: '420px' }}
+      style={{ backgroundColor: bgColor, minHeight: `${Math.max(420, overlayMaxHeight + 40)}px` }}
     >
       {/* Background image — full-cover with gentle treatment */}
       {backgroundImage && (
@@ -377,9 +377,11 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
               <img
                 src={overlayImage}
                 alt="Hero"
-                className="max-w-[75%] sm:max-w-[65%] lg:max-w-none w-auto object-contain mx-auto"
+                className="w-auto object-contain mx-auto"
                 style={{
+                  height: `${overlayMaxHeight}px`,
                   maxHeight: `${overlayMaxHeight}px`,
+                  maxWidth: '100%',
                   filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.25))',
                 }}
               />
