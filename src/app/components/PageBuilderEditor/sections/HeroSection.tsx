@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PageSection } from '@/app/hooks/usePageBuilder';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface HeroSectionEditorProps {
   section: PageSection;
@@ -224,14 +224,51 @@ export const HeroSectionEditor: React.FC<HeroSectionEditorProps> = ({
   );
 };
 
-// Preview Component — split layout with text left, overlay image right
+// Build a slides array — supports both legacy (single slide) and multi-slide content
+function getSlides(content: any): any[] {
+  // New multi-slide format
+  if (Array.isArray(content?.slides) && content.slides.length > 0) {
+    return content.slides;
+  }
+  // Legacy single-slide: build one slide from top-level fields
+  return [{
+    title: content?.title || '',
+    accentText: content?.accentText || '',
+    subtitle: content?.subtitle || '',
+    ctaText: content?.ctaText || '',
+    ctaLink: content?.ctaLink || '',
+    backgroundImage: content?.backgroundImage || '',
+    overlayImage: content?.overlayImage || '',
+  }];
+}
+
+// Preview Component — slideshow with multiple slides
 export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   section,
 }) => {
-  const backgroundImage = section.content?.backgroundImage;
-  const overlayImage = section.content?.overlayImage;
-  const bgColor = section.content?.backgroundColor || section.styling?.backgroundColor || '#f0f4f8';
+  const slides = getSlides(section.content);
   const accentColor = section.content?.accentColor || '#00b4d8';
+  const bgColor = section.content?.backgroundColor || section.styling?.backgroundColor || '#f0f4f8';
+  const autoplayInterval = (section.content?.autoplaySeconds || 5) * 1000;
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Auto-advance slides
+  useEffect(() => {
+    if (slides.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, autoplayInterval);
+    return () => clearInterval(timer);
+  }, [slides.length, autoplayInterval]);
+
+  const goTo = useCallback((idx: number) => setCurrentSlide(idx), []);
+  const goPrev = useCallback(() => setCurrentSlide((p) => (p - 1 + slides.length) % slides.length), [slides.length]);
+  const goNext = useCallback(() => setCurrentSlide((p) => (p + 1) % slides.length), [slides.length]);
+
+  const slide = slides[currentSlide] || slides[0];
+  const backgroundImage = slide?.backgroundImage;
+  const overlayImage = slide?.overlayImage;
 
   return (
     <div
@@ -244,13 +281,12 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
           <img
             src={backgroundImage}
             alt=""
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-700"
             style={{
               filter: 'blur(6px) brightness(0.92)',
               transform: 'scale(1.05)',
             }}
           />
-          {/* Light overlay for readability */}
           <div className="absolute inset-0 bg-white/50" />
         </>
       )}
@@ -259,47 +295,47 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 py-12 sm:py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
         {/* Left — Text content */}
         <div className="order-2 lg:order-1">
-          {section.content?.title && (
+          {slide?.title && (
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2 text-gray-900">
-              {section.content.title}
+              {slide.title}
             </h1>
           )}
-          {section.content?.accentText && (
+          {slide?.accentText && (
             <p
               className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6"
               style={{ color: accentColor }}
             >
-              {section.content.accentText}
+              {slide.accentText}
             </p>
           )}
-          {section.content?.subtitle && (
+          {slide?.subtitle && (
             <p className="text-sm sm:text-base lg:text-lg text-gray-600 mb-6 sm:mb-8 max-w-lg leading-relaxed">
-              »&nbsp; {section.content.subtitle}
+              {slide.subtitle}
             </p>
           )}
-          {section.content?.ctaText && (
-            section.content?.ctaLink ? (
+          {slide?.ctaText && (
+            slide?.ctaLink ? (
               <a
-                href={section.content.ctaLink}
-                target={section.content.ctaLink.startsWith('http') ? '_blank' : undefined}
-                rel={section.content.ctaLink.startsWith('http') ? 'noopener noreferrer' : undefined}
+                href={slide.ctaLink}
+                target={slide.ctaLink.startsWith('http') ? '_blank' : undefined}
+                rel={slide.ctaLink.startsWith('http') ? 'noopener noreferrer' : undefined}
                 className="inline-block px-6 sm:px-8 py-3 rounded-lg font-semibold text-white transition-all hover:opacity-90 shadow-lg text-sm sm:text-base"
                 style={{ backgroundColor: accentColor }}
               >
-                {section.content.ctaText}
+                {slide.ctaText}
               </a>
             ) : (
               <button
                 className="px-6 sm:px-8 py-3 rounded-lg font-semibold text-white transition-all hover:opacity-90 shadow-lg text-sm sm:text-base"
                 style={{ backgroundColor: accentColor }}
               >
-                {section.content.ctaText}
+                {slide.ctaText}
               </button>
             )
           )}
         </div>
 
-        {/* Right — Overlay image (visible on all screens) */}
+        {/* Right — Overlay image */}
         {overlayImage && (
           <div className="order-1 lg:order-2 flex justify-center lg:justify-end">
             <img
@@ -311,10 +347,36 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
         )}
       </div>
 
+      {/* Navigation arrows (shown when >1 slide) */}
+      {slides.length > 1 && (
+        <>
+          <button
+            onClick={goPrev}
+            className="absolute left-3 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={goNext}
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 text-white rounded-full p-2 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </>
+      )}
+
       {/* Dot indicators */}
       <div className="absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full border-2 border-gray-400 bg-transparent" />
-        <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full" style={{ backgroundColor: accentColor }} />
+        {slides.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => goTo(idx)}
+            className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-colors ${
+              idx === currentSlide ? '' : 'border-2 border-gray-400 bg-transparent'
+            }`}
+            style={idx === currentSlide ? { backgroundColor: accentColor } : {}}
+          />
+        ))}
       </div>
     </div>
   );

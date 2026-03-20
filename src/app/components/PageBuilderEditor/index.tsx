@@ -1275,17 +1275,16 @@ const PropertiesPanel: React.FC<{
 
   const handleSave = () => {
     if (onUpdateSection) {
-      // For about sections, sync content fields with section-level fields
       let updateData: Partial<PageSection> = {
         content,
       };
 
       if (section?.type === 'about') {
-        // Use about-specific content fields for the section title/description
         updateData.title = content.title || '';
         updateData.description = content.description || '';
+      } else if (section?.type === 'topbar' || section?.type === 'navbar') {
+        // These sections don't use top-level title/description
       } else {
-        // For other sections, use the general title/description fields
         updateData.title = title;
         updateData.description = description;
       }
@@ -1304,7 +1303,7 @@ const PropertiesPanel: React.FC<{
       </div>
 
       {/* Section Title */}
-      {section.type !== 'about' && (
+      {section.type !== 'about' && section.type !== 'topbar' && section.type !== 'navbar' && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
           <Input
@@ -1317,7 +1316,7 @@ const PropertiesPanel: React.FC<{
       )}
 
       {/* Section Description */}
-      {section.type !== 'about' && (
+      {section.type !== 'about' && section.type !== 'topbar' && section.type !== 'navbar' && (
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
           <Textarea
@@ -1331,55 +1330,242 @@ const PropertiesPanel: React.FC<{
       {/* Section-specific content editors */}
       <div className="border-t pt-4">
         <h4 className="text-sm font-semibold text-gray-900 mb-4">Content</h4>
+
+        {/* ─── Top Bar ─── */}
+        {section.type === 'topbar' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+              <Input
+                type="text"
+                value={content.address || ''}
+                onChange={(e) => setContent({ ...content, address: e.target.value })}
+                placeholder="123 Main St, City - 600001"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+              <Input
+                type="text"
+                value={content.phone || ''}
+                onChange={(e) => setContent({ ...content, phone: e.target.value })}
+                placeholder="+91 9500012345"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.backgroundColor || '#00acc1'}
+                  onChange={(e) => setContent({ ...content, backgroundColor: e.target.value })}
+                  className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+                />
+                <Input
+                  type="text"
+                  value={content.backgroundColor || '#00acc1'}
+                  onChange={(e) => setContent({ ...content, backgroundColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.textColor || '#ffffff'}
+                  onChange={(e) => setContent({ ...content, textColor: e.target.value })}
+                  className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+                />
+                <Input
+                  type="text"
+                  value={content.textColor || '#ffffff'}
+                  onChange={(e) => setContent({ ...content, textColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            {/* Social Links */}
+            <div className="border-t pt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Social Links</label>
+              {(content.socialLinks || []).map((link: any, idx: number) => (
+                <div key={idx} className="flex gap-2 mb-2 items-center">
+                  <select
+                    className="border rounded px-2 py-1.5 text-sm bg-white"
+                    value={link.platform}
+                    onChange={(e) => {
+                      const updated = [...(content.socialLinks || [])];
+                      updated[idx] = { ...updated[idx], platform: e.target.value };
+                      setContent({ ...content, socialLinks: updated });
+                    }}
+                  >
+                    <option value="facebook">Facebook</option>
+                    <option value="instagram">Instagram</option>
+                    <option value="youtube">YouTube</option>
+                    <option value="twitter">Twitter/X</option>
+                    <option value="linkedin">LinkedIn</option>
+                  </select>
+                  <Input
+                    type="text"
+                    value={link.url}
+                    onChange={(e) => {
+                      const updated = [...(content.socialLinks || [])];
+                      updated[idx] = { ...updated[idx], url: e.target.value };
+                      setContent({ ...content, socialLinks: updated });
+                    }}
+                    placeholder="https://..."
+                    className="flex-1"
+                  />
+                  <button
+                    onClick={() => {
+                      const updated = (content.socialLinks || []).filter((_: any, i: number) => i !== idx);
+                      setContent({ ...content, socialLinks: updated });
+                    }}
+                    className="text-red-500 hover:text-red-700 text-xs px-2"
+                  >✕</button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const updated = [...(content.socialLinks || []), { platform: 'facebook', url: '' }];
+                  setContent({ ...content, socialLinks: updated });
+                }}
+              >
+                + Add Social Link
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── Navigation Bar ─── */}
+        {section.type === 'navbar' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Brand Name</label>
+              <Input
+                type="text"
+                value={content.brandName || ''}
+                onChange={(e) => setContent({ ...content, brandName: e.target.value })}
+                placeholder="My Brand"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Brand Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.brandColor || '#00acc1'}
+                  onChange={(e) => setContent({ ...content, brandColor: e.target.value })}
+                  className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+                />
+                <Input
+                  type="text"
+                  value={content.brandColor || '#00acc1'}
+                  onChange={(e) => setContent({ ...content, brandColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Logo Image URL</label>
+              <Input
+                type="text"
+                value={content.logoUrl || ''}
+                onChange={(e) => setContent({ ...content, logoUrl: e.target.value })}
+                placeholder="https://... (optional)"
+              />
+              <p className="text-xs text-gray-500 mt-1">Paste a logo image URL or leave blank for text-only</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.backgroundColor || '#ffffff'}
+                  onChange={(e) => setContent({ ...content, backgroundColor: e.target.value })}
+                  className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+                />
+                <Input
+                  type="text"
+                  value={content.backgroundColor || '#ffffff'}
+                  onChange={(e) => setContent({ ...content, backgroundColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.textColor || '#333333'}
+                  onChange={(e) => setContent({ ...content, textColor: e.target.value })}
+                  className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+                />
+                <Input
+                  type="text"
+                  value={content.textColor || '#333333'}
+                  onChange={(e) => setContent({ ...content, textColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            {/* Menu Items */}
+            <div className="border-t pt-3">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Menu Items</label>
+              {(content.menuItems || []).map((item: any, idx: number) => (
+                <div key={idx} className="flex gap-2 mb-2 items-center">
+                  <Input
+                    type="text"
+                    value={item.label}
+                    onChange={(e) => {
+                      const updated = [...(content.menuItems || [])];
+                      updated[idx] = { ...updated[idx], label: e.target.value };
+                      setContent({ ...content, menuItems: updated });
+                    }}
+                    placeholder="Label"
+                    className="flex-1"
+                  />
+                  <Input
+                    type="text"
+                    value={item.url}
+                    onChange={(e) => {
+                      const updated = [...(content.menuItems || [])];
+                      updated[idx] = { ...updated[idx], url: e.target.value };
+                      setContent({ ...content, menuItems: updated });
+                    }}
+                    placeholder="/page or URL"
+                    className="flex-1"
+                  />
+                  <button
+                    onClick={() => {
+                      const updated = (content.menuItems || []).filter((_: any, i: number) => i !== idx);
+                      setContent({ ...content, menuItems: updated });
+                    }}
+                    className="text-red-500 hover:text-red-700 text-xs px-2"
+                  >✕</button>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const updated = [...(content.menuItems || []), { label: '', url: '' }];
+                  setContent({ ...content, menuItems: updated });
+                }}
+              >
+                + Add Menu Item
+              </Button>
+            </div>
+          </div>
+        )}
         
         {section.type === 'hero' && (
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Headline</label>
-              <Input
-                type="text"
-                value={content.title || ''}
-                onChange={(e) => setContent({ ...content, title: e.target.value })}
-                placeholder="Hero headline"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Accent Text</label>
-              <Input
-                type="text"
-                value={content.accentText || ''}
-                onChange={(e) => setContent({ ...content, accentText: e.target.value })}
-                placeholder="Highlighted phrase in accent color"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Subheadline</label>
-              <Input
-                type="text"
-                value={content.subtitle || ''}
-                onChange={(e) => setContent({ ...content, subtitle: e.target.value })}
-                placeholder="Hero subtitle"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">CTA Button Text</label>
-              <Input
-                type="text"
-                value={content.ctaText || ''}
-                onChange={(e) => setContent({ ...content, ctaText: e.target.value })}
-                placeholder="Call to action text"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">CTA Button Link</label>
-              <Input
-                type="text"
-                value={content.ctaLink || ''}
-                onChange={(e) => setContent({ ...content, ctaLink: e.target.value })}
-                placeholder="/services or https://example.com"
-              />
-              <p className="text-xs text-gray-500 mt-1">Use /page-slug for site pages, or a full URL for external links</p>
-            </div>
+            {/* Global hero settings */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Accent Color</label>
               <div className="flex gap-2">
@@ -1397,55 +1583,198 @@ const PropertiesPanel: React.FC<{
                 />
               </div>
             </div>
-
-            {/* Background Image Upload */}
-            <div className="border-t pt-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Background Image</label>
-              <p className="text-xs text-gray-500 mb-2">Appears blurred behind the entire hero</p>
-              {content.backgroundImage && (
-                <div className="relative mb-2">
-                  <img src={content.backgroundImage} alt="Background" className="w-full h-24 object-cover rounded-lg" />
-                  <button
-                    onClick={() => setContent({ ...content, backgroundImage: null })}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-0.5 rounded text-xs"
-                  >✕</button>
-                </div>
-              )}
-              <input ref={heroBgImageRef} type="file" accept="image/*" onChange={(e) => handleHeroImageUpload(e, 'backgroundImage')} className="hidden" />
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                disabled={isUploadingHeroImage === 'bg'}
-                onClick={() => heroBgImageRef.current?.click()}
-              >
-                {isUploadingHeroImage === 'bg' ? 'Uploading...' : content.backgroundImage ? 'Change Background' : 'Upload Background'}
-              </Button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Autoplay Seconds</label>
+              <Input
+                type="number"
+                min={2}
+                max={30}
+                value={content.autoplaySeconds || 5}
+                onChange={(e) => setContent({ ...content, autoplaySeconds: parseInt(e.target.value) || 5 })}
+              />
             </div>
 
-            {/* Overlay Image Upload */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Overlay Image</label>
-              <p className="text-xs text-gray-500 mb-2">Appears on the right side of the hero</p>
-              {content.overlayImage && (
-                <div className="relative mb-2">
-                  <img src={content.overlayImage} alt="Overlay" className="w-full h-24 object-cover rounded-lg" />
-                  <button
-                    onClick={() => setContent({ ...content, overlayImage: null })}
-                    className="absolute top-1 right-1 bg-red-500 text-white p-0.5 rounded text-xs"
-                  >✕</button>
+            {/* Slides */}
+            <div className="border-t pt-3">
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-semibold text-gray-800">Slides ({(content.slides || [{ title: content.title || '', accentText: content.accentText || '', subtitle: content.subtitle || '', ctaText: content.ctaText || '', ctaLink: content.ctaLink || '', backgroundImage: content.backgroundImage || '', overlayImage: content.overlayImage || '' }]).length})</label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const currentSlides = content.slides || [{ title: content.title || '', accentText: content.accentText || '', subtitle: content.subtitle || '', ctaText: content.ctaText || '', ctaLink: content.ctaLink || '', backgroundImage: content.backgroundImage || '', overlayImage: content.overlayImage || '' }];
+                    setContent({ ...content, slides: [...currentSlides, { title: '', accentText: '', subtitle: '', ctaText: '', ctaLink: '', backgroundImage: '', overlayImage: '' }] });
+                  }}
+                >
+                  + Add Slide
+                </Button>
+              </div>
+              {(content.slides || [{ title: content.title || '', accentText: content.accentText || '', subtitle: content.subtitle || '', ctaText: content.ctaText || '', ctaLink: content.ctaLink || '', backgroundImage: content.backgroundImage || '', overlayImage: content.overlayImage || '' }]).map((slide: any, slideIdx: number) => (
+                <div key={slideIdx} className="border rounded-lg p-3 mb-3 bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-semibold text-gray-600">Slide {slideIdx + 1}</span>
+                    {(content.slides || []).length > 1 && (
+                      <button
+                        onClick={() => {
+                          const updated = (content.slides || []).filter((_: any, i: number) => i !== slideIdx);
+                          setContent({ ...content, slides: updated });
+                        }}
+                        className="text-red-500 hover:text-red-700 text-xs"
+                      >Remove</button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Input
+                      type="text"
+                      value={slide.title || ''}
+                      onChange={(e) => {
+                        const slides = [...(content.slides || [{ title: content.title || '', accentText: content.accentText || '', subtitle: content.subtitle || '', ctaText: content.ctaText || '', ctaLink: content.ctaLink || '', backgroundImage: content.backgroundImage || '', overlayImage: content.overlayImage || '' }])];
+                        slides[slideIdx] = { ...slides[slideIdx], title: e.target.value };
+                        setContent({ ...content, slides });
+                      }}
+                      placeholder="Headline"
+                    />
+                    <Input
+                      type="text"
+                      value={slide.accentText || ''}
+                      onChange={(e) => {
+                        const slides = [...(content.slides || [])];
+                        slides[slideIdx] = { ...slides[slideIdx], accentText: e.target.value };
+                        setContent({ ...content, slides });
+                      }}
+                      placeholder="Accent text"
+                    />
+                    <Input
+                      type="text"
+                      value={slide.subtitle || ''}
+                      onChange={(e) => {
+                        const slides = [...(content.slides || [])];
+                        slides[slideIdx] = { ...slides[slideIdx], subtitle: e.target.value };
+                        setContent({ ...content, slides });
+                      }}
+                      placeholder="Subtitle / description"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        type="text"
+                        value={slide.ctaText || ''}
+                        onChange={(e) => {
+                          const slides = [...(content.slides || [])];
+                          slides[slideIdx] = { ...slides[slideIdx], ctaText: e.target.value };
+                          setContent({ ...content, slides });
+                        }}
+                        placeholder="CTA text"
+                      />
+                      <Input
+                        type="text"
+                        value={slide.ctaLink || ''}
+                        onChange={(e) => {
+                          const slides = [...(content.slides || [])];
+                          slides[slideIdx] = { ...slides[slideIdx], ctaLink: e.target.value };
+                          setContent({ ...content, slides });
+                        }}
+                        placeholder="CTA link"
+                      />
+                    </div>
+                    {/* Background image for this slide */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Background image</p>
+                      {slide.backgroundImage && (
+                        <div className="relative mb-1">
+                          <img src={slide.backgroundImage} alt="" className="w-full h-16 object-cover rounded" />
+                          <button
+                            onClick={() => {
+                              const slides = [...(content.slides || [])];
+                              slides[slideIdx] = { ...slides[slideIdx], backgroundImage: '' };
+                              setContent({ ...content, slides });
+                            }}
+                            className="absolute top-0.5 right-0.5 bg-red-500 text-white px-1 rounded text-[10px]"
+                          >✕</button>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id={`hero-slide-bg-${slideIdx}`}
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+                            const authToken = localStorage.getItem('authToken');
+                            if (!authToken) return;
+                            const res = await fetch(`${apiUrl}/page-builder/websites/${section?.websiteId}/media/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData });
+                            if (!res.ok) throw new Error('Upload failed');
+                            const data = await res.json();
+                            const url = data.data?.url || data.data?.media?.url;
+                            if (url) {
+                              const slides = [...(content.slides || [])];
+                              slides[slideIdx] = { ...slides[slideIdx], backgroundImage: url };
+                              const updatedContent = { ...content, slides };
+                              setContent(updatedContent);
+                              if (onUpdateSection) onUpdateSection({ content: updatedContent });
+                            }
+                          } catch (err) { console.error('Slide bg upload error:', err); }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => document.getElementById(`hero-slide-bg-${slideIdx}`)?.click()}>
+                        {slide.backgroundImage ? 'Change Background' : 'Upload Background'}
+                      </Button>
+                    </div>
+                    {/* Overlay image for this slide */}
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1">Overlay image (right side)</p>
+                      {slide.overlayImage && (
+                        <div className="relative mb-1">
+                          <img src={slide.overlayImage} alt="" className="w-full h-16 object-cover rounded" />
+                          <button
+                            onClick={() => {
+                              const slides = [...(content.slides || [])];
+                              slides[slideIdx] = { ...slides[slideIdx], overlayImage: '' };
+                              setContent({ ...content, slides });
+                            }}
+                            className="absolute top-0.5 right-0.5 bg-red-500 text-white px-1 rounded text-[10px]"
+                          >✕</button>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id={`hero-slide-overlay-${slideIdx}`}
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const formData = new FormData();
+                            formData.append('file', file);
+                            const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+                            const authToken = localStorage.getItem('authToken');
+                            if (!authToken) return;
+                            const res = await fetch(`${apiUrl}/page-builder/websites/${section?.websiteId}/media/upload`, { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData });
+                            if (!res.ok) throw new Error('Upload failed');
+                            const data = await res.json();
+                            const url = data.data?.url || data.data?.media?.url;
+                            if (url) {
+                              const slides = [...(content.slides || [])];
+                              slides[slideIdx] = { ...slides[slideIdx], overlayImage: url };
+                              const updatedContent = { ...content, slides };
+                              setContent(updatedContent);
+                              if (onUpdateSection) onUpdateSection({ content: updatedContent });
+                            }
+                          } catch (err) { console.error('Slide overlay upload error:', err); }
+                        }}
+                      />
+                      <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => document.getElementById(`hero-slide-overlay-${slideIdx}`)?.click()}>
+                        {slide.overlayImage ? 'Change Overlay' : 'Upload Overlay'}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              )}
-              <input ref={heroOverlayImageRef} type="file" accept="image/*" onChange={(e) => handleHeroImageUpload(e, 'overlayImage')} className="hidden" />
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                disabled={isUploadingHeroImage === 'overlay'}
-                onClick={() => heroOverlayImageRef.current?.click()}
-              >
-                {isUploadingHeroImage === 'overlay' ? 'Uploading...' : content.overlayImage ? 'Change Overlay' : 'Upload Overlay'}
-              </Button>
+              ))}
             </div>
 
             {uploadError && (

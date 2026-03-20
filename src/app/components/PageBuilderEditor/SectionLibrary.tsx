@@ -14,6 +14,8 @@ import {
   BookOpen,
   HelpCircle,
   GraduationCap,
+  PanelTop,
+  Navigation,
 } from 'lucide-react';
 
 interface SectionTemplate {
@@ -26,14 +28,51 @@ interface SectionTemplate {
 
 const SECTION_TEMPLATES: SectionTemplate[] = [
   {
+    type: 'topbar',
+    name: 'Top Bar',
+    description: 'Small bar with address, phone & social links',
+    icon: <PanelTop className="w-6 h-6" />,
+    defaultContent: {
+      address: '',
+      phone: '',
+      backgroundColor: '#00acc1',
+      textColor: '#ffffff',
+      socialLinks: [],
+    },
+  },
+  {
+    type: 'navbar',
+    name: 'Navigation',
+    description: 'Brand name/logo with navigation menu',
+    icon: <Navigation className="w-6 h-6" />,
+    defaultContent: {
+      brandName: 'My Brand',
+      brandColor: '#00acc1',
+      backgroundColor: '#ffffff',
+      textColor: '#333333',
+      logoUrl: '',
+      menuItems: [],
+    },
+  },
+  {
     type: 'hero',
     name: 'Hero',
-    description: 'Large banner with headline, subtitle, and CTA',
+    description: 'Large banner with headline, subtitle, and CTA — supports slideshow',
     icon: <Flame className="w-6 h-6" />,
     defaultContent: {
-      title: 'Welcome to Your Website',
-      subtitle: 'Create an amazing first impression',
-      ctaText: 'Get Started',
+      accentColor: '#00b4d8',
+      autoplaySeconds: 5,
+      slides: [
+        {
+          title: 'Welcome to Your Website',
+          accentText: '',
+          subtitle: 'Create an amazing first impression',
+          ctaText: 'Get Started',
+          ctaLink: '',
+          backgroundImage: '',
+          overlayImage: '',
+        },
+      ],
       overlayOpacity: 0.3,
     },
   },

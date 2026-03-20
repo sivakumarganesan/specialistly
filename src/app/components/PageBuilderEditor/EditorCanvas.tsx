@@ -14,6 +14,8 @@ import { ServicesSectionPreview } from './sections/ServicesSection';
 import { CoursesSectionPreview } from './sections/CoursesSection';
 import { BlogSectionPreview } from './sections/BlogSection';
 import { NewsletterSectionPreview } from './sections/NewsletterSection';
+import { TopBarSectionPreview } from './sections/TopBarSection';
+import { NavBarSectionPreview } from './sections/NavBarSection';
 
 interface EditorCanvasProps {
   page: Page;
@@ -62,6 +64,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
 
   const renderSectionPreview = (section: PageSection) => {
     switch (section.type) {
+      case 'topbar':
+        return <TopBarSectionPreview section={section} />;
+      case 'navbar':
+        return <NavBarSectionPreview section={section} />;
       case 'hero':
         return <HeroSectionPreview section={section} />;
       case 'services':

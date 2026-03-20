@@ -3,6 +3,8 @@ import { Page, PageSection } from '@/app/hooks/usePageBuilder';
 import { Website } from '@/app/hooks/usePageBuilder';
 import { HeroSectionPreview } from './sections/HeroSection';
 import { ServicesSectionPreview } from './sections/ServicesSection';
+import { TopBarSectionPreview } from './sections/TopBarSection';
+import { NavBarSectionPreview } from './sections/NavBarSection';
 
 interface PreviewModeProps {
   page: Page;
@@ -12,6 +14,10 @@ interface PreviewModeProps {
 const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
   try {
     switch (section.type) {
+      case 'topbar':
+        return <TopBarSectionPreview section={section} />;
+      case 'navbar':
+        return <NavBarSectionPreview section={section} />;
       case 'hero':
         return <HeroSectionPreview section={section} />;
       case 'services':
