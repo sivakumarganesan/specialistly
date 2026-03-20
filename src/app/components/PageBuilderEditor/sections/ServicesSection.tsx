@@ -273,6 +273,7 @@ export const ServicesSectionEditor: React.FC<ServicesSectionEditorProps> = ({
 export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
   section,
 }) => {
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
   const services = (section.content?.services || []) as Service[];
   const layout = section.content?.layout || 'grid';
   const accentColor = section.content?.accentColor || '#00acc1';
@@ -294,6 +295,50 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
   const cardBorder = isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb';
   const cardTextColor = isDark ? '#ffffff' : '#111827';
   const cardDescColor = isDark ? 'rgba(255,255,255,0.7)' : '#4b5563';
+
+  // Service card component - image focused, title below
+  const ServiceCard = ({ service, className = '' }: { service: Service; className?: string }) => (
+    <div
+      className={`group cursor-pointer rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1 ${className}`}
+      style={{
+        backgroundColor: cardBg,
+        border: `1px solid ${cardBorder}`,
+        boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+      }}
+      onClick={() => setSelectedService(service)}
+    >
+      {/* Image area */}
+      <div className="relative overflow-hidden" style={{ aspectRatio: '4/3' }}>
+        {service.image ? (
+          <img
+            src={service.image}
+            alt={service.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : service.icon ? (
+          <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6' }}>
+            <img src={service.icon} alt={service.title} className="w-20 h-20 object-contain" />
+          </div>
+        ) : (
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${accentColor}22, ${accentColor}44)` }}
+          >
+            <span className="text-5xl font-bold" style={{ color: accentColor }}>
+              {service.title?.charAt(0)?.toUpperCase() || '?'}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Title area */}
+      <div className="px-4 py-4 text-center">
+        <h3 className="font-semibold text-lg" style={{ color: accentColor }}>
+          {service.title}
+        </h3>
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -323,92 +368,103 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
             {services.map((service) => (
               <div
                 key={service.id}
-                className="flex gap-5 p-6 rounded-xl transition-all duration-300 hover:-translate-y-0.5"
+                className="flex gap-5 items-center p-4 rounded-xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer"
                 style={{
                   backgroundColor: cardBg,
                   border: `1px solid ${cardBorder}`,
-                  borderLeft: `4px solid ${accentColor}`,
                   boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
                 }}
+                onClick={() => setSelectedService(service)}
               >
-                {service.icon ? (
-                  <img src={service.icon} alt={service.title} className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
-                ) : (
-                  <div
-                    className="w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 text-white text-xl font-bold"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    {service.title?.charAt(0)?.toUpperCase() || '?'}
-                  </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-lg mb-1" style={{ color: cardTextColor }}>{service.title}</h3>
-                  <p className="text-sm leading-relaxed" style={{ color: cardDescColor }}>{service.description}</p>
+                <div className="w-24 h-18 rounded-lg overflow-hidden flex-shrink-0" style={{ aspectRatio: '4/3' }}>
+                  {service.image ? (
+                    <img src={service.image} alt={service.title} className="w-full h-full object-cover" />
+                  ) : service.icon ? (
+                    <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6' }}>
+                      <img src={service.icon} alt={service.title} className="w-10 h-10 object-contain" />
+                    </div>
+                  ) : (
+                    <div
+                      className="w-full h-full flex items-center justify-center"
+                      style={{ background: `linear-gradient(135deg, ${accentColor}22, ${accentColor}44)` }}
+                    >
+                      <span className="text-2xl font-bold" style={{ color: accentColor }}>
+                        {service.title?.charAt(0)?.toUpperCase() || '?'}
+                      </span>
+                    </div>
+                  )}
                 </div>
-                {service.image && (
-                  <img
-                    src={service.image}
-                    alt={service.title}
-                    className="w-28 h-20 rounded-lg object-cover flex-shrink-0 ml-4"
-                  />
-                )}
+                <h3 className="font-semibold text-lg" style={{ color: accentColor }}>{service.title}</h3>
               </div>
             ))}
           </div>
         ) : (
-          <div className={layout === 'carousel' ? 'flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory' : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6`}>
-            {services.map((service, idx) => (
-              <div
+          <div className={layout === 'carousel' ? 'flex gap-6 overflow-x-auto pb-4 snap-x snap-mandatory' : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'}>
+            {services.map((service) => (
+              <ServiceCard
                 key={service.id}
-                className={`group relative p-6 rounded-xl transition-all duration-300 hover:-translate-y-1 ${layout === 'carousel' ? 'min-w-[280px] snap-start' : ''}`}
-                style={{
-                  backgroundColor: cardBg,
-                  border: `1px solid ${cardBorder}`,
-                  boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-                }}
-              >
-                {/* Top accent bar */}
-                <div
-                  className="absolute top-0 left-6 right-6 h-1 rounded-b-full"
-                  style={{ backgroundColor: accentColor }}
-                />
-
-                {service.image && (
-                  <img
-                    src={service.image}
-                    alt={service.title}
-                    className="w-full h-40 object-cover rounded-lg mb-5 -mt-1"
-                  />
-                )}
-
-                {service.icon ? (
-                  <img src={service.icon} alt={service.title} className="w-16 h-16 rounded-xl object-cover mb-5" />
-                ) : !service.image ? (
-                  <div
-                    className="w-16 h-16 rounded-xl flex items-center justify-center mb-5 text-white text-2xl font-bold shadow-lg"
-                    style={{ backgroundColor: accentColor, boxShadow: `0 4px 14px ${accentColor}40` }}
-                  >
-                    {service.title?.charAt(0)?.toUpperCase() || '?'}
-                  </div>
-                ) : null}
-
-                <h3 className="font-bold text-lg mb-2 group-hover:translate-x-0.5 transition-transform" style={{ color: cardTextColor }}>
-                  {service.title}
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: cardDescColor }}>
-                  {service.description}
-                </p>
-
-                {/* Bottom hover accent line */}
-                <div
-                  className="absolute bottom-0 left-0 right-0 h-0.5 rounded-b-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ backgroundColor: accentColor }}
-                />
-              </div>
+                service={service}
+                className={layout === 'carousel' ? 'min-w-[280px] snap-start' : ''}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* Service detail modal */}
+      {selectedService && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedService(null)}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative max-w-2xl w-full rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+            style={{ backgroundColor: isDark ? '#1f2937' : '#ffffff' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedService(null)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+            >
+              ✕
+            </button>
+
+            {/* Modal image */}
+            {selectedService.image ? (
+              <img
+                src={selectedService.image}
+                alt={selectedService.title}
+                className="w-full h-64 object-cover flex-shrink-0"
+              />
+            ) : selectedService.icon ? (
+              <div className="w-full h-48 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#f3f4f6' }}>
+                <img src={selectedService.icon} alt={selectedService.title} className="w-24 h-24 object-contain" />
+              </div>
+            ) : (
+              <div
+                className="w-full h-48 flex items-center justify-center flex-shrink-0"
+                style={{ background: `linear-gradient(135deg, ${accentColor}33, ${accentColor}66)` }}
+              >
+                <span className="text-6xl font-bold text-white">{selectedService.title?.charAt(0)?.toUpperCase() || '?'}</span>
+              </div>
+            )}
+
+            {/* Modal content */}
+            <div className="p-8 overflow-y-auto">
+              <h2 className="text-2xl font-bold mb-4" style={{ color: accentColor }}>
+                {selectedService.title}
+              </h2>
+              {selectedService.description && (
+                <p className="text-base leading-relaxed whitespace-pre-line" style={{ color: cardDescColor }}>
+                  {selectedService.description}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
