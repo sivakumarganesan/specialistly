@@ -4,7 +4,7 @@ import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Plus, Trash2, LayoutGrid, List } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Upload, X } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -229,36 +229,52 @@ export const ServicesSectionEditor: React.FC<ServicesSectionEditorProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-medium mb-1">Icon URL</label>
+                  <label className="block text-xs font-medium mb-1">Service Image</label>
+                  {service.image ? (
+                    <div className="relative mb-2">
+                      <img
+                        src={service.image}
+                        alt="Service"
+                        className="w-full h-32 object-cover rounded-lg border"
+                      />
+                      <button
+                        onClick={() => handleUpdateService(service.id, { image: '' })}
+                        className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors mb-2">
+                      <div className="flex flex-col items-center">
+                        <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                        <span className="text-xs text-gray-500">Click to upload image</span>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              handleUpdateService(service.id, { image: event.target?.result as string });
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
                   <Input
-                    placeholder="https://example.com/icon.png"
-                    value={service.icon || ''}
-                    onChange={(e) =>
-                      handleUpdateService(service.id, { icon: e.target.value })
-                    }
-                    size="sm"
-                  />
-                  <p className="text-xs text-gray-400 mt-0.5">Small icon shown beside the title</p>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium mb-1">Image URL</label>
-                  <Input
-                    placeholder="https://example.com/service-photo.jpg"
-                    value={service.image || ''}
+                    placeholder="Or paste image URL"
+                    value={service.image?.startsWith('data:') ? '' : (service.image || '')}
                     onChange={(e) =>
                       handleUpdateService(service.id, { image: e.target.value })
                     }
                     size="sm"
                   />
-                  <p className="text-xs text-gray-400 mt-0.5">Large cover image for the service card</p>
-                  {service.image && (
-                    <img
-                      src={service.image}
-                      alt="Preview"
-                      className="mt-2 w-full h-24 object-cover rounded-lg border"
-                    />
-                  )}
                 </div>
               </div>
             </Card>
