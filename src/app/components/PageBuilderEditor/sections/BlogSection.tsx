@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { PageSection } from '@/app/hooks/usePageBuilder';
 
 interface BlogPost {
@@ -13,6 +13,7 @@ interface BlogPost {
 }
 
 export const BlogSectionPreview: React.FC<{ section: PageSection }> = ({ section }) => {
+  const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const posts = (section.content?.posts || []) as BlogPost[];
   const layout = section.content?.layout || 'grid';
 
@@ -51,9 +52,10 @@ export const BlogSectionPreview: React.FC<{ section: PageSection }> = ({ section
           {posts.map((post) => (
             <article
               key={post.id}
-              className={`bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow ${
+              className={`bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer hover:-translate-y-0.5 ${
                 layout === 'list' ? 'flex gap-6' : ''
               }`}
+              onClick={() => setSelectedPost(post)}
             >
               {post.image && (
                 <div className={layout === 'list' ? 'w-64 flex-shrink-0' : ''}>
@@ -81,6 +83,67 @@ export const BlogSectionPreview: React.FC<{ section: PageSection }> = ({ section
           ))}
         </div>
       </div>
+
+      {/* Blog post detail modal */}
+      {selectedPost && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedPost(null)}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative bg-white max-w-3xl w-full rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedPost(null)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+            >
+              ✕
+            </button>
+
+            {/* Header image */}
+            {selectedPost.image && (
+              <img
+                src={selectedPost.image}
+                alt={selectedPost.title}
+                className="w-full h-64 object-cover flex-shrink-0"
+              />
+            )}
+
+            {/* Content */}
+            <div className="p-8 overflow-y-auto">
+              <div className="flex items-center gap-3 mb-4">
+                {selectedPost.category && (
+                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                    {selectedPost.category}
+                  </span>
+                )}
+                {selectedPost.date && (
+                  <span className="text-xs text-gray-500">{selectedPost.date}</span>
+                )}
+              </div>
+
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                {selectedPost.title}
+              </h2>
+
+              {selectedPost.author && (
+                <p className="text-sm text-gray-500 mb-6">By {selectedPost.author}</p>
+              )}
+
+              <div className="prose prose-gray max-w-none">
+                {(selectedPost.content || selectedPost.excerpt).split('\n').map((paragraph, idx) => (
+                  paragraph.trim() ? (
+                    <p key={idx} className="text-gray-700 leading-relaxed mb-4">{paragraph}</p>
+                  ) : null
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
