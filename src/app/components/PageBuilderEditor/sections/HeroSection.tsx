@@ -242,6 +242,17 @@ function getSlides(content: any): any[] {
   }];
 }
 
+// Helper: detect if a hex color is dark (luminance < 0.4)
+function isDarkColor(hex: string): boolean {
+  const c = hex.replace('#', '');
+  if (c.length < 6) return false;
+  const r = parseInt(c.substring(0, 2), 16) / 255;
+  const g = parseInt(c.substring(2, 4), 16) / 255;
+  const b = parseInt(c.substring(4, 6), 16) / 255;
+  const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+  return luminance < 0.4;
+}
+
 // Preview Component — slideshow with multiple slides
 export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   section,
@@ -249,6 +260,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   const slides = getSlides(section.content);
   const accentColor = section.content?.accentColor || '#00b4d8';
   const bgColor = section.content?.backgroundColor || section.styling?.backgroundColor || '#f0f4f8';
+  const darkBg = isDarkColor(bgColor);
   const autoplayInterval = (section.content?.autoplaySeconds || 5) * 1000;
 
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -314,7 +326,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
           {slide?.title && (
             <h1
               className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2"
-              style={{ color: backgroundImage ? '#ffffff' : '#111827' }}
+              style={{ color: (backgroundImage || darkBg) ? '#ffffff' : '#111827' }}
             >
               {slide.title}
             </h1>
@@ -330,7 +342,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
           {slide?.subtitle && (
             <p
               className="text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg leading-relaxed"
-              style={{ color: backgroundImage ? 'rgba(255,255,255,0.85)' : '#4b5563' }}
+              style={{ color: (backgroundImage || darkBg) ? 'rgba(255,255,255,0.85)' : '#4b5563' }}
             >
               {slide.subtitle}
             </p>
@@ -369,13 +381,13 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
                   filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.25))',
                 }}
               />
-              {/* Soft gradient fade at the bottom of the overlay */}
+              {/* Soft gradient fade at the bottom of the overlay — minimal to avoid cutting feet */}
               <div
-                className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
+                className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none"
                 style={{
                   background: backgroundImage
-                    ? 'linear-gradient(to top, rgba(0,0,0,0.15), transparent)'
-                    : `linear-gradient(to top, ${bgColor}, transparent)`,
+                    ? 'linear-gradient(to top, rgba(0,0,0,0.08), transparent)'
+                    : `linear-gradient(to top, ${bgColor}80, transparent)`,
                 }}
               />
             </div>
