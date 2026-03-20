@@ -321,9 +321,9 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
       )}
 
       {/* Content grid: text left, image right */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 py-12 sm:py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-start">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-8 lg:px-16 py-12 sm:py-16 lg:py-20 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-center">
         {/* Left — Text content */}
-        <div className="order-2 lg:order-1 self-center">
+        <div className="order-2 lg:order-1">
           {slide?.title && (
             <h1
               className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2"
@@ -370,34 +370,41 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
           )}
         </div>
 
-        {/* Right — Overlay image with professional presentation */}
-        {overlayImage && (
-          <div className="order-1 lg:order-2 flex justify-center lg:justify-end items-start relative">
-            <div className="relative">
-              <img
-                src={overlayImage}
-                alt="Hero"
-                className="w-auto object-contain mx-auto"
-                style={{
-                  height: `${overlayMaxHeight}px`,
-                  maxHeight: `${overlayMaxHeight}px`,
-                  maxWidth: '100%',
-                  filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.25))',
-                }}
-              />
-              {/* Soft gradient fade at the bottom of the overlay — minimal to avoid cutting feet */}
-              <div
-                className="absolute bottom-0 left-0 right-0 h-8 pointer-events-none"
-                style={{
-                  background: backgroundImage
-                    ? 'linear-gradient(to top, rgba(0,0,0,0.08), transparent)'
-                    : `linear-gradient(to top, ${bgColor}80, transparent)`,
-                }}
-              />
-            </div>
-          </div>
-        )}
+        {/* Right — spacer to reserve grid column when overlay is absolute */}
+        {overlayImage && <div className="order-1 lg:order-2 hidden lg:block" />}
       </div>
+
+      {/* Overlay image — positioned absolutely to span full hero height on the right */}
+      {overlayImage && (
+        <div className="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:flex items-end justify-center z-10 pointer-events-none">
+          <img
+            src={overlayImage}
+            alt="Hero"
+            className="w-auto object-contain"
+            style={{
+              height: `${overlayMaxHeight}px`,
+              maxHeight: '100%',
+              maxWidth: '90%',
+              filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.25))',
+            }}
+          />
+        </div>
+      )}
+      {/* Mobile overlay image */}
+      {overlayImage && (
+        <div className="relative z-10 flex justify-center px-6 -mt-4 mb-4 lg:hidden">
+          <img
+            src={overlayImage}
+            alt="Hero"
+            className="w-auto object-contain mx-auto"
+            style={{
+              maxHeight: `${Math.min(overlayMaxHeight, 350)}px`,
+              maxWidth: '80%',
+              filter: 'drop-shadow(0 8px 30px rgba(0,0,0,0.25))',
+            }}
+          />
+        </div>
+      )}
 
       {/* Navigation arrows (shown when >1 slide) */}
       {slides.length > 1 && (
