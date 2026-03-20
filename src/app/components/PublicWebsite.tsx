@@ -79,6 +79,22 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
     window.scrollTo(0, 0);
   };
 
+  // Intercept internal link clicks (e.g. CTA buttons with href="/about-us")
+  // so they navigate within the SPA instead of doing a full page reload
+  const handleInternalLinkClick = (e: React.MouseEvent<HTMLElement>) => {
+    const target = (e.target as HTMLElement).closest('a[href]') as HTMLAnchorElement | null;
+    if (!target) return;
+    const href = target.getAttribute('href');
+    if (!href || !href.startsWith('/') || href.startsWith('//')) return;
+    // Strip leading slash to get the slug
+    const slug = href.replace(/^\/+/, '');
+    const matchedPage = pages.find((p: any) => p.slug === slug);
+    if (matchedPage) {
+      e.preventDefault();
+      handlePageClick(matchedPage);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-white">
@@ -327,7 +343,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
       )}
 
       {/* Page Content */}
-      <main className="flex-1">
+      <main className="flex-1" onClick={handleInternalLinkClick}>
         {currentPageSlug && currentPage && (
           <PublicPageViewer
             subdomain={actualSubdomain || ''}
