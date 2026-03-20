@@ -11,6 +11,7 @@ interface Service {
   title: string;
   description: string;
   icon?: string;
+  image?: string;
 }
 
 interface ServicesSectionEditorProps {
@@ -237,6 +238,27 @@ export const ServicesSectionEditor: React.FC<ServicesSectionEditorProps> = ({
                     }
                     size="sm"
                   />
+                  <p className="text-xs text-gray-400 mt-0.5">Small icon shown beside the title</p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium mb-1">Image URL</label>
+                  <Input
+                    placeholder="https://example.com/service-photo.jpg"
+                    value={service.image || ''}
+                    onChange={(e) =>
+                      handleUpdateService(service.id, { image: e.target.value })
+                    }
+                    size="sm"
+                  />
+                  <p className="text-xs text-gray-400 mt-0.5">Large cover image for the service card</p>
+                  {service.image && (
+                    <img
+                      src={service.image}
+                      alt="Preview"
+                      className="mt-2 w-full h-24 object-cover rounded-lg border"
+                    />
+                  )}
                 </div>
               </div>
             </Card>
@@ -319,10 +341,17 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
                     {service.title?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                 )}
-                <div>
+                <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-lg mb-1" style={{ color: cardTextColor }}>{service.title}</h3>
                   <p className="text-sm leading-relaxed" style={{ color: cardDescColor }}>{service.description}</p>
                 </div>
+                {service.image && (
+                  <img
+                    src={service.image}
+                    alt={service.title}
+                    className="w-28 h-20 rounded-lg object-cover flex-shrink-0 ml-4"
+                  />
+                )}
               </div>
             ))}
           </div>
@@ -344,16 +373,24 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
                   style={{ backgroundColor: accentColor }}
                 />
 
+                {service.image && (
+                  <img
+                    src={service.image}
+                    alt={service.title}
+                    className="w-full h-40 object-cover rounded-lg mb-5 -mt-1"
+                  />
+                )}
+
                 {service.icon ? (
                   <img src={service.icon} alt={service.title} className="w-16 h-16 rounded-xl object-cover mb-5" />
-                ) : (
+                ) : !service.image ? (
                   <div
                     className="w-16 h-16 rounded-xl flex items-center justify-center mb-5 text-white text-2xl font-bold shadow-lg"
                     style={{ backgroundColor: accentColor, boxShadow: `0 4px 14px ${accentColor}40` }}
                   >
                     {service.title?.charAt(0)?.toUpperCase() || '?'}
                   </div>
-                )}
+                ) : null}
 
                 <h3 className="font-bold text-lg mb-2 group-hover:translate-x-0.5 transition-transform" style={{ color: cardTextColor }}>
                   {service.title}
