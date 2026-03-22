@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Globe, Check, X, Eye, Settings as SettingsIcon, Palette, Share2, Copy, ExternalLink, Link2 } from "lucide-react";
+import { Globe, Check, X, Eye, Settings as SettingsIcon, Palette, Share2, Copy, ExternalLink, Link2, Layout } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { brandingAPI, courseAPI, serviceAPI } from "@/app/api/apiClient";
