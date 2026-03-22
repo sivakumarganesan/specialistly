@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { usePaymentContext } from "@/app/context/PaymentContext";
 import { messageAPI } from "@/app/api/apiClient";
-import { getSubdomainInfo, isSubdomainWebsite } from "@/app/utils/subdomainUtils";
+import { getSubdomainInfo, isSubdomainWebsite, isCustomDomain, getCustomDomain } from "@/app/utils/subdomainUtils";
 import PublicWebsite from "@/app/components/PublicWebsite";
 import { Header } from "@/app/components/Header";
 import { Sidebar } from "@/app/components/Sidebar";
@@ -55,6 +55,12 @@ export function AppContent() {
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const [resetToken, setResetToken] = useState<string | null>(null);
+
+  // Check if this is a custom domain (e.g., adhiranspecialityclinic.com)
+  if (isCustomDomain()) {
+    const domain = getCustomDomain();
+    return <PublicWebsite subdomain={domain} />;
+  }
 
   // Check if this is a public subdomain website (e.g., subdomain.specialistly.com)
   // If so, show the public website viewer instead of the admin dashboard

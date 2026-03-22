@@ -239,6 +239,29 @@ class PageBuilderAPI {
     }
   }
 
+  async updateCustomDomain(websiteId: string, customDomain: string | null) {
+    try {
+      const response = await fetch(`${this.baseURL}/websites/${websiteId}/custom-domain`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+        body: JSON.stringify({ customDomain }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update custom domain');
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Error updating custom domain:', error);
+      throw error;
+    }
+  }
+
   async getPublicWebsite(domain: string) {
     try {
       const response = await fetch(`${this.baseURL}/public/websites/${domain}`);

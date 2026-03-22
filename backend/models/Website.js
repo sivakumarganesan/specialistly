@@ -21,6 +21,13 @@ const websiteSchema = new mongoose.Schema(
       sparse: true,
       unique: true,
     },
+    customDomain: {
+      type: String,
+      lowercase: true,
+      trim: true,
+      sparse: true,
+      unique: true,
+    },
     isConfigured: {
       type: Boolean,
       default: false,

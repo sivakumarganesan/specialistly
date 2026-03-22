@@ -510,6 +510,78 @@ export const updateSubdomain = async (req, res) => {
   }
 };
 
+export const updateCustomDomain = async (req, res) => {
+  try {
+    const { websiteId } = req.params;
+    const userEmail = req.user.email;
+    const { customDomain } = req.body;
+
+    const website = await Website.findById(websiteId);
+
+    if (!website) {
+      return res.status(404).json({
+        success: false,
+        message: 'Website not found',
+      });
+    }
+
+    // Verify ownership
+    if (website.creatorEmail !== userEmail) {
+      return res.status(403).json({
+        success: false,
+        message: 'Unauthorized',
+      });
+    }
+
+    if (customDomain) {
+      // Validate domain format
+      const domainRegex = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/;
+      const normalizedDomain = customDomain.toLowerCase().trim().replace(/^www\./, '');
+      
+      if (!domainRegex.test(normalizedDomain)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid domain format. Example: example.com',
+        });
+      }
+
+      // Check if domain already taken by another website
+      const existingWebsite = await Website.findOne({
+        customDomain: normalizedDomain,
+        _id: { $ne: websiteId },
+      });
+
+      if (existingWebsite) {
+        return res.status(400).json({
+          success: false,
+          message: 'This domain is already connected to another website.',
+        });
+      }
+
+      website.customDomain = normalizedDomain;
+    } else {
+      // Remove custom domain
+      website.customDomain = undefined;
+    }
+
+    await website.save();
+
+    res.json({
+      success: true,
+      data: website,
+      message: customDomain
+        ? `Custom domain set to: ${website.customDomain}`
+        : 'Custom domain removed',
+    });
+  } catch (error) {
+    console.error('Update custom domain error:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // ============ Page Operations ============
 
 export const createPage = async (req, res) => {

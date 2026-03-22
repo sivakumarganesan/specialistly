@@ -40,6 +40,30 @@ export const getSubdomainInfo = (): SubdomainInfo => {
 };
 
 /**
+ * Check if the current hostname is a custom domain (not a specialistly subdomain)
+ * e.g., adhiranspecialityclinic.com or www.adhiranspecialityclinic.com
+ */
+export const isCustomDomain = (): boolean => {
+  const hostname = window.location.hostname;
+  const isLocalhost = hostname === 'localhost' || hostname.startsWith('127.0.0.1');
+  if (isLocalhost) return false;
+  
+  // If the hostname does NOT contain 'specialistly', it's a custom domain
+  return !hostname.includes('specialistly');
+};
+
+/**
+ * Get the custom domain hostname (without www prefix)
+ */
+export const getCustomDomain = (): string => {
+  let hostname = window.location.hostname;
+  if (hostname.startsWith('www.')) {
+    hostname = hostname.substring(4);
+  }
+  return hostname;
+};
+
+/**
  * Check if current page is a public subdomain website
  */
 export const isSubdomainWebsite = (): boolean => {

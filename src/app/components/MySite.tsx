@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Globe, Check, X, Eye, Settings as SettingsIcon, Palette, Share2, Copy, ExternalLink } from "lucide-react";
+import { Globe, Check, X, Eye, Settings as SettingsIcon, Palette, Share2, Copy, ExternalLink, Link2 } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
 import { brandingAPI, courseAPI, serviceAPI } from "@/app/api/apiClient";
+import { pageBuilderAPI } from "@/app/api/pageBuilderAPI";
 import {
   Card,
   CardContent,
@@ -14,7 +15,9 @@ import {
 type MySiteTab = "setup" | "customize" | "preview";
 
 interface WebsiteData {
+  _id?: string;
   subdomain?: string;
+  customDomain?: string;
   isConfigured?: boolean;
   branding?: {
     siteName: string;
@@ -109,7 +112,12 @@ export function MySite() {
 
       {/* Tab Content */}
       <div>
-        {activeTab === "setup" && <SubdomainSetup websiteData={websiteData} setWebsiteData={setWebsiteData} />}
+        {activeTab === "setup" && (
+          <>
+            <SubdomainSetup websiteData={websiteData} setWebsiteData={setWebsiteData} />
+            <CustomDomainSetup websiteData={websiteData} setWebsiteData={setWebsiteData} />
+          </>
+        )}
         {activeTab === "customize" && <SiteCustomization websiteData={websiteData} setWebsiteData={setWebsiteData} />}
         {activeTab === "preview" && <SitePreview websiteData={websiteData} />}
       </div>
@@ -394,6 +402,144 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function CustomDomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteData | null; setWebsiteData: (data: WebsiteData) => void }) {
+  const [customDomain, setCustomDomain] = useState(websiteData?.customDomain || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [pageBuilderWebsiteId, setPageBuilderWebsiteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchWebsiteId = async () => {
+      try {
+        const response = await pageBuilderAPI.getWebsites();
+        if (response?.data?.length > 0) {
+          setPageBuilderWebsiteId(response.data[0]._id);
+          if (response.data[0].customDomain) {
+            setCustomDomain(response.data[0].customDomain);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching website:', error);
+      }
+    };
+    fetchWebsiteId();
+  }, []);
+
+  const handleSave = async () => {
+    if (!pageBuilderWebsiteId) {
+      setMessage({ type: 'error', text: 'No website found. Please set up your branded page first.' });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setMessage(null);
+      const domain = customDomain.trim().toLowerCase().replace(/^www\./, '') || null;
+      const response = await pageBuilderAPI.updateCustomDomain(pageBuilderWebsiteId, domain);
+      if (response?.success) {
+        setMessage({ type: 'success', text: domain ? `Custom domain "${domain}" connected!` : 'Custom domain removed.' });
+        if (domain) setCustomDomain(domain);
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to update custom domain.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!pageBuilderWebsiteId) return;
+    try {
+      setIsSaving(true);
+      setMessage(null);
+      const response = await pageBuilderAPI.updateCustomDomain(pageBuilderWebsiteId, null);
+      if (response?.success) {
+        setCustomDomain('');
+        setMessage({ type: 'success', text: 'Custom domain removed.' });
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to remove custom domain.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="w-5 h-5" />
+            Custom Domain
+          </CardTitle>
+          <CardDescription>
+            Connect your own domain (e.g., yourname.com) to your public website
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Domain Name</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customDomain}
+                onChange={(e) => setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))}
+                placeholder="example.com"
+                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
+              />
+              <Button
+                onClick={handleSave}
+                disabled={isSaving || !customDomain.trim()}
+                className="bg-gray-900 hover:bg-gray-800"
+              >
+                {isSaving ? 'Saving...' : 'Connect'}
+              </Button>
+              {customDomain && (
+                <Button
+                  variant="outline"
+                  onClick={handleRemove}
+                  disabled={isSaving}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {message && (
+            <div className={`rounded-lg p-3 text-sm ${
+              message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'
+            }`}>
+              {message.text}
+            </div>
+          )}
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h4 className="font-semibold text-amber-900 mb-2">DNS Setup Instructions:</h4>
+            <p className="text-sm text-amber-800 mb-3">After connecting your domain here, configure DNS at your domain registrar:</p>
+            <div className="bg-white border border-amber-200 rounded-lg p-3 font-mono text-sm space-y-2">
+              <div>
+                <span className="text-gray-500">Type:</span> <strong>CNAME</strong>
+              </div>
+              <div>
+                <span className="text-gray-500">Name:</span> <strong>@</strong> (or <strong>www</strong>)
+              </div>
+              <div>
+                <span className="text-gray-500">Target:</span> <strong>{websiteData?.subdomain || 'your-subdomain'}.specialistly.com</strong>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700 mt-3">
+              Note: If your registrar doesn't support CNAME on root domain (@), create a CNAME for "www" and set up a redirect from the root to www.
+              DNS changes may take up to 24-48 hours to propagate.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
