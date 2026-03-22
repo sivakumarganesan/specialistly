@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Page, PageSection } from '@/app/hooks/usePageBuilder';
 import { HeroSectionPreview } from './PageBuilderEditor/sections/HeroSection';
 import { ServicesSectionPreview } from './PageBuilderEditor/sections/ServicesSection';
@@ -172,74 +172,16 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
 interface PublicPageViewerProps {
   subdomain: string;
   pageSlug: string;
+  pageData?: any;
 }
 
-export const PublicPageViewer: React.FC<PublicPageViewerProps> = ({ subdomain, pageSlug }) => {
-  const [page, setPage] = useState<any>(null);
-  const [website, setWebsite] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export const PublicPageViewer: React.FC<PublicPageViewerProps> = ({ subdomain, pageSlug, pageData }) => {
+  const page = pageData || null;
 
-  useEffect(() => {
-    const loadPublicPage = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch(`/api/public/page/${subdomain}/${pageSlug}`);
-        
-        if (!response.ok) {
-          throw new Error(response.status === 404 ? 'Page not found' : 'Failed to load page');
-        }
-
-        const data = await response.json();
-        setWebsite(data.data.website);
-        setPage(data.data.page);
-        
-        // Update page data with sections
-        const pageWithSections = {
-          ...data.data.page,
-          sections: data.data.sections || [],
-        };
-        setPage(pageWithSections);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load page');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadPublicPage();
-  }, [subdomain, pageSlug]);
-
-  if (isLoading) {
+  if (!page) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading page...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <p className="text-red-600 text-lg mb-4">{error}</p>
-          <a href="/" className="text-blue-600 hover:underline">
-            Go back home
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  if (!page || !website) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-center">
-          <p className="text-gray-600 text-lg">Page not found</p>
-        </div>
+      <div className="flex items-center justify-center h-96 bg-gray-50">
+        <p className="text-gray-600 text-lg">Page not found</p>
       </div>
     );
   }

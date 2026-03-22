@@ -348,6 +348,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
           <PublicPageViewer
             subdomain={actualSubdomain || ''}
             pageSlug={currentPageSlug}
+            pageData={currentPage}
           />
         )}
       </main>
