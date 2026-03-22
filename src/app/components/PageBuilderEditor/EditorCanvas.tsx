@@ -16,6 +16,7 @@ import { BlogSectionPreview } from './sections/BlogSection';
 import { NewsletterSectionPreview } from './sections/NewsletterSection';
 import { TopBarSectionPreview } from './sections/TopBarSection';
 import { NavBarSectionPreview } from './sections/NavBarSection';
+import { TeamSectionPreview } from './sections/TeamSection';
 
 interface EditorCanvasProps {
   page: Page;
@@ -78,6 +79,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
         return <BlogSectionPreview section={section} />;
       case 'newsletter':
         return <NewsletterSectionPreview section={section} />;
+      case 'team':
+        return <TeamSectionPreview section={section} />;
       default:
         return (
           <div className="p-8 bg-gray-100 text-center">

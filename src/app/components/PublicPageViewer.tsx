@@ -6,6 +6,7 @@ import { CoursesSectionPreview } from './PageBuilderEditor/sections/CoursesSecti
 import { AboutSectionPreview } from './PageBuilderEditor/sections/AboutSection';
 import { BlogSectionPreview } from './PageBuilderEditor/sections/BlogSection';
 import { NewsletterSectionPreview } from './PageBuilderEditor/sections/NewsletterSection';
+import { TeamSectionPreview } from './PageBuilderEditor/sections/TeamSection';
 
 const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
   // TopBar and NavBar are rendered by the parent PublicWebsite header — skip here
@@ -152,6 +153,8 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       return <NewsletterSectionPreview section={section} />;
     case 'blog':
       return <BlogSectionPreview section={section} />;
+    case 'team':
+      return <TeamSectionPreview section={section} />;
     default:
       return (
         <div className="py-16 px-4 text-center" style={{ backgroundColor: section.content?.backgroundColor || '#f3f4f6' }}>

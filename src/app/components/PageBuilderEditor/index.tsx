@@ -2041,6 +2041,73 @@ const PropertiesPanel: React.FC<{
                       placeholder="Service title"
                       className="mb-2 text-xs"
                     />
+                    {/* Service Image Upload */}
+                    <div className="mb-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Image</label>
+                      {service.image ? (
+                        <div className="relative">
+                          <img
+                            src={service.image}
+                            alt="Service"
+                            className="w-full h-24 object-cover rounded border"
+                          />
+                          <button
+                            onClick={() => {
+                              const services = content.services.map((s: any) =>
+                                s.id === service.id ? { ...s, image: '' } : s
+                              );
+                              setContent({ ...content, services });
+                            }}
+                            className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-16 border-2 border-dashed border-gray-300 rounded cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
+                          <div className="flex items-center gap-1.5">
+                            <Upload className="w-4 h-4 text-gray-400" />
+                            <span className="text-xs text-gray-500">Upload image</span>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  const services = content.services.map((s: any) =>
+                                    s.id === service.id
+                                      ? { ...s, image: event.target?.result as string }
+                                      : s
+                                  );
+                                  setContent({ ...content, services });
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      )}
+                      {!service.image && (
+                        <Input
+                          type="text"
+                          value=""
+                          onChange={(e) => {
+                            const services = content.services.map((s: any) =>
+                              s.id === service.id
+                                ? { ...s, image: e.target.value }
+                                : s
+                            );
+                            setContent({ ...content, services });
+                          }}
+                          placeholder="Or paste image URL"
+                          className="mt-1 text-xs"
+                        />
+                      )}
+                    </div>
                     <Textarea
                       value={service.description}
                       onChange={(e) => {
@@ -2638,6 +2705,275 @@ const PropertiesPanel: React.FC<{
                   />
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {section.type === 'team' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Section Title</label>
+              <Input
+                type="text"
+                value={content.title || ''}
+                onChange={(e) => setContent({ ...content, title: e.target.value })}
+                placeholder="Our Team"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Section Description</label>
+              <Textarea
+                value={content.description || ''}
+                onChange={(e) => setContent({ ...content, description: e.target.value })}
+                placeholder="Meet the people behind our success"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
+              <div className="flex gap-2">
+                <Button
+                  variant={content.layout === 'grid' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'grid' })}
+                  className="flex-1 text-xs"
+                >
+                  Grid
+                </Button>
+                <Button
+                  variant={content.layout === 'list' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'list' })}
+                  className="flex-1 text-xs"
+                >
+                  List
+                </Button>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Accent Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.accentColor || '#3B82F6'}
+                  onChange={(e) => setContent({ ...content, accentColor: e.target.value })}
+                  className="w-12 h-10 rounded cursor-pointer"
+                />
+                <Input
+                  type="text"
+                  value={content.accentColor || '#3B82F6'}
+                  onChange={(e) => setContent({ ...content, accentColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            {/* Team Members Management */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">Team Members</h4>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const members = content.members || [];
+                    members.push({
+                      id: Date.now().toString(),
+                      name: 'Team Member',
+                      role: 'Role / Title',
+                      bio: '',
+                      image: '',
+                      email: '',
+                      phone: '',
+                      linkedin: '',
+                      twitter: '',
+                    });
+                    setContent({ ...content, members });
+                  }}
+                  className="text-xs"
+                >
+                  + Add Member
+                </Button>
+              </div>
+              
+              <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                {(content.members || []).map((member: any, idx: number) => (
+                  <div key={member.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs font-medium text-gray-600">Member {idx + 1}</span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const members = content.members.filter(
+                            (m: any) => m.id !== member.id
+                          );
+                          setContent({ ...content, members });
+                        }}
+                        className="text-xs text-red-600 h-6 px-2"
+                      >
+                        Remove
+                      </Button>
+                    </div>
+
+                    {/* Photo Upload */}
+                    <div className="mb-2">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Photo</label>
+                      {member.image ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={member.image}
+                            alt={member.name}
+                            className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                          />
+                          <button
+                            onClick={() => {
+                              const members = content.members.map((m: any) =>
+                                m.id === member.id ? { ...m, image: '' } : m
+                              );
+                              setContent({ ...content, members });
+                            }}
+                            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-colors">
+                          <div className="flex items-center gap-1.5">
+                            <Upload className="w-4 h-4 text-gray-400" />
+                            <span className="text-xs text-gray-500">Upload photo</span>
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  const members = content.members.map((m: any) =>
+                                    m.id === member.id
+                                      ? { ...m, image: event.target?.result as string }
+                                      : m
+                                  );
+                                  setContent({ ...content, members });
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                          />
+                        </label>
+                      )}
+                      {!member.image && (
+                        <Input
+                          type="text"
+                          value=""
+                          onChange={(e) => {
+                            const members = content.members.map((m: any) =>
+                              m.id === member.id
+                                ? { ...m, image: e.target.value }
+                                : m
+                            );
+                            setContent({ ...content, members });
+                          }}
+                          placeholder="Or paste image URL"
+                          className="mt-1 text-xs"
+                        />
+                      )}
+                    </div>
+
+                    <Input
+                      type="text"
+                      value={member.name}
+                      onChange={(e) => {
+                        const members = content.members.map((m: any) =>
+                          m.id === member.id ? { ...m, name: e.target.value } : m
+                        );
+                        setContent({ ...content, members });
+                      }}
+                      placeholder="Full name"
+                      className="mb-2 text-xs"
+                    />
+                    <Input
+                      type="text"
+                      value={member.role}
+                      onChange={(e) => {
+                        const members = content.members.map((m: any) =>
+                          m.id === member.id ? { ...m, role: e.target.value } : m
+                        );
+                        setContent({ ...content, members });
+                      }}
+                      placeholder="Role / Title (e.g., Senior Dentist)"
+                      className="mb-2 text-xs"
+                    />
+                    <Textarea
+                      value={member.bio}
+                      onChange={(e) => {
+                        const members = content.members.map((m: any) =>
+                          m.id === member.id ? { ...m, bio: e.target.value } : m
+                        );
+                        setContent({ ...content, members });
+                      }}
+                      placeholder="Bio / description"
+                      className="text-xs mb-2"
+                      rows={2}
+                    />
+
+                    {/* Contact & Social */}
+                    <details className="text-xs">
+                      <summary className="cursor-pointer text-gray-500 hover:text-gray-700 font-medium mb-2">Contact & Social Links</summary>
+                      <div className="space-y-2 pl-1">
+                        <Input
+                          type="email"
+                          value={member.email || ''}
+                          onChange={(e) => {
+                            const members = content.members.map((m: any) =>
+                              m.id === member.id ? { ...m, email: e.target.value } : m
+                            );
+                            setContent({ ...content, members });
+                          }}
+                          placeholder="Email address"
+                          className="text-xs"
+                        />
+                        <Input
+                          type="tel"
+                          value={member.phone || ''}
+                          onChange={(e) => {
+                            const members = content.members.map((m: any) =>
+                              m.id === member.id ? { ...m, phone: e.target.value } : m
+                            );
+                            setContent({ ...content, members });
+                          }}
+                          placeholder="Phone number"
+                          className="text-xs"
+                        />
+                        <Input
+                          type="url"
+                          value={member.linkedin || ''}
+                          onChange={(e) => {
+                            const members = content.members.map((m: any) =>
+                              m.id === member.id ? { ...m, linkedin: e.target.value } : m
+                            );
+                            setContent({ ...content, members });
+                          }}
+                          placeholder="LinkedIn profile URL"
+                          className="text-xs"
+                        />
+                        <Input
+                          type="url"
+                          value={member.twitter || ''}
+                          onChange={(e) => {
+                            const members = content.members.map((m: any) =>
+                              m.id === member.id ? { ...m, twitter: e.target.value } : m
+                            );
+                            setContent({ ...content, members });
+                          }}
+                          placeholder="Twitter / X profile URL"
+                          className="text-xs"
+                        />
+                      </div>
+                    </details>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
