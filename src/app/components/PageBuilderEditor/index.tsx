@@ -3562,6 +3562,54 @@ const PropertiesPanel: React.FC<{
         </div>
       </div>
 
+      <div className="border-t pt-4">
+        <h4 className="text-sm font-semibold text-gray-900 mb-3">Font Colors</h4>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Title Color</label>
+            <div className="flex gap-2 items-center">
+              <input
+                type="color"
+                value={content.titleColor || '#111827'}
+                onChange={(e) => setContent({ ...content, titleColor: e.target.value })}
+                className="w-10 h-8 rounded cursor-pointer border border-gray-300"
+              />
+              <Input
+                type="text"
+                value={content.titleColor || '#111827'}
+                onChange={(e) => setContent({ ...content, titleColor: e.target.value })}
+                placeholder="#111827"
+                className="flex-1 text-xs"
+              />
+              {content.titleColor && content.titleColor !== '#111827' && (
+                <Button variant="ghost" size="sm" onClick={() => setContent({ ...content, titleColor: '' })} className="text-xs text-gray-500 px-2">Reset</Button>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Description Color</label>
+            <div className="flex gap-2 items-center">
+              <input
+                type="color"
+                value={content.descriptionColor || '#4b5563'}
+                onChange={(e) => setContent({ ...content, descriptionColor: e.target.value })}
+                className="w-10 h-8 rounded cursor-pointer border border-gray-300"
+              />
+              <Input
+                type="text"
+                value={content.descriptionColor || '#4b5563'}
+                onChange={(e) => setContent({ ...content, descriptionColor: e.target.value })}
+                placeholder="#4b5563"
+                className="flex-1 text-xs"
+              />
+              {content.descriptionColor && content.descriptionColor !== '#4b5563' && (
+                <Button variant="ghost" size="sm" onClick={() => setContent({ ...content, descriptionColor: '' })} className="text-xs text-gray-500 px-2">Reset</Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Save Button */}
       <Button
         onClick={handleSave}

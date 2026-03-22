@@ -30,8 +30,8 @@ export const TeamSectionPreview: React.FC<{ section: PageSection }> = ({ section
     return 0.299 * r + 0.587 * g + 0.114 * b < 0.4;
   })();
 
-  const titleColor = isDark ? '#ffffff' : '#111827';
-  const subtitleColor = isDark ? 'rgba(255,255,255,0.7)' : '#6b7280';
+  const titleColor = section.content?.titleColor || (isDark ? '#ffffff' : '#111827');
+  const subtitleColor = section.content?.descriptionColor || (isDark ? 'rgba(255,255,255,0.7)' : '#6b7280');
   const cardBg = isDark ? 'rgba(255,255,255,0.08)' : '#ffffff';
   const cardBorder = isDark ? 'rgba(255,255,255,0.1)' : '#e5e7eb';
   const cardTextColor = isDark ? '#ffffff' : '#111827';

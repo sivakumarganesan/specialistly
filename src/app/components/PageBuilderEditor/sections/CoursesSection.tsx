@@ -334,10 +334,10 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
     >
       <div className="max-w-6xl mx-auto">
         {section.content?.title && (
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">{section.content.title}</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: section.content?.titleColor || undefined }}>{section.content.title}</h2>
         )}
         {section.content?.description && (
-          <p className="text-gray-600 mb-12 text-lg">
+          <p className="mb-12 text-lg" style={{ color: section.content?.descriptionColor || '#4b5563' }}>
             {section.content.description}
           </p>
         )}

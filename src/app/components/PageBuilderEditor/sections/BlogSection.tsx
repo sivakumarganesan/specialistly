@@ -21,9 +21,9 @@ export const BlogSectionPreview: React.FC<{ section: PageSection }> = ({ section
     return (
       <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#f9fafb' }}>
         <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">{section.title || 'Blog'}</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: section.content?.titleColor || undefined }}>{section.title || 'Blog'}</h2>
           {section.description && (
-            <p className="text-gray-600 text-lg mb-8">{section.description}</p>
+            <p className="text-lg mb-8" style={{ color: section.content?.descriptionColor || '#4b5563' }}>{section.description}</p>
           )}
           <div className="bg-white rounded-lg shadow-sm border border-dashed border-gray-300 p-12">
             <p className="text-gray-400 text-lg">📝 No blog posts yet</p>
@@ -38,9 +38,9 @@ export const BlogSectionPreview: React.FC<{ section: PageSection }> = ({ section
     <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#f9fafb' }}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold mb-4">{section.title || 'Blog'}</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4" style={{ color: section.content?.titleColor || undefined }}>{section.title || 'Blog'}</h2>
           {section.description && (
-            <p className="text-gray-600 text-lg">{section.description}</p>
+            <p className="text-lg" style={{ color: section.content?.descriptionColor || '#4b5563' }}>{section.description}</p>
           )}
         </div>
 

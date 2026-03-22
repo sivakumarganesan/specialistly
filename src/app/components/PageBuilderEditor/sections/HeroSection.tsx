@@ -282,6 +282,8 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
   const backgroundImage = slide?.backgroundImage;
   const overlayImage = slide?.overlayImage;
   const overlayMaxHeight = section.content?.overlayMaxHeight || 500;
+  const titleColor = section.content?.titleColor || ((backgroundImage || darkBg) ? '#ffffff' : '#111827');
+  const subtitleColor = section.content?.descriptionColor || ((backgroundImage || darkBg) ? 'rgba(255,255,255,0.85)' : '#4b5563');
 
   return (
     <div
@@ -327,7 +329,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
           {slide?.title && (
             <h1
               className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2"
-              style={{ color: (backgroundImage || darkBg) ? '#ffffff' : '#111827' }}
+              style={{ color: titleColor }}
             >
               {slide.title}
             </h1>
@@ -343,7 +345,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
           {slide?.subtitle && (
             <p
               className="text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 max-w-lg leading-relaxed"
-              style={{ color: (backgroundImage || darkBg) ? 'rgba(255,255,255,0.85)' : '#4b5563' }}
+              style={{ color: subtitleColor }}
             >
               {slide.subtitle}
             </p>
