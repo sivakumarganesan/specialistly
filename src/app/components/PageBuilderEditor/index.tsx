@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePageBuilder, Website, Page, PageSection } from '@/app/hooks/usePageBuilder';
 import { pageBuilderAPI } from '@/app/api/pageBuilderAPI';
 import { Card } from '@/app/components/ui/card';
@@ -1203,12 +1203,55 @@ const PropertiesPanel: React.FC<{
   const heroBgImageRef = React.useRef<HTMLInputElement>(null);
   const heroOverlayImageRef = React.useRef<HTMLInputElement>(null);
 
+  // Auto-save refs
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialMount = useRef(true);
+  const isSyncingFromParent = useRef(false);
+
   useEffect(() => {
+    isSyncingFromParent.current = true;
     setTitle(section?.title || '');
     setDescription(section?.description || '');
     setContent(section?.content || {});
     setAboutImageUrl(section?.content?.image || '');
   }, [section]);
+
+  // Auto-save: debounce content/title/description changes and push to parent
+  useEffect(() => {
+    // Skip the initial mount
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    // Skip changes that come from parent section prop syncing
+    if (isSyncingFromParent.current) {
+      isSyncingFromParent.current = false;
+      return;
+    }
+    if (!onUpdateSection || !section) return;
+
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      const updateData: Partial<PageSection> = { content };
+      if (section.type === 'about') {
+        updateData.title = content.title || '';
+        updateData.description = content.description || '';
+      } else if (section.type !== 'topbar' && section.type !== 'navbar') {
+        updateData.title = title;
+        updateData.description = description;
+      }
+      onUpdateSection(updateData);
+    }, 600);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [content, title, description]);
+
+  // Reset initial mount flag when section changes
+  useEffect(() => {
+    isInitialMount.current = true;
+  }, [section?._id]);
 
   if (!section) {
     return (
