@@ -31,6 +31,7 @@ import PaymentModal from "@/app/components/PaymentModal";
 import { PrivacyPolicy } from "@/app/components/PrivacyPolicy";
 import { TermsOfUse } from "@/app/components/TermsOfUse";
 import { Support } from "@/app/components/Support";
+import { ZoomDocumentation } from "@/app/components/ZoomDocumentation";
 
 type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
 type UserType = "specialist" | "customer";
@@ -120,6 +121,9 @@ export function AppContent() {
     }
     if (currentPage === "support") {
       return <Support onBack={() => setCurrentPage("homepage")} />;
+    }
+    if (currentPage === "zoom-docs") {
+      return <ZoomDocumentation onBack={() => setCurrentPage("homepage")} />;
     }
     if (currentPage === "signup") {
       return <Signup />;
@@ -227,6 +231,9 @@ export function AppContent() {
   }
   if (currentPage === "support") {
     return <Support onBack={() => setCurrentPage("dashboard")} />;
+  }
+  if (currentPage === "zoom-docs") {
+    return <ZoomDocumentation onBack={() => setCurrentPage("dashboard")} />;
   }
 
   // Handle viewing specialist
