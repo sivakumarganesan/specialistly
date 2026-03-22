@@ -5,7 +5,8 @@ import { Badge } from "@/app/components/ui/badge";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
-import { courseAPI } from "@/app/api/apiClient";
+import { HLSVideoPlayer } from "@/app/components/HLSVideoPlayer";
+import { courseAPI, videoAPI, API_BASE_URL } from "@/app/api/apiClient";
 import { useAuth } from "@/app/context/AuthContext";
 import {
   Select,
@@ -37,6 +38,7 @@ import {
   X,
   CheckCircle,
   PlayCircle,
+  Play,
   Award,
 } from "lucide-react";
 import { Checkbox } from "@/app/components/ui/checkbox";
@@ -54,9 +56,10 @@ interface Course {
   type: "self-paced" | "cohort-based";
   description: string;
   price: string;
+  currency?: string; // Add currency field
   duration: string;
   studentsEnrolled: number;
-  status: "active" | "draft";
+  status: "published" | "draft";
   level: string;
   category: string;
   thumbnail?: string;
@@ -65,12 +68,15 @@ interface Course {
   totalLessons?: number;
   certificateIncluded?: boolean;
   accessDuration?: string;
+  lessons?: any[];
   // Cohort-based specific fields
   cohortSize?: string;
   startDate?: string;
   endDate?: string;
   schedule?: string;
   meetingPlatform?: string;
+  zoomLink?: string;
+  zoomStartUrl?: string;
   liveSessions?: number;
 }
 
@@ -82,9 +88,10 @@ interface SearchableItem {
 
 interface CoursesProps {
   onUpdateSearchableItems: (items: SearchableItem[]) => void;
+  embedded?: boolean;
 }
 
-export function Courses({ onUpdateSearchableItems }: CoursesProps) {
+export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -94,30 +101,35 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     const loadCourses = async () => {
       try {
         setIsLoading(true);
-        const response = await courseAPI.getAll({ creator: user?.email });
+        const response = await courseAPI.getAll({ specialistEmail: user?.email });
         const courseData = response.data || response;
         if (courseData) {
           // Transform MongoDB data to Course interface
           const transformedCourses: Course[] = (Array.isArray(courseData) ? courseData : []).map((course: any) => ({
             id: course._id || course.id,
             title: course.title,
-            type: course.type,
+            type: course.courseType || course.type,
             description: course.description,
-            price: course.price,
-            duration: course.duration,
+            thumbnail: course.thumbnail || "",
+            price: course.price?.toString() || "",
+            currency: course.currency || "USD",
+            duration: course.duration || "",
             studentsEnrolled: course.studentsEnrolled || 0,
             status: course.status || "draft",
-            level: course.level,
-            category: course.category,
+            level: course.level || "Beginner",
+            category: course.category || "Technology",
             modules: course.modules,
             totalLessons: course.totalLessons,
-            certificateIncluded: course.certificateIncluded,
-            accessDuration: course.accessDuration,
-            cohortSize: course.cohortSize,
-            startDate: course.startDate,
-            endDate: course.endDate,
-            schedule: course.schedule,
-            meetingPlatform: course.meetingPlatform,
+            certificateIncluded: course.certificateIncluded !== undefined ? course.certificateIncluded : true,
+            accessDuration: course.accessDuration || "Lifetime",
+            lessons: course.lessons || [],
+            cohortSize: course.cohortSize || "",
+            startDate: course.startDate || "",
+            endDate: course.endDate || "",
+            schedule: course.schedule || "",
+            meetingPlatform: course.meetingPlatform || "Zoom",
+            zoomLink: course.zoomLink || "",
+            zoomStartUrl: course.zoomStartUrl || "",
             liveSessions: course.liveSessions,
           }));
           setCourses(transformedCourses);
@@ -141,30 +153,68 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       type: "course",
     }));
     onUpdateSearchableItems(searchableItems);
-  }, [courses, onUpdateSearchableItems]);
+  }, [courses]);
 
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [manageLessonsDialogOpen, setManageLessonsDialogOpen] = useState(false);
+  const [enrollmentsDialogOpen, setEnrollmentsDialogOpen] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [courseType, setCourseType] = useState<"self-paced" | "cohort-based" | null>(null);
+  const [courseEnrollments, setCourseEnrollments] = useState<any[]>([]);
+  const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
+
+  interface Lesson {
+    _id?: string;
+    title: string;
+    order: number;
+    files?: LessonFile[];
+    hlsUrl?: string;
+    cloudflareStreamId?: string;
+    cloudflareStatus?: string;
+    videoThumbnail?: string;
+  }
+
+  interface LessonFile {
+    _id?: string;
+    fileName: string;
+    fileUrl: string;
+    fileType: string;
+    fileSize?: number;
+    uploadedAt?: string;
+    googleDriveFileId?: string;
+    downloadLink?: string;
+    viewLink?: string;
+  }
+
+  const [lessons, setLessons] = useState<Lesson[]>([]);
+  const [uploadingFileFor, setUploadingFileFor] = useState<number | null>(null);
+  const [selectedFilesByLesson, setSelectedFilesByLesson] = useState<{ [key: number]: File[] }>({});
+  const [uploadingVideoFor, setUploadingVideoFor] = useState<number | null>(null);
+  const [videoUploadProgress, setVideoUploadProgress] = useState<{ [key: number]: number }>({});
+  
+  // Preview states
+  const [previewLessonIndex, setPreviewLessonIndex] = useState<number | null>(null);
+  const [previewFileIndex, setPreviewFileIndex] = useState<number | null>(null);
+  const [showVideoPreview, setShowVideoPreview] = useState(false);
+  const [showFilePreview, setShowFilePreview] = useState(false);
+  const [previewHlsUrl, setPreviewHlsUrl] = useState<string | null>(null);
+  const [loadingPreviewVideo, setLoadingPreviewVideo] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
+    thumbnail: "",
     price: "",
+    currency: "USD",
     duration: "",
-    level: "Beginner",
-    category: "Technology",
-    // Self-paced specific fields
-    totalLessons: "",
-    certificateIncluded: true,
-    accessDuration: "Lifetime",
     // Cohort-based specific fields
     cohortSize: "",
     startDate: "",
     endDate: "",
     schedule: "",
     meetingPlatform: "Zoom",
+    zoomLink: "",
     liveSessions: "",
   });
 
@@ -174,31 +224,24 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
 
   const handleCreateCourse = async () => {
     if (courseType && formData.title) {
-      // Remove _id from modules to let backend generate them
-      const modulesData = modules.map(({ id, ...rest }) => rest);
       const courseData = {
         title: formData.title,
-        type: courseType,
+        courseType: courseType,
         description: formData.description,
-        price: formData.price,
+        thumbnail: formData.thumbnail || "",
+        price: parseInt(formData.price) || 0,
+        currency: formData.currency || "USD",
         duration: formData.duration,
-        studentsEnrolled: 0,
         status: "draft",
-        level: formData.level,
-        category: formData.category,
-        creator: user?.email,
-        ...(courseType === "self-paced" && {
-          totalLessons: parseInt(formData.totalLessons) || 0,
-          certificateIncluded: formData.certificateIncluded,
-          accessDuration: formData.accessDuration,
-          modules: modulesData,
-        }),
+        specialistId: user?.id,
+        specialistEmail: user?.email,
         ...(courseType === "cohort-based" && {
           cohortSize: formData.cohortSize,
           startDate: formData.startDate,
           endDate: formData.endDate,
           schedule: formData.schedule,
           meetingPlatform: formData.meetingPlatform,
+          zoomLink: formData.zoomLink,
           liveSessions: parseInt(formData.liveSessions) || 0,
         }),
       };
@@ -208,6 +251,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         const newCourse: Course = {
           id: response.data?._id,
           ...courseData,
+          type: courseType,
         };
         setCourses([...courses, newCourse]);
         setCreateDialogOpen(false);
@@ -228,23 +272,19 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
       const updatedData = {
         title: formData.title,
         description: formData.description,
-        price: formData.price,
+        thumbnail: formData.thumbnail || "",
+        price: parseInt(formData.price) || 0,
+        currency: formData.currency || "USD",
         duration: formData.duration,
-        level: formData.level,
-        category: formData.category,
-        creator: user?.email,
-        ...(selectedCourse.type === "self-paced" && {
-          totalLessons: parseInt(formData.totalLessons) || 0,
-          certificateIncluded: formData.certificateIncluded,
-          accessDuration: formData.accessDuration,
-          modules: modulesData,
-        }),
-        ...(selectedCourse.type === "cohort-based" && {
+        specialistId: user?.id,
+        specialistEmail: user?.email,
+        ...((selectedCourse.type === "cohort-based" || selectedCourse.type === "cohort") && {
           cohortSize: formData.cohortSize,
           startDate: formData.startDate,
           endDate: formData.endDate,
           schedule: formData.schedule,
           meetingPlatform: formData.meetingPlatform,
+          zoomLink: formData.zoomLink,
           liveSessions: parseInt(formData.liveSessions) || 0,
         }),
       };
@@ -288,20 +328,32 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const toggleStatus = async (id: string) => {
     const course = courses.find(c => c.id === id);
     if (course) {
-      const newStatus = course.status === "active" ? "draft" : "active";
+      const newStatus = course.status === "published" ? "draft" : "published";
       try {
-        await courseAPI.update(id, { status: newStatus });
+        let result: any;
+        if (newStatus === "published") {
+          result = await courseAPI.publishCourse(id);
+        } else {
+          result = await courseAPI.update(id, { status: newStatus });
+        }
         setCourses(
           courses.map((c) =>
             c.id === id
               ? {
                   ...c,
                   status: newStatus,
+                  zoomLink: result?.data?.zoomLink || c.zoomLink,
+                  zoomStartUrl: result?.data?.zoomStartUrl || c.zoomStartUrl,
                 }
               : c
           )
         );
-        alert(`✓ Course status updated to ${newStatus}!`);
+        const msg = newStatus === 'published' 
+          ? (result?.zoomMeetingCreated 
+              ? '✓ Course published! Zoom meeting link created automatically.' 
+              : '✓ Course published successfully!')
+          : '✓ Course unpublished.';
+        alert(msg);
       } catch (error) {
         console.error("Failed to update course status:", error);
         alert(`Failed to update course status: ${error instanceof Error ? error.message : "Please try again."}`);
@@ -309,23 +361,60 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     }
   };
 
+  const handleGenerateZoom = async (id: string) => {
+    try {
+      const result = await courseAPI.generateZoomMeeting(id);
+      if (result?.success) {
+        setCourses(
+          courses.map((c) =>
+            c.id === id
+              ? { ...c, zoomLink: result.zoomLink, zoomStartUrl: result.zoomStartUrl, meetingPlatform: 'zoom' }
+              : c
+          )
+        );
+        alert('✓ Zoom meeting link created successfully!');
+      }
+    } catch (error) {
+      console.error("Failed to generate Zoom meeting:", error);
+      alert(`Failed to generate Zoom meeting: ${error instanceof Error ? error.message : "Please try again."}`);
+    }
+  };
+
+  const openEnrollmentsDialog = async (course: Course) => {
+    setSelectedCourse(course);
+    setEnrollmentsDialogOpen(true);
+    setEnrollmentsLoading(true);
+    try {
+      const response = await courseAPI.getCourseEnrollments(course.id);
+      setCourseEnrollments(response.data?.enrollments || []);
+    } catch (error) {
+      console.error("Failed to fetch enrollments:", error);
+      alert(`Failed to fetch enrollments: ${error instanceof Error ? error.message : "Please try again."}`);
+    } finally {
+      setEnrollmentsLoading(false);
+    }
+  };
+
   const openEditDialog = (course: Course) => {
     setSelectedCourse(course);
+    // Convert ISO dates to YYYY-MM-DD for date inputs
+    const formatDate = (d: string) => {
+      if (!d) return "";
+      try { return new Date(d).toISOString().split('T')[0]; } catch { return ""; }
+    };
     setFormData({
-      title: course.title,
-      description: course.description,
-      price: course.price,
-      duration: course.duration,
-      level: course.level,
-      category: course.category,
-      totalLessons: course.totalLessons?.toString() || "",
-      certificateIncluded: course.certificateIncluded || true,
-      accessDuration: course.accessDuration || "Lifetime",
+      title: course.title || "",
+      description: course.description || "",
+      thumbnail: course.thumbnail || "",
+      price: course.price || "",
+      currency: course.currency || "USD",
+      duration: course.duration || "",
       cohortSize: course.cohortSize || "",
-      startDate: course.startDate || "",
-      endDate: course.endDate || "",
+      startDate: formatDate(course.startDate || ""),
+      endDate: formatDate(course.endDate || ""),
       schedule: course.schedule || "",
       meetingPlatform: course.meetingPlatform || "Zoom",
+      zoomLink: course.zoomLink || "",
       liveSessions: course.liveSessions?.toString() || "",
     });
     if (course.modules && course.modules.length > 0) {
@@ -340,18 +429,16 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     setFormData({
       title: "",
       description: "",
+      thumbnail: "",
       price: "",
+      currency: "USD",
       duration: "",
-      level: "Beginner",
-      category: "Technology",
-      totalLessons: "",
-      certificateIncluded: true,
-      accessDuration: "Lifetime",
       cohortSize: "",
       startDate: "",
       endDate: "",
       schedule: "",
       meetingPlatform: "Zoom",
+      zoomLink: "",
       liveSessions: "",
     });
     setModules([{ id: "1", title: "Introduction to Course", duration: "2 hours", lessonsCount: 5 }]);
@@ -387,6 +474,485 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
     );
   };
 
+  const addLesson = () => {
+    const newLesson: Lesson = {
+      title: "",
+      order: lessons.length + 1,
+    };
+    setLessons([...lessons, newLesson]);
+  };
+
+  const removeLesson = (index: number) => {
+    setLessons(lessons.filter((_, i) => i !== index));
+  };
+
+  const updateLesson = (index: number, field: keyof Lesson, value: string | number) => {
+    setLessons(
+      lessons.map((lesson, i) =>
+        i === index ? { ...lesson, [field]: value } : lesson
+      )
+    );
+  };
+
+  const uploadVideoToCloudflare = async (lessonIndex: number, file: File) => {
+    try {
+      if (!selectedCourse) {
+        throw new Error("No course selected");
+      }
+
+      const lesson = lessons[lessonIndex];
+      if (!lesson || !lesson.title?.trim()) {
+        alert("Please enter a lesson title before uploading a video.");
+        return;
+      }
+
+      setUploadingVideoFor(lessonIndex);
+      setVideoUploadProgress({ ...videoUploadProgress, [lessonIndex]: 0 });
+
+      // Ensure lesson has an ID (use MongoDB _id if exists, otherwise use index as temporary ID)
+      const lessonId = lesson._id || `temp-${lessonIndex}-${Date.now()}`;
+
+      // Step 1: Get upload token from backend with required metadata
+      const tokenResponse = await videoAPI.getUploadToken({
+        courseId: selectedCourse.id,
+        lessonId: lessonId,
+        title: lesson.title,
+        fileName: file.name,
+        fileSize: file.size,
+      });
+
+      if (!tokenResponse.success) {
+        // Check for configuration errors
+        if (tokenResponse.error === 'CLOUDFLARE_NOT_CONFIGURED') {
+          throw new Error(
+            "⚠️ Cloudflare Stream is not configured on this server.\n\n" +
+            "The administrator needs to add these environment variables to the backend:\n" +
+            "• CLOUDFLARE_ACCOUNT_ID\n" +
+            "• CLOUDFLARE_API_TOKEN\n\n" +
+            "Once configured, video uploads will work."
+          );
+        }
+        throw new Error(tokenResponse.message || "Failed to get upload token from Cloudflare");
+      }
+
+      if (!tokenResponse.uploadUrl || !tokenResponse.streamId) {
+        throw new Error("Invalid upload token response from server");
+      }
+
+      const { uploadUrl, streamId } = tokenResponse;
+
+      // Step 2: Upload video using TUS resumable upload (supports large files)
+      const tus = await import("tus-js-client");
+      const TusUpload = tus.Upload || tus.default?.Upload;
+
+      await new Promise<void>((resolve, reject) => {
+        const upload = new TusUpload(file, {
+          uploadUrl: uploadUrl,   // Use uploadUrl (not endpoint) since we already have the URL
+          chunkSize: 50 * 1024 * 1024, // 50MB chunks
+          retryDelays: [0, 1000, 3000, 5000],
+          metadata: {
+            filename: file.name,
+            filetype: file.type,
+          },
+          onError: (error: Error) => {
+            console.error("TUS upload error:", error);
+            reject(new Error(`Upload failed: ${error.message}`));
+          },
+          onProgress: (bytesUploaded: number, bytesTotal: number) => {
+            const pct = Math.round((bytesUploaded / bytesTotal) * 95);
+            setVideoUploadProgress((prev) => ({ ...prev, [lessonIndex]: pct }));
+          },
+          onSuccess: () => {
+            resolve();
+          },
+        });
+        upload.start();
+      });
+
+      setVideoUploadProgress({ ...videoUploadProgress, [lessonIndex]: 100 });
+
+      // Step 3: Update lesson with video metadata
+      const updatedLessons = [...lessons];
+      updatedLessons[lessonIndex] = {
+        ...updatedLessons[lessonIndex],
+        cloudflareStreamId: streamId,
+        cloudflareStatus: "inprogress", // Valid enum: 'ready', 'inprogress', 'error', 'pending'
+      };
+      setLessons(updatedLessons);
+
+      alert("✓ Video uploaded! Cloudflare is processing it. Check back in a few minutes.");
+    } catch (error) {
+      console.error("Video upload error:", error);
+      alert(
+        `Video upload failed: ${error instanceof Error ? error.message : "Please try again."}`
+      );
+    } finally {
+      setUploadingVideoFor(null);
+      setVideoUploadProgress({});
+    }
+  };
+
+  const handleFileSelect = (lessonIndex: number, files: FileList | null) => {
+    if (!files) return;
+    
+    const fileArray = Array.from(files);
+    const lesson = lessons[lessonIndex];
+    
+    if (!lesson.files) {
+      lesson.files = [];
+    }
+    
+    // Add selected files to the lesson
+    for (const file of fileArray) {
+      const fileType = getFileType(file.name);
+      const newFile: LessonFile = {
+        fileName: file.name,
+        fileUrl: URL.createObjectURL(file), // Temporary URL for preview
+        fileType: fileType,
+        fileSize: file.size,
+        uploadedAt: new Date().toISOString(),
+      };
+      
+      if (!lesson.files.find(f => f.fileName === file.name)) {
+        lesson.files.push(newFile);
+      }
+    }
+    
+    setLessons([...lessons]);
+  };
+
+  const extractFileId = (url: string): string => {
+    if (!url) return '';
+    if (url.includes('/d/')) {
+      return url.split('/d/')[1]?.split('/')[0] || '';
+    } else if (url.includes('id=')) {
+      return new URL(url).searchParams.get('id') || '';
+    }
+    return url;
+  };
+
+  const uploadFileToLesson = async (lessonIndex: number, file: File) => {
+    if (!selectedCourse) {
+      alert("Please select a course first");
+      return;
+    }
+
+    const lesson = lessons[lessonIndex];
+
+    try {
+      // Max file size: 100MB
+      const maxFileSize = 100 * 1024 * 1024;
+      if (file.size > maxFileSize) {
+        alert("File size exceeds 100MB limit");
+        return;
+      }
+
+      setUploadingFileFor(lessonIndex);
+
+      // If lesson doesn't have an ID yet, we can't upload through the API
+      if (!lesson._id) {
+        // For new lessons, we'll add files locally with a placeholder and get real URL after lesson is created
+        if (!lesson.files) {
+          lesson.files = [];
+        }
+
+        const newFile: LessonFile = {
+          fileName: file.name,
+          fileUrl: '', // Will be populated after lesson creation
+          fileType: getFileType(file.name),
+          fileSize: file.size,
+          mimeType: file.type,
+          uploadedAt: new Date().toISOString(),
+        };
+
+        lesson.files.push(newFile);
+        setLessons([...lessons]);
+        alert(`✓ File "${file.name}" added. It will be uploaded when you save the course.`);
+        return;
+      }
+
+      // For existing lessons, upload to R2
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `${API_BASE_URL}/courses/${selectedCourse.id}/lessons/${lesson._id}/files`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to upload file');
+      }
+
+      const data = await response.json();
+
+      if (!lesson.files) {
+        lesson.files = [];
+      }
+
+      lesson.files.push(data.file);
+      setLessons([...lessons]);
+      alert(`✓ File "${file.name}" uploaded successfully!`);
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert(`Failed to upload file: ${error instanceof Error ? error.message : 'Please try again'}`);
+    } finally {
+      setUploadingFileFor(null);
+    }
+  };
+
+  const deleteFileFromLesson = async (lessonIndex: number, fileIndex: number) => {
+    const lesson = lessons[lessonIndex];
+    if (!lesson.files) return;
+
+    const file = lesson.files[fileIndex];
+    
+    // If file hasn't been uploaded yet, just remove from local state
+    if (!file.fileKey) {
+      lesson.files.splice(fileIndex, 1);
+      setLessons([...lessons]);
+      return;
+    }
+
+    if (!selectedCourse) return;
+
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `${API_BASE_URL}/courses/${selectedCourse.id}/lessons/${lesson._id}/files/${encodeURIComponent(file.fileKey)}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to delete file');
+      }
+
+      lesson.files.splice(fileIndex, 1);
+      setLessons([...lessons]);
+      alert('✓ File deleted successfully!');
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      alert(`Failed to delete file: ${error instanceof Error ? error.message : 'Please try again'}`);
+    }
+  };
+
+  const removeFileFromLesson = (lessonIndex: number, fileIndex: number) => {
+    const lesson = lessons[lessonIndex];
+    if (lesson.files) {
+      lesson.files.splice(fileIndex, 1);
+      setLessons([...lessons]);
+    }
+  };
+
+  const getFileType = (fileName: string): string => {
+    const extension = fileName.split('.').pop()?.toLowerCase() || 'other';
+    const typeMap: { [key: string]: string } = {
+      'pdf': 'pdf',
+      'doc': 'doc',
+      'docx': 'docx',
+      'xls': 'xls',
+      'xlsx': 'xlsx',
+      'ppt': 'ppt',
+      'pptx': 'pptx',
+      'txt': 'txt',
+      'zip': 'zip',
+    };
+    return typeMap[extension] || 'other';
+  };
+
+  const getFileIcon = (fileType: string) => {
+    const icons: { [key: string]: string } = {
+      'pdf': '📄',
+      'doc': '📝',
+      'docx': '📝',
+      'xls': '📊',
+      'xlsx': '📊',
+      'ppt': '🎯',
+      'pptx': '🎯',
+      'txt': '📄',
+      'zip': '📦',
+      'other': '📎',
+    };
+    return icons[fileType] || '📎';
+  };
+
+  const openManageLessonsDialog = (course: Course) => {
+    setSelectedCourse(course);
+    // Initialize lessons from course if they exist
+    if (course.lessons && Array.isArray(course.lessons)) {
+      setLessons(course.lessons.map((l: any, idx) => ({
+        _id: l._id,
+        title: l.title,
+        order: idx + 1,
+        files: l.files || [],
+        cloudflareStreamId: l.cloudflareStreamId,
+        cloudflareStatus: l.cloudflareStatus,
+        hlsUrl: l.hlsUrl,
+        videoThumbnail: l.videoThumbnail,
+      })));
+    } else {
+      setLessons([]);
+    }
+    setManageLessonsDialogOpen(true);
+  };
+
+  const handlePreviewVideo = async (lessonIndex: number) => {
+    try {
+      setPreviewLessonIndex(lessonIndex);
+      setLoadingPreviewVideo(true);
+      
+      const lesson = lessons[lessonIndex];
+      if (!lesson.cloudflareStreamId) {
+        alert("No video available for preview");
+        return;
+      }
+
+      // If lesson has already been saved, fetch the HLS URL from the server
+      if (lesson._id && selectedCourse?.id) {
+        try {
+          const response = await videoAPI.getLessonVideo(selectedCourse.id, lesson._id);
+          if (response?.success && response.video?.hlsUrl) {
+            setPreviewHlsUrl(response.video.hlsUrl);
+            setShowVideoPreview(true);
+            return;
+          }
+        } catch (err) {
+          console.warn("Could not fetch video from API, trying backend endpoint:", err);
+        }
+      }
+
+      // Fallback: Try to get playback URL from Cloudflare Stream ID
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `${API_BASE_URL}/videos/playback-url/${lesson.cloudflareStreamId}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.hlsUrl) {
+          setPreviewHlsUrl(data.hlsUrl);
+        } else if (data.playbackUrl) {
+          setPreviewHlsUrl(data.playbackUrl);
+        }
+      } else {
+        alert("Video is still being processed or not available yet. Please try again in a moment.");
+      }
+      
+      setShowVideoPreview(true);
+    } catch (error) {
+      console.error("Error loading video preview:", error);
+      alert("Failed to load video preview. The video may still be processing.");
+    } finally {
+      setLoadingPreviewVideo(false);
+    }
+  };
+
+  const handleSaveLessons = async () => {
+    if (!selectedCourse) return;
+
+    // Validate all lessons have title
+    const invalidLessons = lessons.filter(l => !l.title);
+    if (invalidLessons.length > 0) {
+      alert("Please fill in all lesson titles. You can add files optionally. Videos are managed via Cloudflare Stream.");
+      return;
+    }
+
+    try {
+      // Handle both new and existing lessons
+      for (const lesson of lessons) {
+        if (!lesson._id) {
+          // Add NEW lessons
+          const lessonData: any = {
+            title: lesson.title,
+            files: lesson.files || [],
+            order: lesson.order,
+          };
+
+          // Include Cloudflare video metadata if available
+          if (lesson.cloudflareStreamId) {
+            lessonData.cloudflareStreamId = lesson.cloudflareStreamId;
+            lessonData.cloudflareStatus = lesson.cloudflareStatus || "inprogress"; // Valid enum: 'ready', 'inprogress', 'error', 'pending'
+          }
+
+          await courseAPI.addLesson(selectedCourse.id, lessonData);
+        } else if (lesson.cloudflareStreamId && typeof lesson._id === 'string' && lesson._id.length === 24) {
+          // UPDATE EXISTING lessons with video metadata ONLY if _id is valid MongoDB ObjectId
+          try {
+            await videoAPI.saveLessonVideo({
+              courseId: selectedCourse.id,
+              lessonId: lesson._id,
+              videoId: lesson.cloudflareStreamId,
+              title: lesson.title,
+              duration: lesson.duration,
+              thumbnail: lesson.videoThumbnail,
+            });
+          } catch (videoError) {
+            console.error(`Video save error for lesson ${lesson.title}:`, videoError);
+            // Don't fail the whole save if video metadata save fails
+          }
+        }
+      }
+      
+      setManageLessonsDialogOpen(false);
+      setSelectedFilesByLesson({});
+      alert("✓ Lessons saved successfully!");
+      
+      // Refresh courses
+      const response = await courseAPI.getAll({ specialistEmail: user?.email });
+      const courseData = response.data || response;
+      if (courseData) {
+        const transformedCourses: Course[] = (Array.isArray(courseData) ? courseData : []).map((course: any) => ({
+          id: course._id || course.id,
+          title: course.title,
+          type: course.courseType || course.type,
+          description: course.description,
+          price: course.price?.toString() || "",
+          duration: course.duration || "",
+          studentsEnrolled: course.studentsEnrolled || 0,
+          status: course.status || "draft",
+          level: course.level || "Beginner",
+          category: course.category || "Technology",
+          modules: course.modules,
+          totalLessons: course.totalLessons,
+          certificateIncluded: course.certificateIncluded !== undefined ? course.certificateIncluded : true,
+          accessDuration: course.accessDuration || "Lifetime",
+          cohortSize: course.cohortSize || "",
+          startDate: course.startDate || "",
+          endDate: course.endDate || "",
+          schedule: course.schedule || "",
+          meetingPlatform: course.meetingPlatform || "Zoom",
+          liveSessions: course.liveSessions,
+          lessons: course.lessons,
+        }));
+        setCourses(transformedCourses);
+      }
+    } catch (error) {
+      console.error("Failed to save lessons:", error);
+      alert(`Failed to save lessons: ${error instanceof Error ? error.message : "Please try again."}`);
+    }
+  };
+
+
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "self-paced":
@@ -401,9 +967,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   const getTypeColor = (type: string) => {
     switch (type) {
       case "self-paced":
-        return "bg-blue-100 text-blue-700";
+        return "bg-cyan-100 text-blue-700";
       case "cohort-based":
-        return "bg-purple-100 text-purple-700";
+        return "bg-gray-100 text-gray-900";
       default:
         return "bg-gray-100 text-gray-700";
     }
@@ -414,7 +980,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   };
 
   const getActiveCourses = () => {
-    return courses.filter((c) => c.status === "active").length;
+    return courses.filter((c) => c.status === "published").length;
   };
 
   const getTotalRevenue = () => {
@@ -425,8 +991,9 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className={embedded ? "space-y-6" : "p-4 md:p-6 space-y-6"}>
       {/* Header */}
+      {!embedded && (
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-1">Courses</h1>
@@ -435,13 +1002,14 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           </p>
         </div>
       </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <GraduationCap className="h-5 w-5 text-purple-600" />
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <GraduationCap className="h-5 w-5 text-gray-900" />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Courses</p>
@@ -468,11 +1036,11 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
         <h2 className="text-lg font-semibold mb-3">Create New Course</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-blue-500"
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-cyan-500"
             onClick={() => openCreateDialog("self-paced")}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-blue-100 rounded-full">
+              <div className="p-4 bg-cyan-100 rounded-full">
                 <PlayCircle className="h-8 w-8 text-blue-600" />
               </div>
               <h3 className="font-semibold text-lg">Self-Paced Course</h3>
@@ -493,7 +1061,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   Certificates
                 </Badge>
               </div>
-              <Button className="bg-blue-600 hover:bg-blue-700 gap-2">
+              <Button className="bg-cyan-600 hover:bg-cyan-700 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Self-Paced
               </Button>
@@ -501,12 +1069,12 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
           </Card>
 
           <Card
-            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-purple-500"
+            className="p-6 cursor-pointer hover:shadow-lg transition-all hover:border-gray-400"
             onClick={() => openCreateDialog("cohort-based")}
           >
             <div className="flex flex-col items-center text-center gap-3">
-              <div className="p-4 bg-purple-100 rounded-full">
-                <Users className="h-8 w-8 text-purple-600" />
+              <div className="p-4 bg-gray-100 rounded-full">
+                <Users className="h-8 w-8 text-gray-900" />
               </div>
               <h3 className="font-semibold text-lg">Cohort-Based Course</h3>
               <p className="text-sm text-gray-600">
@@ -526,7 +1094,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   Interactive
                 </Badge>
               </div>
-              <Button className="bg-purple-600 hover:bg-purple-700 gap-2">
+              <Button className="bg-gray-900 hover:bg-gray-800 gap-2">
                 <Plus className="h-4 w-4" />
                 Create Cohort-Based
               </Button>
@@ -553,7 +1121,7 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   </div>
                   <Badge
                     className={
-                      course.status === "active"
+                      course.status === "published"
                         ? "bg-green-100 text-green-700"
                         : "bg-gray-100 text-gray-700"
                     }
@@ -581,20 +1149,26 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Price:</span>
-                    <span className="font-semibold">{course.price}</span>
+                    <span className="font-semibold">
+                      {course.currency === 'INR' ? '₹' : '$'}
+                      {course.price} {course.currency || 'USD'}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600">Duration:</span>
                     <span className="font-semibold">{course.duration}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600">Students:</span>
-                    <span className="font-semibold">{course.studentsEnrolled}</span>
+                  <div className="flex items-center justify-between bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-blue-600" />
+                      <span className="text-gray-700 font-medium">Enrollments:</span>
+                    </div>
+                    <span className="font-bold text-blue-600">{course.studentsEnrolled}</span>
                   </div>
-                  {course.type === "self-paced" && course.totalLessons && (
+                  {course.type === "self-paced" && (
                     <div className="flex items-center justify-between">
                       <span className="text-gray-600">Lessons:</span>
-                      <span className="font-semibold">{course.totalLessons}</span>
+                      <span className="font-semibold">{course.totalLessons ?? course.lessons?.length ?? 0}</span>
                     </div>
                   )}
                   {course.type === "cohort-based" && course.liveSessions && (
@@ -621,6 +1195,43 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                   </div>
                 )}
 
+                {course.type === "cohort-based" && course.zoomLink && (
+                  <div className="space-y-2">
+                    <a
+                      href={course.zoomStartUrl || course.zoomLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-sm text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded transition font-medium w-full justify-center"
+                    >
+                      <Video className="h-4 w-4" />
+                      Start / Host Zoom Meeting
+                    </a>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                      <span className="truncate">Join link: {course.zoomLink}</span>
+                    </div>
+                  </div>
+                )}
+
+                {course.type === "cohort-based" && !course.zoomLink && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full text-blue-600 border-blue-200 hover:bg-blue-50"
+                    onClick={() => handleGenerateZoom(course.id)}
+                  >
+                    <Video className="h-4 w-4 mr-1" />
+                    Generate Zoom Meeting Link
+                  </Button>
+                )}
+
+                {course.type === "self-paced" && course.status === "draft" && (
+                  <div className="bg-blue-50 border border-blue-200 rounded p-2">
+                    <p className="text-sm text-blue-700 font-medium">
+                      📚 Start adding lessons to build your course
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex gap-2 pt-2">
                   <Button
                     variant="outline"
@@ -631,12 +1242,32 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
                     <Edit className="h-4 w-4 mr-1" />
                     Edit
                   </Button>
+                  {course.type === "self-paced" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openManageLessonsDialog(course)}
+                      title="Add lessons/videos to your course"
+                    >
+                      <Video className="h-4 w-4 mr-1" />
+                      Lessons
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEnrollmentsDialog(course)}
+                    title="View students enrolled in this course"
+                  >
+                    <Users className="h-4 w-4 mr-1" />
+                    Enrollments
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => toggleStatus(course.id)}
                   >
-                    {course.status === "active" ? "Deactivate" : "Activate"}
+                    {course.status === "published" ? "Unpublish" : "Publish"}
                   </Button>
                   <Button
                     variant="outline"
@@ -680,304 +1311,123 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </div>
 
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="thumbnail">Course Thumbnail Image</Label>
+              <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50">
+                <Input
+                  id="thumbnail"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setFormData({ ...formData, thumbnail: event.target?.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <label htmlFor="thumbnail" className="cursor-pointer block">
+                  {formData.thumbnail ? (
+                    <div>
+                      <img src={formData.thumbnail} alt="Thumbnail preview" className="w-20 h-20 object-cover mx-auto rounded mb-2" />
+                      <p className="text-sm text-blue-600">Click to change image</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-gray-600">Click to upload course thumbnail</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF (Max 5MB)</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="description">Description</Label>
+                <span className="text-sm text-gray-600">
+                  {formData.description.length}/2000
+                </span>
+              </div>
               <Textarea
                 id="description"
                 placeholder="Describe what students will learn"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => {
+                  if (e.target.value.length <= 2000) {
+                    setFormData({ ...formData, description: e.target.value });
+                  }
+                }}
+                maxLength={2000}
                 rows={3}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Maximum 2000 characters allowed for course description
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <Label htmlFor="currency">Currency *</Label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, currency: value })
+                  }
+                >
+                  <SelectTrigger id="currency">
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">💵 USD (United States Dollar) - Stripe</SelectItem>
+                    <SelectItem value="INR">🇮🇳 INR (Indian Rupees) - Razorpay</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <Label htmlFor="price">Price *</Label>
                 <Input
                   id="price"
-                  placeholder="$99"
+                  placeholder="99"
+                  type="number"
                   value={formData.price}
                   onChange={(e) =>
                     setFormData({ ...formData, price: e.target.value })
                   }
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="startDate">Start Date *</Label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startDate: e.target.value })
+                  }
+                />
+              </div>
 
               <div>
-                <Label htmlFor="duration">Duration *</Label>
+                <Label htmlFor="endDate">End Date *</Label>
                 <Input
-                  id="duration"
-                  placeholder="e.g., 8 weeks"
-                  value={formData.duration}
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, duration: e.target.value })
+                    setFormData({ ...formData, endDate: e.target.value })
                   }
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="level">Course Level *</Label>
-                <Select
-                  value={formData.level}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, level: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Beginner">Beginner</SelectItem>
-                    <SelectItem value="Intermediate">Intermediate</SelectItem>
-                    <SelectItem value="Advanced">Advanced</SelectItem>
-                    <SelectItem value="All Levels">All Levels</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="category">Category *</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Technology">Technology</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                    <SelectItem value="Personal Development">Personal Development</SelectItem>
-                    <SelectItem value="Health & Fitness">Health & Fitness</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Self-Paced Specific Fields */}
-            {courseType === "self-paced" && (
-              <>
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-3">Self-Paced Course Settings</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="totalLessons">Total Lessons</Label>
-                        <Input
-                          id="totalLessons"
-                          type="number"
-                          placeholder="e.g., 48"
-                          value={formData.totalLessons}
-                          onChange={(e) =>
-                            setFormData({ ...formData, totalLessons: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="accessDuration">Access Duration</Label>
-                        <Select
-                          value={formData.accessDuration}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, accessDuration: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select access duration" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Lifetime">Lifetime Access</SelectItem>
-                            <SelectItem value="1 Year">1 Year</SelectItem>
-                            <SelectItem value="6 Months">6 Months</SelectItem>
-                            <SelectItem value="3 Months">3 Months</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="certificate"
-                        checked={formData.certificateIncluded}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, certificateIncluded: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="certificate" className="cursor-pointer">
-                        Include certificate of completion
-                      </Label>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Course Modules</Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addModule}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Module
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {modules.map((module, index) => (
-                          <Card key={module.id} className="p-3">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Module {index + 1}</span>
-                                {modules.length > 1 && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeModule(module.id)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                              <Input
-                                placeholder="Module title"
-                                value={module.title}
-                                onChange={(e) =>
-                                  updateModule(module.id, "title", e.target.value)
-                                }
-                              />
-                              <div className="grid grid-cols-2 gap-2">
-                                <Input
-                                  placeholder="Duration (e.g., 2 hours)"
-                                  value={module.duration}
-                                  onChange={(e) =>
-                                    updateModule(module.id, "duration", e.target.value)
-                                  }
-                                />
-                                <Input
-                                  type="number"
-                                  placeholder="Lessons count"
-                                  value={module.lessonsCount || ""}
-                                  onChange={(e) =>
-                                    updateModule(module.id, "lessonsCount", parseInt(e.target.value) || 0)
-                                  }
-                                />
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Cohort-Based Specific Fields */}
-            {courseType === "cohort-based" && (
-              <>
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-3">Cohort-Based Course Settings</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="cohortSize">Max Cohort Size</Label>
-                        <Input
-                          id="cohortSize"
-                          type="number"
-                          placeholder="e.g., 50"
-                          value={formData.cohortSize}
-                          onChange={(e) =>
-                            setFormData({ ...formData, cohortSize: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="liveSessions">Live Sessions</Label>
-                        <Input
-                          id="liveSessions"
-                          type="number"
-                          placeholder="e.g., 16"
-                          value={formData.liveSessions}
-                          onChange={(e) =>
-                            setFormData({ ...formData, liveSessions: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="startDate">Start Date</Label>
-                        <Input
-                          id="startDate"
-                          type="date"
-                          value={formData.startDate}
-                          onChange={(e) =>
-                            setFormData({ ...formData, startDate: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="endDate">End Date</Label>
-                        <Input
-                          id="endDate"
-                          type="date"
-                          value={formData.endDate}
-                          onChange={(e) =>
-                            setFormData({ ...formData, endDate: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="schedule">Schedule</Label>
-                      <Input
-                        id="schedule"
-                        placeholder="e.g., Mon & Wed, 7:00 PM - 9:00 PM"
-                        value={formData.schedule}
-                        onChange={(e) =>
-                          setFormData({ ...formData, schedule: e.target.value })
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="meetingPlatform">Meeting Platform</Label>
-                      <Select
-                        value={formData.meetingPlatform}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, meetingPlatform: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select platform" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Zoom">Zoom</SelectItem>
-                          <SelectItem value="Google Meet">Google Meet</SelectItem>
-                          <SelectItem value="Microsoft Teams">Microsoft Teams</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
           <DialogFooter>
@@ -1019,304 +1469,124 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </div>
 
             <div>
-              <Label htmlFor="edit-description">Description</Label>
+              <Label htmlFor="edit-thumbnail">Course Thumbnail Image</Label>
+              <div className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:bg-gray-50">
+                <Input
+                  id="edit-thumbnail"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        setFormData({ ...formData, thumbnail: event.target?.result as string });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+                <label htmlFor="edit-thumbnail" className="cursor-pointer block">
+                  {formData.thumbnail ? (
+                    <div>
+                      <img src={formData.thumbnail} alt="Thumbnail preview" className="w-20 h-20 object-cover mx-auto rounded mb-2" />
+                      <p className="text-sm text-blue-600">Click to change image</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-gray-600">Click to upload course thumbnail</p>
+                      <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF (Max 5MB)</p>
+                    </div>
+                  )}
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="edit-description">Description</Label>
+                <span className="text-sm text-gray-600">
+                  {formData.description.length}/2000
+                </span>
+              </div>
               <Textarea
                 id="edit-description"
                 placeholder="Describe what students will learn"
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => {
+                  if (e.target.value.length <= 2000) {
+                    setFormData({ ...formData, description: e.target.value });
+                  }
+                }}
+                maxLength={2000}
                 rows={3}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Maximum 2000 characters allowed for course description
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
+                <Label htmlFor="edit-currency">Currency *</Label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(value) =>
+                    setFormData({ ...formData, currency: value })
+                  }
+                >
+                  <SelectTrigger id="edit-currency">
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USD">💵 USD (United States Dollar) - Stripe</SelectItem>
+                    <SelectItem value="INR">🇮🇳 INR (Indian Rupees) - Razorpay</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
                 <Label htmlFor="edit-price">Price *</Label>
                 <Input
                   id="edit-price"
-                  placeholder="$99"
+                  placeholder="99"
+                  type="number"
                   value={formData.price}
                   onChange={(e) =>
                     setFormData({ ...formData, price: e.target.value })
                   }
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-startDate">Start Date *</Label>
+                <Input
+                  id="edit-startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startDate: e.target.value })
+                  }
+                />
+              </div>
 
               <div>
-                <Label htmlFor="edit-duration">Duration *</Label>
+                <Label htmlFor="edit-endDate">End Date *</Label>
                 <Input
-                  id="edit-duration"
-                  placeholder="e.g., 8 weeks"
-                  value={formData.duration}
+                  id="edit-endDate"
+                  type="date"
+                  value={formData.endDate}
                   onChange={(e) =>
-                    setFormData({ ...formData, duration: e.target.value })
+                    setFormData({ ...formData, endDate: e.target.value })
                   }
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-level">Course Level *</Label>
-                <Select
-                  value={formData.level}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, level: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Beginner">Beginner</SelectItem>
-                    <SelectItem value="Intermediate">Intermediate</SelectItem>
-                    <SelectItem value="Advanced">Advanced</SelectItem>
-                    <SelectItem value="All Levels">All Levels</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
 
-              <div>
-                <Label htmlFor="edit-category">Category *</Label>
-                <Select
-                  value={formData.category}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, category: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Technology">Technology</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                    <SelectItem value="Business">Business</SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                    <SelectItem value="Personal Development">Personal Development</SelectItem>
-                    <SelectItem value="Health & Fitness">Health & Fitness</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Self-Paced Specific Fields */}
-            {selectedCourse?.type === "self-paced" && (
-              <>
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-3">Self-Paced Course Settings</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-totalLessons">Total Lessons</Label>
-                        <Input
-                          id="edit-totalLessons"
-                          type="number"
-                          placeholder="e.g., 48"
-                          value={formData.totalLessons}
-                          onChange={(e) =>
-                            setFormData({ ...formData, totalLessons: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-accessDuration">Access Duration</Label>
-                        <Select
-                          value={formData.accessDuration}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, accessDuration: value })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select access duration" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Lifetime">Lifetime Access</SelectItem>
-                            <SelectItem value="1 Year">1 Year</SelectItem>
-                            <SelectItem value="6 Months">6 Months</SelectItem>
-                            <SelectItem value="3 Months">3 Months</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="edit-certificate"
-                        checked={formData.certificateIncluded}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, certificateIncluded: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="edit-certificate" className="cursor-pointer">
-                        Include certificate of completion
-                      </Label>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <Label>Course Modules</Label>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={addModule}
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Module
-                        </Button>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        {modules.map((module, index) => (
-                          <Card key={module.id} className="p-3">
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium">Module {index + 1}</span>
-                                {modules.length > 1 && (
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removeModule(module.id)}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                )}
-                              </div>
-                              <Input
-                                placeholder="Module title"
-                                value={module.title}
-                                onChange={(e) =>
-                                  updateModule(module.id, "title", e.target.value)
-                                }
-                              />
-                              <div className="grid grid-cols-2 gap-2">
-                                <Input
-                                  placeholder="Duration (e.g., 2 hours)"
-                                  value={module.duration}
-                                  onChange={(e) =>
-                                    updateModule(module.id, "duration", e.target.value)
-                                  }
-                                />
-                                <Input
-                                  type="number"
-                                  placeholder="Lessons count"
-                                  value={module.lessonsCount || ""}
-                                  onChange={(e) =>
-                                    updateModule(module.id, "lessonsCount", parseInt(e.target.value) || 0)
-                                  }
-                                />
-                              </div>
-                            </div>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {/* Cohort-Based Specific Fields */}
-            {selectedCourse?.type === "cohort-based" && (
-              <>
-                <div className="border-t pt-4">
-                  <h3 className="font-semibold mb-3">Cohort-Based Course Settings</h3>
-                  
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-cohortSize">Max Cohort Size</Label>
-                        <Input
-                          id="edit-cohortSize"
-                          type="number"
-                          placeholder="e.g., 50"
-                          value={formData.cohortSize}
-                          onChange={(e) =>
-                            setFormData({ ...formData, cohortSize: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-liveSessions">Live Sessions</Label>
-                        <Input
-                          id="edit-liveSessions"
-                          type="number"
-                          placeholder="e.g., 16"
-                          value={formData.liveSessions}
-                          onChange={(e) =>
-                            setFormData({ ...formData, liveSessions: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="edit-startDate">Start Date</Label>
-                        <Input
-                          id="edit-startDate"
-                          type="date"
-                          value={formData.startDate}
-                          onChange={(e) =>
-                            setFormData({ ...formData, startDate: e.target.value })
-                          }
-                        />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="edit-endDate">End Date</Label>
-                        <Input
-                          id="edit-endDate"
-                          type="date"
-                          value={formData.endDate}
-                          onChange={(e) =>
-                            setFormData({ ...formData, endDate: e.target.value })
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label htmlFor="edit-schedule">Schedule</Label>
-                      <Input
-                        id="edit-schedule"
-                        placeholder="e.g., Mon & Wed, 7:00 PM - 9:00 PM"
-                        value={formData.schedule}
-                        onChange={(e) =>
-                          setFormData({ ...formData, schedule: e.target.value })
-                        }
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="edit-meetingPlatform">Meeting Platform</Label>
-                      <Select
-                        value={formData.meetingPlatform}
-                        onValueChange={(value) =>
-                          setFormData({ ...formData, meetingPlatform: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select platform" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Zoom">Zoom</SelectItem>
-                          <SelectItem value="Google Meet">Google Meet</SelectItem>
-                          <SelectItem value="Microsoft Teams">Microsoft Teams</SelectItem>
-                          <SelectItem value="Other">Other</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
 
           <DialogFooter>
@@ -1328,6 +1598,537 @@ export function Courses({ onUpdateSearchableItems }: CoursesProps) {
             </Button>
             <Button onClick={handleEditCourse}>
               Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage Lessons Dialog */}
+      <Dialog open={manageLessonsDialogOpen} onOpenChange={setManageLessonsDialogOpen}>
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Manage Course Lessons</DialogTitle>
+            <DialogDescription>
+              Add lessons with videos, files (PDF, Word, Excel), or both. Students will see these lessons after enrolling.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-md space-y-3">
+              <p className="text-sm font-semibold text-blue-900">📚 Add Course Lessons (Videos & Materials)</p>
+              <div className="text-sm text-blue-800 space-y-2">
+                <div className="bg-white p-3 rounded border border-green-300 border-dashed">
+                  <strong className="text-green-700">✓ How to add lessons:</strong>
+                  <p className="text-xs text-green-700 mt-2">
+                    1. <strong>Lesson Title</strong> (required) - Name your lesson<br/>
+                    2. <strong>Video URL</strong> (optional) - Video playback link<br/>
+                    3. <strong>Course Materials</strong> (optional) - Upload PDF, Word docs, Excel, PowerPoint, Images, ZIP files
+                  </p>
+                  <p className="text-xs text-green-700 mt-2">
+                    You can have a lesson with video only, materials only, or both!
+                  </p>
+                </div>
+                
+                <div>
+                  <strong className="text-blue-900">📎 Course Materials - Upload Files</strong>
+                  <p className="text-xs text-blue-700 mt-1 mb-2">
+                    Click "Choose" to upload course materials directly. Supported formats: PDF, Word (.doc, .docx), Excel (.xls, .xlsx), PowerPoint (.ppt, .pptx), Images (JPG, PNG, GIF), ZIP archives. Maximum 100MB per file.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {lessons.length === 0 ? (
+                <p className="text-sm text-gray-500 text-center py-4">No lessons added yet. Click "Add Lesson" to get started.</p>
+              ) : (
+                lessons.map((lesson, index) => (
+                  <Card key={index} className="p-6 bg-gradient-to-br from-white to-gray-50">
+                    {/* Lesson Header */}
+                    <div className="flex items-center justify-between mb-6 pb-4 border-b">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gray-100 text-gray-900 rounded-full flex items-center justify-center font-semibold text-sm">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <Input
+                            placeholder="e.g., Introduction to React"
+                            value={lesson.title}
+                            onChange={(e) => updateLesson(index, "title", e.target.value)}
+                            className="font-semibold text-base border-0 px-0 focus-visible:ring-0 focus-visible:border-b-2"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeLesson(index)}
+                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Video Preview Section */}
+                    <div className="mb-6">
+                      <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        🎬 Lesson Video
+                        {lesson.cloudflareStreamId && (
+                          <span className="inline-block bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs font-bold">
+                            ✓ Uploaded
+                          </span>
+                        )}
+                      </p>
+                      
+                      {lesson.cloudflareStreamId ? (
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4">
+                          <div className="flex items-start gap-4">
+                            <div className="flex-shrink-0 w-20 h-20 bg-green-200 rounded-lg flex items-center justify-center">
+                              <span className="text-3xl">🎬</span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-green-900">Video Uploaded</p>
+                              <p className="text-xs text-green-700 mt-1">
+                                Stream ID: <code className="bg-green-100 px-1 rounded text-xs font-mono">{lesson.cloudflareStreamId}</code>
+                              </p>
+                              <p className="text-xs text-green-700 mt-1">
+                                Status: <span className="font-bold">{lesson.cloudflareStatus || 'ready'}</span>
+                              </p>
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  onClick={() => handlePreviewVideo(index)}
+                                  disabled={loadingPreviewVideo}
+                                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-xs"
+                                >
+                                  👁️ Preview
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    const updatedLessons = [...lessons];
+                                    updatedLessons[index] = {
+                                      ...updatedLessons[index],
+                                      cloudflareStreamId: undefined,
+                                      cloudflareStatus: undefined,
+                                    };
+                                    setLessons(updatedLessons);
+                                  }}
+                                  className="text-xs border-green-300 hover:bg-green-100"
+                                >
+                                  ✕
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition">
+                          <div className="text-center">
+                            <input
+                              id={`video-upload-${index}`}
+                              type="file"
+                              accept=".mp4,.webm,.mov"
+                              disabled={uploadingVideoFor === index}
+                              onChange={(e) => {
+                                const file = e.currentTarget.files?.[0];
+                                if (file) {
+                                  if (file.size > 5 * 1024 * 1024 * 1024) {
+                                    alert("File size must be under 5GB");
+                                    return;
+                                  }
+                                  uploadVideoToCloudflare(index, file);
+                                }
+                              }}
+                              className="hidden"
+                            />
+                            <div className="mb-2">
+                              <span className="text-3xl">📤</span>
+                            </div>
+                            <p className="text-sm font-medium text-gray-700 mb-2">
+                              {uploadingVideoFor === index ? `Uploading... ${videoUploadProgress[index] || 0}%` : "Drag & drop your video or click to browse"}
+                            </p>
+                            <p className="text-xs text-gray-500 mb-3">
+                              MP4, WebM, or MOV • Max 5GB
+                            </p>
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => document.getElementById(`video-upload-${index}`)?.click()}
+                              disabled={uploadingVideoFor === index}
+                              className="bg-gray-900 hover:bg-gray-800"
+                            >
+                              {uploadingVideoFor === index ? "Uploading..." : "Upload Video"}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Course Materials Section */}
+                    <div>
+                      <p className="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                        📎 Course Materials
+                        {lesson.files && lesson.files.length > 0 && (
+                          <span className="inline-block bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold">
+                            {lesson.files.length} file{lesson.files.length !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </p>
+
+                      {/* Upload Input */}
+                      <div className="mb-4">
+                        <div className="flex gap-2 mb-2">
+                          <input
+                            id={`lesson-files-${index}`}
+                            type="file"
+                            multiple={false}
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.jpg,.jpeg,.png,.gif"
+                            className="flex-1 text-xs border rounded px-2 py-2 file:text-xs file:px-3 file:py-1 file:border file:border-gray-300 file:rounded file:bg-gray-50 hover:file:bg-gray-100"
+                            onChange={(e) => {
+                              const file = e.currentTarget.files?.[0];
+                              if (file) {
+                                uploadFileToLesson(index, file);
+                                e.currentTarget.value = '';
+                              }
+                            }}
+                            disabled={uploadingFileFor === index}
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => document.getElementById(`lesson-files-${index}`)?.click()}
+                            disabled={uploadingFileFor === index}
+                            className="bg-blue-600 hover:bg-blue-700"
+                          >
+                            {uploadingFileFor === index ? 'Adding...' : '+ Add'}
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          PDF, Word, Excel, PowerPoint, Images, ZIP • Max 100MB
+                        </p>
+                      </div>
+
+                      {/* File Preview Cards */}
+                      {lesson.files && lesson.files.length > 0 ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {lesson.files.map((file, fileIndex) => (
+                            <div
+                              key={fileIndex}
+                              className="group relative bg-white border border-gray-200 rounded-lg p-3 hover:border-gray-300 hover:shadow-sm transition cursor-pointer"
+                              onClick={() => {
+                                setPreviewLessonIndex(index);
+                                setPreviewFileIndex(fileIndex);
+                                setShowFilePreview(true);
+                              }}
+                            >
+                              <div className="flex items-start gap-3">
+                                {/* File Icon/Thumbnail */}
+                                <div className="flex-shrink-0 w-12 h-12 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                                  {file.fileType.includes('image') ? (
+                                    <img
+                                      src={file.fileUrl}
+                                      alt={file.fileName}
+                                      className="w-full h-full object-cover rounded"
+                                    />
+                                  ) : (
+                                    <span className="text-xl">{getFileIcon(file.fileType)}</span>
+                                  )}
+                                </div>
+                                
+                                {/* File Info */}
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs font-semibold text-gray-900 truncate break-words hover:text-blue-600">
+                                    {file.fileName}
+                                  </p>
+                                  {file.fileSize && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {(file.fileSize / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                  )}
+                                  <p className="text-xs text-blue-600 mt-1 opacity-0 group-hover:opacity-100 transition">
+                                    👁️ Click to preview
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Delete Button */}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteFileFromLesson(index, fileIndex);
+                                }}
+                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition text-red-600 hover:bg-red-50 p-1 h-6 w-6"
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                          <p className="text-xs text-gray-500">No files added yet</p>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={addLesson}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Lesson
+            </Button>
+          </div>
+
+          {/* Video Preview Modal */}
+          <Dialog open={showVideoPreview} onOpenChange={setShowVideoPreview}>
+            <DialogContent className="sm:max-w-[900px] max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>
+                  {previewLessonIndex !== null ? `Preview: ${lessons[previewLessonIndex]?.title}` : 'Video Preview'}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="w-full bg-black rounded-lg aspect-video flex items-center justify-center relative overflow-hidden">
+                {previewHlsUrl ? (
+                  <HLSVideoPlayer
+                    hlsUrl={previewHlsUrl}
+                    title={previewLessonIndex !== null ? lessons[previewLessonIndex]?.title : 'Video Preview'}
+                    onError={(err) => console.error("Video playback error:", err)}
+                    className="w-full h-full"
+                  />
+                ) : loadingPreviewVideo ? (
+                  <div className="text-white flex items-center gap-2">
+                    <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    Loading video...
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-center">
+                    <p className="mb-2">Video preview not available</p>
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowVideoPreview(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* File Preview Modal */}
+          <Dialog open={showFilePreview} onOpenChange={setShowFilePreview}>
+            <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {previewLessonIndex !== null && previewFileIndex !== null
+                    ? lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileName
+                    : 'File Preview'}
+                </DialogTitle>
+              </DialogHeader>
+              
+              {previewLessonIndex !== null && previewFileIndex !== null && (
+                <div className="space-y-4">
+                  {(() => {
+                    const file = lessons[previewLessonIndex]?.files?.[previewFileIndex];
+                    if (!file) return <p>File not found</p>;
+
+                    // Image preview
+                    if (file.fileType.includes('image')) {
+                      return (
+                        <div className="flex justify-center">
+                          <img
+                            src={file.fileUrl}
+                            alt={file.fileName}
+                            className="max-w-full max-h-96 rounded-lg"
+                          />
+                        </div>
+                      );
+                    }
+
+                    // PDF preview (embed)
+                    if (file.fileType === 'pdf') {
+                      return (
+                        <div className="w-full h-96 rounded-lg border border-gray-200 overflow-hidden">
+                          <iframe
+                            src={`${file.fileUrl}#toolbar=0`}
+                            className="w-full h-full"
+                            title="PDF Preview"
+                          />
+                        </div>
+                      );
+                    }
+
+                    // For other file types, show file info and download option
+                    return (
+                      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <div className="text-5xl">
+                          {getFileIcon(file.fileType)}
+                        </div>
+                        <p className="font-semibold text-gray-900">{file.fileName}</p>
+                        <p className="text-sm text-gray-600">
+                          {(file.fileSize ? file.fileSize / 1024 / 1024 : 0).toFixed(2)} MB
+                        </p>
+                        <p className="text-xs text-gray-500 text-center max-w-xs">
+                          Preview not available for this file type. Click below to download.
+                        </p>
+                        <a
+                          href={file.fileUrl}
+                          download={file.fileName}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition"
+                        >
+                          ⬇️ Download File
+                        </a>
+                      </div>
+                    );
+                  })()}
+
+                  {/* File Info */}
+                  <div className="p-3 bg-gray-50 rounded border border-gray-200 space-y-2">
+                    <p className="text-xs text-gray-600">
+                      <strong>File Name:</strong> {lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileName}
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      <strong>File Size:</strong> {((lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileSize || 0) / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      <strong>Type:</strong> {lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileType.toUpperCase()}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowFilePreview(false)}>
+                  Close
+                </Button>
+                {previewLessonIndex !== null && previewFileIndex !== null && (
+                  <a
+                    href={lessons[previewLessonIndex]?.files?.[previewFileIndex]?.fileUrl}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm transition"
+                  >
+                    ⬇️ Download
+                  </a>
+                )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setManageLessonsDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleSaveLessons}
+              disabled={lessons.some(l => !l.title)}
+            >
+              Save Lessons
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Enrollments Dialog */}
+      <Dialog open={enrollmentsDialogOpen} onOpenChange={setEnrollmentsDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Course Enrollments - {selectedCourse?.title}</DialogTitle>
+            <DialogDescription>
+              {enrollmentsLoading ? (
+                <span>Loading enrollments...</span>
+              ) : courseEnrollments.length === 0 ? (
+                <span>No students enrolled yet</span>
+              ) : (
+                <span>{courseEnrollments.length} student{courseEnrollments.length !== 1 ? 's' : ''} enrolled</span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {enrollmentsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading enrollments...</p>
+              </div>
+            </div>
+          ) : courseEnrollments.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+              <p className="text-gray-600">No students have enrolled in this course yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-3 font-semibold">Email</th>
+                      <th className="text-left py-2 px-3 font-semibold">Enrolled</th>
+                      <th className="text-center py-2 px-3 font-semibold">Progress</th>
+                      <th className="text-center py-2 px-3 font-semibold">Completion</th>
+                      <th className="text-center py-2 px-3 font-semibold">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {courseEnrollments.map((enrollment) => (
+                      <tr key={enrollment._id} className="border-b hover:bg-gray-50">
+                        <td className="py-3 px-3">{enrollment.customerEmail}</td>
+                        <td className="py-3 px-3 text-xs text-gray-600">
+                          {new Date(enrollment.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="py-3 px-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-xs">
+                              <div 
+                                className="bg-green-600 h-2 rounded-full" 
+                                style={{ width: `${enrollment.completionPercentage}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs font-semibold text-gray-700 min-w-[45px] text-right">
+                              {enrollment.completionPercentage}%
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="text-xs px-2 py-1 rounded-full" style={{
+                            backgroundColor: enrollment.completed ? '#d1fae5' : '#f3f4f6',
+                            color: enrollment.completed ? '#065f46' : '#6b7280'
+                          }}>
+                            {enrollment.completedLessons}/{enrollment.totalLessons}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-center font-semibold">
+                          {enrollment.amount > 0 ? `$${enrollment.amount}` : 'Free'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEnrollmentsDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

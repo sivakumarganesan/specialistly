@@ -1,0 +1,235 @@
+import React, { useState } from 'react';
+import { PageSection } from '@/app/hooks/usePageBuilder';
+import { Card } from '@/app/components/ui/card';
+import { Input } from '@/app/components/ui/input';
+import { Textarea } from '@/app/components/ui/textarea';
+import { Upload, X } from 'lucide-react';
+
+interface AboutSectionEditorProps {
+  section: PageSection;
+  onChange: (updates: Partial<PageSection>) => void;
+}
+
+export const AboutSectionEditor: React.FC<AboutSectionEditorProps> = ({
+  section,
+  onChange,
+}) => {
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    section.content?.image || null
+  );
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const imageUrl = event.target?.result as string;
+        setImagePreview(imageUrl);
+        onChange({
+          content: {
+            ...section.content,
+            image: imageUrl,
+          },
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6">
+        <h3 className="font-bold mb-4">Section Content</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Title</label>
+            <Input
+              placeholder="About Us"
+              value={section.content?.title || ''}
+              onChange={(e) =>
+                onChange({
+                  content: {
+                    ...section.content,
+                    title: e.target.value,
+                  },
+                })
+              }
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">Description</label>
+            <Textarea
+              placeholder="Tell your story..."
+              value={section.content?.description || ''}
+              onChange={(e) =>
+                onChange({
+                  content: {
+                    ...section.content,
+                    description: e.target.value,
+                  },
+                })
+              }
+              rows={5}
+            />
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="font-bold mb-4">Image</h3>
+        {imagePreview && (
+          <div className="relative mb-4">
+            <img
+              src={imagePreview}
+              alt="About"
+              className="w-full h-48 object-cover rounded-lg"
+            />
+            <button
+              onClick={() => {
+                setImagePreview(null);
+                onChange({
+                  content: {
+                    ...section.content,
+                    image: null,
+                  },
+                });
+              }}
+              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+        <label className="flex items-center justify-center w-full px-4 py-8 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
+          <div className="text-center">
+            <Upload className="w-6 h-6 mx-auto mb-2 text-gray-400" />
+            <span className="text-sm text-gray-600">Upload image</span>
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            className="hidden"
+          />
+        </label>
+      </Card>
+
+      <Card className="p-6">
+        <h3 className="font-bold mb-4">Layout</h3>
+        <div>
+          <label className="block text-sm font-medium mb-2">Image Position</label>
+          <select
+            value={section.content?.imagePosition || 'right'}
+            onChange={(e) =>
+              onChange({
+                content: {
+                  ...section.content,
+                  imagePosition: e.target.value,
+                },
+              })
+            }
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+          >
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+            <option value="top">Top</option>
+            <option value="bottom">Bottom</option>
+          </select>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
+// Helper function to render formatted text with markdown support
+const renderFormattedText = (text: string) => {
+  if (!text) return null;
+
+  return text.split('\n').map((line, lineIdx) => {
+    if (line.trim() === '') {
+      return <br key={lineIdx} />;
+    }
+
+    // Handle lists
+    if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+      return (
+        <div key={lineIdx} className="ml-4 my-2 flex">
+          <span className="mr-2">•</span>
+          <span>{line.replace(/^[\s]*[-*]\s/, '')}</span>
+        </div>
+      );
+    }
+
+    // Parse inline formatting: **bold**, *italic*
+    const parts = [];
+    let regex = /\*\*(.*?)\*\*|\*(.*?)\*|([^*]+)/g;
+    let match;
+    let lastIndex = 0;
+
+    while ((match = regex.exec(line)) !== null) {
+      const bold = match[1];
+      const italic = match[2];
+      const text = match[3];
+
+      if (bold) {
+        parts.push(<strong key={`${lineIdx}-${match.index}`}>{bold}</strong>);
+      } else if (italic) {
+        parts.push(<em key={`${lineIdx}-${match.index}`}>{italic}</em>);
+      } else if (text) {
+        parts.push(text);
+      }
+    }
+
+    return (
+      <div key={lineIdx} className="my-2">
+        {parts.length > 0 ? parts : line}
+      </div>
+    );
+  });
+};
+
+// Preview Component
+export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
+  section,
+}) => {
+  const imagePosition = section.content?.imagePosition || 'right';
+
+  const contentClasses = {
+    left: 'flex-row-reverse',
+    right: 'flex-row',
+    top: 'flex-col',
+    bottom: 'flex-col-reverse',
+  }[imagePosition] as string;
+
+  return (
+    <div className="py-16 px-4 bg-white">
+      <div className="max-w-6xl mx-auto">
+        <div className={`flex gap-12 items-start ${contentClasses}`}>
+          {section.content?.image && (
+            <div className="flex-1">
+              <img
+                src={section.content.image}
+                alt={section.content?.title}
+                className="w-full h-auto rounded-lg shadow-lg"
+              />
+            </div>
+          )}
+
+          <div className="flex-1">
+            {section.content?.title && (
+              <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ letterSpacing: '-0.02em', color: section.content?.titleColor || '#111827' }}>{section.content.title}</h2>
+            )}
+            {section.content?.description && (
+              <div className="text-lg leading-relaxed" style={{ lineHeight: '1.8', color: section.content?.descriptionColor || '#374151' }}>
+                {renderFormattedText(section.content.description)}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default AboutSectionEditor;

@@ -4,6 +4,7 @@ import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/app/components/ui/card';
+import { ArrowLeft } from 'lucide-react';
 
 export function Login() {
   const { login, setCurrentPage } = useAuth();
@@ -41,8 +42,15 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-indigo-100 flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-white flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
+        <button
+          onClick={() => setCurrentPage('homepage')}
+          className="flex items-center gap-2 text-gray-700 hover:text-gray-900 mb-4 font-medium text-sm"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </button>
         <Card className="shadow-lg">
           <CardHeader className="text-center">
             <CardTitle className="text-3xl">Welcome Back</CardTitle>
@@ -84,7 +92,7 @@ export function Login() {
 
               <Button
                 type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700"
+                className="w-full bg-gray-900 hover:bg-gray-800"
                 disabled={isLoading}
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
@@ -95,9 +103,19 @@ export function Login() {
                 <button
                   type="button"
                   onClick={() => setCurrentPage('signup')}
-                  className="text-purple-600 hover:underline font-medium"
+                  className="text-gray-900 hover:underline font-medium"
                 >
                   Sign up here
+                </button>
+              </p>
+
+              <p className="text-center text-sm text-gray-600">
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage('forgotPassword')}
+                  className="text-gray-700 hover:text-gray-900 hover:underline font-medium"
+                >
+                  Forgot password?
                 </button>
               </p>
             </form>

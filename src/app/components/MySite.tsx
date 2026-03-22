@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Globe, Check, X, Eye, Settings as SettingsIcon, Palette, Layout, Share2, Copy, ExternalLink } from "lucide-react";
+import { Globe, Check, X, Eye, Settings as SettingsIcon, Palette, Share2, Copy, ExternalLink, Link2, Layout } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { useAuth } from "@/app/context/AuthContext";
-import { websiteAPI, courseAPI, serviceAPI } from "@/app/api/apiClient";
+import { brandingAPI, courseAPI, serviceAPI } from "@/app/api/apiClient";
+import { pageBuilderAPI } from "@/app/api/pageBuilderAPI";
 import {
   Card,
   CardContent,
@@ -11,10 +12,12 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 
-type MySiteTab = "setup" | "customize" | "content" | "preview";
+type MySiteTab = "setup" | "customize" | "preview";
 
 interface WebsiteData {
+  _id?: string;
   subdomain?: string;
+  customDomain?: string;
   isConfigured?: boolean;
   branding?: {
     siteName: string;
@@ -50,7 +53,7 @@ export function MySite() {
       if (!user?.email) return;
       try {
         setIsLoading(true);
-        const response = await websiteAPI.getWebsite(user.email);
+        const response = await brandingAPI.getMyBranding(user.email);
         if (response && response.data) {
           setWebsiteData(response.data);
           console.log("Website data loaded:", response.data);
@@ -68,7 +71,6 @@ export function MySite() {
   const tabs = [
     { id: "setup" as MySiteTab, label: "Setup", icon: Globe },
     { id: "customize" as MySiteTab, label: "Customize", icon: Palette },
-    { id: "content" as MySiteTab, label: "Content", icon: Layout },
     { id: "preview" as MySiteTab, label: "Preview", icon: Eye },
   ];
 
@@ -97,7 +99,7 @@ export function MySite() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? "border-purple-600 text-purple-600"
+                  ? "border-gray-900 text-gray-900"
                   : "border-transparent text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -110,10 +112,21 @@ export function MySite() {
 
       {/* Tab Content */}
       <div>
-        {activeTab === "setup" && <SubdomainSetup websiteData={websiteData} setWebsiteData={setWebsiteData} />}
+        {activeTab === "setup" && (
+          <>
+            <SubdomainSetup websiteData={websiteData} setWebsiteData={setWebsiteData} />
+            <CustomDomainSetup websiteData={websiteData} setWebsiteData={setWebsiteData} />
+          </>
+        )}
         {activeTab === "customize" && <SiteCustomization websiteData={websiteData} setWebsiteData={setWebsiteData} />}
-        {activeTab === "content" && <ContentSelection websiteData={websiteData} setWebsiteData={setWebsiteData} />}
         {activeTab === "preview" && <SitePreview websiteData={websiteData} />}
+      </div>
+      
+      {/* Info: Courses and Services selection moved to Branded Page Builder */}
+      <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-700">
+          <strong>📌 Adding Content:</strong> To showcase your courses and services on your public site, use the <strong>"Branded Page Builder"</strong> in the sidebar to add and configure sections for your offerings.
+        </p>
       </div>
     </div>
   );
@@ -142,7 +155,7 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
     
     try {
       setIsSaving(true);
-      const response = await websiteAPI.updateSubdomain(user.email, { subdomain });
+      const response = await brandingAPI.updateBranding(user.email, { slug: subdomain });
       if (response && response.data) {
         setWebsiteData(response.data);
         setSuccessMessage("Subdomain configured successfully!");
@@ -202,7 +215,7 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
                   <Button
                     onClick={checkAvailability}
                     disabled={!subdomain || isChecking}
-                    className="bg-purple-600 hover:bg-purple-700"
+                    className="bg-gray-900 hover:bg-gray-800"
                   >
                     {isChecking ? "Checking..." : "Check"}
                   </Button>
@@ -229,7 +242,7 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
                 )}
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="bg-cyan-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-semibold text-blue-900 mb-2">Guidelines:</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• Use only lowercase letters, numbers, and hyphens</li>
@@ -244,7 +257,7 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
                   <Button
                     onClick={handleSetupDomain}
                     disabled={isSaving}
-                    className="bg-purple-600 hover:bg-purple-700"
+                    className="bg-gray-900 hover:bg-gray-800"
                   >
                     {isSaving ? "Setting up..." : "Setup This Domain"}
                   </Button>
@@ -266,8 +279,8 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Share2 className="w-5 h-5 text-purple-600" />
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Share2 className="w-5 h-5 text-gray-900" />
                   </div>
                   <div>
                     <h4 className="font-semibold mb-1">Easy Sharing</h4>
@@ -277,8 +290,8 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Palette className="w-5 h-5 text-purple-600" />
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Palette className="w-5 h-5 text-gray-900" />
                   </div>
                   <div>
                     <h4 className="font-semibold mb-1">Custom Branding</h4>
@@ -288,8 +301,8 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Layout className="w-5 h-5 text-purple-600" />
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Layout className="w-5 h-5 text-gray-900" />
                   </div>
                   <div>
                     <h4 className="font-semibold mb-1">Professional Look</h4>
@@ -299,8 +312,8 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <SettingsIcon className="w-5 h-5 text-purple-600" />
+                  <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <SettingsIcon className="w-5 h-5 text-gray-900" />
                   </div>
                   <div>
                     <h4 className="font-semibold mb-1">Full Control</h4>
@@ -330,7 +343,7 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
                   href={`https://${websiteData?.subdomain}.specialistly.com`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-2xl font-bold text-purple-600 hover:underline flex items-center gap-2"
+                  className="text-2xl font-bold text-gray-900 hover:underline flex items-center gap-2"
                 >
                   {websiteData?.subdomain}.specialistly.com
                   <ExternalLink className="w-5 h-5" />
@@ -348,11 +361,11 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="border rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-purple-600 mb-1">0</div>
+                <div className="text-3xl font-bold text-gray-900 mb-1">0</div>
                 <p className="text-sm text-gray-600">Site Visitors</p>
               </div>
               <div className="border rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-purple-600 mb-1">0</div>
+                <div className="text-3xl font-bold text-gray-900 mb-1">0</div>
                 <p className="text-sm text-gray-600">Published Items</p>
               </div>
               <div className="border rounded-lg p-4 text-center">
@@ -361,7 +374,7 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
               </div>
             </div>
 
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-cyan-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-semibold text-blue-900 mb-2">Next Steps:</h4>
               <ol className="text-sm text-blue-700 space-y-1 list-decimal list-inside">
                 <li>Customize your site's branding and theme</li>
@@ -379,7 +392,7 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
                 Change Domain
               </Button>
               <Button 
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-gray-900 hover:bg-gray-800"
                 onClick={() => window.open(`https://${websiteData?.subdomain}.specialistly.com`, '_blank')}
               >
                 Visit Site
@@ -389,6 +402,144 @@ function SubdomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteD
           </CardContent>
         </Card>
       )}
+    </div>
+  );
+}
+
+function CustomDomainSetup({ websiteData, setWebsiteData }: { websiteData: WebsiteData | null; setWebsiteData: (data: WebsiteData) => void }) {
+  const [customDomain, setCustomDomain] = useState(websiteData?.customDomain || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [pageBuilderWebsiteId, setPageBuilderWebsiteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchWebsiteId = async () => {
+      try {
+        const response = await pageBuilderAPI.getWebsites();
+        if (response?.data?.length > 0) {
+          setPageBuilderWebsiteId(response.data[0]._id);
+          if (response.data[0].customDomain) {
+            setCustomDomain(response.data[0].customDomain);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching website:', error);
+      }
+    };
+    fetchWebsiteId();
+  }, []);
+
+  const handleSave = async () => {
+    if (!pageBuilderWebsiteId) {
+      setMessage({ type: 'error', text: 'No website found. Please set up your branded page first.' });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setMessage(null);
+      const domain = customDomain.trim().toLowerCase().replace(/^www\./, '') || null;
+      const response = await pageBuilderAPI.updateCustomDomain(pageBuilderWebsiteId, domain);
+      if (response?.success) {
+        setMessage({ type: 'success', text: domain ? `Custom domain "${domain}" connected!` : 'Custom domain removed.' });
+        if (domain) setCustomDomain(domain);
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to update custom domain.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    if (!pageBuilderWebsiteId) return;
+    try {
+      setIsSaving(true);
+      setMessage(null);
+      const response = await pageBuilderAPI.updateCustomDomain(pageBuilderWebsiteId, null);
+      if (response?.success) {
+        setCustomDomain('');
+        setMessage({ type: 'success', text: 'Custom domain removed.' });
+      }
+    } catch (error: any) {
+      setMessage({ type: 'error', text: error.message || 'Failed to remove custom domain.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="mt-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="w-5 h-5" />
+            Custom Domain
+          </CardTitle>
+          <CardDescription>
+            Connect your own domain (e.g., yourname.com) to your public website
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-2">Domain Name</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={customDomain}
+                onChange={(e) => setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))}
+                placeholder="example.com"
+                className="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
+              />
+              <Button
+                onClick={handleSave}
+                disabled={isSaving || !customDomain.trim()}
+                className="bg-gray-900 hover:bg-gray-800"
+              >
+                {isSaving ? 'Saving...' : 'Connect'}
+              </Button>
+              {customDomain && (
+                <Button
+                  variant="outline"
+                  onClick={handleRemove}
+                  disabled={isSaving}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  Remove
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {message && (
+            <div className={`rounded-lg p-3 text-sm ${
+              message.type === 'success' ? 'bg-green-50 border border-green-200 text-green-700' : 'bg-red-50 border border-red-200 text-red-700'
+            }`}>
+              {message.text}
+            </div>
+          )}
+
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+            <h4 className="font-semibold text-amber-900 mb-2">DNS Setup Instructions:</h4>
+            <p className="text-sm text-amber-800 mb-3">After connecting your domain here, configure DNS at your domain registrar:</p>
+            <div className="bg-white border border-amber-200 rounded-lg p-3 font-mono text-sm space-y-2">
+              <div>
+                <span className="text-gray-500">Type:</span> <strong>CNAME</strong>
+              </div>
+              <div>
+                <span className="text-gray-500">Name:</span> <strong>@</strong> (or <strong>www</strong>)
+              </div>
+              <div>
+                <span className="text-gray-500">Target:</span> <strong>{websiteData?.subdomain || 'your-subdomain'}.specialistly.com</strong>
+              </div>
+            </div>
+            <p className="text-xs text-amber-700 mt-3">
+              Note: If your registrar doesn't support CNAME on root domain (@), create a CNAME for "www" and set up a redirect from the root to www.
+              DNS changes may take up to 24-48 hours to propagate.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -462,10 +613,17 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
     
     try {
       setIsSaving(true);
-      const response = await websiteAPI.updateBranding(user.email, {
-        branding: brandingData,
-        theme: { mode: theme },
-        footer: footerData,
+      const response = await brandingAPI.updateBranding(user.email, {
+        colors: {
+          primary: brandingData?.primaryColor || '#3b82f6',
+          secondary: brandingData?.secondaryColor || '#1f2937',
+          accent: '#f59e0b'
+        },
+        header: {
+          title: brandingData?.siteName || '',
+          subtitle: brandingData?.tagline || '',
+          backgroundImage: brandingData?.logo || ''
+        }
       });
       if (response && response.data) {
         setWebsiteData(response.data);
@@ -495,7 +653,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                 type="text"
                 value={brandingData.siteName}
                 onChange={(e) => handleChange("siteName", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
 
@@ -505,7 +663,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                 type="text"
                 value={brandingData.tagline}
                 onChange={(e) => handleChange("tagline", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
 
@@ -582,7 +740,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                     type="text"
                     value={brandingData.primaryColor}
                     onChange={(e) => handleChange("primaryColor", e.target.value)}
-                    className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
                   />
                 </div>
               </div>
@@ -600,7 +758,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                     type="text"
                     value={brandingData.secondaryColor}
                     onChange={(e) => handleChange("secondaryColor", e.target.value)}
-                    className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
                   />
                 </div>
               </div>
@@ -613,7 +771,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                   onClick={() => setTheme("light")}
                   className={`p-4 border-2 rounded-lg transition-all ${
                     theme === "light"
-                      ? "border-purple-600 bg-purple-50"
+                      ? "border-gray-900 bg-gray-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -624,7 +782,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                   onClick={() => setTheme("dark")}
                   className={`p-4 border-2 rounded-lg transition-all ${
                     theme === "dark"
-                      ? "border-purple-600 bg-purple-50"
+                      ? "border-gray-900 bg-gray-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -638,7 +796,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
               <Button 
                 onClick={handleSaveChanges}
                 disabled={isSaving}
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-gray-900 hover:bg-gray-800"
               >
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
@@ -665,7 +823,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                   onClick={() => setFooterData((prev) => ({ ...prev, style: "minimal" }))}
                   className={`p-4 border-2 rounded-lg transition-all ${
                     footerData.style === "minimal"
-                      ? "border-purple-600 bg-purple-50"
+                      ? "border-gray-900 bg-gray-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -676,7 +834,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                   onClick={() => setFooterData((prev) => ({ ...prev, style: "detailed" }))}
                   className={`p-4 border-2 rounded-lg transition-all ${
                     footerData.style === "detailed"
-                      ? "border-purple-600 bg-purple-50"
+                      ? "border-gray-900 bg-gray-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -687,7 +845,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                   onClick={() => setFooterData((prev) => ({ ...prev, style: "custom" }))}
                   className={`p-4 border-2 rounded-lg transition-all ${
                     footerData.style === "custom"
-                      ? "border-purple-600 bg-purple-50"
+                      ? "border-gray-900 bg-gray-50"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
@@ -703,7 +861,7 @@ function SiteCustomization({ websiteData, setWebsiteData }: { websiteData: Websi
                 value={footerData.text}
                 onChange={(e) => setFooterData((prev) => ({ ...prev, text: e.target.value }))}
                 placeholder="© 2026 My Creator Site. All rights reserved."
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
                 rows={2}
               />
             </div>
@@ -835,12 +993,13 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
     try {
       setIsLoading(true);
       // Fetch courses for current user
-      const coursesResponse = await courseAPI.getAll();
+      const coursesResponse = await courseAPI.getAll({ specialistEmail: user?.email });
       const allCourses = Array.isArray(coursesResponse?.data) ? coursesResponse.data : [];
       
-      // Filter for active courses by the current user
+      // Filter for courses by the current user (accept draft, published, or any status)
       const userCourses = allCourses.filter(
-        (course: any) => course.creator === user?.email && course.status === "active"
+        (course: any) => (course.creator === user?.email || course.specialistEmail === user?.email) && 
+                         (course.status === "draft" || course.status === "published" || course.status === "active")
       );
       setCourses(userCourses);
 
@@ -848,11 +1007,14 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
       const servicesResponse = await serviceAPI.getAll();
       const allServices = Array.isArray(servicesResponse?.data) ? servicesResponse.data : [];
       
-      // Filter for active services by the current user
+      // Filter for services by the current user (accept draft, published, or any status)
       const userServices = allServices.filter(
-        (service: any) => service.creator === user?.email && service.status === "active"
+        (service: any) => (service.creator === user?.email || service.specialistEmail === user?.email) && 
+                          (service.status === "draft" || service.status === "published" || service.status === "active")
       );
       setServices(userServices);
+      
+      console.log("MySite ContentSelection - Loaded", userCourses.length, "courses and", userServices.length, "services");
     } catch (error) {
       console.error("Failed to fetch content:", error);
     } finally {
@@ -877,14 +1039,14 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
     
     try {
       setIsSaving(true);
-      const response = await websiteAPI.updateContent(user.email, {
+      const response = await brandingAPI.updateContent(user.email, {
         selectedCourses,
-        selectedServices,
+        selectedServices
       });
       if (response && response.data) {
         setWebsiteData(response.data);
-        setSuccessMessage("Content selection saved successfully!");
-        setTimeout(() => setSuccessMessage(""), 3000);
+        setSuccessMessage("Content selection saved successfully! Your courses and services are now published on your public site.");
+        setTimeout(() => setSuccessMessage(""), 5000);
       }
     } catch (error) {
       console.error("Failed to save content:", error);
@@ -912,8 +1074,11 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
           {isLoading ? (
             <div className="text-center py-8 text-gray-500">Loading your courses...</div>
           ) : courses.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No active courses found. Create and activate courses to add them to your site.
+            <div className="text-center py-8 text-gray-500 space-y-4">
+              <p>No courses found. Create and manage courses to add them to your site.</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                <p className="text-blue-700"><strong>Tip:</strong> Go to "Manage Courses" in the sidebar to create your first course.</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -924,7 +1089,7 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
                     key={course._id}
                     className={`border rounded-lg p-4 cursor-pointer transition-all ${
                       isSelected
-                        ? "border-purple-500 bg-purple-50"
+                        ? "border-gray-400 bg-gray-50"
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                     onClick={() => toggleCourse(course._id)}
@@ -935,14 +1100,14 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleCourse(course._id)}
-                          className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                          className="w-5 h-5 text-gray-900 rounded focus:ring-2 focus:ring-gray-400"
                           onClick={(e) => e.stopPropagation()}
                         />
                       </div>
                       <div className="flex-1">
                         <h4 className="font-semibold mb-1">{course.title}</h4>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
+                          <span className="bg-cyan-100 text-blue-700 px-2 py-1 rounded text-xs">
                             {course.courseType || "Course"}
                           </span>
                           <span>₹{course.price}</span>
@@ -974,8 +1139,11 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
           {isLoading ? (
             <div className="text-center py-8 text-gray-500">Loading your services...</div>
           ) : services.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No active services found. Create and activate services to add them to your site.
+            <div className="text-center py-8 text-gray-500 space-y-4">
+              <p>No services found. Create and manage services to add them to your site.</p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+                <p className="text-blue-700"><strong>Tip:</strong> Go to "Create / Edit Offerings" in the sidebar to create your first service.</p>
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -986,7 +1154,7 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
                     key={service._id}
                     className={`border rounded-lg p-4 cursor-pointer transition-all ${
                       isSelected
-                        ? "border-purple-500 bg-purple-50"
+                        ? "border-gray-400 bg-gray-50"
                         : "border-gray-200 hover:border-gray-300"
                     }`}
                     onClick={() => toggleService(service._id)}
@@ -997,7 +1165,7 @@ function ContentSelection({ websiteData, setWebsiteData }: { websiteData: Websit
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleService(service._id)}
-                          className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                          className="w-5 h-5 text-gray-900 rounded focus:ring-2 focus:ring-gray-400"
                           onClick={(e) => e.stopPropagation()}
                         />
                       </div>
@@ -1117,9 +1285,9 @@ function SitePreview({ websiteData }: { websiteData: WebsiteData | null }) {
                   <span className="font-bold text-lg">{websiteData?.branding?.siteName || "My Creator Site"}</span>
                 </div>
                 <div className="flex gap-4">
-                  <button className="text-gray-700 hover:text-purple-600">Courses</button>
-                  <button className="text-gray-700 hover:text-purple-600">Services</button>
-                  <button className="text-gray-700 hover:text-purple-600">About</button>
+                  <button className="text-gray-700 hover:text-gray-900">Courses</button>
+                  <button className="text-gray-700 hover:text-gray-900">Services</button>
+                  <button className="text-gray-700 hover:text-gray-900">About</button>
                 </div>
               </div>
             </div>
@@ -1135,7 +1303,7 @@ function SitePreview({ websiteData }: { websiteData: WebsiteData | null }) {
               <p className="text-xl mb-6 text-white/90">
                 {websiteData?.branding?.tagline || "Welcome to my creator site"}
               </p>
-              <Button className="bg-white text-purple-600 hover:bg-gray-100">
+              <Button className="bg-white text-gray-900 hover:bg-gray-100">
                 Explore Courses
               </Button>
             </div>
@@ -1150,14 +1318,14 @@ function SitePreview({ websiteData }: { websiteData: WebsiteData | null }) {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {courses.map((course) => (
                       <div key={course._id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                        <div className="h-40 bg-gradient-to-br from-purple-400 to-pink-400"></div>
+                        <div className="h-40 bg-gradient-to-br from-gray-600 to-gray-800"></div>
                         <div className="p-4">
                           <h3 className="font-semibold mb-2 line-clamp-2">{course.title}</h3>
                           <div className="flex items-center justify-between">
-                            <span className="text-2xl font-bold text-purple-600">₹{course.price || 0}</span>
+                            <span className="text-2xl font-bold text-gray-900">₹{course.price || 0}</span>
                             <span className="text-sm text-gray-600">{course.enrollments?.length || 0} students</span>
                           </div>
-                          <Button className="w-full mt-4 bg-purple-600 hover:bg-purple-700">
+                          <Button className="w-full mt-4 bg-gray-900 hover:bg-gray-800">
                             Enroll Now
                           </Button>
                         </div>
@@ -1179,11 +1347,11 @@ function SitePreview({ websiteData }: { websiteData: WebsiteData | null }) {
                 ) : services.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {services.map((service) => (
-                      <div key={service._id} className="border rounded-lg p-6 hover:border-purple-500 transition-colors">
+                      <div key={service._id} className="border rounded-lg p-6 hover:border-gray-400 transition-colors">
                         <h3 className="font-semibold text-lg mb-2 line-clamp-2">{service.title}</h3>
                         <p className="text-sm text-gray-600 mb-3 line-clamp-2">{service.description}</p>
                         <div className="flex items-center justify-between mb-4">
-                          <span className="text-2xl font-bold text-purple-600">₹{service.price || 0}</span>
+                          <span className="text-2xl font-bold text-gray-900">₹{service.price || 0}</span>
                           <span className="text-sm text-gray-600">{service.duration || 0} min</span>
                         </div>
                         <Button variant="outline" className="w-full">
@@ -1265,7 +1433,7 @@ function SitePreview({ websiteData }: { websiteData: WebsiteData | null }) {
         <Button variant="outline">
           Edit Customization
         </Button>
-        <Button className="bg-purple-600 hover:bg-purple-700">
+        <Button className="bg-gray-900 hover:bg-gray-800">
           <ExternalLink className="w-4 h-4 mr-2" />
           Open Live Site
         </Button>

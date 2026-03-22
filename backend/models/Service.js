@@ -29,13 +29,18 @@ const serviceSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  currency: {
+    type: String,
+    enum: ['USD', 'INR'],
+    default: 'USD',
+  },
   duration: {
     type: String,
-    required: true,
+    required: false,  // Required for consulting, optional for webinar
   },
   capacity: {
     type: String,
-    required: true,
+    required: false,  // Required only for webinars
   },
   schedule: {
     type: String,

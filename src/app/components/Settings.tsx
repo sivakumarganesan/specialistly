@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle } from "lucide-react";
+import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video, Trash2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
-import { creatorAPI, subscriptionAPI } from "@/app/api/apiClient";
+import { creatorAPI, subscriptionAPI, API_BASE_URL } from "@/app/api/apiClient";
+import { specialistRazorpayAPI } from "@/app/api/paymentAPI";
+import { ManageAvailability } from "@/app/components/ManageAvailability";
+import { DeleteAccountModal } from "@/app/components/DeleteAccountModal";
 import {
   Card,
   CardContent,
@@ -11,27 +14,59 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 
-type SettingsTab = "profile" | "payment" | "slots" | "subscriptions";
+type SettingsTab = "profile" | "payment" | "slots" | "availability" | "subscriptions" | "danger";
 
 interface SettingsProps {
   initialTab?: SettingsTab;
+  onNavigate?: (page: string) => void;
 }
 
-export function Settings({ initialTab = "profile" }: SettingsProps) {
+export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) {
+  const { userType, setCurrentPage } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
-  const tabs = [
+  const allTabs = [
     { id: "profile" as SettingsTab, label: "User Profile", icon: User },
-    { id: "payment" as SettingsTab, label: "Payment Settings", icon: CreditCard },
-    { id: "slots" as SettingsTab, label: "Allotment Slots", icon: Clock },
-    { id: "subscriptions" as SettingsTab, label: "My Subscriptions", icon: Package },
+    { id: "payment" as SettingsTab, label: "Payment Settings", icon: CreditCard, specialistOnly: true },
+    { id: "availability" as SettingsTab, label: "Manage Availability", icon: Clock, specialistOnly: true },
+    { id: "slots" as SettingsTab, label: "Allotment Slots", icon: Clock, specialistOnly: true },
+    { id: "subscriptions" as SettingsTab, label: "My Subscriptions", icon: Package, specialistOnly: true },
+    { id: "danger" as SettingsTab, label: "Danger Zone", icon: AlertCircle },
   ];
+
+  const tabs = allTabs.filter(tab => !tab.specialistOnly || userType === "specialist");
+
+  const handleDeleteSuccess = () => {
+    // Redirect to home page
+    setCurrentPage("homepage");
+  };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2">Settings</h1>
-        <p className="text-gray-600">Manage your account settings and preferences</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">Settings</h1>
+          <p className="text-gray-600">Manage your account settings and preferences</p>
+        </div>
+        {onNavigate && userType === "specialist" && (
+          <Button
+            onClick={() => onNavigate("specialist-settings")}
+            variant="outline"
+            className="gap-2"
+          >
+            Manage Specialities →
+          </Button>
+        )}
+        {onNavigate && userType === "customer" && (
+          <Button
+            onClick={() => onNavigate("customer-settings")}
+            variant="outline"
+            className="gap-2"
+          >
+            Manage Interests →
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -44,7 +79,7 @@ export function Settings({ initialTab = "profile" }: SettingsProps) {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? "border-purple-600 text-purple-600"
+                  ? "border-gray-900 text-gray-900"
                   : "border-transparent text-gray-600 hover:text-gray-900"
               }`}
             >
@@ -59,9 +94,18 @@ export function Settings({ initialTab = "profile" }: SettingsProps) {
       <div>
         {activeTab === "profile" && <UserProfile />}
         {activeTab === "payment" && <PaymentSettings />}
+        {activeTab === "availability" && <ManageAvailability />}
         {activeTab === "slots" && <AllotmentSlots />}
         {activeTab === "subscriptions" && <MySubscriptions />}
+        {activeTab === "danger" && <DangerZone onDeleteClick={() => setIsDeleteModalOpen(true)} />}
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onDeleteSuccess={handleDeleteSuccess}
+      />
     </div>
   );
 }
@@ -84,11 +128,13 @@ function UserProfile() {
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [zoomConnected, setZoomConnected] = useState(false);
+  const [zoomConnecting, setZoomConnecting] = useState(false);
 
   // Fetch profile data from database when component mounts or user changes
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (!user?.email) return;
+      if (!user?.email || !user?.id) return;
       
       setIsLoading(true);
       try {
@@ -106,11 +152,11 @@ function UserProfile() {
             website: profile.website || prev.website,
             profileImage: profile.profileImage || null,
           }));
-          console.log("Profile data loaded from database:", profile);
+          // Check if Zoom is connected from profile data
+          setZoomConnected(profile.zoomConnected || !!profile.zoomAccessToken);
         }
       } catch (error) {
-        console.log("No saved profile found, using defaults");
-        // If no saved profile, just use the user data from auth
+        // Profile not found is expected - just use defaults
         setProfileData((prev) => ({
           ...prev,
           name: user.name || prev.name,
@@ -122,7 +168,48 @@ function UserProfile() {
     };
 
     fetchProfileData();
-  }, [user?.email]); // Fetch when user email changes (login/logout)
+  }, [user?.email, user?.id]); // Fetch when user email/id changes (login/logout)
+
+  // Check Zoom connection status on mount and when OAuth returns
+  useEffect(() => {
+    const fetchZoomStatus = async () => {
+      if (!user?.id) return;
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/zoom/oauth/user/status?userId=${user.id}`);
+        const data = await response.json();
+        
+        if (data.success && data.authorized) {
+          setZoomConnected(true);
+        } else {
+          setZoomConnected(false);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Zoom status:', error);
+        // Status check failed, rely on profile data
+      }
+    };
+
+    // Check on mount
+    fetchZoomStatus();
+
+    // Also check for OAuth success/error in URL params (when returning from OAuth flow)
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('oauth_success') === 'true') {
+      setZoomConnected(true);
+      setSuccessMessage("✓ Zoom account connected successfully!");
+      setTimeout(() => setSuccessMessage(""), 5000);
+      // Clean up URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (params.get('oauth_error')) {
+      const errorMsg = params.get('oauth_error');
+      setErrorMessage(`Zoom connection failed: ${errorMsg}`);
+      setZoomConnecting(false);
+      setTimeout(() => setErrorMessage(""), 5000);
+      // Clean up URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [user?.id]);
 
   const handleChange = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
@@ -194,6 +281,58 @@ function UserProfile() {
     }
   };
 
+  const handleConnectZoom = () => {
+    setZoomConnecting(true);
+    const userId = user?.id;
+    if (!userId) {
+      console.error('User ID not found');
+      alert('Unable to connect to Zoom. Please ensure you are logged in.');
+      setZoomConnecting(false);
+      return;
+    }
+    // Redirect to OAuth authorization URL with userId
+    window.location.href = `${API_BASE_URL}/zoom/oauth/user/authorize?userId=${userId}`;
+  };
+
+  const handleDisconnectZoom = async () => {
+    if (!window.confirm('Are you sure you want to disconnect your Zoom account? You can reconnect anytime.')) {
+      return;
+    }
+
+    if (!user?.id) {
+      alert('Unable to determine your user ID. Please try again.');
+      return;
+    }
+
+    try {
+      setZoomConnecting(true);
+      const response = await fetch(`${API_BASE_URL}/zoom/oauth/user/revoke`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: user.id }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setZoomConnected(false);
+        setSuccessMessage('✓ Zoom account disconnected successfully. You can reconnect anytime.');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } else {
+        setErrorMessage(`Failed to disconnect Zoom: ${data.error || 'Unknown error'}`);
+        setTimeout(() => setErrorMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Error disconnecting Zoom:', error);
+      setErrorMessage('Failed to disconnect Zoom account. Please try again.');
+      setTimeout(() => setErrorMessage(''), 3000);
+    } finally {
+      setZoomConnecting(false);
+    }
+  };
+
   const userInitials = profileData.name
     .split(" ")
     .map((n) => n[0])
@@ -218,11 +357,11 @@ function UserProfile() {
                 className="w-32 h-32 rounded-full object-cover border-4 border-purple-200"
               />
             ) : (
-              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-4xl font-bold">
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white text-4xl font-bold">
                 {userInitials}
               </div>
             )}
-            <label className="absolute bottom-0 right-0 w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white hover:bg-purple-700 cursor-pointer">
+            <label className="absolute bottom-0 right-0 w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center text-white hover:bg-gray-800 cursor-pointer">
               <Camera className="w-5 h-5" />
               <input
                 type="file"
@@ -253,7 +392,7 @@ function UserProfile() {
         <CardContent className="space-y-4">
           {/* Loading Indicator */}
           {isLoading && (
-            <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 text-blue-700">
+            <div className="p-3 bg-cyan-50 border border-blue-200 rounded-lg flex items-center gap-2 text-blue-700">
               <div className="w-4 h-4 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin" />
               <span className="text-sm">Loading profile data...</span>
             </div>
@@ -281,7 +420,7 @@ function UserProfile() {
                 type="text"
                 value={profileData.name}
                 onChange={(e) => handleChange("name", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
@@ -293,7 +432,7 @@ function UserProfile() {
                 type="email"
                 value={profileData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
           </div>
@@ -308,7 +447,7 @@ function UserProfile() {
                 type="tel"
                 value={profileData.phone}
                 onChange={(e) => handleChange("phone", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
@@ -320,7 +459,7 @@ function UserProfile() {
                 type="text"
                 value={profileData.location}
                 onChange={(e) => handleChange("location", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
           </div>
@@ -335,7 +474,7 @@ function UserProfile() {
                 type="text"
                 value={profileData.company}
                 onChange={(e) => handleChange("company", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
             <div>
@@ -344,7 +483,7 @@ function UserProfile() {
                 type="url"
                 value={profileData.website}
                 onChange={(e) => handleChange("website", e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
             </div>
           </div>
@@ -355,7 +494,7 @@ function UserProfile() {
               value={profileData.bio}
               onChange={(e) => handleChange("bio", e.target.value)}
               rows={4}
-              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
             />
           </div>
 
@@ -383,7 +522,7 @@ function UserProfile() {
             <Button
               onClick={handleSave}
               disabled={isSaving || uploadingPhoto}
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-gray-900 hover:bg-gray-800"
             >
               {isSaving ? (
                 <span className="flex items-center gap-2">
@@ -400,6 +539,89 @@ function UserProfile() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Zoom Integration */}
+      <Card className="lg:col-span-2">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Video className="w-5 h-5" />
+            Zoom Integration
+          </CardTitle>
+          <CardDescription>Connect your Zoom account to automatically create video meetings for appointments and cohort courses</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {zoomConnected ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full" />
+                    <span className="text-green-700 font-medium">✓ Zoom Account Connected</span>
+                  </div>
+                  <p className="text-sm text-green-600 mt-2">Your Zoom account is connected and ready to use. Meetings will be automatically created when you publish cohort courses with Zoom as the meeting platform, or when participants book appointments.</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={handleConnectZoom}
+                    disabled={zoomConnecting}
+                    className="bg-gray-900 hover:bg-gray-800"
+                  >
+                    {zoomConnecting ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Reconnecting...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Video className="w-4 h-4" />
+                        Re-authorize
+                      </span>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleDisconnectZoom}
+                    disabled={zoomConnecting}
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
+                    {zoomConnecting ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                        Disconnecting...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        Disconnect Zoom
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 bg-cyan-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-700 mb-4">Connect your Zoom account to enable automatic video meeting creation for cohort courses and appointments.</p>
+                <Button
+                  onClick={handleConnectZoom}
+                  disabled={zoomConnecting}
+                  className="bg-cyan-600 hover:bg-cyan-700"
+                >
+                  {zoomConnecting ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Connecting to Zoom...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Video className="w-4 h-4" />
+                      Connect Zoom Account
+                    </span>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -410,6 +632,104 @@ function PaymentSettings() {
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState("");
   const { user } = useAuth();
+
+  // Razorpay config state
+  const [razorpayConfigured, setRazorpayConfigured] = useState(false);
+  const [razorpayKeyIdMasked, setRazorpayKeyIdMasked] = useState<string | null>(null);
+  const [razorpayKeyId, setRazorpayKeyId] = useState("");
+  const [razorpayKeySecret, setRazorpayKeySecret] = useState("");
+  const [showSecret, setShowSecret] = useState(false);
+  const [razorpayLoading, setRazorpayLoading] = useState(false);
+  const [razorpayMessage, setRazorpayMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [showRazorpayForm, setShowRazorpayForm] = useState(false);
+
+  // Check Stripe connection status on mount
+  useEffect(() => {
+    const checkStripeStatus = async () => {
+      try {
+        const token = localStorage.getItem("authToken");
+        if (!token) return;
+
+        const response = await fetch(
+          `${API_BASE_URL}/marketplace/specialist/status`,
+          {
+            method: "GET",
+            headers: {
+              "Authorization": `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const data = await response.json();
+        if (data.success && data.status === "active") {
+          setStripeConnected(true);
+        }
+      } catch (error) {
+        console.error("Error checking Stripe status:", error);
+      }
+    };
+
+    checkStripeStatus();
+  }, []);
+
+  // Load Razorpay config on mount
+  useEffect(() => {
+    const loadRazorpayConfig = async () => {
+      try {
+        const data = await specialistRazorpayAPI.getConfig();
+        if (data.success) {
+          setRazorpayConfigured(data.razorpayConfigured);
+          setRazorpayKeyIdMasked(data.keyIdMasked);
+        }
+      } catch (err) {
+        console.error("Failed to load Razorpay config:", err);
+      }
+    };
+    loadRazorpayConfig();
+  }, []);
+
+  const handleSaveRazorpay = async () => {
+    setRazorpayMessage(null);
+    setRazorpayLoading(true);
+    try {
+      const data = await specialistRazorpayAPI.saveConfig({
+        razorpayKeyId: razorpayKeyId.trim(),
+        razorpayKeySecret: razorpayKeySecret.trim(),
+      });
+      if (data.success) {
+        setRazorpayConfigured(true);
+        setRazorpayKeyIdMasked(data.keyIdMasked);
+        setRazorpayKeyId("");
+        setRazorpayKeySecret("");
+        setShowRazorpayForm(false);
+        setRazorpayMessage({ type: "success", text: "Razorpay credentials saved and verified!" });
+      } else {
+        setRazorpayMessage({ type: "error", text: data.message || "Failed to save credentials" });
+      }
+    } catch (err: any) {
+      setRazorpayMessage({ type: "error", text: err.message || "Something went wrong" });
+    } finally {
+      setRazorpayLoading(false);
+    }
+  };
+
+  const handleRemoveRazorpay = async () => {
+    setRazorpayMessage(null);
+    setRazorpayLoading(true);
+    try {
+      const data = await specialistRazorpayAPI.removeConfig();
+      if (data.success) {
+        setRazorpayConfigured(false);
+        setRazorpayKeyIdMasked(null);
+        setRazorpayMessage({ type: "success", text: "Razorpay credentials removed" });
+      }
+    } catch (err: any) {
+      setRazorpayMessage({ type: "error", text: err.message || "Something went wrong" });
+    } finally {
+      setRazorpayLoading(false);
+    }
+  };
 
   const handleSavePaymentSettings = async () => {
     setIsSaving(true);
@@ -435,6 +755,84 @@ function PaymentSettings() {
       setMessage(`Failed to save: ${error instanceof Error ? error.message : "Please try again."}`);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDisconnectStripe = async () => {
+    setMessage("");
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setMessage("Authentication error. Please log in again.");
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/marketplace/specialist/disconnect`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setStripeConnected(false);
+        setMessage("✓ Stripe account disconnected successfully");
+        setTimeout(() => setMessage(""), 3000);
+      } else {
+        setMessage(`❌ Failed to disconnect: ${data.message || "Please try again."}`);
+      }
+    } catch (error) {
+      console.error("Failed to disconnect Stripe:", error);
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : "Please try again."}`);
+    }
+  };
+
+  const handleConnectStripe = async () => {
+    setMessage("");
+    try {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setMessage("Authentication error. Please log in again.");
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}/marketplace/specialist/onboarding-link`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      console.log('Stripe onboarding response:', {
+        status: response.status,
+        success: data.success,
+        message: data.message,
+        error: data.error,
+        code: data.code,
+      });
+
+      if (data.success && data.onboardingUrl) {
+        // Redirect to Stripe onboarding
+        window.location.href = data.onboardingUrl;
+      } else {
+        const errorMsg = data.error || data.message || "Please try again.";
+        setMessage(`❌ Failed to get onboarding link: ${errorMsg}`);
+      }
+    } catch (error) {
+      console.error("Failed to connect Stripe:", error);
+      setMessage(`❌ Error: ${error instanceof Error ? error.message : "Please try again."}`);
     }
   };
 
@@ -476,8 +874,8 @@ function PaymentSettings() {
                 Connect your Stripe account to start accepting payments from customers
               </p>
               <Button
-                onClick={() => setStripeConnected(true)}
-                className="bg-purple-600 hover:bg-purple-700"
+                onClick={handleConnectStripe}
+                className="bg-gray-900 hover:bg-gray-800"
               >
                 Connect with Stripe
               </Button>
@@ -492,7 +890,11 @@ function PaymentSettings() {
                   <p className="font-semibold text-green-900">Stripe Connected</p>
                   <p className="text-sm text-green-700">acct_1234567890abcdef</p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleDisconnectStripe}
+                >
                   Disconnect
                 </Button>
               </div>
@@ -513,7 +915,7 @@ function PaymentSettings() {
                 <select
                   value={payoutSchedule}
                   onChange={(e) => setPayoutSchedule(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
                 >
                   <option value="daily">Daily</option>
                   <option value="weekly">Weekly</option>
@@ -523,7 +925,7 @@ function PaymentSettings() {
 
               <div className="flex justify-end">
                 <Button 
-                  className="bg-purple-600 hover:bg-purple-700"
+                  className="bg-gray-900 hover:bg-gray-800"
                   onClick={handleSavePaymentSettings}
                   disabled={isSaving}
                 >
@@ -531,6 +933,151 @@ function PaymentSettings() {
                   {isSaving ? "Saving..." : "Save Settings"}
                 </Button>
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Razorpay Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <CreditCard className="w-5 h-5" />
+            Razorpay Account
+          </CardTitle>
+          <CardDescription>
+            Connect your Razorpay account so customers can pay directly via Razorpay for INR courses
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {razorpayMessage && (
+            <div className={`p-3 rounded-md flex items-center gap-2 mb-4 ${
+              razorpayMessage.type === "success"
+                ? "bg-green-50 border border-green-200"
+                : "bg-red-50 border border-red-200"
+            }`}>
+              <AlertCircle className={`w-4 h-4 ${
+                razorpayMessage.type === "success" ? "text-green-600" : "text-red-600"
+              }`} />
+              <span className={razorpayMessage.type === "success" ? "text-green-700" : "text-red-700"}>
+                {razorpayMessage.text}
+              </span>
+            </div>
+          )}
+
+          {razorpayConfigured && !showRazorpayForm ? (
+            <div className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center gap-3">
+                <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-green-900">Razorpay Connected</p>
+                  <p className="text-sm text-green-700">Key: {razorpayKeyIdMasked}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-500">
+                Customer payments for your INR courses will go directly to your Razorpay account.
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowRazorpayForm(true)}
+                >
+                  Update Credentials
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={handleRemoveRazorpay}
+                  disabled={razorpayLoading}
+                >
+                  Disconnect
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              {!showRazorpayForm && !razorpayConfigured && (
+                <div className="text-center py-8">
+                  <div className="mb-4 flex justify-center">
+                    <svg className="w-20 h-8" viewBox="0 0 120 30" xmlns="http://www.w3.org/2000/svg">
+                      <text x="10" y="22" fontFamily="Arial, sans-serif" fontSize="18" fontWeight="bold" fill="#072654">Razorpay</text>
+                    </svg>
+                  </div>
+                  <p className="text-gray-600 mb-6">
+                    Connect your Razorpay account to receive direct payments for INR courses
+                  </p>
+                  <Button
+                    onClick={() => setShowRazorpayForm(true)}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    Connect Razorpay Account
+                  </Button>
+                </div>
+              )}
+
+              {showRazorpayForm && (
+                <div className="space-y-4">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                    Find your API keys at{" "}
+                    <a href="https://dashboard.razorpay.com/app/keys" target="_blank" rel="noopener noreferrer" className="underline font-medium">
+                      Razorpay Dashboard → Settings → API Keys
+                    </a>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Key ID</label>
+                    <input
+                      type="text"
+                      value={razorpayKeyId}
+                      onChange={(e) => setRazorpayKeyId(e.target.value)}
+                      placeholder="rzp_test_..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Razorpay Key Secret</label>
+                    <div className="relative">
+                      <input
+                        type={showSecret ? "text" : "password"}
+                        value={razorpayKeySecret}
+                        onChange={(e) => setRazorpayKeySecret(e.target.value)}
+                        placeholder="Enter your key secret"
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSecret(!showSecret)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={handleSaveRazorpay}
+                      disabled={razorpayLoading || !razorpayKeyId.trim() || !razorpayKeySecret.trim()}
+                    >
+                      {razorpayLoading ? "Verifying..." : "Save & Verify"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowRazorpayForm(false);
+                        setRazorpayKeyId("");
+                        setRazorpayKeySecret("");
+                        setRazorpayMessage(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
@@ -660,7 +1207,7 @@ function AllotmentSlots() {
               <select
                 value={slotDuration}
                 onChange={(e) => setSlotDuration(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 <option value="15">15 minutes</option>
                 <option value="30">30 minutes</option>
@@ -674,7 +1221,7 @@ function AllotmentSlots() {
               <select
                 value={bufferTime}
                 onChange={(e) => setBufferTime(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               >
                 <option value="0">No buffer</option>
                 <option value="5">5 minutes</option>
@@ -698,7 +1245,7 @@ function AllotmentSlots() {
                     type="checkbox"
                     checked={slot.enabled}
                     onChange={() => toggleSlot(slot.id)}
-                    className="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-500"
+                    className="w-5 h-5 text-gray-900 rounded focus:ring-2 focus:ring-gray-400"
                   />
                 </label>
                 <div className="flex-1 grid grid-cols-3 gap-4 items-center">
@@ -709,7 +1256,7 @@ function AllotmentSlots() {
                       value={slot.startTime}
                       onChange={(e) => handleTimeChange(slot.id, "startTime", e.target.value)}
                       disabled={!slot.enabled}
-                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:bg-gray-100"
                     />
                     <span className="text-gray-500">to</span>
                     <input
@@ -717,7 +1264,7 @@ function AllotmentSlots() {
                       value={slot.endTime}
                       onChange={(e) => handleTimeChange(slot.id, "endTime", e.target.value)}
                       disabled={!slot.enabled}
-                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-100"
+                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:bg-gray-100"
                     />
                   </div>
                   <span className={`text-sm ${slot.enabled ? "text-green-600" : "text-gray-400"}`}>
@@ -730,7 +1277,7 @@ function AllotmentSlots() {
 
           <div className="flex justify-end pt-4">
             <Button 
-              className="bg-purple-600 hover:bg-purple-700"
+              className="bg-gray-900 hover:bg-gray-800"
               onClick={handleSaveAvailability}
               disabled={isSaving}
             >
@@ -745,7 +1292,7 @@ function AllotmentSlots() {
 }
 
 function MySubscriptions() {
-  const { user } = useAuth();
+  const { user, updateSubscription } = useAuth();
   const [currentPlan, setCurrentPlan] = useState<"free" | "pro">(
     (user?.subscription?.planType as "free" | "pro") || "free"
   );
@@ -792,22 +1339,10 @@ function MySubscriptions() {
         setMessage("Unable to determine your email address");
         return;
       }
-      const subscriptionData = {
-        email,
-        planType: "pro",
-        price: 999,
-        currency: "₹",
-        billingCycle: "monthly",
-        features: plans.find(p => p.id === "pro")?.features || [],
-        status: "active",
-        autoRenew: true,
-      };
       
-      await subscriptionAPI.changePlan(email, subscriptionData);
+      // Update subscription via auth context
+      await updateSubscription("pro");
       setCurrentPlan("pro");
-      
-      // Update auth context
-      await updateSubscription(subscriptionData);
       
       setMessage("✓ Upgraded to Pro Plan successfully!");
       setTimeout(() => setMessage(""), 3000);
@@ -828,22 +1363,10 @@ function MySubscriptions() {
         setMessage("Unable to determine your email address");
         return;
       }
-      const subscriptionData = {
-        email,
-        planType: "free",
-        price: 0,
-        currency: "₹",
-        billingCycle: "forever",
-        features: plans.find(p => p.id === "free")?.features || [],
-        status: "active",
-        autoRenew: false,
-      };
       
-      await subscriptionAPI.changePlan(email, subscriptionData);
+      // Update subscription via auth context
+      await updateSubscription("free");
       setCurrentPlan("free");
-      
-      // Update auth context
-      await updateSubscription(subscriptionData);
       
       setMessage("✓ Switched to Free Plan successfully!");
       setTimeout(() => setMessage(""), 3000);
@@ -885,7 +1408,7 @@ function MySubscriptions() {
                 key={plan.id}
                 className={`border rounded-lg p-6 ${
                   plan.status === "active"
-                    ? "border-purple-500 bg-purple-50"
+                    ? "border-gray-400 bg-gray-50"
                     : "border-gray-200"
                 }`}
               >
@@ -914,7 +1437,7 @@ function MySubscriptions() {
                   <ul className="space-y-1">
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="text-sm flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 bg-purple-600 rounded-full" />
+                        <span className="w-1.5 h-1.5 bg-gray-900 rounded-full" />
                         {feature}
                       </li>
                     ))}
@@ -951,7 +1474,7 @@ function MySubscriptions() {
                       {plan.id === "free" && (
                         <Button
                           size="sm"
-                          className="w-full bg-purple-600 hover:bg-purple-700"
+                          className="w-full bg-gray-900 hover:bg-gray-800"
                           onClick={handleUpgrade}
                           disabled={isLoading}
                         >
@@ -965,7 +1488,7 @@ function MySubscriptions() {
                     {plan.id === "free" && (
                       <Button
                         size="sm"
-                        className="w-full bg-purple-600 hover:bg-purple-700"
+                        className="w-full bg-gray-900 hover:bg-gray-800"
                         onClick={handleDowngrade}
                         disabled={isLoading}
                       >
@@ -977,6 +1500,44 @@ function MySubscriptions() {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+function DangerZone({ onDeleteClick }: { onDeleteClick: () => void }) {
+  return (
+    <div className="space-y-6">
+      <Card className="border-red-200 bg-red-50">
+        <CardHeader>
+          <CardTitle className="text-red-600">Delete Account</CardTitle>
+          <CardDescription>
+            Permanently delete your account and all associated data
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="bg-white border border-red-200 rounded-lg p-4 space-y-3">
+            <h3 className="font-semibold text-red-700">⚠️ Warning: This action cannot be undone</h3>
+            <p className="text-sm text-gray-700">
+              Deleting your account will permanently remove:
+            </p>
+            <ul className="text-sm text-gray-700 space-y-1 ml-4">
+              <li>• Your account and profile information</li>
+              <li>• All courses and services you created</li>
+              <li>• All consulting slots and appointments</li>
+              <li>• All course enrollments and learning progress</li>
+              <li>• Your payment and subscription information</li>
+              <li>• All communications and messages</li>
+            </ul>
+          </div>
+
+          <Button
+            onClick={onDeleteClick}
+            className="w-full bg-red-600 hover:bg-red-700"
+            size="lg"
+          >
+            Delete My Account
+          </Button>
         </CardContent>
       </Card>
     </div>

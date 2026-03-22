@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Bell, ChevronDown, Search, Menu, GraduationCap, Briefcase } from "lucide-react";
+import { Bell, ChevronDown, Search, Menu, GraduationCap, Briefcase, Home } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/app/components/ui/avatar";
 import { useAuth } from "@/app/context/AuthContext";
@@ -93,8 +93,8 @@ export function Header({ onMenuClick, onNavigateToSettings, searchableItems, onS
           className="flex items-center gap-2 mr-6 cursor-pointer hover:opacity-80 transition-opacity"
           onClick={() => setCurrentPage('dashboard')}
         >
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold">S</span>
+          <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center">
+            <span className="text-white font-bold text-sm">S</span>
           </div>
           <span className="font-bold text-xl hidden sm:inline">Specialistly</span>
         </div>
@@ -106,7 +106,7 @@ export function Header({ onMenuClick, onNavigateToSettings, searchableItems, onS
             <input
               type="text"
               placeholder="Search Offerings, Courses.."
-              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
@@ -160,6 +160,11 @@ export function Header({ onMenuClick, onNavigateToSettings, searchableItems, onS
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setCurrentPage('homepage')} className="flex items-center gap-2">
+                <Home className="h-4 w-4" />
+                Home
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => onNavigateToSettings?.("profile")}>
                 Profile

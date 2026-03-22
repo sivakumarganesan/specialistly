@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Scheduled Webinars Endpoint</title>
+</head>
+<body>
+    <h1>Test Scheduled Webinars Endpoint</h1>
+    <button onclick="testEndpoint()">Test Endpoint</button>
+    <pre id="output"></pre>
+    
+    <script>
+        async function testEndpoint() {
+            const output = document.getElementById('output');
+            try {
+                const url = 'http://localhost:5001/api/appointments/scheduled-webinars?specialistEmail=specialist@test.com';
+                console.log('Fetching:', url);
+                output.textContent = 'Fetching: ' + url + '\n\n';
+                
+                const response = await fetch(url);
+                output.textContent += 'Status: ' + response.status + '\n';
+                output.textContent += 'OK: ' + response.ok + '\n\n';
+                
+                const data = await response.json();
+                output.textContent += 'Response:\n' + JSON.stringify(data, null, 2);
+            } catch (error) {
+                output.textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
