@@ -108,21 +108,16 @@ const corsOptions = {
   origin: (origin, callback) => {
     // Refresh cache if stale
     if (Date.now() - lastCacheRefresh > CACHE_TTL) {
-      refreshCustomDomainCache().then(() => {
-        if (isOriginAllowed(origin)) {
-          callback(null, true);
-        } else {
-          console.warn(`[CORS] Blocked origin: ${origin}`);
-          callback(new Error(`CORS policy: Origin ${origin} not allowed`));
-        }
-      });
+      refreshCustomDomainCache()
+        .then(() => {
+          callback(null, isOriginAllowed(origin) ? true : false);
+        })
+        .catch(() => {
+          // On cache refresh failure, still allow the request through
+          callback(null, isOriginAllowed(origin) ? true : false);
+        });
     } else {
-      if (isOriginAllowed(origin)) {
-        callback(null, true);
-      } else {
-        console.warn(`[CORS] Blocked origin: ${origin}`);
-        callback(new Error(`CORS policy: Origin ${origin} not allowed`));
-      }
+      callback(null, isOriginAllowed(origin) ? true : false);
     }
   },
   credentials: true,
