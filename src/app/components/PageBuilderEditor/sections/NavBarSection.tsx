@@ -9,19 +9,25 @@ export const NavBarSectionPreview: React.FC<{ section: PageSection }> = ({ secti
   const bgColor = section.content?.backgroundColor || '#ffffff';
   const textColor = section.content?.textColor || '#333333';
   const logoUrl = section.content?.logoUrl || '';
+  const logoDisplayMode = section.content?.logoDisplayMode || 'auto';
   const menuItems: { label: string; url: string }[] = section.content?.menuItems || [];
+
+  const showLogo = logoUrl && (logoDisplayMode === 'both' || logoDisplayMode === 'logo' || (logoDisplayMode === 'auto' && logoUrl));
+  const showText = logoDisplayMode === 'both' || logoDisplayMode === 'text' || (logoDisplayMode === 'auto' && !logoUrl);
 
   return (
     <nav style={{ backgroundColor: bgColor }} className="border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          {logoUrl && (
+          {showLogo && (
             <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" />
           )}
-          <span className="text-lg sm:text-xl font-bold tracking-tight" style={{ color: brandColor }}>
-            {brandName}
-          </span>
+          {showText && (
+            <span className="text-lg sm:text-xl font-bold tracking-tight" style={{ color: brandColor }}>
+              {brandName}
+            </span>
+          )}
         </div>
 
         {/* Desktop menu */}

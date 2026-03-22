@@ -1200,9 +1200,11 @@ const PropertiesPanel: React.FC<{
   const [isUploadingHeroImage, setIsUploadingHeroImage] = useState<'bg' | 'overlay' | null>(null);
   const [uploadError, setUploadError] = useState('');
   const [isUploadingGalleryImage, setIsUploadingGalleryImage] = useState(false);
+  const [isUploadingNavLogo, setIsUploadingNavLogo] = useState(false);
   const aboutImageInputRef = React.useRef<HTMLInputElement>(null);
   const heroBgImageRef = React.useRef<HTMLInputElement>(null);
   const heroOverlayImageRef = React.useRef<HTMLInputElement>(null);
+  const navLogoInputRef = React.useRef<HTMLInputElement>(null);
   const galleryImageInputRef = React.useRef<HTMLInputElement>(null);
 
   // Auto-save refs
@@ -1580,14 +1582,92 @@ const PropertiesPanel: React.FC<{
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Logo Image URL</label>
-              <Input
-                type="text"
-                value={content.logoUrl || ''}
-                onChange={(e) => setContent({ ...content, logoUrl: e.target.value })}
-                placeholder="https://... (optional)"
-              />
-              <p className="text-xs text-gray-500 mt-1">Paste a logo image URL or leave blank for text-only</p>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Logo</label>
+              <div className="space-y-2">
+                <div className="w-full h-20 bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
+                  {content.logoUrl ? (
+                    <img src={content.logoUrl} alt="Logo" className="h-full w-auto object-contain p-1" />
+                  ) : (
+                    <span className="text-gray-400 text-xs">No logo</span>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navLogoInputRef.current?.click()}
+                    disabled={isUploadingNavLogo}
+                    className="gap-2 flex-1"
+                  >
+                    <Upload className="w-4 h-4" />
+                    {isUploadingNavLogo ? 'Uploading...' : content.logoUrl ? 'Change Logo' : 'Upload Logo'}
+                  </Button>
+                  {content.logoUrl && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setContent({ ...content, logoUrl: '' })}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
+                </div>
+                <input
+                  ref={navLogoInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (!file.type.startsWith('image/')) { setUploadError('Please upload an image file'); return; }
+                    if (file.size > 5 * 1024 * 1024) { setUploadError('File size must be less than 5MB'); return; }
+                    try {
+                      setIsUploadingNavLogo(true);
+                      setUploadError('');
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+                      const authToken = localStorage.getItem('authToken');
+                      if (!authToken) { setUploadError('Authentication token not found.'); setIsUploadingNavLogo(false); return; }
+                      const uploadResponse = await fetch(
+                        `${apiUrl}/page-builder/websites/${section?.websiteId}/media/upload`,
+                        { method: 'POST', headers: { 'Authorization': `Bearer ${authToken}` }, body: formData }
+                      );
+                      if (!uploadResponse.ok) {
+                        const error = await uploadResponse.json();
+                        throw new Error(error.message || 'Upload failed');
+                      }
+                      const uploadData = await uploadResponse.json();
+                      const imageUrl = uploadData.data?.url || uploadData.data?.media?.url;
+                      if (!imageUrl) throw new Error('No URL returned from upload');
+                      const updatedContent = { ...content, logoUrl: imageUrl };
+                      setContent(updatedContent);
+                      if (onUpdateSection) onUpdateSection({ content: updatedContent });
+                    } catch (error) {
+                      setUploadError(error instanceof Error ? error.message : 'Failed to upload logo');
+                    } finally {
+                      setIsUploadingNavLogo(false);
+                    }
+                    e.target.value = '';
+                  }}
+                  className="hidden"
+                />
+                {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
+                <p className="text-xs text-gray-500">Max 5MB. PNG or SVG recommended.</p>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Header Display</label>
+              <select
+                value={content.logoDisplayMode || 'auto'}
+                onChange={(e) => setContent({ ...content, logoDisplayMode: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                <option value="auto">Auto (Logo if available, otherwise Text)</option>
+                <option value="both">Both Logo & Text</option>
+                <option value="logo">Logo Only</option>
+                <option value="text">Text Only</option>
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Background Color</label>

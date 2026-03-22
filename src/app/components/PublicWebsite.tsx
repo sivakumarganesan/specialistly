@@ -208,6 +208,9 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
             const brandColor = nc.brandColor || website?.branding?.primaryColor || '#00acc1';
             const brandName = nc.brandName || website?.branding?.siteName || 'Website';
             const logoUrl = nc.logoUrl || website?.branding?.logo || '';
+            const logoDisplayMode = nc.logoDisplayMode || 'auto';
+            const showLogo = logoUrl && (logoDisplayMode === 'both' || logoDisplayMode === 'logo' || (logoDisplayMode === 'auto' && logoUrl));
+            const showText = logoDisplayMode === 'both' || logoDisplayMode === 'text' || (logoDisplayMode === 'auto' && !logoUrl);
             // Merge section-defined menu items with page links
             const sectionMenuItems: { label: string; url: string }[] = nc.menuItems || [];
             const hasMenuItems = sectionMenuItems.length > 0;
@@ -216,8 +219,8 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
               <nav style={{ backgroundColor: navBgColor }} className="border-b border-gray-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {logoUrl && <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" />}
-                    <span className="text-lg sm:text-xl font-bold tracking-tight" style={{ color: brandColor }}>{brandName}</span>
+                    {showLogo && <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" />}
+                    {showText && <span className="text-lg sm:text-xl font-bold tracking-tight" style={{ color: brandColor }}>{brandName}</span>}
                   </div>
 
                   {/* Desktop nav */}
