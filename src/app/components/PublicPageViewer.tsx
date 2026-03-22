@@ -31,7 +31,7 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
           }}
         >
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4">{section.title}</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">{section.title}</h2>
             {section.description && (
               <p className="text-lg mb-8 opacity-90">{section.description}</p>
             )}
@@ -47,9 +47,9 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       return (
         <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#f9fafb' }}>
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4">{section.title}</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">{section.title}</h2>
             {section.description && (
-              <p className="text-gray-600 mb-8">{section.description}</p>
+              <p className="text-gray-600 text-lg mb-8">{section.description}</p>
             )}
             <div className="space-y-4">
               {section.content?.email && (
@@ -75,9 +75,9 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       return (
         <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#ffffff' }}>
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4 text-center">{section.title}</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-center">{section.title}</h2>
             {section.description && (
-              <p className="text-gray-600 mb-12 text-center">{section.description}</p>
+              <p className="text-gray-600 text-lg mb-12 text-center">{section.description}</p>
             )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {(section.content?.testimonials || []).map((testimonial: any) => (
@@ -112,9 +112,9 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       return (
         <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#f9fafb' }}>
           <div className="max-w-6xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4 text-center">{section.title}</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-center">{section.title}</h2>
             {section.description && (
-              <p className="text-gray-600 mb-12 text-center">{section.description}</p>
+              <p className="text-gray-600 text-lg mb-12 text-center">{section.description}</p>
             )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {(section.content?.plans || []).map((plan: any) => (
@@ -135,9 +135,9 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       return (
         <div className="py-16 px-4" style={{ backgroundColor: section.content?.backgroundColor || '#ffffff' }}>
           <div className="max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4 text-center">{section.title}</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-center">{section.title}</h2>
             {section.description && (
-              <p className="text-gray-600 mb-12 text-center">{section.description}</p>
+              <p className="text-gray-600 text-lg mb-12 text-center">{section.description}</p>
             )}
             <div className="space-y-4">
               {(section.content?.faqs || []).map((faq: any) => (
@@ -190,7 +190,7 @@ export const PublicPageViewer: React.FC<PublicPageViewerProps> = ({ subdomain, p
   }
 
   return (
-    <div className="w-full bg-white" style={{ fontFamily: "'Segoe UI', 'Trebuchet MS', system-ui, -apple-system, sans-serif" }}>
+    <div className="w-full bg-white" style={{ fontFamily: "'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif" }}>
       {/* Page content - NO DUPLICATE HEADER (handled by PublicWebsite) */}
       <main className="min-h-screen">
         {page.sections && page.sections.length > 0 ? (

@@ -81,9 +81,9 @@ export const NewsletterSectionPreview: React.FC<{ section: PageSection }> = ({ s
       <div className="max-w-4xl mx-auto">
         {/* Subscribe Section */}
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">{section.title || 'Newsletter'}</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold mb-4">{section.title || 'Newsletter'}</h2>
           {section.description && (
-            <p className="text-gray-600 mb-8">{section.description}</p>
+            <p className="text-gray-600 text-lg mb-8">{section.description}</p>
           )}
           <form onSubmit={handleSubscribe} className="flex gap-2 max-w-lg mx-auto">
             <input

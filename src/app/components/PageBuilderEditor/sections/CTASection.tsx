@@ -162,7 +162,7 @@ export const CTASectionPreview: React.FC<{ section: PageSection }> = ({
       }}
     >
       {section.content?.title && (
-        <h2 className="text-3xl font-bold mb-4">{section.content.title}</h2>
+        <h2 className="text-3xl sm:text-4xl font-bold mb-4">{section.content.title}</h2>
       )}
       {section.content?.description && (
         <p className="text-lg mb-8 max-w-2xl mx-auto opacity-90">

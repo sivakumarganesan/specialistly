@@ -218,10 +218,10 @@ export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
 
           <div className="flex-1">
             {section.content?.title && (
-              <h2 className="text-4xl font-bold mb-6 text-gray-900" style={{ fontFamily: 'Georgia, serif', letterSpacing: '-0.5px' }}>{section.content.title}</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-6 text-gray-900" style={{ letterSpacing: '-0.02em' }}>{section.content.title}</h2>
             )}
             {section.content?.description && (
-              <div className="text-gray-700 text-lg leading-relaxed" style={{ fontFamily: "'Segoe UI', 'Trebuchet MS', system-ui, sans-serif", lineHeight: '1.8' }}>
+              <div className="text-gray-700 text-lg leading-relaxed" style={{ lineHeight: '1.8' }}>
                 {renderFormattedText(section.content.description)}
               </div>
             )}
