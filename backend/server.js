@@ -7,6 +7,7 @@ import multer from 'multer';
 import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { subdomainMiddleware } from './middleware/subdomainMiddleware.js';
+import Website from './models/Website.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import courseRoutes from './routes/courseRoutes.js';
@@ -56,6 +57,25 @@ const allowedOrigins = [
   'http://localhost:5173', // Vite dev server
 ];
 
+// Cache of allowed custom domains (refreshed periodically)
+let customDomainCache = new Set();
+let lastCacheRefresh = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const refreshCustomDomainCache = async () => {
+  try {
+    const websites = await Website.find(
+      { customDomain: { $exists: true, $ne: null, $ne: '' } },
+      { customDomain: 1, _id: 0 }
+    ).lean();
+    customDomainCache = new Set(websites.map(w => w.customDomain.toLowerCase()));
+    lastCacheRefresh = Date.now();
+    console.log(`[CORS] Refreshed custom domain cache: ${customDomainCache.size} domains`);
+  } catch (err) {
+    console.error('[CORS] Failed to refresh custom domain cache:', err.message);
+  }
+};
+
 // Function to check if origin is allowed
 const isOriginAllowed = (origin) => {
   if (!origin) return true; // Allow no-origin requests (mobile apps, curl)
@@ -72,16 +92,37 @@ const isOriginAllowed = (origin) => {
   if (origin.match(/^https?:\/\/[a-z0-9-]+\.specialistly\.local(:[0-9]+)?$/)) {
     return true;
   }
+
+  // Allow custom domains registered in the database
+  try {
+    const originHost = new URL(origin).hostname.toLowerCase().replace(/^www\./, '');
+    if (customDomainCache.has(originHost)) return true;
+  } catch (e) {
+    // Invalid URL, ignore
+  }
   
   return false;
 };
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (isOriginAllowed(origin)) {
-      callback(null, true);
+    // Refresh cache if stale
+    if (Date.now() - lastCacheRefresh > CACHE_TTL) {
+      refreshCustomDomainCache().then(() => {
+        if (isOriginAllowed(origin)) {
+          callback(null, true);
+        } else {
+          console.warn(`[CORS] Blocked origin: ${origin}`);
+          callback(new Error(`CORS policy: Origin ${origin} not allowed`));
+        }
+      });
     } else {
-      callback(new Error(`CORS policy: Origin ${origin} not allowed`));
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        console.warn(`[CORS] Blocked origin: ${origin}`);
+        callback(new Error(`CORS policy: Origin ${origin} not allowed`));
+      }
     }
   },
   credentials: true,
@@ -134,7 +175,10 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Connect to MongoDB
-connectDB();
+connectDB().then(() => {
+  // Pre-load custom domain cache after DB connects
+  refreshCustomDomainCache();
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
