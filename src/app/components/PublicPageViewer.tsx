@@ -202,13 +202,6 @@ export const PublicPageViewer: React.FC<PublicPageViewerProps> = ({ subdomain, p
           </div>
         )}
       </main>
-
-      {/* Footer */}
-      <footer style={{ backgroundColor: website?.branding?.footerBgColor || '#111827', color: website?.branding?.footerTextColor || '#ffffff' }} className="py-8 mt-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p>&copy; {new Date().getFullYear()} {website.branding?.siteName || 'Website'}. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   );
 };
