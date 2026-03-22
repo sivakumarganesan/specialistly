@@ -1199,9 +1199,11 @@ const PropertiesPanel: React.FC<{
   const [isUploadingAboutImage, setIsUploadingAboutImage] = useState(false);
   const [isUploadingHeroImage, setIsUploadingHeroImage] = useState<'bg' | 'overlay' | null>(null);
   const [uploadError, setUploadError] = useState('');
+  const [isUploadingGalleryImage, setIsUploadingGalleryImage] = useState(false);
   const aboutImageInputRef = React.useRef<HTMLInputElement>(null);
   const heroBgImageRef = React.useRef<HTMLInputElement>(null);
   const heroOverlayImageRef = React.useRef<HTMLInputElement>(null);
+  const galleryImageInputRef = React.useRef<HTMLInputElement>(null);
 
   // Auto-save refs
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2325,16 +2327,149 @@ const PropertiesPanel: React.FC<{
         )}
 
         {section.type === 'gallery' && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Columns</label>
-              <Input
-                type="number"
-                min="1"
-                max="6"
-                value={content.columns || 3}
-                onChange={(e) => setContent({ ...content, columns: parseInt(e.target.value) })}
+              <div className="flex gap-2">
+                {[1, 2, 3, 4].map((n) => (
+                  <Button
+                    key={n}
+                    variant={(content.columns || 3) === n ? 'default' : 'outline'}
+                    onClick={() => setContent({ ...content, columns: n })}
+                    className="flex-1 text-xs"
+                  >
+                    {n}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Gallery Images */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Images</label>
+              <div className="space-y-2">
+                {(content.images || []).map((img: any, idx: number) => (
+                  <div key={img.id || idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                    <img
+                      src={img.url}
+                      alt={img.caption || `Image ${idx + 1}`}
+                      className="w-14 h-14 object-cover rounded flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <Input
+                        type="text"
+                        value={img.caption || ''}
+                        onChange={(e) => {
+                          const images = [...(content.images || [])];
+                          images[idx] = { ...images[idx], caption: e.target.value };
+                          setContent({ ...content, images });
+                        }}
+                        placeholder="Caption (optional)"
+                        className="text-xs"
+                      />
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const images = (content.images || []).filter((_: any, i: number) => i !== idx);
+                        setContent({ ...content, images });
+                      }}
+                      className="text-red-500 hover:text-red-700 flex-shrink-0"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => galleryImageInputRef.current?.click()}
+                disabled={isUploadingGalleryImage}
+                className="gap-2 mt-2 w-full"
+              >
+                <Upload className="w-4 h-4" />
+                {isUploadingGalleryImage ? 'Uploading...' : 'Add Image'}
+              </Button>
+              <input
+                ref={galleryImageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={async (e) => {
+                  const files = e.target.files;
+                  if (!files || files.length === 0) return;
+
+                  setIsUploadingGalleryImage(true);
+                  setUploadError('');
+
+                  const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+                  const authToken = localStorage.getItem('authToken');
+                  if (!authToken) {
+                    setUploadError('Authentication token not found. Please log in again.');
+                    setIsUploadingGalleryImage(false);
+                    return;
+                  }
+
+                  const newImages = [...(content.images || [])];
+
+                  for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    if (!file.type.startsWith('image/')) continue;
+                    if (file.size > 5 * 1024 * 1024) {
+                      setUploadError('Each file must be less than 5MB');
+                      continue;
+                    }
+
+                    try {
+                      const formData = new FormData();
+                      formData.append('file', file);
+
+                      const uploadResponse = await fetch(
+                        `${apiUrl}/page-builder/websites/${section?.websiteId}/media/upload`,
+                        {
+                          method: 'POST',
+                          headers: { 'Authorization': `Bearer ${authToken}` },
+                          body: formData,
+                        }
+                      );
+
+                      if (!uploadResponse.ok) {
+                        const error = await uploadResponse.json();
+                        throw new Error(error.message || 'Upload failed');
+                      }
+
+                      const uploadData = await uploadResponse.json();
+                      const imageUrl = uploadData.data?.url || uploadData.data?.media?.url;
+                      if (imageUrl) {
+                        newImages.push({
+                          id: `img_${Date.now()}_${i}`,
+                          url: imageUrl,
+                          caption: '',
+                        });
+                      }
+                    } catch (error) {
+                      console.error('Gallery image upload error:', error);
+                      setUploadError(error instanceof Error ? error.message : 'Failed to upload image');
+                    }
+                  }
+
+                  const updatedContent = { ...content, images: newImages };
+                  setContent(updatedContent);
+                  if (onUpdateSection) {
+                    onUpdateSection({ content: updatedContent });
+                  }
+                  setIsUploadingGalleryImage(false);
+                  // Reset input so the same file can be re-selected
+                  e.target.value = '';
+                }}
+                className="hidden"
               />
+              {uploadError && (
+                <p className="text-xs text-red-600 mt-1">{uploadError}</p>
+              )}
+              <p className="text-xs text-gray-500 mt-1">Max 5MB per image. PNG or JPG recommended.</p>
             </div>
           </div>
         )}
