@@ -2296,6 +2296,190 @@ const PropertiesPanel: React.FC<{
           </div>
         )}
 
+        {section.type === 'video' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Section Title</label>
+              <Input
+                type="text"
+                value={content.title || ''}
+                onChange={(e) => setContent({ ...content, title: e.target.value })}
+                placeholder="Our Videos"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Section Description</label>
+              <Textarea
+                value={content.description || ''}
+                onChange={(e) => setContent({ ...content, description: e.target.value })}
+                placeholder="Watch our latest content"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Layout</label>
+              <div className="flex gap-2">
+                <Button
+                  variant={content.layout === 'grid' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'grid' })}
+                  className="flex-1 text-xs"
+                >
+                  Grid
+                </Button>
+                <Button
+                  variant={content.layout === 'featured' ? 'default' : 'outline'}
+                  onClick={() => setContent({ ...content, layout: 'featured' })}
+                  className="flex-1 text-xs"
+                >
+                  Featured
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Featured: first video large, rest in grid</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Columns</label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4].map((n) => (
+                  <Button
+                    key={n}
+                    variant={(content.columns || 3) === n ? 'default' : 'outline'}
+                    onClick={() => setContent({ ...content, columns: n })}
+                    className="flex-1 text-xs"
+                  >
+                    {n}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Accent Color</label>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.accentColor || '#FF0000'}
+                  onChange={(e) => setContent({ ...content, accentColor: e.target.value })}
+                  className="w-12 h-10 rounded cursor-pointer"
+                />
+                <Input
+                  type="text"
+                  value={content.accentColor || '#FF0000'}
+                  onChange={(e) => setContent({ ...content, accentColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+
+            {/* Videos Management */}
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="text-sm font-semibold text-gray-900">Videos</h4>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const videos = content.videos || [];
+                    videos.push({
+                      id: Date.now().toString(),
+                      url: '',
+                      title: 'New Video',
+                      description: '',
+                    });
+                    setContent({ ...content, videos });
+                  }}
+                  className="text-xs"
+                >
+                  + Add Video
+                </Button>
+              </div>
+              
+              <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                {(content.videos || []).map((video: any, idx: number) => {
+                  const videoId = video.url ? (() => {
+                    const patterns = [
+                      /(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+                      /^([a-zA-Z0-9_-]{11})$/,
+                    ];
+                    for (const p of patterns) { const m = video.url.match(p); if (m) return m[1]; }
+                    return null;
+                  })() : null;
+
+                  return (
+                    <div key={video.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-xs font-medium text-gray-600">Video {idx + 1}</span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const videos = content.videos.filter(
+                              (v: any) => v.id !== video.id
+                            );
+                            setContent({ ...content, videos });
+                          }}
+                          className="text-xs text-red-600 h-6 px-2"
+                        >
+                          Remove
+                        </Button>
+                      </div>
+
+                      {/* Thumbnail preview */}
+                      {videoId && (
+                        <div className="relative mb-2 rounded overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                          <img
+                            src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
+                            alt={video.title}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow">
+                              <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <Input
+                        type="text"
+                        value={video.url}
+                        onChange={(e) => {
+                          const videos = content.videos.map((v: any) =>
+                            v.id === video.id ? { ...v, url: e.target.value } : v
+                          );
+                          setContent({ ...content, videos });
+                        }}
+                        placeholder="YouTube URL (e.g. https://youtube.com/watch?v=...)"
+                        className="mb-2 text-xs"
+                      />
+                      <Input
+                        type="text"
+                        value={video.title}
+                        onChange={(e) => {
+                          const videos = content.videos.map((v: any) =>
+                            v.id === video.id ? { ...v, title: e.target.value } : v
+                          );
+                          setContent({ ...content, videos });
+                        }}
+                        placeholder="Video title"
+                        className="mb-2 text-xs"
+                      />
+                      <Textarea
+                        value={video.description || ''}
+                        onChange={(e) => {
+                          const videos = content.videos.map((v: any) =>
+                            v.id === video.id ? { ...v, description: e.target.value } : v
+                          );
+                          setContent({ ...content, videos });
+                        }}
+                        placeholder="Short description (optional)"
+                        className="text-xs"
+                        rows={2}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
         {section.type === 'newsletter' && (
           <div className="space-y-4">
             <div>

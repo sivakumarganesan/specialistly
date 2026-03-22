@@ -16,6 +16,7 @@ import {
   GraduationCap,
   PanelTop,
   Navigation,
+  Play,
 } from 'lucide-react';
 
 interface SectionTemplate {
@@ -203,6 +204,20 @@ const SECTION_TEMPLATES: SectionTemplate[] = [
       title: 'Our Work',
       images: [],
       columns: 3,
+    },
+  },
+  {
+    type: 'video',
+    name: 'Video Gallery',
+    description: 'Showcase YouTube videos',
+    icon: <Play className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Our Videos',
+      description: 'Watch our latest content',
+      videos: [],
+      layout: 'grid',
+      columns: 3,
+      accentColor: '#FF0000',
     },
   },
   {
