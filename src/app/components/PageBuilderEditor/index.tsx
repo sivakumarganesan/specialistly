@@ -3868,6 +3868,52 @@ const PropertiesPanel: React.FC<{
         </div>
       </div>
 
+      {/* Animation */}
+      {section.type !== 'topbar' && section.type !== 'navbar' && (
+        <div className="border-t pt-4">
+          <h4 className="text-sm font-semibold text-gray-900 mb-3">Entrance Animation</h4>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Effect</label>
+              <select
+                value={content.animation || 'none'}
+                onChange={(e) => setContent({ ...content, animation: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              >
+                <option value="none">None</option>
+                <option value="fadeIn">Fade In</option>
+                <option value="fadeInUp">Fade In Up</option>
+                <option value="fadeInDown">Fade In Down</option>
+                <option value="fadeInLeft">Fade In Left</option>
+                <option value="fadeInRight">Fade In Right</option>
+                <option value="zoomIn">Zoom In</option>
+                <option value="zoomInUp">Zoom In Up</option>
+                <option value="slideInUp">Slide In Up</option>
+                <option value="flipIn">Flip In</option>
+                <option value="bounceIn">Bounce In</option>
+              </select>
+            </div>
+            {content.animation && content.animation !== 'none' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Speed</label>
+                <div className="flex gap-2">
+                  {(['slow', 'normal', 'fast'] as const).map((s) => (
+                    <Button
+                      key={s}
+                      variant={(content.animationSpeed || 'normal') === s ? 'default' : 'outline'}
+                      onClick={() => setContent({ ...content, animationSpeed: s })}
+                      className="flex-1 text-xs capitalize"
+                    >
+                      {s}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Save Button */}
       <Button
         onClick={handleSave}

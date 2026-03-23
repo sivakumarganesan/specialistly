@@ -9,6 +9,7 @@ import { NewsletterSectionPreview } from './PageBuilderEditor/sections/Newslette
 import { TeamSectionPreview } from './PageBuilderEditor/sections/TeamSection';
 import { VideoGallerySectionPreview } from './PageBuilderEditor/sections/VideoGallerySection';
 import { GallerySectionPreview } from './PageBuilderEditor/sections/GallerySection';
+import AnimatedSection from './PageBuilderEditor/AnimatedSection';
 
 const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
   // TopBar and NavBar are rendered by the parent PublicWebsite header — skip here
@@ -200,7 +201,13 @@ export const PublicPageViewer: React.FC<PublicPageViewerProps> = ({ subdomain, p
           [...page.sections]
             .sort((a: PageSection, b: PageSection) => a.order - b.order)
             .map((section: PageSection) => (
-              <SectionRenderer key={section._id} section={section} />
+              <AnimatedSection
+                key={section._id}
+                animation={section.content?.animation}
+                speed={section.content?.animationSpeed}
+              >
+                <SectionRenderer section={section} />
+              </AnimatedSection>
             ))
         ) : (
           <div className="flex items-center justify-center h-96 bg-gray-50">
