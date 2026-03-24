@@ -209,9 +209,9 @@ export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
   return (
     <div className="py-16 px-4" style={{ backgroundColor: bgColor }}>
       <div className="max-w-6xl mx-auto">
-        <div className={`flex gap-8 md:gap-12 items-center ${directionClasses}`}>
+        <div className={`flex flex-wrap md:flex-nowrap gap-8 md:gap-12 items-center ${directionClasses}`}>
           {section.content?.image && (
-            <div className={isHorizontal ? 'w-full md:w-1/2 flex-shrink-0' : 'w-full'}>
+            <div className={isHorizontal ? 'w-full md:w-1/2 md:flex-shrink-0' : 'w-full'}>
               <img
                 src={section.content.image}
                 alt={section.content?.title}
