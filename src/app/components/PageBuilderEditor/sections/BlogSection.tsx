@@ -46,23 +46,23 @@ export const BlogSectionPreview: React.FC<{ section: PageSection }> = ({ section
 
         <div className={
           layout === 'grid'
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'
-            : 'space-y-8 max-w-3xl mx-auto'
+            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
+            : 'space-y-6 max-w-3xl mx-auto'
         }>
           {posts.map((post) => (
             <article
               key={post.id}
               className={`bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all cursor-pointer hover:-translate-y-0.5 ${
-                layout === 'list' ? 'flex gap-6' : ''
+                layout === 'list' ? 'flex flex-col sm:flex-row gap-0 sm:gap-6' : ''
               }`}
               onClick={() => setSelectedPost(post)}
             >
               {post.image && (
-                <div className={layout === 'list' ? 'w-64 flex-shrink-0' : ''}>
+                <div className={layout === 'list' ? 'w-full sm:w-48 md:w-64 flex-shrink-0' : ''}>
                   <img
                     src={post.image}
                     alt={post.title}
-                    className={`w-full object-cover ${layout === 'list' ? 'h-full' : 'h-48'}`}
+                    className={`w-full object-cover ${layout === 'list' ? 'h-48 sm:h-full' : 'h-48 sm:h-52'}`}
                   />
                 </div>
               )}
