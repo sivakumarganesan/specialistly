@@ -1428,6 +1428,19 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               </div>
             </div>
 
+            <div>
+              <Label htmlFor="zoomLink">Zoom Meeting Link</Label>
+              <Input
+                id="zoomLink"
+                placeholder="https://us06web.zoom.us/j/... or your Personal Meeting URL"
+                value={formData.zoomLink}
+                onChange={(e) =>
+                  setFormData({ ...formData, zoomLink: e.target.value })
+                }
+              />
+              <p className="text-xs text-gray-500 mt-1">Paste your Zoom meeting or personal meeting link. Students will see this after enrollment.</p>
+            </div>
+
           </div>
 
           <DialogFooter>
@@ -1586,6 +1599,18 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               </div>
             </div>
 
+            <div>
+              <Label htmlFor="edit-zoomLink">Zoom Meeting Link</Label>
+              <Input
+                id="edit-zoomLink"
+                placeholder="https://us06web.zoom.us/j/... or your Personal Meeting URL"
+                value={formData.zoomLink}
+                onChange={(e) =>
+                  setFormData({ ...formData, zoomLink: e.target.value })
+                }
+              />
+              <p className="text-xs text-gray-500 mt-1">Paste your Zoom meeting or personal meeting link. Students will see this after enrollment.</p>
+            </div>
 
           </div>
 
