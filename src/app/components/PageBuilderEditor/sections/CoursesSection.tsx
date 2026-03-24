@@ -448,13 +448,13 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
                   {backendCourses.length > 0 && (() => {
                     const isCohortClosed = (course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate && new Date(course.startDate) <= new Date();
                     return isCohortClosed ? (
-                      <div className="mt-3 w-full py-2 px-4 bg-gray-400 text-white text-sm font-semibold rounded-lg text-center">
+                      <div className={`mt-3 py-2 px-4 bg-gray-400 text-white text-sm font-semibold rounded-lg text-center ${layout === 'list' ? 'w-fit' : 'w-full'}`}>
                         Enrollment Closed
                       </div>
                     ) : (
                       <button
                         onClick={() => setCheckoutCourse(course)}
-                        className="mt-3 w-full py-2 px-4 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                        className={`mt-3 py-2 px-4 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 ${layout === 'list' ? 'w-fit' : 'w-full'}`}
                       >
                         <ShoppingCart className="h-4 w-4" />
                         {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
