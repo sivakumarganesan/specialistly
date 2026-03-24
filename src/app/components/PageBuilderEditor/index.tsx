@@ -1998,11 +1998,72 @@ const PropertiesPanel: React.FC<{
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              {/* Formatting toolbar */}
+              <div className="flex gap-1 mb-1 p-1 bg-gray-50 rounded-t-lg border border-b-0 border-gray-200">
+                {[
+                  { label: 'B', wrap: '**', title: 'Bold (**text**)' },
+                  { label: 'I', wrap: '*', title: 'Italic (*text*)' },
+                ].map((btn) => (
+                  <button
+                    key={btn.label}
+                    title={btn.title}
+                    className={`w-7 h-7 flex items-center justify-center rounded text-xs font-bold hover:bg-gray-200 transition-colors ${
+                      btn.label === 'I' ? 'italic' : ''
+                    }`}
+                    onClick={() => {
+                      const ta = document.querySelector<HTMLTextAreaElement>('#about-description-ta');
+                      if (!ta) return;
+                      const start = ta.selectionStart;
+                      const end = ta.selectionEnd;
+                      const text = content.description || '';
+                      const selected = text.substring(start, end);
+                      const newText = text.substring(0, start) + btn.wrap + (selected || 'text') + btn.wrap + text.substring(end);
+                      setContent({ ...content, description: newText });
+                      setTimeout(() => {
+                        ta.focus();
+                        const cursorPos = selected ? end + btn.wrap.length * 2 : start + btn.wrap.length + 4 + btn.wrap.length;
+                        ta.setSelectionRange(start + btn.wrap.length, start + btn.wrap.length + (selected.length || 4));
+                      }, 0);
+                    }}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+                <button
+                  title="Bullet list (- item)"
+                  className="w-7 h-7 flex items-center justify-center rounded text-xs hover:bg-gray-200 transition-colors"
+                  onClick={() => {
+                    const ta = document.querySelector<HTMLTextAreaElement>('#about-description-ta');
+                    if (!ta) return;
+                    const start = ta.selectionStart;
+                    const text = content.description || '';
+                    // Find start of current line
+                    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+                    const lineEnd = text.indexOf('\n', start);
+                    const line = text.substring(lineStart, lineEnd === -1 ? text.length : lineEnd);
+                    const isList = line.trimStart().startsWith('- ');
+                    let newText;
+                    if (isList) {
+                      newText = text.substring(0, lineStart) + line.replace(/^(\s*)- /, '$1') + text.substring(lineEnd === -1 ? text.length : lineEnd);
+                    } else {
+                      newText = text.substring(0, lineStart) + '- ' + line + text.substring(lineEnd === -1 ? text.length : lineEnd);
+                    }
+                    setContent({ ...content, description: newText });
+                    setTimeout(() => ta.focus(), 0);
+                  }}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeWidth={2} d="M4 6h.01M8 6h12M4 12h.01M8 12h12M4 18h.01M8 18h12" /></svg>
+                </button>
+                <div className="w-px bg-gray-300 mx-0.5" />
+                <span className="flex items-center text-[10px] text-gray-400 px-1">**bold** *italic* - list</span>
+              </div>
               <Textarea
+                id="about-description-ta"
                 value={content.description || ''}
                 onChange={(e) => setContent({ ...content, description: e.target.value })}
-                placeholder="Tell your story..."
-                rows={5}
+                placeholder="Tell your story... Use **bold**, *italic*, and - for lists"
+                rows={6}
+                className="rounded-t-none"
               />
             </div>
             <div>

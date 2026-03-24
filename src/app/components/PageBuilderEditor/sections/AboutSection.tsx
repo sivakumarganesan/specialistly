@@ -194,34 +194,39 @@ export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
   section,
 }) => {
   const imagePosition = section.content?.imagePosition || 'right';
+  const bgColor = section.styling?.backgroundColor || '#ffffff';
 
-  const contentClasses = {
-    left: 'flex-row-reverse',
-    right: 'flex-row',
+  const isHorizontal = imagePosition === 'left' || imagePosition === 'right';
+
+  // On mobile always stack vertically (image on top); on md+ use the chosen layout
+  const directionClasses = {
+    left: 'flex-col md:flex-row-reverse',
+    right: 'flex-col md:flex-row',
     top: 'flex-col',
     bottom: 'flex-col-reverse',
   }[imagePosition] as string;
 
   return (
-    <div className="py-16 px-4 bg-white">
+    <div className="py-16 px-4" style={{ backgroundColor: bgColor }}>
       <div className="max-w-6xl mx-auto">
-        <div className={`flex gap-12 items-start ${contentClasses}`}>
+        <div className={`flex gap-8 md:gap-12 items-center ${directionClasses}`}>
           {section.content?.image && (
-            <div className="flex-1">
+            <div className={isHorizontal ? 'w-full md:w-1/2 flex-shrink-0' : 'w-full'}>
               <img
                 src={section.content.image}
                 alt={section.content?.title}
-                className="w-full h-auto rounded-lg shadow-lg"
+                className="w-full h-auto rounded-2xl shadow-lg"
+                style={{ maxHeight: isHorizontal ? '500px' : '400px', objectFit: 'cover' }}
               />
             </div>
           )}
 
-          <div className="flex-1">
+          <div className={isHorizontal && section.content?.image ? 'w-full md:w-1/2' : 'w-full'}>
             {section.content?.title && (
               <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ letterSpacing: '-0.02em', color: section.content?.titleColor || '#111827' }}>{section.content.title}</h2>
             )}
             {section.content?.description && (
-              <div className="text-lg leading-relaxed" style={{ lineHeight: '1.8', color: section.content?.descriptionColor || '#374151' }}>
+              <div className="text-base sm:text-lg leading-relaxed" style={{ lineHeight: '1.8', color: section.content?.descriptionColor || '#374151' }}>
                 {renderFormattedText(section.content.description)}
               </div>
             )}
