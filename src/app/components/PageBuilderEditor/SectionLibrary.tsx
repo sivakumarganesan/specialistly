@@ -208,16 +208,16 @@ const SECTION_TEMPLATES: SectionTemplate[] = [
   },
   {
     type: 'video',
-    name: 'Video Gallery',
-    description: 'Showcase YouTube videos',
+    name: 'Video Testimonials',
+    description: 'Showcase video testimonials',
     icon: <Play className="w-6 h-6" />,
     defaultContent: {
-      title: 'Our Videos',
-      description: 'Watch our latest content',
+      title: 'What Our Patients Say',
+      description: 'Real stories from real people',
       videos: [],
       layout: 'grid',
-      columns: 3,
-      accentColor: '#FF0000',
+      columns: 2,
+      accentColor: '#0ea5e9',
     },
   },
   {

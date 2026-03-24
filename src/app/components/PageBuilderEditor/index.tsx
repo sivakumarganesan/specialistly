@@ -2562,7 +2562,7 @@ const PropertiesPanel: React.FC<{
                 type="text"
                 value={content.title || ''}
                 onChange={(e) => setContent({ ...content, title: e.target.value })}
-                placeholder="Our Videos"
+                placeholder="What Our Patients Say"
               />
             </div>
             <div>
@@ -2570,7 +2570,7 @@ const PropertiesPanel: React.FC<{
               <Textarea
                 value={content.description || ''}
                 onChange={(e) => setContent({ ...content, description: e.target.value })}
-                placeholder="Watch our latest content"
+                placeholder="Real stories from real people"
               />
             </div>
             <div>
@@ -2599,7 +2599,7 @@ const PropertiesPanel: React.FC<{
                 {[1, 2, 3, 4].map((n) => (
                   <Button
                     key={n}
-                    variant={(content.columns || 3) === n ? 'default' : 'outline'}
+                    variant={(content.columns || 2) === n ? 'default' : 'outline'}
                     onClick={() => setContent({ ...content, columns: n })}
                     className="flex-1 text-xs"
                   >
@@ -2613,23 +2613,23 @@ const PropertiesPanel: React.FC<{
               <div className="flex gap-2">
                 <input
                   type="color"
-                  value={content.accentColor || '#FF0000'}
+                  value={content.accentColor || '#0ea5e9'}
                   onChange={(e) => setContent({ ...content, accentColor: e.target.value })}
                   className="w-12 h-10 rounded cursor-pointer"
                 />
                 <Input
                   type="text"
-                  value={content.accentColor || '#FF0000'}
+                  value={content.accentColor || '#0ea5e9'}
                   onChange={(e) => setContent({ ...content, accentColor: e.target.value })}
                   className="flex-1"
                 />
               </div>
             </div>
 
-            {/* Videos Management */}
+            {/* Video Testimonials Management */}
             <div className="border-t pt-4">
               <div className="flex justify-between items-center mb-3">
-                <h4 className="text-sm font-semibold text-gray-900">Videos</h4>
+                <h4 className="text-sm font-semibold text-gray-900">Testimonials</h4>
                 <Button
                   size="sm"
                   onClick={() => {
@@ -2637,14 +2637,16 @@ const PropertiesPanel: React.FC<{
                     videos.push({
                       id: Date.now().toString(),
                       url: '',
-                      title: 'New Video',
+                      title: '',
                       description: '',
+                      personName: '',
+                      personRole: '',
                     });
                     setContent({ ...content, videos });
                   }}
                   className="text-xs"
                 >
-                  + Add Video
+                  + Add Testimonial
                 </Button>
               </div>
               
@@ -2660,9 +2662,9 @@ const PropertiesPanel: React.FC<{
                   })() : null;
 
                   return (
-                    <div key={video.id} className="p-3 bg-gray-50 rounded border border-gray-200">
+                    <div key={video.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-medium text-gray-600">Video {idx + 1}</span>
+                        <span className="text-xs font-medium text-gray-600">Testimonial {idx + 1}</span>
                         <Button
                           size="sm"
                           variant="ghost"
@@ -2680,15 +2682,15 @@ const PropertiesPanel: React.FC<{
 
                       {/* Thumbnail preview */}
                       {videoId && (
-                        <div className="relative mb-2 rounded overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                        <div className="relative mb-2 rounded-lg overflow-hidden" style={{ aspectRatio: '16/9' }}>
                           <img
                             src={`https://img.youtube.com/vi/${videoId}/mqdefault.jpg`}
                             alt={video.title}
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow">
-                              <svg className="w-5 h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                            <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center shadow">
+                              <svg className="w-5 h-5 ml-0.5" style={{ color: content.accentColor || '#0ea5e9' }} fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
                             </div>
                           </div>
                         </div>
@@ -2706,6 +2708,35 @@ const PropertiesPanel: React.FC<{
                         placeholder="YouTube URL (e.g. https://youtube.com/watch?v=...)"
                         className="mb-2 text-xs"
                       />
+
+                      {/* Person details */}
+                      <div className="grid grid-cols-2 gap-2 mb-2">
+                        <Input
+                          type="text"
+                          value={video.personName || ''}
+                          onChange={(e) => {
+                            const videos = content.videos.map((v: any) =>
+                              v.id === video.id ? { ...v, personName: e.target.value } : v
+                            );
+                            setContent({ ...content, videos });
+                          }}
+                          placeholder="Person name"
+                          className="text-xs"
+                        />
+                        <Input
+                          type="text"
+                          value={video.personRole || ''}
+                          onChange={(e) => {
+                            const videos = content.videos.map((v: any) =>
+                              v.id === video.id ? { ...v, personRole: e.target.value } : v
+                            );
+                            setContent({ ...content, videos });
+                          }}
+                          placeholder="Role / Designation"
+                          className="text-xs"
+                        />
+                      </div>
+
                       <Input
                         type="text"
                         value={video.title}
@@ -2726,7 +2757,7 @@ const PropertiesPanel: React.FC<{
                           );
                           setContent({ ...content, videos });
                         }}
-                        placeholder="Short description (optional)"
+                        placeholder="Testimonial quote (optional)"
                         className="text-xs"
                         rows={2}
                       />
