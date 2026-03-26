@@ -705,9 +705,9 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
               <CalendarClock className="h-5 w-5 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Available Days</p>
+              <p className="text-sm text-gray-600">Consulting</p>
               <p className="text-2xl font-bold">
-                {getAvailableDays().length}
+                {getTotalConsultingServices()}
               </p>
             </div>
           </div>
