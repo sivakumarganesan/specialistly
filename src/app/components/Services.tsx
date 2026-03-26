@@ -72,18 +72,6 @@ interface Service {
   thumbnail?: string;
 }
 
-interface WeeklyAvailability {
-  day: string;
-  enabled: boolean;
-  startTime: string;
-  endTime: string;
-}
-
-interface CreatorProfile {
-  weeklyAvailability: WeeklyAvailability[];
-  savedAt?: string;
-}
-
 interface SearchableItem {
   id: string;
   title: string;
@@ -103,7 +91,7 @@ interface ServicesProps {
 }
 
 export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: ServicesProps) {
-  const { user } = useAuth();
+  const { user, setCurrentPage } = useAuth();
   const [activeTab, setActiveTab] = useState<"courses" | "offerings">("courses");
   const [services, setServices] = useState<Service[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -267,31 +255,6 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
     { day: "Saturday", time: "10:00", enabled: false },
     { day: "Sunday", time: "10:00", enabled: false },
   ]);
-
-  const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
-  const [selectedServiceForSlots, setSelectedServiceForSlots] = useState<Service | null>(null);
-  
-  // Creator Profile with Weekly Availability
-  const [creatorProfile, setCreatorProfile] = useState<CreatorProfile>({
-    weeklyAvailability: [
-      { day: "Monday", enabled: true, startTime: "09:00", endTime: "17:00" },
-      { day: "Tuesday", enabled: true, startTime: "09:00", endTime: "17:00" },
-      { day: "Wednesday", enabled: true, startTime: "09:00", endTime: "17:00" },
-      { day: "Thursday", enabled: true, startTime: "09:00", endTime: "17:00" },
-      { day: "Friday", enabled: true, startTime: "09:00", endTime: "17:00" },
-      { day: "Saturday", enabled: false, startTime: "09:00", endTime: "17:00" },
-      { day: "Sunday", enabled: false, startTime: "09:00", endTime: "17:00" },
-    ],
-    savedAt: new Date().toISOString(),
-  });
-
-  // Appointment slots state
-  const [appointmentSlots, setAppointmentSlots] = useState<AppointmentSlot[]>([]);
-  const [newSlot, setNewSlot] = useState({
-    date: new Date().toISOString().split('T')[0],
-    startTime: "09:00",
-    endTime: "10:00",
-  });
 
   const handleCreateService = async () => {
     if (!formData.title || !formData.description) {
@@ -598,100 +561,6 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
     setWeeklySchedule(updated);
   };
 
-  const openAppointmentDialog = () => {
-    setAppointmentDialogOpen(true);
-  };
-
-  const addAppointmentSlot = async () => {
-    if (newSlot.date && newSlot.startTime && newSlot.endTime) {
-      try {
-        const slotData = {
-          date: newSlot.date,
-          startTime: newSlot.startTime,
-          endTime: newSlot.endTime,
-          status: "available",
-          specialistEmail: user?.email,
-          specialistName: user?.name,
-        };
-        
-        const response = await appointmentAPI.create(slotData);
-        const createdSlot: AppointmentSlot = {
-          id: response.data._id,
-          date: response.data.date,
-          startTime: response.data.startTime,
-          endTime: response.data.endTime,
-          status: response.data.status || "available",
-          bookedBy: response.data.bookedBy,
-          serviceTitle: response.data.serviceTitle,
-        };
-        
-        setAppointmentSlots([...appointmentSlots, createdSlot]);
-        setNewSlot({
-          date: new Date().toISOString().split('T')[0],
-          startTime: "09:00",
-          endTime: "10:00",
-        });
-        alert("Appointment slot added successfully!");
-      } catch (error) {
-        console.error("Failed to create appointment slot:", error);
-        alert("Failed to add appointment slot. Please try again.");
-      }
-    }
-  };
-
-  const deleteAppointmentSlot = async (slotId: string) => {
-    try {
-      await appointmentAPI.delete(slotId);
-      setAppointmentSlots(appointmentSlots.filter((slot) => slot.id !== slotId));
-      alert("Appointment slot deleted successfully!");
-    } catch (error) {
-      console.error("Failed to delete appointment slot:", error);
-      alert("Failed to delete appointment slot. Please try again.");
-    }
-  };
-
-  const toggleDayAvailability = (index: number) => {
-    const updated = [...creatorProfile.weeklyAvailability];
-    updated[index].enabled = !updated[index].enabled;
-    setCreatorProfile({
-      ...creatorProfile,
-      weeklyAvailability: updated,
-    });
-  };
-
-  const updateDayTime = (index: number, field: "startTime" | "endTime", value: string) => {
-    const updated = [...creatorProfile.weeklyAvailability];
-    updated[index][field] = value;
-    setCreatorProfile({
-      ...creatorProfile,
-      weeklyAvailability: updated,
-    });
-  };
-
-  const saveWeeklyAvailability = () => {
-    setCreatorProfile({
-      ...creatorProfile,
-      savedAt: new Date().toISOString(),
-    });
-    setAppointmentDialogOpen(false);
-  };
-
-  const getAvailableSlots = () => {
-    return appointmentSlots.filter((slot) => slot.status === "available");
-  };
-
-  const getBookedSlots = () => {
-    return appointmentSlots.filter((slot) => slot.status === "booked");
-  };
-
-  const getAvailableDays = () => {
-    return creatorProfile.weeklyAvailability.filter((day) => day.enabled);
-  };
-
-  const getUnavailableDays = () => {
-    return creatorProfile.weeklyAvailability.filter((day) => !day.enabled);
-  };
-
   const getTotalConsultingServices = () => {
     return services.filter((s) => s.type === "consulting").length;
   };
@@ -736,17 +605,14 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
           </p>
         </div>
         
-        {/* Set Availability Button */}
+        {/* Manage Availability Button */}
         {activeTab === "offerings" && getTotalConsultingServices() > 0 && (
           <Button
             className="bg-cyan-600 hover:bg-cyan-700 gap-2"
-            onClick={openAppointmentDialog}
+            onClick={() => setCurrentPage('settings')}
           >
             <CalendarClock className="h-5 w-5" />
-            Set Your Availability
-            <Badge className="bg-white text-blue-600">
-              {getAvailableDays().length}/7
-            </Badge>
+            Manage Availability
           </Button>
         )}
       </div>
@@ -848,7 +714,7 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
         </Card>
       </div>
 
-      {/* Appointment Availability Info - Show when consulting services exist */}
+      {/* Consulting Availability Info - Show when consulting services exist */}
       {getTotalConsultingServices() > 0 && (
         <Card className="p-4 bg-gradient-to-r from-gray-50 to-gray-100 border-blue-200">
           <div className="flex items-center justify-between">
@@ -859,22 +725,17 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
               <div>
                 <h3 className="font-semibold text-lg">Your Consulting Availability</h3>
                 <p className="text-sm text-gray-600">
-                  {getAvailableDays().length} days available • {getUnavailableDays().length} days unavailable
-                  {creatorProfile.savedAt && (
-                    <span className="ml-2 text-xs text-gray-500">
-                      Last updated: {new Date(creatorProfile.savedAt).toLocaleDateString()}
-                    </span>
-                  )}
+                  Manage your weekly availability and booking rules in Settings → Manage Availability
                 </p>
               </div>
             </div>
             <Button
               variant="outline"
               className="gap-2"
-              onClick={openAppointmentDialog}
+              onClick={() => setCurrentPage('settings')}
             >
               <Edit className="h-4 w-4" />
-              Manage Slots
+              Manage Availability
             </Button>
           </div>
         </Card>
@@ -1733,200 +1594,6 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
             >
               Save Changes
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Manage Weekly Availability Dialog */}
-      <Dialog open={appointmentDialogOpen} onOpenChange={setAppointmentDialogOpen}>
-        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarClock className="h-5 w-5" />
-              Set Your Availability
-            </DialogTitle>
-            <DialogDescription>
-              Configure your weekly availability for consulting services. Enable/disable each day and set your working hours.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-6 py-4">
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="p-3 bg-green-50 border-green-200">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Available Days</p>
-                  <p className="text-2xl font-bold text-green-700">{getAvailableDays().length}/7</p>
-                </div>
-              </Card>
-              <Card className="p-3 bg-gray-50 border-gray-200">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Unavailable Days</p>
-                  <p className="text-2xl font-bold text-gray-700">{getUnavailableDays().length}/7</p>
-                </div>
-              </Card>
-            </div>
-
-            {/* Weekly Schedule Configuration */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold">Weekly Schedule</h3>
-                {creatorProfile.savedAt && (
-                  <span className="text-xs text-gray-500">
-                    Last saved: {new Date(creatorProfile.savedAt).toLocaleString()}
-                  </span>
-                )}
-              </div>
-              
-              <div className="space-y-2">
-                {creatorProfile.weeklyAvailability.map((day, index) => (
-                  <Card 
-                    key={index} 
-                    className={`p-4 transition-all ${
-                      day.enabled 
-                        ? "bg-green-50 border-green-200" 
-                        : "bg-gray-50 border-gray-200"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Checkbox */}
-                      <Checkbox
-                        id={`day-${index}`}
-                        checked={day.enabled}
-                        onCheckedChange={() => toggleDayAvailability(index)}
-                      />
-                      
-                      {/* Day Label */}
-                      <label
-                        htmlFor={`day-${index}`}
-                        className="flex-1 cursor-pointer font-semibold min-w-[100px]"
-                      >
-                        {day.day}
-                      </label>
-                      
-                      {/* Time Inputs */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-gray-600 min-w-fit">Start:</span>
-                          <Input
-                            type="time"
-                            value={day.startTime}
-                            onChange={(e) => updateDayTime(index, "startTime", e.target.value)}
-                            disabled={!day.enabled}
-                            className="w-24"
-                          />
-                        </div>
-                        
-                        <div className="flex items-center gap-1">
-                          <span className="text-xs text-gray-600 min-w-fit">End:</span>
-                          <Input
-                            type="time"
-                            value={day.endTime}
-                            onChange={(e) => updateDayTime(index, "endTime", e.target.value)}
-                            disabled={!day.enabled}
-                            className="w-24"
-                          />
-                        </div>
-                      </div>
-                      
-                      {/* Status Badge */}
-                      {day.enabled && (
-                        <Badge className="bg-green-100 text-green-700">
-                          Open
-                        </Badge>
-                      )}
-                      {!day.enabled && (
-                        <Badge className="bg-gray-100 text-gray-700">
-                          Off
-                        </Badge>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="border-t pt-4">
-              <h4 className="text-sm font-semibold mb-3">Quick Actions</h4>
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const updated = creatorProfile.weeklyAvailability.map((day) => ({
-                      ...day,
-                      enabled: true,
-                    }));
-                    setCreatorProfile({ ...creatorProfile, weeklyAvailability: updated });
-                  }}
-                >
-                  Enable All Days
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const updated = creatorProfile.weeklyAvailability.map((day, idx) => ({
-                      ...day,
-                      enabled: idx < 5, // Monday to Friday
-                    }));
-                    setCreatorProfile({ ...creatorProfile, weeklyAvailability: updated });
-                  }}
-                >
-                  Weekdays (Mon-Fri)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const updated = creatorProfile.weeklyAvailability.map((day, idx) => ({
-                      ...day,
-                      enabled: idx >= 5, // Saturday and Sunday
-                    }));
-                    setCreatorProfile({ ...creatorProfile, weeklyAvailability: updated });
-                  }}
-                >
-                  Weekends (Sat-Sun)
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const updated = creatorProfile.weeklyAvailability.map((day) => ({
-                      ...day,
-                      enabled: false,
-                    }));
-                    setCreatorProfile({ ...creatorProfile, weeklyAvailability: updated });
-                  }}
-                >
-                  Disable All
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="border-t pt-4">
-            <div className="flex items-center justify-between w-full">
-              <p className="text-sm text-gray-500">
-                <span className="font-medium">{getTotalConsultingServices()}</span> consulting service(s) will use this availability
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setAppointmentDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={saveWeeklyAvailability}
-                  className="bg-cyan-600 hover:bg-cyan-700 gap-2"
-                >
-                  <Calendar className="h-4 w-4" />
-                  Save Availability
-                </Button>
-              </div>
-            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
