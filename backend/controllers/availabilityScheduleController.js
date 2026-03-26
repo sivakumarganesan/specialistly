@@ -1,5 +1,47 @@
 import AvailabilitySchedule from '../models/AvailabilitySchedule.js';
 import CreatorProfile from '../models/CreatorProfile.js';
+import ConsultingSlot from '../models/ConsultingSlot.js';
+import { generateSlotsForDateRange } from '../utils/slotGenerationUtils.js';
+
+/**
+ * Regenerate future unbooked consulting slots based on updated availability.
+ * Deletes old unbooked future slots and creates new ones from the schedule.
+ */
+async function regenerateConsultingSlots(specialist, schedule) {
+  try {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    // Delete future unbooked slots for this specialist
+    await ConsultingSlot.deleteMany({
+      specialistId: specialist._id,
+      date: { $gte: now },
+      bookedCount: 0,
+    });
+
+    // Generate new slots from the updated availability
+    const numDays = schedule.bookingRules?.maxAdvanceBooking || 90;
+    const generatedSlots = generateSlotsForDateRange(schedule, now, numDays, {
+      duration: schedule.slotConfig?.defaultDuration || 60,
+    });
+
+    if (generatedSlots.length > 0) {
+      const slotsToCreate = generatedSlots.map((slot) => ({
+        ...slot,
+        specialistId: specialist._id,
+        specialistEmail: specialist.email,
+        duration: slot.duration,
+      }));
+      await ConsultingSlot.insertMany(slotsToCreate);
+    }
+
+    console.log(`[Availability] Regenerated ${generatedSlots.length} consulting slots for ${specialist.email}`);
+    return generatedSlots.length;
+  } catch (err) {
+    console.error('[Availability] Error regenerating slots:', err);
+    return 0;
+  }
+}
 
 /**
  * Get specialist's availability schedule
@@ -119,9 +161,12 @@ export const createAvailabilitySchedule = async (req, res) => {
 
     await schedule.save();
 
+    // Auto-regenerate consulting slots from the new schedule
+    const slotsGenerated = await regenerateConsultingSlots(specialist, schedule);
+
     res.status(201).json({
       success: true,
-      message: 'Availability schedule created successfully',
+      message: `Availability schedule created successfully. ${slotsGenerated} consulting slots generated.`,
       data: schedule,
     });
   } catch (error) {
@@ -169,9 +214,16 @@ export const updateAvailabilitySchedule = async (req, res) => {
       });
     }
 
+    // Auto-regenerate consulting slots from the updated schedule
+    const specialist = await CreatorProfile.findById(schedule.specialistId);
+    let slotsGenerated = 0;
+    if (specialist) {
+      slotsGenerated = await regenerateConsultingSlots(specialist, schedule);
+    }
+
     res.status(200).json({
       success: true,
-      message: 'Availability schedule updated successfully',
+      message: `Availability schedule updated successfully. ${slotsGenerated} consulting slots regenerated.`,
       data: schedule,
     });
   } catch (error) {
