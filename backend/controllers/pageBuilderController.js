@@ -229,7 +229,12 @@ export const updateBranding = async (req, res) => {
       delete branding.colors;
     }
 
-    website.branding = { ...website.branding, ...branding };
+    // Explicitly handle logo removal (empty string means cleared)
+    const updatedBranding = { ...website.branding, ...branding };
+    if ('logo' in branding && !branding.logo) {
+      updatedBranding.logo = '';
+    }
+    website.branding = updatedBranding;
     await website.save();
 
     res.json({

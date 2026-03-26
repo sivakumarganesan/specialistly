@@ -805,7 +805,7 @@ const BrandingPanel: React.FC<{ website: Website | null; onCancel?: () => void }
       setErrorMessage('');
 
       await pageBuilderAPI.updateBranding(website._id, {
-        logo: logo || undefined,
+        logo: logo || '',
         colors: {
           primary: primaryColor,
           secondary: secondaryColor,
