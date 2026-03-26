@@ -892,7 +892,7 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-600">Linked to your availability</span>
                       <Badge className="bg-cyan-100 text-blue-700">
-                        {getAvailableSlots().length} slots
+                        Consulting
                       </Badge>
                     </div>
                   </div>
