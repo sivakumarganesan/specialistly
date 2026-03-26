@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
-import { customerAPI, serviceAPI, courseAPI, consultingSlotAPI, creatorAPI } from "@/app/api/apiClient";
+import { customerAPI, serviceAPI, courseAPI, consultingSlotAPI } from "@/app/api/apiClient";
 import { ManageSlots } from "@/app/components/ConsultingSlots";
 import { SpecialistMeetingManager } from "@/app/components/SpecialistMeetingManager";
 
@@ -52,17 +52,8 @@ export function Dashboard({
       try {
         setLoading(true);
         
-        // Fetch creator profile for full name
-        if (user?.email) {
-          try {
-            const creatorResponse = await creatorAPI.getByEmail(user.email);
-            if (creatorResponse?.data) {
-              setFullName(creatorResponse.data.creatorName || user.name || "Creator");
-            }
-          } catch {
-            setFullName(user.name || "Creator");
-          }
-        }
+        // Use authenticated user's name for greeting
+        setFullName(user?.name || "Creator");
 
         // Fetch customers
         const customersResponse = await customerAPI.getAll({ specialistEmail: user?.email });
