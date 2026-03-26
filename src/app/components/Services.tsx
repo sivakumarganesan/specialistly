@@ -37,6 +37,7 @@ import {
   X,
   CalendarClock,
   GraduationCap,
+  ImagePlus,
 } from "lucide-react";
 import { Checkbox } from "@/app/components/ui/checkbox";
 
@@ -67,6 +68,8 @@ interface Service {
   endAmPm?: "AM" | "PM";
   assignedCustomer?: string;
   assignedCustomerEmail?: string;
+  currency?: string;
+  thumbnail?: string;
 }
 
 interface WeeklyAvailability {
@@ -238,9 +241,11 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
     title: "",
     description: "",
     price: "",
+    currency: "USD" as string,
     duration: "",
     capacity: "",
     schedule: "Flexible",
+    thumbnail: "",
     // Webinar specific fields
     eventType: "single" as "single" | "multiple",
     location: "zoom",
@@ -309,10 +314,12 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
         type: serviceType,
         description: formData.description,
         price: formData.price,
+        currency: formData.currency,
         duration: formData.duration,
         schedule: formData.schedule,
         status: "draft",
         creator: user?.email,
+        thumbnail: formData.thumbnail,
         ...(serviceType === "webinar" && {
           capacity: formData.capacity,
           eventType: formData.eventType,
@@ -354,9 +361,11 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
         title: formData.title,
         description: formData.description,
         price: formData.price,
+        currency: formData.currency,
         duration: formData.duration,
         schedule: formData.schedule,
         creator: user?.email,
+        thumbnail: formData.thumbnail,
         ...(selectedService.type === "webinar" && {
           capacity: formData.capacity,
           eventType: formData.eventType,
@@ -475,9 +484,11 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
       title: service.title,
       description: service.description,
       price: service.price,
+      currency: service.currency || "USD",
       duration: service.duration,
       capacity: service.capacity || "",
       schedule: service.schedule,
+      thumbnail: service.thumbnail || "",
       eventType: service.eventType || "single",
       location: service.location || "zoom",
       sessionFrequency: service.sessionFrequency || "onetime",
@@ -509,9 +520,11 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
       title: "",
       description: "",
       price: "",
+      currency: "USD",
       duration: "",
       capacity: "",
       schedule: "Flexible",
+      thumbnail: "",
       eventType: "single",
       location: "zoom",
       sessionFrequency: "onetime",
@@ -533,6 +546,20 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
     setServiceType(type);
     resetForm();
     setCreateDialogOpen(true);
+  };
+
+  const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Image must be under 2MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData((prev) => ({ ...prev, thumbnail: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const addWebinarDate = () => {
@@ -1246,14 +1273,29 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="price">Price</Label>
-                <Input
-                  id="price"
-                  placeholder="$99"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
-                />
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.currency}
+                    onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">$</SelectItem>
+                      <SelectItem value="INR">₹</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="price"
+                    placeholder="99"
+                    value={formData.price}
+                    onChange={(e) =>
+                      setFormData({ ...formData, price: e.target.value })
+                    }
+                    className="flex-1"
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="duration">Duration {serviceType === "consulting" ? "(minutes) *" : ""}</Label>
@@ -1265,6 +1307,32 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
                     setFormData({ ...formData, duration: e.target.value })
                   }
                 />
+              </div>
+            </div>
+
+            {/* Thumbnail Upload */}
+            <div>
+              <Label>Thumbnail Image</Label>
+              <div className="mt-1 flex items-center gap-4">
+                {formData.thumbnail ? (
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                    <img src={formData.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, thumbnail: "" })}
+                      className="absolute top-0 right-0 bg-black/60 text-white p-0.5 rounded-bl"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-20 h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                    <ImagePlus className="h-5 w-5 text-gray-400" />
+                    <span className="text-[10px] text-gray-400 mt-1">Upload</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailChange} />
+                  </label>
+                )}
+                <p className="text-xs text-gray-500">JPG, PNG or WebP. Max 2MB.</p>
               </div>
             </div>
 
@@ -1549,14 +1617,29 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-price">Price</Label>
-                <Input
-                  id="edit-price"
-                  placeholder="$99"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData({ ...formData, price: e.target.value })
-                  }
-                />
+                <div className="flex gap-2">
+                  <Select
+                    value={formData.currency}
+                    onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                  >
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">$</SelectItem>
+                      <SelectItem value="INR">₹</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    id="edit-price"
+                    placeholder="99"
+                    value={formData.price}
+                    onChange={(e) =>
+                      setFormData({ ...formData, price: e.target.value })
+                    }
+                    className="flex-1"
+                  />
+                </div>
               </div>
               <div>
                 <Label htmlFor="edit-duration">Duration {selectedService?.type === "consulting" ? "(minutes) *" : ""}</Label>
@@ -1568,6 +1651,32 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
                     setFormData({ ...formData, duration: e.target.value })
                   }
                 />
+              </div>
+            </div>
+
+            {/* Thumbnail Upload */}
+            <div>
+              <Label>Thumbnail Image</Label>
+              <div className="mt-1 flex items-center gap-4">
+                {formData.thumbnail ? (
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                    <img src={formData.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, thumbnail: "" })}
+                      className="absolute top-0 right-0 bg-black/60 text-white p-0.5 rounded-bl"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="w-20 h-20 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors">
+                    <ImagePlus className="h-5 w-5 text-gray-400" />
+                    <span className="text-[10px] text-gray-400 mt-1">Upload</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailChange} />
+                  </label>
+                )}
+                <p className="text-xs text-gray-500">JPG, PNG or WebP. Max 2MB.</p>
               </div>
             </div>
 
