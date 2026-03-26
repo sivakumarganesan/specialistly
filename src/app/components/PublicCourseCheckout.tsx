@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -441,7 +442,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
 
   if (!isOpen) return null;
 
-  return (
+  return ReactDOM.createPortal(
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
@@ -855,6 +856,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
