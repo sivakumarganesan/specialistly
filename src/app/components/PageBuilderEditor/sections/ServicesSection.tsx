@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { PageSection } from '@/app/hooks/usePageBuilder';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Plus, Trash2, LayoutGrid, List, Upload, X } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, Upload, X, Calendar, Clock } from 'lucide-react';
+import { ConsultingSlotCalendar } from '@/app/components/ConsultingSlotCalendar';
 
 interface Service {
   id: string;
@@ -287,11 +289,26 @@ export const ServicesSectionEditor: React.FC<ServicesSectionEditorProps> = ({
 };
 
 // Preview Component
+interface FetchedService {
+  _id: string;
+  title: string;
+  type: 'webinar' | 'consulting';
+  description: string;
+  price: string;
+  currency?: string;
+  duration?: string;
+  capacity?: string;
+  thumbnail?: string;
+}
+
 export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
   section,
 }) => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [bookingService, setBookingService] = useState<FetchedService | null>(null);
   const services = (section.content?.services || []) as Service[];
+  const fetchedServices = (section.content?.fetchedServices || []) as FetchedService[];
+  const specialistEmail = section.content?.specialistEmail || '';
   const layout = section.content?.layout || 'grid';
   const accentColor = section.content?.accentColor || '#00acc1';
   const bgColor = section.styling?.backgroundColor || '#ffffff';
@@ -426,10 +443,85 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
             ))}
           </div>
         )}
+
+        {/* Active consulting services from database */}
+        {fetchedServices.filter(s => s.type === 'consulting').length > 0 && (
+          <div className="mt-12">
+            <h3
+              className="text-2xl font-bold mb-6 text-center"
+              style={{ color: titleColor }}
+            >
+              Book a 1:1 Consulting Session
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {fetchedServices
+                .filter(s => s.type === 'consulting')
+                .map((service) => (
+                  <div
+                    key={service._id}
+                    className="group rounded-xl overflow-hidden transition-all duration-300 hover:-translate-y-1"
+                    style={{
+                      backgroundColor: cardBg,
+                      border: `1px solid ${cardBorder}`,
+                      boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    {/* Image area */}
+                    <div className="relative overflow-hidden" style={{ aspectRatio: '4/3' }}>
+                      {service.thumbnail ? (
+                        <img
+                          src={service.thumbnail}
+                          alt={service.title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div
+                          className="w-full h-full flex items-center justify-center"
+                          style={{ background: `linear-gradient(135deg, ${accentColor}22, ${accentColor}44)` }}
+                        >
+                          <Calendar className="w-16 h-16" style={{ color: accentColor }} />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content area */}
+                    <div className="p-4 space-y-3">
+                      <h3 className="font-semibold text-lg" style={{ color: accentColor }}>
+                        {service.title}
+                      </h3>
+                      {service.description && (
+                        <p className="text-sm line-clamp-2" style={{ color: cardDescColor }}>
+                          {service.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-3 text-sm" style={{ color: cardDescColor }}>
+                        {service.duration && (
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {service.duration}
+                          </span>
+                        )}
+                        <span className="font-semibold" style={{ color: cardTextColor }}>
+                          {service.currency === 'INR' ? '₹' : '$'}{service.price}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setBookingService(service)}
+                        className="w-full py-2.5 rounded-lg font-medium text-white transition-opacity hover:opacity-90"
+                        style={{ backgroundColor: accentColor }}
+                      >
+                        Book Now
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Service detail modal */}
-      {selectedService && (
+      {selectedService && ReactDOM.createPortal(
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={() => setSelectedService(null)}
@@ -440,7 +532,6 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
             style={{ backgroundColor: isDark ? '#1f2937' : '#ffffff' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close button */}
             <button
               onClick={() => setSelectedService(null)}
               className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
@@ -448,7 +539,6 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
               ✕
             </button>
 
-            {/* Modal image */}
             {selectedService.image ? (
               <img
                 src={selectedService.image}
@@ -468,7 +558,6 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
               </div>
             )}
 
-            {/* Modal content */}
             <div className="p-8 overflow-y-auto">
               <h2 className="text-2xl font-bold mb-4" style={{ color: accentColor }}>
                 {selectedService.title}
@@ -480,7 +569,47 @@ export const ServicesSectionPreview: React.FC<{ section: PageSection }> = ({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Consulting slot booking calendar modal */}
+      {bookingService && specialistEmail && ReactDOM.createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setBookingService(null)}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative max-w-2xl w-full rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col bg-white"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setBookingService(null)}
+              className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-black/40 text-white flex items-center justify-center hover:bg-black/60 transition-colors"
+            >
+              ✕
+            </button>
+
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-bold" style={{ color: accentColor }}>
+                {bookingService.title}
+              </h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {bookingService.duration && `${bookingService.duration} • `}
+                {bookingService.currency === 'INR' ? '₹' : '$'}{bookingService.price}
+              </p>
+            </div>
+
+            <div className="overflow-y-auto p-4">
+              <ConsultingSlotCalendar
+                specialistEmail={specialistEmail}
+                defaultDuration={bookingService.duration ? parseInt(bookingService.duration) || 60 : 60}
+              />
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

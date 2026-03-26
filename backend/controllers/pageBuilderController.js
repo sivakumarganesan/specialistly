@@ -3,6 +3,7 @@ import Page from '../models/Page.js';
 import PageSection from '../models/PageSection.js';
 import User from '../models/User.js';
 import Course from '../models/Course.js';
+import Service from '../models/Service.js';
 
 // ============ Website Operations ============
 
@@ -1220,6 +1221,14 @@ export const getPublicWebsite = async (req, res) => {
       .select('_id title description thumbnail courseType price currency lessons startDate endDate schedule meetingPlatform zoomLink cohortSize liveSessions')
       .sort({ createdAt: -1 });
 
+    // Enrich services sections with actual specialist service data
+    const specialistServices = await Service.find({
+      creator: website.creatorEmail,
+      status: 'active',
+    })
+      .select('_id title type description price currency duration capacity thumbnail')
+      .sort({ createdAt: -1 });
+
     const enrichedPages = pages.map((page) => {
       const pageObj = page.toObject();
       pageObj.sections = pageObj.sections.map((section) => {
@@ -1227,6 +1236,13 @@ export const getPublicWebsite = async (req, res) => {
           section.content = {
             ...section.content,
             fetchedCourses: specialistCourses,
+          };
+        }
+        if (section.type === 'services') {
+          section.content = {
+            ...section.content,
+            fetchedServices: specialistServices,
+            specialistEmail: website.creatorEmail,
           };
         }
         return section;

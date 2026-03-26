@@ -5,7 +5,7 @@ import { Badge } from "@/app/components/ui/badge";
 import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
-import { serviceAPI, appointmentAPI, customerAPI } from "@/app/api/apiClient";
+import { serviceAPI, appointmentAPI, customerAPI, consultingSlotAPI } from "@/app/api/apiClient";
 import { Courses } from "@/app/components/Courses";
 import { useAuth } from "@/app/context/AuthContext";
 import {
@@ -456,9 +456,17 @@ export function Services({ onUpdateSearchableItems, onUpdateCourseItems }: Servi
           }
         }
         
-        // For consulting services, inform user to create slots in ManageSlots
+        // For consulting services, auto-generate slots from availability
         if (newStatus === "active" && service.type === "consulting") {
-          alert(`✓ Consulting service activated! Now go to "Manage Consulting Slots" to set up your availability for customers to book.`);
+          try {
+            await consultingSlotAPI.generateFromAvailability({
+              specialistEmail: user?.email || '',
+            });
+            alert(`✓ Consulting service activated! Slots have been auto-generated from your availability schedule. Manage them in "Manage Consulting Slots".`);
+          } catch (slotError) {
+            console.error("Failed to auto-generate slots:", slotError);
+            alert(`✓ Consulting service activated! Please go to "Manage Consulting Slots" or set up your availability schedule to create bookable slots.`);
+          }
         }
         
         setServices(

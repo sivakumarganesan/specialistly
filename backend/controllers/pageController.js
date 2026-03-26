@@ -2,6 +2,7 @@ import Page from '../models/Page.js';
 import PageSection from '../models/PageSection.js';
 import Website from '../models/Website.js';
 import Course from '../models/Course.js';
+import Service from '../models/Service.js';
 
 // ============ Page Operations ============
 
@@ -526,7 +527,7 @@ export const getPublicPage = async (req, res) => {
     // Get all sections for the page
     const sections = await PageSection.find({ pageId: page._id }).sort({ order: 1 });
 
-    // Enrich courses sections with actual course data from the specialist
+    // Enrich courses and services sections with actual data from the specialist
     const enrichedSections = await Promise.all(
       sections.map(async (section) => {
         if (section.type === 'courses') {
@@ -546,6 +547,27 @@ export const getPublicPage = async (req, res) => {
             return sectionObj;
           } catch (err) {
             console.error('Error enriching courses section:', err);
+            return section;
+          }
+        }
+        if (section.type === 'services') {
+          try {
+            const specialistServices = await Service.find({
+              creator: website.creatorEmail,
+              status: 'active',
+            })
+              .select('_id title type description price currency duration capacity thumbnail')
+              .sort({ createdAt: -1 });
+
+            const sectionObj = section.toObject();
+            sectionObj.content = {
+              ...sectionObj.content,
+              fetchedServices: specialistServices,
+              specialistEmail: website.creatorEmail,
+            };
+            return sectionObj;
+          } catch (err) {
+            console.error('Error enriching services section:', err);
             return section;
           }
         }
@@ -640,7 +662,7 @@ export const getPublicPageViaSubdomain = async (req, res) => {
     // Get all sections for the page
     const sections = await PageSection.find({ pageId: page._id }).sort({ order: 1 });
 
-    // Enrich courses sections with actual course data from the specialist
+    // Enrich courses and services sections with actual data from the specialist
     console.log('[Public Page] Enriching sections, creatorEmail:', website.creatorEmail);
     const enrichedSections = await Promise.all(
       sections.map(async (section) => {
@@ -664,6 +686,27 @@ export const getPublicPageViaSubdomain = async (req, res) => {
             return sectionObj;
           } catch (err) {
             console.error('Error enriching courses section:', err);
+            return section;
+          }
+        }
+        if (section.type === 'services') {
+          try {
+            const specialistServices = await Service.find({
+              creator: website.creatorEmail,
+              status: 'active',
+            })
+              .select('_id title type description price currency duration capacity thumbnail')
+              .sort({ createdAt: -1 });
+
+            const sectionObj = section.toObject();
+            sectionObj.content = {
+              ...sectionObj.content,
+              fetchedServices: specialistServices,
+              specialistEmail: website.creatorEmail,
+            };
+            return sectionObj;
+          } catch (err) {
+            console.error('Error enriching services section:', err);
             return section;
           }
         }
