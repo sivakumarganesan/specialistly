@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/app/components/ui/card";
 import { Badge } from "@/app/components/ui/badge";
-import { customerAPI, serviceAPI, courseAPI, consultingSlotAPI } from "@/app/api/apiClient";
+import { customerAPI, serviceAPI, courseAPI, consultingSlotAPI, creatorAPI } from "@/app/api/apiClient";
 import { ManageSlots } from "@/app/components/ConsultingSlots";
 import { SpecialistMeetingManager } from "@/app/components/SpecialistMeetingManager";
 
@@ -31,7 +31,7 @@ export function Dashboard({
   onNavigateToServices?: () => void;
   onViewServiceDetail?: (serviceId: string) => void;
 }) {
-  const { user, updateSubscription, setCurrentPage } = useAuth();
+  const { user, updateSubscription, updateUserName, setCurrentPage } = useAuth();
   const [activeSection, setActiveSection] = useState<"overview" | "manage-slots" | "manage-meetings">("overview");
   const [isUpgrading, setIsUpgrading] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
@@ -52,8 +52,21 @@ export function Dashboard({
       try {
         setLoading(true);
         
-        // Use authenticated user's name for greeting
-        setFullName(user?.name || "Creator");
+        // Fetch creator profile for full name and sync to auth
+        if (user?.email) {
+          try {
+            const creatorResponse = await creatorAPI.getByEmail(user.email);
+            if (creatorResponse?.data?.creatorName) {
+              const creatorName = creatorResponse.data.creatorName;
+              setFullName(creatorName);
+              if (creatorName !== user.name) {
+                updateUserName(creatorName);
+              }
+            }
+          } catch {
+            setFullName(user.name || "Creator");
+          }
+        }
 
         // Fetch customers
         const customersResponse = await customerAPI.getAll({ specialistEmail: user?.email });

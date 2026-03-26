@@ -32,6 +32,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   updateSubscription: (planType: 'free' | 'pro') => Promise<void>;
+  updateUserName: (name: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -135,6 +136,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCurrentPage('homepage');
   };
 
+  const updateUserName = (name: string) => {
+    if (user) {
+      const updatedUser = { ...user, name };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  };
+
   const updateSubscription = async (planType: 'free' | 'pro') => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/subscription`, {
@@ -176,6 +185,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         updateSubscription,
+        updateUserName,
       }}
     >
       {children}
