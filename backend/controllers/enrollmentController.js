@@ -2,6 +2,7 @@ import cloudflareStreamService from '../services/cloudflareStreamService.js';
 import Certificate from '../models/Certificate.js';
 import Course from '../models/Course.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
+import Customer from '../models/Customer.js';
 
 const generateCertificateId = () => {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -65,6 +66,57 @@ export const enrollSelfPaced = async (req, res) => {
     });
 
     await enrollment.save();
+
+    // Link customer to specialist
+    try {
+      let customer = await Customer.findOne({ email: finalCustomerEmail });
+      if (!customer) {
+        customer = await Customer.create({
+          name: finalCustomerEmail.split('@')[0],
+          email: finalCustomerEmail,
+          status: 'active',
+        });
+      }
+
+      const hasSpecialist = customer.specialists?.some(
+        (s) => s.specialistEmail === course.specialistEmail,
+      );
+      if (!hasSpecialist) {
+        customer.specialists.push({
+          specialistId: course.specialistId,
+          specialistEmail: course.specialistEmail,
+          firstBookedDate: new Date(),
+        });
+      }
+
+      const hasEnrollment = customer.enrollments?.some(
+        (e) => e.courseId?.toString() === courseId?.toString(),
+      );
+      if (!hasEnrollment) {
+        customer.enrollments.push({
+          courseId,
+          enrolledAt: new Date(),
+          status: 'active',
+        });
+      }
+
+      customer.purchases.push({
+        offeringTitle: course.title || 'Course',
+        offeringType: 'course',
+        offeringId: courseId,
+        price: String(course.price || 0),
+        status: 'completed',
+      });
+
+      if (course.price > 0) {
+        customer.totalSpent = (customer.totalSpent || 0) + Number(course.price);
+      }
+      customer.purchaseCount = (customer.purchaseCount || 0) + 1;
+      customer.updatedAt = new Date();
+      await customer.save();
+    } catch (custErr) {
+      console.error('Customer linking error (non-blocking):', custErr.message);
+    }
 
     res.status(201).json({
       success: true,

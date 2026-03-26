@@ -4,8 +4,68 @@ import MarketplaceCommission from '../models/MarketplaceCommission.js';
 import CreatorProfile from '../models/CreatorProfile.js';
 import Course from '../models/Course.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
+import Customer from '../models/Customer.js';
 import { sendEnrollmentConfirmation, sendCohortEnrollmentConfirmation, sendSpecialistNotification } from '../services/emailService.js';
 import mongoose from 'mongoose';
+
+/**
+ * Find or create a Customer record and link the specialist + enrollment.
+ */
+async function linkCustomerToSpecialist({ customerEmail, customerName, specialistEmail, specialistId, courseId, courseTitle, amount }) {
+  try {
+    let customer = await Customer.findOne({ email: customerEmail });
+    if (!customer) {
+      customer = await Customer.create({
+        name: customerName || customerEmail.split('@')[0],
+        email: customerEmail,
+        status: 'active',
+      });
+    }
+
+    // Add specialist if not already linked
+    const hasSpecialist = customer.specialists?.some(
+      (s) => s.specialistEmail === specialistEmail,
+    );
+    if (!hasSpecialist) {
+      customer.specialists.push({
+        specialistId,
+        specialistEmail,
+        firstBookedDate: new Date(),
+      });
+    }
+
+    // Add enrollment if not already present
+    const hasEnrollment = customer.enrollments?.some(
+      (e) => e.courseId?.toString() === courseId?.toString(),
+    );
+    if (!hasEnrollment) {
+      customer.enrollments.push({
+        courseId,
+        enrolledAt: new Date(),
+        status: 'active',
+      });
+    }
+
+    // Add purchase record
+    customer.purchases.push({
+      offeringTitle: courseTitle || 'Course',
+      offeringType: 'course',
+      offeringId: courseId,
+      price: String(amount || 0),
+      status: 'completed',
+    });
+
+    if (amount > 0) {
+      customer.totalSpent = (customer.totalSpent || 0) + Number(amount);
+    }
+    customer.purchaseCount = (customer.purchaseCount || 0) + 1;
+    customer.updatedAt = new Date();
+
+    await customer.save();
+  } catch (err) {
+    console.error('linkCustomerToSpecialist error (non-blocking):', err.message);
+  }
+}
 
 /**
  * Create payment intent for public (guest) course purchase
@@ -175,6 +235,17 @@ export const createPublicPaymentIntent = async (req, res) => {
       } catch (emailErr) {
         console.error('Email sending failed (non-blocking):', emailErr.message);
       }
+
+      // Link customer to specialist
+      await linkCustomerToSpecialist({
+        customerEmail,
+        customerName,
+        specialistEmail: course.specialistEmail,
+        specialistId: course.specialistId,
+        courseId,
+        courseTitle: course.title,
+        amount: 0,
+      });
 
       return res.status(200).json({
         success: true,
@@ -465,6 +536,18 @@ export const confirmPublicPayment = async (req, res) => {
         console.error('Email sending failed (non-blocking):', emailErr.message);
       }
 
+      // Link customer to specialist
+      const confirmedCourse = await Course.findById(commission.serviceId);
+      await linkCustomerToSpecialist({
+        customerEmail: commission.customerEmail,
+        customerName: commission.customerEmail.split('@')[0],
+        specialistEmail: commission.specialistEmail,
+        specialistId: commission.specialistId,
+        courseId: commission.serviceId,
+        courseTitle: confirmedCourse?.title,
+        amount: commission.totalAmount || 0,
+      });
+
       return res.status(200).json({
         success: true,
         message: 'Payment confirmed and enrollment created',
@@ -628,6 +711,18 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
     } catch (emailErr) {
       console.error('Email sending failed (non-blocking):', emailErr.message);
     }
+
+    // Link customer to specialist
+    const razorpayCourse = await Course.findById(commission.serviceId);
+    await linkCustomerToSpecialist({
+      customerEmail: commission.customerEmail,
+      customerName: commission.customerEmail.split('@')[0],
+      specialistEmail: commission.specialistEmail,
+      specialistId: commission.specialistId,
+      courseId: commission.serviceId,
+      courseTitle: razorpayCourse?.title,
+      amount: commission.totalAmount || 0,
+    });
 
     return res.status(200).json({
       success: true,
