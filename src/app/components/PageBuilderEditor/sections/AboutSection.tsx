@@ -198,40 +198,62 @@ export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
 
   const isHorizontal = imagePosition === 'left' || imagePosition === 'right';
 
-  // On mobile always stack vertically (image on top); on md+ use the chosen layout
-  const directionClasses = {
-    left: 'flex-col md:flex-row-reverse',
-    right: 'flex-col md:flex-row',
-    top: 'flex-col',
-    bottom: 'flex-col-reverse',
-  }[imagePosition] as string;
-
   return (
     <div className="py-16 px-4" style={{ backgroundColor: bgColor }}>
       <div className="max-w-6xl mx-auto">
-        <div className={`flex flex-wrap md:flex-nowrap gap-8 md:gap-12 items-center ${directionClasses}`}>
-          {section.content?.image && (
-            <div className={isHorizontal ? 'w-full md:w-1/2 md:flex-shrink-0' : 'w-full'}>
-              <img
-                src={section.content.image}
-                alt={section.content?.title}
-                className="w-full h-auto rounded-2xl shadow-lg"
-                style={{ maxHeight: isHorizontal ? '500px' : '400px', objectFit: 'cover' }}
-              />
-            </div>
-          )}
-
-          <div className={isHorizontal && section.content?.image ? 'w-full md:w-1/2' : 'w-full'}>
-            {section.content?.title && (
-              <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ letterSpacing: '-0.02em', color: section.content?.titleColor || '#111827' }}>{section.content.title}</h2>
-            )}
-            {section.content?.description && (
-              <div className="text-base sm:text-lg leading-relaxed" style={{ lineHeight: '1.8', color: section.content?.descriptionColor || '#374151' }}>
-                {renderFormattedText(section.content.description)}
+        {isHorizontal ? (
+          <div
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center"
+            style={{ direction: imagePosition === 'left' ? 'ltr' : 'rtl' }}
+          >
+            {/* Image column */}
+            {section.content?.image && (
+              <div style={{ direction: 'ltr' }}>
+                <img
+                  src={section.content.image}
+                  alt={section.content?.title}
+                  className="w-full h-auto rounded-2xl shadow-lg object-cover"
+                  style={{ maxHeight: '520px' }}
+                />
               </div>
             )}
+
+            {/* Text column */}
+            <div style={{ direction: 'ltr' }} className={!section.content?.image ? 'md:col-span-2' : ''}>
+              {section.content?.title && (
+                <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ letterSpacing: '-0.02em', color: section.content?.titleColor || '#111827' }}>{section.content.title}</h2>
+              )}
+              {section.content?.description && (
+                <div className="text-base sm:text-lg leading-relaxed" style={{ lineHeight: '1.8', color: section.content?.descriptionColor || '#374151' }}>
+                  {renderFormattedText(section.content.description)}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className={`flex flex-col ${imagePosition === 'bottom' ? 'flex-col-reverse' : ''} gap-8`}>
+            {section.content?.image && (
+              <div className="w-full">
+                <img
+                  src={section.content.image}
+                  alt={section.content?.title}
+                  className="w-full h-auto rounded-2xl shadow-lg object-cover mx-auto"
+                  style={{ maxHeight: '400px' }}
+                />
+              </div>
+            )}
+            <div className="w-full">
+              {section.content?.title && (
+                <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ letterSpacing: '-0.02em', color: section.content?.titleColor || '#111827' }}>{section.content.title}</h2>
+              )}
+              {section.content?.description && (
+                <div className="text-base sm:text-lg leading-relaxed" style={{ lineHeight: '1.8', color: section.content?.descriptionColor || '#374151' }}>
+                  {renderFormattedText(section.content.description)}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
