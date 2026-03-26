@@ -18,6 +18,8 @@ const pageSectionSchema = new mongoose.Schema(
     type: {
       type: String,
       enum: [
+        'topbar',
+        'navbar',
         'hero',
         'about',
         'services',
@@ -35,6 +37,7 @@ const pageSectionSchema = new mongoose.Schema(
         'faq',
         'newsletter',
         'blog',
+        'booking',
         'custom',
       ],
       required: true,
