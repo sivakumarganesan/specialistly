@@ -435,9 +435,9 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
     }
   };
 
-  /** Navigate to My Learning (main app) */
+  /** Navigate to My Learning (main app) in a new tab */
   const goToMyLearning = () => {
-    window.location.href = '/';
+    window.open('https://www.specialistly.com', '_blank', 'noopener');
   };
 
   if (!isOpen) return null;
