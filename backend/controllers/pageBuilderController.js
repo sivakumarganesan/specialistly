@@ -1250,6 +1250,12 @@ export const getPublicWebsite = async (req, res) => {
             specialistEmail: website.creatorEmail,
           };
         }
+        if (section.type === 'booking') {
+          section.content = {
+            ...section.content,
+            specialistEmail: website.creatorEmail,
+          };
+        }
         return section;
       });
       return pageObj;

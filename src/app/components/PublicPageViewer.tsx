@@ -9,6 +9,7 @@ import { NewsletterSectionPreview } from './PageBuilderEditor/sections/Newslette
 import { TeamSectionPreview } from './PageBuilderEditor/sections/TeamSection';
 import { VideoGallerySectionPreview } from './PageBuilderEditor/sections/VideoGallerySection';
 import { GallerySectionPreview } from './PageBuilderEditor/sections/GallerySection';
+import { BookingSectionPreview } from './PageBuilderEditor/sections/BookingSection';
 import AnimatedSection from './PageBuilderEditor/AnimatedSection';
 
 const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
@@ -162,6 +163,8 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
       return <VideoGallerySectionPreview section={section} />;
     case 'gallery':
       return <GallerySectionPreview section={section} />;
+    case 'booking':
+      return <BookingSectionPreview section={section} />;
     default:
       return (
         <div className="py-16 px-4 text-center" style={{ backgroundColor: section.content?.backgroundColor || '#f3f4f6' }}>

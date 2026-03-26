@@ -17,6 +17,7 @@ import {
   PanelTop,
   Navigation,
   Play,
+  CalendarCheck,
 } from 'lucide-react';
 
 interface SectionTemplate {
@@ -244,6 +245,17 @@ const SECTION_TEMPLATES: SectionTemplate[] = [
       description: 'Latest insights and articles',
       layout: 'grid',
       posts: [],
+    },
+  },
+  {
+    type: 'booking',
+    name: 'Book Appointment',
+    description: 'Let visitors book a 1:1 personal consultation',
+    icon: <CalendarCheck className="w-6 h-6" />,
+    defaultContent: {
+      title: 'Book a Personal Appointment',
+      description: 'Schedule a one-on-one consultation session with our specialist.',
+      buttonText: 'Book Now',
     },
   },
 ];

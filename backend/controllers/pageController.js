@@ -571,6 +571,14 @@ export const getPublicPage = async (req, res) => {
             return section;
           }
         }
+        if (section.type === 'booking') {
+          const sectionObj = section.toObject();
+          sectionObj.content = {
+            ...sectionObj.content,
+            specialistEmail: website.creatorEmail,
+          };
+          return sectionObj;
+        }
         return section;
       })
     );
@@ -709,6 +717,14 @@ export const getPublicPageViaSubdomain = async (req, res) => {
             console.error('Error enriching services section:', err);
             return section;
           }
+        }
+        if (section.type === 'booking') {
+          const sectionObj = section.toObject();
+          sectionObj.content = {
+            ...sectionObj.content,
+            specialistEmail: website.creatorEmail,
+          };
+          return sectionObj;
         }
         return section;
       })

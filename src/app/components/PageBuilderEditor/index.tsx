@@ -3882,6 +3882,20 @@ const PropertiesPanel: React.FC<{
             </div>
           </div>
         )}
+
+        {section.type === 'booking' && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Button Text</label>
+              <Input
+                type="text"
+                value={content.buttonText || ''}
+                onChange={(e) => setContent({ ...content, buttonText: e.target.value })}
+                placeholder="Book Now"
+              />
+            </div>
+          </div>
+        )}
       </div>
       <div className="border-t pt-4">
         <h4 className="text-sm font-semibold text-gray-900 mb-3">Background Color</h4>

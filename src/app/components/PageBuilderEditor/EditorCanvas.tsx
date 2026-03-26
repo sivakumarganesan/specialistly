@@ -19,6 +19,7 @@ import { NavBarSectionPreview } from './sections/NavBarSection';
 import { TeamSectionPreview } from './sections/TeamSection';
 import { VideoGallerySectionPreview } from './sections/VideoGallerySection';
 import { GallerySectionPreview } from './sections/GallerySection';
+import { BookingSectionPreview } from './sections/BookingSection';
 
 interface EditorCanvasProps {
   page: Page;
@@ -87,6 +88,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = ({
         return <VideoGallerySectionPreview section={section} />;
       case 'gallery':
         return <GallerySectionPreview section={section} />;
+      case 'booking':
+        return <BookingSectionPreview section={section} />;
       default:
         return (
           <div className="p-8 bg-gray-100 text-center">

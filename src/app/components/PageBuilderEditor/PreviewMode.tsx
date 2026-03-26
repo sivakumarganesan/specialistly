@@ -5,6 +5,7 @@ import { HeroSectionPreview } from './sections/HeroSection';
 import { ServicesSectionPreview } from './sections/ServicesSection';
 import { TopBarSectionPreview } from './sections/TopBarSection';
 import { NavBarSectionPreview } from './sections/NavBarSection';
+import { BookingSectionPreview } from './sections/BookingSection';
 
 interface PreviewModeProps {
   page: Page;
@@ -22,6 +23,8 @@ const SectionRenderer: React.FC<{ section: PageSection }> = ({ section }) => {
         return <HeroSectionPreview section={section} />;
       case 'services':
         return <ServicesSectionPreview section={section} />;
+      case 'booking':
+        return <BookingSectionPreview section={section} />;
       case 'cta':
         return (
         <div
