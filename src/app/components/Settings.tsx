@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 
-type SettingsTab = "profile" | "payment" | "slots" | "availability" | "subscriptions" | "danger";
+type SettingsTab = "profile" | "payment" | "availability" | "subscriptions" | "danger";
 
 interface SettingsProps {
   initialTab?: SettingsTab;
@@ -30,7 +30,6 @@ export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) 
     { id: "profile" as SettingsTab, label: "User Profile", icon: User },
     { id: "payment" as SettingsTab, label: "Payment Settings", icon: CreditCard, specialistOnly: true },
     { id: "availability" as SettingsTab, label: "Manage Availability", icon: Clock, specialistOnly: true },
-    { id: "slots" as SettingsTab, label: "Allotment Slots", icon: Clock, specialistOnly: true },
     { id: "subscriptions" as SettingsTab, label: "My Subscriptions", icon: Package, specialistOnly: true },
     { id: "danger" as SettingsTab, label: "Danger Zone", icon: AlertCircle },
   ];
@@ -95,7 +94,6 @@ export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) 
         {activeTab === "profile" && <UserProfile />}
         {activeTab === "payment" && <PaymentSettings />}
         {activeTab === "availability" && <ManageAvailability />}
-        {activeTab === "slots" && <AllotmentSlots />}
         {activeTab === "subscriptions" && <MySubscriptions />}
         {activeTab === "danger" && <DangerZone onDeleteClick={() => setIsDeleteModalOpen(true)} />}
       </div>
@@ -1107,182 +1105,6 @@ function PaymentSettings() {
 
             <Button variant="outline" className="w-full">
               Add New Payment Method
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function AllotmentSlots() {
-  const { user } = useAuth();
-  const [slots, setSlots] = useState([
-    { id: 1, day: "Monday", startTime: "09:00", endTime: "17:00", enabled: true },
-    { id: 2, day: "Tuesday", startTime: "09:00", endTime: "17:00", enabled: true },
-    { id: 3, day: "Wednesday", startTime: "09:00", endTime: "17:00", enabled: true },
-    { id: 4, day: "Thursday", startTime: "09:00", endTime: "17:00", enabled: true },
-    { id: 5, day: "Friday", startTime: "09:00", endTime: "17:00", enabled: true },
-    { id: 6, day: "Saturday", startTime: "10:00", endTime: "14:00", enabled: false },
-    { id: 7, day: "Sunday", startTime: "10:00", endTime: "14:00", enabled: false },
-  ]);
-
-  const [slotDuration, setSlotDuration] = useState("60");
-  const [bufferTime, setBufferTime] = useState("15");
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState("");
-
-  const toggleSlot = (id: number) => {
-    setSlots((prev) =>
-      prev.map((slot) =>
-        slot.id === id ? { ...slot, enabled: !slot.enabled } : slot
-      )
-    );
-  };
-
-  const handleTimeChange = (id: number, field: "startTime" | "endTime", value: string) => {
-    setSlots((prev) =>
-      prev.map((slot) =>
-        slot.id === id ? { ...slot, [field]: value } : slot
-      )
-    );
-  };
-
-  const handleSaveAvailability = async () => {
-    setIsSaving(true);
-    setMessage("");
-    try {
-      if (!user?.email) {
-        setMessage("Unable to determine your email address");
-        return;
-      }
-
-      const slotsData = {
-        email: user.email,
-        slots,
-        slotDuration: parseInt(slotDuration),
-        bufferTime: parseInt(bufferTime),
-      };
-
-      // Call API to save availability
-      const response = await creatorAPI.save({ ...user, appointmentSlots: slotsData });
-      
-      setMessage("✓ Availability settings saved successfully!");
-      setTimeout(() => setMessage(""), 3000);
-    } catch (error) {
-      console.error("Failed to save availability:", error);
-      setMessage(`Failed to save: ${error instanceof Error ? error.message : "Please try again."}`);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Availability Settings</CardTitle>
-          <CardDescription>Set your weekly availability for bookings</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {message && (
-            <div className={`p-3 rounded-md flex items-center gap-2 ${
-              message.includes("✓") 
-                ? "bg-green-50 border border-green-200" 
-                : "bg-red-50 border border-red-200"
-            }`}>
-              <AlertCircle className={`w-4 h-4 ${
-                message.includes("✓") 
-                  ? "text-green-600" 
-                  : "text-red-600"
-              }`} />
-              <span className={message.includes("✓") ? "text-green-700" : "text-red-700"}>
-                {message}
-              </span>
-            </div>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium mb-2">Slot Duration (minutes)</label>
-              <select
-                value={slotDuration}
-                onChange={(e) => setSlotDuration(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-              >
-                <option value="15">15 minutes</option>
-                <option value="30">30 minutes</option>
-                <option value="60">60 minutes</option>
-                <option value="90">90 minutes</option>
-                <option value="120">120 minutes</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Buffer Time (minutes)</label>
-              <select
-                value={bufferTime}
-                onChange={(e) => setBufferTime(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
-              >
-                <option value="0">No buffer</option>
-                <option value="5">5 minutes</option>
-                <option value="10">10 minutes</option>
-                <option value="15">15 minutes</option>
-                <option value="30">30 minutes</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            {slots.map((slot) => (
-              <div
-                key={slot.id}
-                className={`border rounded-lg p-4 flex items-center gap-4 ${
-                  slot.enabled ? "bg-white" : "bg-gray-50"
-                }`}
-              >
-                <label className="flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={slot.enabled}
-                    onChange={() => toggleSlot(slot.id)}
-                    className="w-5 h-5 text-gray-900 rounded focus:ring-2 focus:ring-gray-400"
-                  />
-                </label>
-                <div className="flex-1 grid grid-cols-3 gap-4 items-center">
-                  <span className="font-medium">{slot.day}</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="time"
-                      value={slot.startTime}
-                      onChange={(e) => handleTimeChange(slot.id, "startTime", e.target.value)}
-                      disabled={!slot.enabled}
-                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:bg-gray-100"
-                    />
-                    <span className="text-gray-500">to</span>
-                    <input
-                      type="time"
-                      value={slot.endTime}
-                      onChange={(e) => handleTimeChange(slot.id, "endTime", e.target.value)}
-                      disabled={!slot.enabled}
-                      className="px-3 py-1 border rounded focus:outline-none focus:ring-2 focus:ring-gray-400 disabled:bg-gray-100"
-                    />
-                  </div>
-                  <span className={`text-sm ${slot.enabled ? "text-green-600" : "text-gray-400"}`}>
-                    {slot.enabled ? "Available" : "Unavailable"}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <Button 
-              className="bg-gray-900 hover:bg-gray-800"
-              onClick={handleSaveAvailability}
-              disabled={isSaving}
-            >
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? "Saving..." : "Save Availability"}
             </Button>
           </div>
         </CardContent>
