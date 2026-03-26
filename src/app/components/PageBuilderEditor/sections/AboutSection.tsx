@@ -202,24 +202,9 @@ export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
     <div className="py-16 px-4" style={{ backgroundColor: bgColor }}>
       <div className="max-w-6xl mx-auto">
         {isHorizontal ? (
-          <div
-            className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center"
-            style={{ direction: imagePosition === 'left' ? 'ltr' : 'rtl' }}
-          >
-            {/* Image column */}
-            {section.content?.image && (
-              <div style={{ direction: 'ltr' }}>
-                <img
-                  src={section.content.image}
-                  alt={section.content?.title}
-                  className="w-full h-auto rounded-2xl shadow-lg object-cover"
-                  style={{ maxHeight: '520px' }}
-                />
-              </div>
-            )}
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
             {/* Text column */}
-            <div style={{ direction: 'ltr' }} className={!section.content?.image ? 'md:col-span-2' : ''}>
+            <div className={`${imagePosition === 'left' ? 'md:order-2' : 'md:order-1'} ${!section.content?.image ? 'md:col-span-2' : ''}`}>
               {section.content?.title && (
                 <h2 className="text-3xl sm:text-4xl font-bold mb-6" style={{ letterSpacing: '-0.02em', color: section.content?.titleColor || '#111827' }}>{section.content.title}</h2>
               )}
@@ -229,6 +214,18 @@ export const AboutSectionPreview: React.FC<{ section: PageSection }> = ({
                 </div>
               )}
             </div>
+
+            {/* Image column */}
+            {section.content?.image && (
+              <div className={imagePosition === 'left' ? 'md:order-1' : 'md:order-2'}>
+                <img
+                  src={section.content.image}
+                  alt={section.content?.title}
+                  className="w-full h-auto rounded-2xl shadow-lg object-cover"
+                  style={{ maxHeight: '520px' }}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className={`flex flex-col ${imagePosition === 'bottom' ? 'flex-col-reverse' : ''} gap-8`}>
