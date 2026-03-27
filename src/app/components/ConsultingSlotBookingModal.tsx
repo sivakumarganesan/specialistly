@@ -64,10 +64,6 @@ export function ConsultingSlotBookingModal({
       setError('Please enter your phone number');
       return;
     }
-    if (!user?.id) {
-      setError('Please login to book a slot');
-      return;
-    }
 
     setIsLoading(true);
     setBookingStatus('loading');
@@ -75,7 +71,7 @@ export function ConsultingSlotBookingModal({
 
     try {
       const bookingData = {
-        customerId: user.id,
+        customerId: user?.id || `guest_${email}`,
         customerEmail: email,
         customerName: name,
         customerPhone: phone,

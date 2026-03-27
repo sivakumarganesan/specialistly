@@ -264,10 +264,10 @@ export const bookSlot = async (req, res) => {
     const { slotId } = req.params;
     const { customerId, customerEmail, customerName, customerPhone, customerAddress, additionalNotes } = req.body;
 
-    if (!customerId || !customerEmail || !customerName) {
+    if (!customerEmail || !customerName) {
       return res.status(400).json({
         success: false,
-        message: 'Missing required fields: customerId, customerEmail, customerName',
+        message: 'Missing required fields: customerEmail, customerName',
       });
     }
 
@@ -303,7 +303,7 @@ export const bookSlot = async (req, res) => {
     // Add booking WITHOUT creating Zoom meeting
     // Specialist will create Zoom meeting on-demand before the meeting
     const booking = {
-      customerId,
+      customerId: customerId || `guest_${customerEmail}`,
       customerEmail,
       customerName,
       customerPhone: customerPhone || '',
