@@ -2,6 +2,7 @@ import ConsultingSlot from '../models/ConsultingSlot.js';
 import User from '../models/User.js';
 import AvailabilitySchedule from '../models/AvailabilitySchedule.js';
 import CreatorProfile from '../models/CreatorProfile.js';
+import Customer from '../models/Customer.js';
 import mongoose from 'mongoose';
 import { generateSlotsForDateRange } from '../utils/slotGenerationUtils.js';
 import zoomService from '../services/zoomService.js';
@@ -261,7 +262,7 @@ export const createSlot = async (req, res) => {
 export const bookSlot = async (req, res) => {
   try {
     const { slotId } = req.params;
-    const { customerId, customerEmail, customerName } = req.body;
+    const { customerId, customerEmail, customerName, additionalNotes } = req.body;
 
     if (!customerId || !customerEmail || !customerName) {
       return res.status(400).json({
@@ -298,6 +299,7 @@ export const bookSlot = async (req, res) => {
       customerId,
       customerEmail,
       customerName,
+      additionalNotes: additionalNotes || '',
       bookedAt: new Date(),
       // zoomMeeting field will be populated later when specialist generates it
     };
@@ -307,10 +309,54 @@ export const bookSlot = async (req, res) => {
     slot.isFullyBooked = slot.bookedCount >= slot.totalCapacity;
     await slot.save();
 
+    // Find or create a Customer record so the specialist can reference them later
+    try {
+      let customer = await Customer.findOne({ email: customerEmail });
+      if (!customer) {
+        customer = new Customer({
+          name: customerName,
+          email: customerEmail,
+          specialists: [{
+            specialistId: slot.specialistId,
+            specialistEmail: slot.specialistEmail,
+            specialistName: '',
+            firstBookedDate: new Date(),
+          }],
+        });
+      } else {
+        // Link specialist if not already linked
+        const alreadyLinked = customer.specialists?.some(
+          (s) => s.specialistEmail === slot.specialistEmail
+        );
+        if (!alreadyLinked) {
+          customer.specialists.push({
+            specialistId: slot.specialistId,
+            specialistEmail: slot.specialistEmail,
+            specialistName: '',
+            firstBookedDate: new Date(),
+          });
+        }
+      }
+      customer.bookings.push({
+        serviceId: slot._id,
+        bookedAt: new Date(),
+        status: 'confirmed',
+      });
+      customer.purchaseCount = (customer.purchaseCount || 0) + 1;
+      await customer.save();
+      console.log(`👤 Customer record ensured for ${customerEmail}`);
+    } catch (custErr) {
+      // Non-blocking — booking already succeeded
+      console.error('⚠️ Failed to create/update customer record:', custErr.message);
+    }
+
     // Get specialist details for email
     const specialist = await CreatorProfile.findById(slot.specialistId);
     const specialistName = specialist?.creatorName || 'Specialist';
-    const appointmentDate = new Date(slot.date);
+    // Parse as local date to avoid UTC offset shifting the day
+    const dateStr = slot.date instanceof Date ? slot.date.toISOString().split('T')[0] : String(slot.date).split('T')[0];
+    const [yy, mm, dd] = dateStr.split('-').map(Number);
+    const appointmentDate = new Date(yy, mm - 1, dd);
     const dateLabel = appointmentDate.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -344,6 +390,13 @@ export const bookSlot = async (req, res) => {
                 Your specialist will create the Zoom meeting link shortly before your appointment. You'll receive the meeting link via email as soon as it's available.
               </p>
             </div>
+
+            ${additionalNotes ? `
+            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #166534; margin-top: 0;">📝 Your Notes</h3>
+              <p style="color: #166534; margin: 10px 0;">${additionalNotes}</p>
+            </div>
+            ` : ''}
 
             <div style="background-color: #f0f0f0; padding: 15px; border-radius: 4px; margin: 20px 0;">
               <h3 style="color: #333; margin-top: 0;">✨ What to Expect</h3>
@@ -395,6 +448,13 @@ export const bookSlot = async (req, res) => {
               <p style="color: #1e40af; margin: 5px 0;"><strong>Time:</strong> ${slot.startTime} - ${slot.endTime}</p>
               <p style="color: #1e40af; margin: 5px 0;"><strong>Duration:</strong> ${slot.duration} minutes</p>
             </div>
+
+            ${additionalNotes ? `
+            <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+              <h3 style="color: #92400e; margin-top: 0;">📝 Customer Notes</h3>
+              <p style="color: #92400e; margin: 10px 0;">${additionalNotes}</p>
+            </div>
+            ` : ''}
 
             <div style="background-color: #dcfce7; border-left: 4px solid #22c55e; padding: 15px; margin: 20px 0; border-radius: 4px;">
               <h3 style="color: #166534; margin-top: 0;">🎥 Next Step: Create Zoom Meeting</h3>

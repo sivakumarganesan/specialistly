@@ -58,6 +58,7 @@ export function ConsultingSlotBookingModal({
         customerId: user.id,
         customerEmail: user.email,
         customerName: user.name || user.email.split('@')[0],
+        additionalNotes: additionalNotes.trim() || undefined,
       };
 
       const response = await consultingSlotAPI.book(selectedSlot._id, bookingData);
@@ -84,7 +85,9 @@ export function ConsultingSlotBookingModal({
     }
   };
 
-  const slotDate = new Date(selectedSlot.date);
+  // Parse date as local (not UTC) to avoid off-by-one day in negative-offset timezones
+  const dateParts = selectedSlot.date.split('T')[0].split('-').map(Number);
+  const slotDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
   const dateLabel = slotDate.toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
