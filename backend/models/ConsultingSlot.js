@@ -82,11 +82,13 @@ const consultingSlotSchema = new mongoose.Schema(
     bookings: [
       {
         customerId: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'User',
+          type: String,
         },
         customerEmail: String,
         customerName: String,
+        customerPhone: String,
+        customerAddress: String,
+        additionalNotes: String,
         bookedAt: {
           type: Date,
           default: Date.now,
