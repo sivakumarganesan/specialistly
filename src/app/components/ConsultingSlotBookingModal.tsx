@@ -37,6 +37,10 @@ export function ConsultingSlotBookingModal({
   const [error, setError] = useState<string | null>(null);
   const [bookingStatus, setBookingStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [bookingMessage, setBookingMessage] = useState('');
+  const [customerName, setCustomerName] = useState(user?.name || '');
+  const [customerEmail, setCustomerEmail] = useState(user?.email || '');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerAddress, setCustomerAddress] = useState('');
   const [additionalNotes, setAdditionalNotes] = useState('');
 
   if (!isOpen || !selectedSlot) {
@@ -44,7 +48,23 @@ export function ConsultingSlotBookingModal({
   }
 
   const handleCompleteBooking = async () => {
-    if (!user?.email || !user?.id) {
+    const name = customerName.trim();
+    const email = customerEmail.trim();
+    const phone = customerPhone.trim();
+
+    if (!name) {
+      setError('Please enter your name');
+      return;
+    }
+    if (!email) {
+      setError('Please enter your email');
+      return;
+    }
+    if (!phone) {
+      setError('Please enter your phone number');
+      return;
+    }
+    if (!user?.id) {
       setError('Please login to book a slot');
       return;
     }
@@ -56,8 +76,10 @@ export function ConsultingSlotBookingModal({
     try {
       const bookingData = {
         customerId: user.id,
-        customerEmail: user.email,
-        customerName: user.name || user.email.split('@')[0],
+        customerEmail: email,
+        customerName: name,
+        customerPhone: phone,
+        customerAddress: customerAddress.trim() || undefined,
         additionalNotes: additionalNotes.trim() || undefined,
       };
 
@@ -188,28 +210,52 @@ export function ConsultingSlotBookingModal({
                 <h3 className="font-semibold text-gray-900">Your Information</h3>
                 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Name</label>
+                  <label className="text-sm font-medium text-gray-700">Name <span className="text-red-500">*</span></label>
                   <input
                     type="text"
-                    value={user?.name || ''}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Your full name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Email</label>
+                  <label className="text-sm font-medium text-gray-700">Email <span className="text-red-500">*</span></label>
                   <input
                     type="email"
-                    value={user?.email || ''}
-                    disabled
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 cursor-not-allowed"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Phone Number <span className="text-red-500">*</span></label>
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="+91 9876543210"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700">Address <span className="text-gray-400 text-xs">(Optional)</span></label>
+                  <input
+                    type="text"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    placeholder="Your address"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">
-                    Additional Notes (Optional)
+                    Additional Notes <span className="text-gray-400 text-xs">(Optional)</span>
                   </label>
                   <textarea
                     value={additionalNotes}
@@ -230,7 +276,7 @@ export function ConsultingSlotBookingModal({
                       Important Information
                     </p>
                     <ul className="text-xs text-amber-800 space-y-1">
-                      <li>✓ A confirmation email will be sent to {user?.email}</li>
+                      <li>✓ A confirmation email will be sent to your email address</li>
                       <li>✓ You'll receive meeting details and any required links 24 hours before the session</li>
                       <li>✓ Please cancel at least 24 hours in advance if you need to reschedule</li>
                     </ul>
@@ -266,7 +312,7 @@ export function ConsultingSlotBookingModal({
             {bookingStatus === 'idle' && (
               <button
                 onClick={handleCompleteBooking}
-                disabled={isLoading || !user?.email}
+                disabled={isLoading || !customerName.trim() || !customerEmail.trim() || !customerPhone.trim()}
                 className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {isLoading ? (

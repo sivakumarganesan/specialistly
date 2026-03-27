@@ -262,12 +262,19 @@ export const createSlot = async (req, res) => {
 export const bookSlot = async (req, res) => {
   try {
     const { slotId } = req.params;
-    const { customerId, customerEmail, customerName, additionalNotes } = req.body;
+    const { customerId, customerEmail, customerName, customerPhone, customerAddress, additionalNotes } = req.body;
 
     if (!customerId || !customerEmail || !customerName) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: customerId, customerEmail, customerName',
+      });
+    }
+
+    if (!customerPhone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required',
       });
     }
 
@@ -299,6 +306,8 @@ export const bookSlot = async (req, res) => {
       customerId,
       customerEmail,
       customerName,
+      customerPhone: customerPhone || '',
+      customerAddress: customerAddress || '',
       additionalNotes: additionalNotes || '',
       bookedAt: new Date(),
       // zoomMeeting field will be populated later when specialist generates it
@@ -316,6 +325,7 @@ export const bookSlot = async (req, res) => {
         customer = new Customer({
           name: customerName,
           email: customerEmail,
+          phone: customerPhone || '',
           specialists: [{
             specialistId: slot.specialistId,
             specialistEmail: slot.specialistEmail,
@@ -324,6 +334,10 @@ export const bookSlot = async (req, res) => {
           }],
         });
       } else {
+        // Update phone if provided and not already set
+        if (customerPhone && !customer.phone) {
+          customer.phone = customerPhone;
+        }
         // Link specialist if not already linked
         const alreadyLinked = customer.specialists?.some(
           (s) => s.specialistEmail === slot.specialistEmail
@@ -444,6 +458,8 @@ export const bookSlot = async (req, res) => {
             <div style="background-color: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 4px;">
               <h3 style="color: #1e40af; margin-top: 0;">📅 Session Details</h3>
               <p style="color: #1e40af; margin: 5px 0;"><strong>Customer:</strong> ${customerName} (${customerEmail})</p>
+              <p style="color: #1e40af; margin: 5px 0;"><strong>Phone:</strong> ${customerPhone}</p>
+              ${customerAddress ? `<p style="color: #1e40af; margin: 5px 0;"><strong>Address:</strong> ${customerAddress}</p>` : ''}
               <p style="color: #1e40af; margin: 5px 0;"><strong>Date:</strong> ${dateLabel}</p>
               <p style="color: #1e40af; margin: 5px 0;"><strong>Time:</strong> ${slot.startTime} - ${slot.endTime}</p>
               <p style="color: #1e40af; margin: 5px 0;"><strong>Duration:</strong> ${slot.duration} minutes</p>
