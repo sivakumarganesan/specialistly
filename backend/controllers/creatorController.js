@@ -6,7 +6,7 @@ import { SPECIALITY_CATEGORIES, isValidCategory } from '../constants/specialityC
 // Create or update specialist profile (unified Creator/Specialist)
 export const saveCreatorProfile = async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, lookupEmail } = req.body;
     
     if (!email) {
       return res.status(400).json({
@@ -26,12 +26,16 @@ export const saveCreatorProfile = async (req, res) => {
       website: req.body.website,
       hasProfileImage: !!req.body.profileImage,
     });
+
+    // Remove lookupEmail from the update payload
+    const { lookupEmail: _lookup, ...updateData } = req.body;
     
-    // Update the User document with specialist profile fields
+    // Look up by the original auth email first, then fall back to body email
+    const findEmail = lookupEmail || email;
     const profile = await User.findOneAndUpdate(
-      { email },
+      { email: findEmail },
       { 
-        ...req.body, 
+        ...updateData, 
         isSpecialist: true,
         updatedAt: Date.now() 
       },

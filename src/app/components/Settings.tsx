@@ -259,6 +259,7 @@ function UserProfile() {
       const creatorData = {
         creatorName: profileData.name,
         email: profileData.email,
+        lookupEmail: user?.email,
         bio: profileData.bio,
         phone: profileData.phone,
         location: profileData.location,
