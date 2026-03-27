@@ -23,6 +23,12 @@ interface ConsultingSlotCalendarProps {
   defaultDuration?: number;
 }
 
+/** Parse a "YYYY-MM-DD" string as a local date (avoids UTC-offset shift). */
+function parseLocalDate(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 export function ConsultingSlotCalendar({
   specialistEmail,
   onSelectSlot,
@@ -51,7 +57,7 @@ export function ConsultingSlotCalendar({
   // Reset selected date if it's no longer in the current month
   useEffect(() => {
     if (selectedDate) {
-      const selectedDateObj = new Date(selectedDate);
+      const selectedDateObj = parseLocalDate(selectedDate);
       const isInCurrentMonth = 
         selectedDateObj.getFullYear() === currentDate.getFullYear() &&
         selectedDateObj.getMonth() === currentDate.getMonth();
@@ -237,7 +243,7 @@ export function ConsultingSlotCalendar({
                   .filter(([date]) => !selectedDate || date === selectedDate)
                   .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
                   .map(([date, dateSlots]) => {
-                    const dateObj = new Date(date);
+                    const dateObj = parseLocalDate(date);
                     const dateLabel = dateObj.toLocaleDateString('en-US', {
                       weekday: 'long',
                       month: 'short',
@@ -278,7 +284,7 @@ export function ConsultingSlotCalendar({
                       <p>
                         <span className="text-gray-600">Date:</span>{' '}
                         <span className="font-medium">
-                          {new Date(selectedSlot.date).toLocaleDateString('en-US', {
+                          {parseLocalDate(selectedSlot.date.split('T')[0]).toLocaleDateString('en-US', {
                             weekday: 'long',
                             month: 'short',
                             day: 'numeric',
