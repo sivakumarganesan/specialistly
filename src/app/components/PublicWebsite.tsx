@@ -174,10 +174,16 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                 <div className="max-w-7xl mx-auto flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-4 flex-wrap">
                     {tc.address && (
-                      <span className="flex items-center gap-1.5">
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(tc.address)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 hover:opacity-80"
+                        style={{ color: textColor }}
+                      >
                         <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                         <span>{tc.address}</span>
-                      </span>
+                      </a>
                     )}
                     {tc.phone && (
                       <a href={`tel:${tc.phone.replace(/\s/g, '')}`} className="flex items-center gap-1.5 hover:opacity-80" style={{ color: textColor }}>
