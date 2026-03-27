@@ -1688,6 +1688,7 @@ const PropertiesPanel: React.FC<{
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
+              <p className="text-xs text-gray-500 mb-1">Brand name &amp; active menu item fallback</p>
               <div className="flex gap-2">
                 <input
                   type="color"
@@ -1699,6 +1700,24 @@ const PropertiesPanel: React.FC<{
                   type="text"
                   value={content.textColor || '#333333'}
                   onChange={(e) => setContent({ ...content, textColor: e.target.value })}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Link Color</label>
+              <p className="text-xs text-gray-500 mb-1">Color for menu links (use a lighter shade on dark backgrounds)</p>
+              <div className="flex gap-2">
+                <input
+                  type="color"
+                  value={content.linkColor || content.textColor || '#333333'}
+                  onChange={(e) => setContent({ ...content, linkColor: e.target.value })}
+                  className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+                />
+                <Input
+                  type="text"
+                  value={content.linkColor || content.textColor || '#333333'}
+                  onChange={(e) => setContent({ ...content, linkColor: e.target.value })}
                   className="flex-1"
                 />
               </div>

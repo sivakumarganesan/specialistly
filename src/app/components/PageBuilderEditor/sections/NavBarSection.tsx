@@ -8,6 +8,7 @@ export const NavBarSectionPreview: React.FC<{ section: PageSection }> = ({ secti
   const brandColor = section.content?.brandColor || '#00acc1';
   const bgColor = section.content?.backgroundColor || '#ffffff';
   const textColor = section.content?.textColor || '#333333';
+  const linkColor = section.content?.linkColor || textColor;
   const logoUrl = section.content?.logoUrl || '';
   const logoDisplayMode = section.content?.logoDisplayMode || 'auto';
   const menuItems: { label: string; url: string }[] = section.content?.menuItems || [];
@@ -36,8 +37,8 @@ export const NavBarSectionPreview: React.FC<{ section: PageSection }> = ({ secti
             <a
               key={i}
               href={item.url || '#'}
-              className="text-sm font-medium hover:opacity-70 transition-opacity"
-              style={{ color: textColor }}
+              className="text-sm font-medium hover:opacity-80 transition-opacity"
+              style={{ color: linkColor }}
             >
               {item.label}
             </a>
@@ -63,8 +64,8 @@ export const NavBarSectionPreview: React.FC<{ section: PageSection }> = ({ secti
             <a
               key={i}
               href={item.url || '#'}
-              className="block text-sm font-medium py-1.5 hover:opacity-70 transition-opacity"
-              style={{ color: textColor }}
+              className="block text-sm font-medium py-1.5 hover:opacity-80 transition-opacity"
+              style={{ color: linkColor }}
             >
               {item.label}
             </a>

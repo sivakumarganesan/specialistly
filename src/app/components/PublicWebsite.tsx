@@ -211,6 +211,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
             const nc = navBarSection?.content || {};
             const navBgColor = nc.backgroundColor || website?.branding?.headerBgColor || '#ffffff';
             const navTextColor = nc.textColor || '#333333';
+            const navLinkColor = nc.linkColor || navTextColor;
             const brandColor = nc.brandColor || website?.branding?.primaryColor || '#00acc1';
             const brandName = nc.brandName || website?.branding?.siteName || 'Website';
             const logoUrl = nc.logoUrl || website?.branding?.logo || '';
@@ -233,7 +234,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                   <div className="hidden md:flex items-center gap-6">
                     {/* Section-defined menu items */}
                     {sectionMenuItems.map((item, i) => (
-                      <a key={`menu-${i}`} href={item.url || '#'} className="text-sm font-medium hover:opacity-70 transition-opacity" style={{ color: navTextColor }}>
+                      <a key={`menu-${i}`} href={item.url || '#'} className="text-sm font-medium hover:opacity-80 transition-opacity" style={{ color: navLinkColor }}>
                         {item.label}
                       </a>
                     ))}
@@ -242,8 +243,8 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                       <button
                         key={page._id}
                         onClick={() => handlePageClick(page)}
-                        className={`text-sm font-medium transition-opacity ${currentPageSlug === page.slug ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
-                        style={{ color: currentPageSlug === page.slug ? brandColor : navTextColor }}
+                        className={`text-sm font-medium transition-opacity ${currentPageSlug === page.slug ? 'opacity-100' : 'opacity-80 hover:opacity-100'}`}
+                        style={{ color: currentPageSlug === page.slug ? brandColor : navLinkColor }}
                       >
                         {page.title}
                       </button>
@@ -262,7 +263,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                 {isMobileNavOpen && (
                   <div className="md:hidden border-t border-gray-200 px-4 py-3 space-y-1" style={{ backgroundColor: navBgColor }}>
                     {sectionMenuItems.map((item, i) => (
-                      <a key={`mob-menu-${i}`} href={item.url || '#'} className="block text-sm font-medium py-2 hover:opacity-70" style={{ color: navTextColor }}>
+                      <a key={`mob-menu-${i}`} href={item.url || '#'} className="block text-sm font-medium py-2 hover:opacity-80" style={{ color: navLinkColor }}>
                         {item.label}
                       </a>
                     ))}
@@ -270,8 +271,8 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                       <button
                         key={page._id}
                         onClick={() => handlePageClick(page)}
-                        className={`block w-full text-left text-sm font-medium py-2 ${currentPageSlug === page.slug ? '' : 'opacity-70'}`}
-                        style={{ color: currentPageSlug === page.slug ? brandColor : navTextColor }}
+                        className={`block w-full text-left text-sm font-medium py-2 ${currentPageSlug === page.slug ? '' : 'opacity-80'}`}
+                        style={{ color: currentPageSlug === page.slug ? brandColor : navLinkColor }}
                       >
                         {page.title}
                       </button>
