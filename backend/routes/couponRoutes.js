@@ -1,15 +1,21 @@
 import express from 'express';
 import Coupon from '../models/Coupon.js';
+import User from '../models/User.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // Middleware to check if user is a specialist
-const requireSpecialist = (req, res, next) => {
-  if (!req.user?.role || (req.user.role !== 'specialist' && req.user.role !== 'admin')) {
-    return res.status(403).json({ error: 'Specialist access required' });
+const requireSpecialist = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.userId).select('role isSpecialist');
+    if (!user || (user.role !== 'specialist' && user.role !== 'admin' && !user.isSpecialist)) {
+      return res.status(403).json({ error: 'Specialist access required' });
+    }
+    next();
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to verify specialist status' });
   }
-  next();
 };
 
 // Create a new coupon
