@@ -1,5 +1,16 @@
 import { API_BASE_URL } from '@/app/api/apiClient';
 
+/** Check for expired JWT on any raw fetch response */
+const checkAuth = (response: Response) => {
+  if (response.status === 401) {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userType');
+    window.dispatchEvent(new CustomEvent('session-expired'));
+  }
+  return response;
+};
+
 export const paymentAPI = {
   /**
    * Create Payment Intent (Legacy - for non-marketplace payments)
@@ -246,6 +257,7 @@ export const specialistRazorpayAPI = {
         Authorization: `Bearer ${localStorage.getItem('authToken')}`,
       },
     });
+    checkAuth(response);
     return response.json();
   },
 
@@ -258,6 +270,7 @@ export const specialistRazorpayAPI = {
       },
       body: JSON.stringify(data),
     });
+    checkAuth(response);
     return response.json();
   },
 
@@ -268,6 +281,7 @@ export const specialistRazorpayAPI = {
         Authorization: `Bearer ${localStorage.getItem('authToken')}`,
       },
     });
+    checkAuth(response);
     return response.json();
   },
 };

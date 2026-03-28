@@ -51,14 +51,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const savedUserType = localStorage.getItem('userType') as "specialist" | "customer" | null;
     
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
-      const userTypeValue = savedUserType || "customer";
-      setUserType(userTypeValue);
-      // Set default page based on user type on page refresh
-      setCurrentPage('dashboard');
+      // Check if token is expired before restoring the session
+      try {
+        const payload = JSON.parse(atob(savedToken.split('.')[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          // Token already expired — clear it
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          localStorage.removeItem('userType');
+        } else {
+          setToken(savedToken);
+          setUser(JSON.parse(savedUser));
+          const userTypeValue = savedUserType || "customer";
+          setUserType(userTypeValue);
+          setCurrentPage('dashboard');
+        }
+      } catch {
+        // Malformed token — clear it
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('userType');
+      }
     }
     setIsLoading(false);
+  }, []);
+
+  // Listen for session-expired events dispatched by apiClient
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      setToken(null);
+      setUser(null);
+      setUserType(null);
+      setCurrentPage('homepage');
+      alert('Your session has expired. Please log in again.');
+    };
+    window.addEventListener('session-expired', handleSessionExpired);
+    return () => window.removeEventListener('session-expired', handleSessionExpired);
   }, []);
 
   const signup = async (data: any) => {

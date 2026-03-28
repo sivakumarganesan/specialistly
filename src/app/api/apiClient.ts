@@ -38,6 +38,20 @@ const apiCall = async (
 
     if (!response.ok) {
       const errorMessage = result.error || result.message || "API Error";
+
+      // Handle expired or invalid JWT — force logout so user can re-login
+      if (response.status === 401) {
+        const msg = typeof errorMessage === 'string' ? errorMessage.toLowerCase() : '';
+        if (msg.includes('expired') || msg.includes('invalid token') || msg.includes('jwt')) {
+          console.warn('Session expired — logging out');
+          localStorage.removeItem('authToken');
+          localStorage.removeItem('user');
+          localStorage.removeItem('userType');
+          // Notify the app that the session is gone
+          window.dispatchEvent(new CustomEvent('session-expired'));
+        }
+      }
+
       // Don't log 404s as they're expected when resources don't exist yet
       if (response.status !== 404) {
         console.error(`API Error (${response.status}):`, errorMessage);
