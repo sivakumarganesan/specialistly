@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ForgotPassword } from './ForgotPassword';
 import ReactDOM from 'react-dom';
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import {
@@ -209,6 +210,8 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
   // Login fields
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  // Forgot password state
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
 
   // Signup fields
   const [signupName, setSignupName] = useState('');
@@ -550,64 +553,86 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                     </button>
                   </div>
 
-                  {/* Login Form */}
+                  {/* Login Form or Forgot Password */}
                   {authTab === 'login' && (
-                    <form onSubmit={handleLogin} className="space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input
-                          type="email"
-                          required
-                          value={loginEmail}
-                          onChange={(e) => setLoginEmail(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
-                          placeholder="Enter your email"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                        <input
-                          type="password"
-                          required
-                          value={loginPassword}
-                          onChange={(e) => setLoginPassword(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
-                          placeholder="Enter your password"
-                        />
-                      </div>
-
-                      {error && (
-                        <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
-                          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                          <span>{error}</span>
-                        </div>
-                      )}
-
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3 px-4 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                      >
-                        {loading ? (
-                          <>
-                            <Loader className="h-4 w-4 animate-spin" />
-                            {isFree ? 'Logging in & Enrolling...' : 'Logging in...'}
-                          </>
-                        ) : (
-                          <>
-                            <LogIn className="h-4 w-4" />
-                            {isFree ? 'Log In & Enroll' : 'Log In & Continue'}
-                          </>
-                        )}
-                      </button>
-
-                      <p className="text-center text-sm text-gray-500">
-                        Don&apos;t have an account?{' '}
-                        <button type="button" onClick={() => { setAuthTab('signup'); setError(null); }} className="text-gray-900 font-medium hover:underline">
-                          Sign up
+                    showForgotPassword ? (
+                      <div className="py-2">
+                        <ForgotPassword />
+                        <button
+                          type="button"
+                          onClick={() => setShowForgotPassword(false)}
+                          className="mt-4 text-gray-700 hover:text-gray-900 hover:underline font-medium text-sm"
+                        >
+                          &larr; Back to Login
                         </button>
-                      </p>
-                    </form>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleLogin} className="space-y-3">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                          <input
+                            type="email"
+                            required
+                            value={loginEmail}
+                            onChange={(e) => setLoginEmail(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
+                            placeholder="Enter your email"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                          <input
+                            type="password"
+                            required
+                            value={loginPassword}
+                            onChange={(e) => setLoginPassword(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
+                            placeholder="Enter your password"
+                          />
+                          <div className="text-right mt-1">
+                            <button
+                              type="button"
+                              onClick={() => setShowForgotPassword(true)}
+                              className="text-xs text-gray-700 hover:text-gray-900 hover:underline font-medium"
+                            >
+                              Forgot password?
+                            </button>
+                          </div>
+                        </div>
+
+                        {error && (
+                          <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-lg">
+                            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                            <span>{error}</span>
+                          </div>
+                        )}
+
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="w-full py-3 px-4 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {loading ? (
+                            <>
+                              <Loader className="h-4 w-4 animate-spin" />
+                              {isFree ? 'Logging in & Enrolling...' : 'Logging in...'}
+                            </>
+                          ) : (
+                            <>
+                              <LogIn className="h-4 w-4" />
+                              {isFree ? 'Log In & Enroll' : 'Log In & Continue'}
+                            </>
+                          )}
+                        </button>
+
+                        <p className="text-center text-sm text-gray-500">
+                          Don&apos;t have an account?{' '}
+                          <button type="button" onClick={() => { setAuthTab('signup'); setError(null); }} className="text-gray-900 font-medium hover:underline">
+                            Sign up
+                          </button>
+                        </p>
+                      </form>
+                    )
                   )}
 
                   {/* Signup Form */}
