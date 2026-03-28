@@ -22,7 +22,7 @@ export const NavBarSectionPreview: React.FC<{ section: PageSection }> = ({ secti
         {/* Brand */}
         <div className="flex items-center gap-2">
           {showLogo && (
-            <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" />
+            <img src={logoUrl} alt={brandName} className="h-12 w-auto object-contain" />
           )}
           {showText && (
             <span className="text-lg sm:text-xl font-bold tracking-tight" style={{ color: brandColor }}>

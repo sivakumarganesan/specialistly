@@ -226,7 +226,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
               <nav style={{ backgroundColor: navBgColor }} className="border-b border-gray-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {showLogo && <img src={logoUrl} alt={brandName} className="h-8 w-auto object-contain" />}
+                    {showLogo && <img src={logoUrl} alt={brandName} className="h-12 w-auto object-contain" />}
                     {showText && <span className="text-lg sm:text-xl font-bold tracking-tight" style={{ color: brandColor }}>{brandName}</span>}
                   </div>
 
