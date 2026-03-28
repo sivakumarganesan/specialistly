@@ -158,6 +158,20 @@ export const courseAPI = {
     apiCall("/courses/certificates/my-certificates"),
 };
 
+// Coupon API calls
+export const couponAPI = {
+  getAll: (courseId?: string) => {
+    const params = courseId ? `?course=${courseId}` : '';
+    return apiCall(`/coupons${params}`);
+  },
+  create: (data: { code: string; course: string; discountType: string; discountValue: number; maxRedemptions?: number; expiresAt?: string }) =>
+    apiCall('/coupons', 'POST', data),
+  update: (id: string, data: any) => apiCall(`/coupons/${id}`, 'PUT', data),
+  delete: (id: string) => apiCall(`/coupons/${id}`, 'DELETE'),
+  validate: (code: string, courseId: string) =>
+    apiCall(`/coupons/validate/${encodeURIComponent(code)}?course=${courseId}`),
+};
+
 // Service API calls
 export const serviceAPI = {
   getAll: (filters?: { creator?: string }) => {

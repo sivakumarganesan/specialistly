@@ -8,8 +8,8 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js';
-import { X, CreditCard, CheckCircle, Loader, AlertCircle, LogIn, UserPlus } from 'lucide-react';
-import { API_BASE_URL } from '@/app/api/apiClient';
+import { X, CreditCard, CheckCircle, Loader, AlertCircle, LogIn, UserPlus, Tag } from 'lucide-react';
+import { API_BASE_URL, couponAPI } from '@/app/api/apiClient';
 import { RazorpayPaymentForm } from './RazorpayPaymentForm';
 
 // Fetch Stripe public key from backend at runtime
@@ -219,6 +219,12 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
   const [signupPassword, setSignupPassword] = useState('');
   const [signupConfirm, setSignupConfirm] = useState('');
 
+  // Coupon state
+  const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState<{ code: string; discountType: string; discountValue: number } | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
   // Check for existing session on mount
   useEffect(() => {
     if (isOpen) {
@@ -251,11 +257,41 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
       setSignupPassword('');
       setSignupConfirm('');
       setAuthTab('login');
+      setCouponCode('');
+      setCouponApplied(null);
+      setCouponError(null);
     }
   }, [isOpen]);
 
   const isFree = !course.price || course.price === 0;
   const courseCurrencySymbol = course.currency === 'INR' ? '₹' : '$';
+
+  // Compute discounted price
+  let displayPrice = course.price || 0;
+  if (couponApplied) {
+    if (couponApplied.discountType === 'percentage') {
+      displayPrice = Math.max(0, displayPrice - Math.round((displayPrice * couponApplied.discountValue) / 100));
+    } else {
+      displayPrice = Math.max(0, displayPrice - couponApplied.discountValue);
+    }
+  }
+  const isEffectivelyFree = displayPrice === 0;
+
+  /** Validate and apply a coupon code */
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    setCouponApplied(null);
+    try {
+      const data = await couponAPI.validate(couponCode.trim(), course._id);
+      setCouponApplied({ code: data.code, discountType: data.discountType, discountValue: data.discountValue });
+    } catch (err: any) {
+      setCouponError(err.message || 'Invalid coupon code');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
 
   /** Call create-intent and proceed to payment (or success for free) */
   const initiatePayment = async (name: string, email: string, token: string | null) => {
@@ -270,6 +306,7 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
           courseId: course._id,
           customerEmail: email,
           customerName: name,
+          couponCode: couponApplied?.code || undefined,
         }),
       });
       const data = await res.json();
@@ -474,8 +511,59 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                 <p className="text-sm text-gray-500 mt-1 line-clamp-2">{course.description}</p>
               )}
               <div className="mt-2 font-bold text-lg text-gray-900">
-                {isFree ? 'Free' : `${courseCurrencySymbol}${course.price}`}
+                {isFree ? 'Free' : couponApplied ? (
+                  <span className="flex items-center gap-2">
+                    <span className="line-through text-gray-400 font-normal text-base">{courseCurrencySymbol}{course.price}</span>
+                    <span>{isEffectivelyFree ? 'Free' : `${courseCurrencySymbol}${displayPrice}`}</span>
+                  </span>
+                ) : `${courseCurrencySymbol}${course.price}`}
               </div>
+
+              {/* Coupon Code Input (only for paid courses) */}
+              {!isFree && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  {couponApplied ? (
+                    <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                      <div className="flex items-center gap-2 text-green-700 text-sm">
+                        <Tag className="h-4 w-4" />
+                        <span className="font-medium">{couponApplied.code}</span>
+                        <span>—</span>
+                        <span>{couponApplied.discountType === 'percentage' ? `${couponApplied.discountValue}% off` : `${courseCurrencySymbol}${couponApplied.discountValue} off`}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setCouponApplied(null); setCouponCode(''); setCouponError(null); }}
+                        className="text-green-600 hover:text-red-500 text-xs font-medium"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={couponCode}
+                          onChange={(e) => { setCouponCode(e.target.value); setCouponError(null); }}
+                          placeholder="Coupon code"
+                          className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-400 outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyCoupon}
+                          disabled={couponLoading || !couponCode.trim()}
+                          className="px-3 py-1.5 text-sm bg-gray-900 text-white rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {couponLoading ? <Loader className="h-3 w-3 animate-spin" /> : 'Apply'}
+                        </button>
+                      </div>
+                      {couponError && (
+                        <p className="text-xs text-red-500 mt-1">{couponError}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

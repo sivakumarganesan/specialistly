@@ -6,7 +6,7 @@ import { Input } from "@/app/components/ui/input";
 import { Label } from "@/app/components/ui/label";
 import { Textarea } from "@/app/components/ui/textarea";
 import { HLSVideoPlayer } from "@/app/components/HLSVideoPlayer";
-import { courseAPI, videoAPI, API_BASE_URL } from "@/app/api/apiClient";
+import { courseAPI, videoAPI, couponAPI, API_BASE_URL } from "@/app/api/apiClient";
 import { useAuth } from "@/app/context/AuthContext";
 import {
   Select,
@@ -40,6 +40,7 @@ import {
   PlayCircle,
   Play,
   Award,
+  Tag,
 } from "lucide-react";
 import { Checkbox } from "@/app/components/ui/checkbox";
 
@@ -163,6 +164,61 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
   const [courseType, setCourseType] = useState<"self-paced" | "cohort-based" | null>(null);
   const [courseEnrollments, setCourseEnrollments] = useState<any[]>([]);
   const [enrollmentsLoading, setEnrollmentsLoading] = useState(false);
+
+  // Coupon management state
+  const [couponsDialogOpen, setCouponsDialogOpen] = useState(false);
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
+  const [couponForm, setCouponForm] = useState({ code: '', discountType: 'percentage', discountValue: '', maxRedemptions: '', expiresAt: '' });
+  const [couponSaving, setCouponSaving] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
+
+  const openCouponsDialog = async (course: Course) => {
+    setSelectedCourse(course);
+    setCouponsDialogOpen(true);
+    setCouponsLoading(true);
+    setCouponError(null);
+    try {
+      const data = await couponAPI.getAll(course.id);
+      setCoupons(Array.isArray(data) ? data : []);
+    } catch {
+      setCoupons([]);
+    } finally {
+      setCouponsLoading(false);
+    }
+  };
+
+  const handleCreateCoupon = async () => {
+    if (!selectedCourse || !couponForm.code || !couponForm.discountValue) return;
+    setCouponSaving(true);
+    setCouponError(null);
+    try {
+      const payload: any = {
+        code: couponForm.code.trim().toUpperCase(),
+        course: selectedCourse.id,
+        discountType: couponForm.discountType,
+        discountValue: Number(couponForm.discountValue),
+      };
+      if (couponForm.maxRedemptions) payload.maxRedemptions = Number(couponForm.maxRedemptions);
+      if (couponForm.expiresAt) payload.expiresAt = couponForm.expiresAt;
+      const newCoupon = await couponAPI.create(payload);
+      setCoupons((prev) => [...prev, newCoupon]);
+      setCouponForm({ code: '', discountType: 'percentage', discountValue: '', maxRedemptions: '', expiresAt: '' });
+    } catch (err: any) {
+      setCouponError(err.message || 'Failed to create coupon');
+    } finally {
+      setCouponSaving(false);
+    }
+  };
+
+  const handleDeleteCoupon = async (couponId: string) => {
+    try {
+      await couponAPI.delete(couponId);
+      setCoupons((prev) => prev.filter((c) => c._id !== couponId));
+    } catch (err: any) {
+      setCouponError(err.message || 'Failed to delete coupon');
+    }
+  };
 
   interface Lesson {
     _id?: string;
@@ -1270,6 +1326,15 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => openCouponsDialog(course)}
+                    title="Manage coupon codes for this course"
+                  >
+                    <Tag className="h-4 w-4 mr-1" />
+                    Coupons
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => toggleStatus(course.id)}
                   >
                     {course.status === "published" ? "Unpublish" : "Publish"}
@@ -2168,6 +2233,134 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setEnrollmentsDialogOpen(false)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Coupons Dialog */}
+      <Dialog open={couponsDialogOpen} onOpenChange={setCouponsDialogOpen}>
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Coupon Codes — {selectedCourse?.title}</DialogTitle>
+            <DialogDescription>
+              Create and manage discount coupons for this course.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Create coupon form */}
+          <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+            <p className="text-sm font-semibold text-gray-700">Create New Coupon</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="coupon-code">Code *</Label>
+                <Input
+                  id="coupon-code"
+                  placeholder="e.g. SAVE20"
+                  value={couponForm.code}
+                  onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value.toUpperCase() })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="coupon-type">Discount Type</Label>
+                <Select
+                  value={couponForm.discountType}
+                  onValueChange={(v) => setCouponForm({ ...couponForm, discountType: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                    <SelectItem value="fixed">Fixed Amount</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="coupon-value">Discount Value *</Label>
+                <Input
+                  id="coupon-value"
+                  type="number"
+                  min="1"
+                  placeholder={couponForm.discountType === 'percentage' ? 'e.g. 20' : 'e.g. 500'}
+                  value={couponForm.discountValue}
+                  onChange={(e) => setCouponForm({ ...couponForm, discountValue: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="coupon-max">Max Redemptions</Label>
+                <Input
+                  id="coupon-max"
+                  type="number"
+                  min="1"
+                  placeholder="Unlimited"
+                  value={couponForm.maxRedemptions}
+                  onChange={(e) => setCouponForm({ ...couponForm, maxRedemptions: e.target.value })}
+                />
+              </div>
+              <div className="col-span-2">
+                <Label htmlFor="coupon-expires">Expiry Date (optional)</Label>
+                <Input
+                  id="coupon-expires"
+                  type="date"
+                  value={couponForm.expiresAt}
+                  onChange={(e) => setCouponForm({ ...couponForm, expiresAt: e.target.value })}
+                />
+              </div>
+            </div>
+            {couponError && (
+              <p className="text-sm text-red-600">{couponError}</p>
+            )}
+            <Button
+              size="sm"
+              onClick={handleCreateCoupon}
+              disabled={couponSaving || !couponForm.code || !couponForm.discountValue}
+            >
+              {couponSaving ? 'Creating...' : 'Create Coupon'}
+            </Button>
+          </div>
+
+          {/* Existing coupons list */}
+          <div className="mt-4">
+            <p className="text-sm font-semibold text-gray-700 mb-2">Existing Coupons</p>
+            {couponsLoading ? (
+              <p className="text-sm text-gray-500">Loading...</p>
+            ) : coupons.length === 0 ? (
+              <p className="text-sm text-gray-500">No coupons yet for this course.</p>
+            ) : (
+              <div className="space-y-2">
+                {coupons.map((coupon) => (
+                  <div key={coupon._id} className="flex items-center justify-between p-3 bg-white border rounded-lg">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold text-sm">{coupon.code}</span>
+                        <Badge variant={coupon.isActive ? "default" : "secondary"}>
+                          {coupon.isActive ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {coupon.discountType === 'percentage' ? `${coupon.discountValue}% off` : `${selectedCourse?.currency === 'INR' ? '₹' : '$'}${coupon.discountValue} off`}
+                        {' · '}{coupon.redemptions}/{coupon.maxRedemptions || '∞'} used
+                        {coupon.expiresAt && ` · Expires ${new Date(coupon.expiresAt).toLocaleDateString()}`}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteCoupon(coupon._id)}
+                      className="text-red-600 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCouponsDialogOpen(false)}>
               Close
             </Button>
           </DialogFooter>

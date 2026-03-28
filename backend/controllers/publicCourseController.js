@@ -5,6 +5,7 @@ import CreatorProfile from '../models/CreatorProfile.js';
 import Course from '../models/Course.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import Customer from '../models/Customer.js';
+import Coupon from '../models/Coupon.js';
 import { sendEnrollmentConfirmation, sendCohortEnrollmentConfirmation, sendSpecialistNotification } from '../services/emailService.js';
 import mongoose from 'mongoose';
 
@@ -78,6 +79,7 @@ export const createPublicPaymentIntent = async (req, res) => {
       courseId,
       customerEmail,
       customerName,
+      couponCode,
       commissionPercentage = 15,
     } = req.body;
 
@@ -186,8 +188,36 @@ export const createPublicPaymentIntent = async (req, res) => {
       }
     }
 
+    // Coupon logic (authenticated users only)
+    let discountAmount = 0;
+    let appliedCoupon = null;
+    let amount = course.price || 0;
+    if (couponCode && req.user?.userId) {
+      const coupon = await Coupon.findOne({
+        code: couponCode.trim().toUpperCase(),
+        course: course._id,
+        isActive: true,
+      });
+      if (!coupon) {
+        return res.status(400).json({ success: false, message: 'Invalid or inactive coupon code' });
+      }
+      if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+        return res.status(400).json({ success: false, message: 'Coupon expired' });
+      }
+      if (coupon.maxRedemptions && coupon.redemptions >= coupon.maxRedemptions) {
+        return res.status(400).json({ success: false, message: 'Coupon fully redeemed' });
+      }
+      if (coupon.discountType === 'percentage') {
+        discountAmount = Math.round((amount * coupon.discountValue) / 100);
+      } else if (coupon.discountType === 'fixed') {
+        discountAmount = Math.round(coupon.discountValue);
+      }
+      if (discountAmount > amount) discountAmount = amount;
+      amount = amount - discountAmount;
+      appliedCoupon = coupon;
+    }
+
     // Free course - direct enrollment
-    const amount = course.price || 0;
     if (amount === 0) {
       const enrollment = await SelfPacedEnrollment.create({
         customerId,
@@ -247,11 +277,19 @@ export const createPublicPaymentIntent = async (req, res) => {
         amount: 0,
       });
 
+      // Increment coupon redemptions if coupon was applied
+      if (appliedCoupon) {
+        appliedCoupon.redemptions += 1;
+        await appliedCoupon.save();
+      }
+
       return res.status(200).json({
         success: true,
         message: 'Enrolled in free course',
         enrollmentId: enrollment._id,
         isFree: true,
+        discountAmount,
+        couponCode: couponCode || null,
       });
     }
 
@@ -320,12 +358,20 @@ export const createPublicPaymentIntent = async (req, res) => {
         paymentStatus: 'pending',
       });
 
+      // Increment coupon redemptions
+      if (appliedCoupon) {
+        appliedCoupon.redemptions += 1;
+        await appliedCoupon.save();
+      }
+
       return res.status(200).json({
         success: true,
         paymentGateway: 'stripe',
         paymentIntentId: paymentResult.paymentIntentId,
         clientSecret: paymentResult.clientSecret,
         amount: amountInCents / 100,
+        discountAmount,
+        couponCode: couponCode || null,
       });
     }
 
@@ -402,6 +448,12 @@ export const createPublicPaymentIntent = async (req, res) => {
         useSpecialistRazorpay: useSpecialistRazorpay || false,
       });
 
+      // Increment coupon redemptions
+      if (appliedCoupon) {
+        appliedCoupon.redemptions += 1;
+        await appliedCoupon.save();
+      }
+
       return res.status(200).json({
         success: true,
         paymentGateway: 'razorpay',
@@ -409,6 +461,8 @@ export const createPublicPaymentIntent = async (req, res) => {
         amount: amountInSmallestUnit / 100,
         currency: razorpayCurrency,
         keyId: useSpecialistRazorpay ? specialist.razorpayKeyId : process.env.RAZORPAY_KEY_ID,
+        discountAmount,
+        couponCode: couponCode || null,
       });
     }
   } catch (error) {
