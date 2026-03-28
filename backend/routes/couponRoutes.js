@@ -35,6 +35,9 @@ router.post('/', authMiddleware, requireSpecialist, async (req, res) => {
     await coupon.save();
     res.status(201).json(coupon);
   } catch (err) {
+    if (err.code === 11000) {
+      return res.status(409).json({ error: `A coupon with code "${code.toUpperCase()}" already exists. Please use a different code.` });
+    }
     res.status(400).json({ error: err.message });
   }
 });
