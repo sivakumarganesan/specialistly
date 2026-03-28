@@ -329,7 +329,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
           {slide?.title && (
             <h1
               className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2"
-              style={{ color: titleColor }}
+              style={{ color: titleColor, whiteSpace: 'pre-line' }}
             >
               {slide.title}
             </h1>

@@ -1845,15 +1845,15 @@ const PropertiesPanel: React.FC<{
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Input
-                      type="text"
+                    <Textarea
                       value={slide.title || ''}
                       onChange={(e) => {
                         const slides = [...(content.slides || [{ title: content.title || '', accentText: content.accentText || '', subtitle: content.subtitle || '', ctaText: content.ctaText || '', ctaLink: content.ctaLink || '', backgroundImage: content.backgroundImage || '', overlayImage: content.overlayImage || '' }])];
                         slides[slideIdx] = { ...slides[slideIdx], title: e.target.value };
                         setContent({ ...content, slides });
                       }}
-                      placeholder="Headline"
+                      placeholder="Headline (press Enter for line break)"
+                      rows={2}
                     />
                     <Input
                       type="text"
