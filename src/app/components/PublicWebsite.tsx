@@ -215,7 +215,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
             const brandColor = nc.brandColor || website?.branding?.primaryColor || '#00acc1';
             const brandName = nc.brandName || website?.branding?.siteName || 'Website';
             const logoUrl = nc.logoUrl || website?.branding?.logo || '';
-            const logoDisplayMode = nc.logoDisplayMode || 'auto';
+            const logoDisplayMode = nc.logoDisplayMode || 'both';
             const showLogo = logoUrl && (logoDisplayMode === 'both' || logoDisplayMode === 'logo' || (logoDisplayMode === 'auto' && logoUrl));
             const showText = logoDisplayMode === 'both' || logoDisplayMode === 'text' || (logoDisplayMode === 'auto' && !logoUrl);
             // Merge section-defined menu items with page links

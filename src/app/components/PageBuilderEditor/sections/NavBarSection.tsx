@@ -10,7 +10,7 @@ export const NavBarSectionPreview: React.FC<{ section: PageSection }> = ({ secti
   const textColor = section.content?.textColor || '#333333';
   const linkColor = section.content?.linkColor || textColor;
   const logoUrl = section.content?.logoUrl || '';
-  const logoDisplayMode = section.content?.logoDisplayMode || 'auto';
+  const logoDisplayMode = section.content?.logoDisplayMode || 'both';
   const menuItems: { label: string; url: string }[] = section.content?.menuItems || [];
 
   const showLogo = logoUrl && (logoDisplayMode === 'both' || logoDisplayMode === 'logo' || (logoDisplayMode === 'auto' && logoUrl));

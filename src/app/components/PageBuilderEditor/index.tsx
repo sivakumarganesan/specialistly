@@ -1659,7 +1659,7 @@ const PropertiesPanel: React.FC<{
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Header Display</label>
               <select
-                value={content.logoDisplayMode || 'auto'}
+                value={content.logoDisplayMode || 'both'}
                 onChange={(e) => setContent({ ...content, logoDisplayMode: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
               >
