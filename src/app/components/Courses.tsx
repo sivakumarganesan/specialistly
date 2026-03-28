@@ -639,6 +639,11 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
 
     const lesson = lessons[lessonIndex];
 
+    if (!lesson || !lesson.title?.trim()) {
+      alert("Please enter a lesson title before uploading materials.");
+      return;
+    }
+
     try {
       // Max file size: 100MB
       const maxFileSize = 100 * 1024 * 1024;
@@ -1671,17 +1676,25 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   <Card key={index} className="p-6 bg-gradient-to-br from-white to-gray-50">
                     {/* Lesson Header */}
                     <div className="flex items-center justify-between mb-6 pb-4 border-b">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gray-100 text-gray-900 rounded-full flex items-center justify-center font-semibold text-sm">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-8 h-8 bg-gray-100 text-gray-900 rounded-full flex items-center justify-center font-semibold text-sm flex-shrink-0">
                           {index + 1}
                         </div>
                         <div className="flex-1">
+                          <label className="text-xs font-semibold text-gray-600 mb-1 flex items-center gap-1">
+                            Lesson Title <span className="text-red-500">*</span>
+                          </label>
                           <Input
                             placeholder="e.g., Introduction to React"
                             value={lesson.title}
                             onChange={(e) => updateLesson(index, "title", e.target.value)}
-                            className="font-semibold text-base border-0 px-0 focus-visible:ring-0 focus-visible:border-b-2"
+                            className={`font-semibold text-lg h-11 ${
+                              !lesson.title?.trim() ? 'border-red-300 focus-visible:ring-red-400' : 'border-gray-300'
+                            }`}
                           />
+                          {!lesson.title?.trim() && (
+                            <p className="text-xs text-red-500 mt-1">Title is required before uploading videos or materials</p>
+                          )}
                         </div>
                       </div>
                       <Button
@@ -1784,8 +1797,9 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                               type="button"
                               size="sm"
                               onClick={() => document.getElementById(`video-upload-${index}`)?.click()}
-                              disabled={uploadingVideoFor === index}
-                              className="bg-gray-900 hover:bg-gray-800"
+                              disabled={uploadingVideoFor === index || !lesson.title?.trim()}
+                              className="bg-gray-900 hover:bg-gray-800 disabled:opacity-50"
+                              title={!lesson.title?.trim() ? 'Enter a lesson title first' : ''}
                             >
                               {uploadingVideoFor === index ? "Uploading..." : "Upload Video"}
                             </Button>
@@ -1827,8 +1841,9 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                             type="button"
                             size="sm"
                             onClick={() => document.getElementById(`lesson-files-${index}`)?.click()}
-                            disabled={uploadingFileFor === index}
-                            className="bg-blue-600 hover:bg-blue-700"
+                            disabled={uploadingFileFor === index || !lesson.title?.trim()}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                            title={!lesson.title?.trim() ? 'Enter a lesson title first' : ''}
                           >
                             {uploadingFileFor === index ? 'Adding...' : '+ Add'}
                           </Button>
