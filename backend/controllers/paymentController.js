@@ -2,6 +2,7 @@ import Payment from '../models/Payment.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import Course from '../models/Course.js';
 import CommissionConfig from '../models/CommissionConfig.js';
+import Coupon from '../models/Coupon.js';
 import { stripeService } from '../services/stripeService.js';
 import { sendEnrollmentConfirmation, sendSpecialistNotification } from '../services/emailService.js';
 import mongoose from 'mongoose';
@@ -12,7 +13,7 @@ import mongoose from 'mongoose';
  */
 export const createPaymentIntent = async (req, res) => {
   try {
-    const { serviceId, serviceType, customerId, customerEmail } = req.body;
+    const { serviceId, serviceType, customerId, customerEmail, couponCode } = req.body;
     const authenticatedUserId = req.user?.userId;
 
     // Validate input
@@ -80,8 +81,38 @@ export const createPaymentIntent = async (req, res) => {
       });
     }
 
+    // Coupon logic (authenticated users only)
+    let discountAmount = 0;
+    let appliedCoupon = null;
+    let amount = service.price || 0;
+    if (couponCode) {
+      const coupon = await Coupon.findOne({
+        code: couponCode.trim().toUpperCase(),
+        course: service._id,
+        isActive: true,
+      });
+      if (!coupon) {
+        return res.status(400).json({ success: false, message: 'Invalid or inactive coupon code' });
+      }
+      if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+        return res.status(400).json({ success: false, message: 'Coupon expired' });
+      }
+      if (coupon.maxRedemptions && coupon.redemptions >= coupon.maxRedemptions) {
+        return res.status(400).json({ success: false, message: 'Coupon fully redeemed' });
+      }
+      // Calculate discount
+      if (coupon.discountType === 'percentage') {
+        discountAmount = Math.round((amount * coupon.discountValue) / 100);
+      } else if (coupon.discountType === 'fixed') {
+        discountAmount = Math.round(coupon.discountValue);
+      }
+      // Prevent negative/freeload
+      if (discountAmount > amount) discountAmount = amount;
+      amount = amount - discountAmount;
+      appliedCoupon = coupon;
+    }
+
     // Validate amount
-    const amount = service.price || 0;
     if (amount === 0) {
       // Free course - create enrollment directly
       const enrollment = await SelfPacedEnrollment.create({
@@ -93,12 +124,18 @@ export const createPaymentIntent = async (req, res) => {
         paymentStatus: 'completed',
         status: 'active',
       });
-
+      // Increment coupon redemptions if coupon was used
+      if (appliedCoupon) {
+        appliedCoupon.redemptions += 1;
+        await appliedCoupon.save();
+      }
       return res.status(200).json({
         success: true,
         message: 'Enrolled to free course',
         enrollmentId: enrollment._id,
         isFree: true,
+        discountAmount,
+        couponCode: couponCode || null,
       });
     }
 
@@ -133,6 +170,8 @@ export const createPaymentIntent = async (req, res) => {
         serviceType,
         serviceName: service.title,
         idempotencyKey,
+        couponCode: couponCode || '',
+        discountAmount,
       },
     });
 
@@ -171,10 +210,17 @@ export const createPaymentIntent = async (req, res) => {
       metadata: {
         userAgent: req.headers['user-agent'],
         ipAddress: req.ip,
+        couponCode: couponCode || '',
+        discountAmount,
       },
       stripeResponse: paymentIntentResult,
     });
 
+    // Increment coupon redemptions if payment intent is created and coupon was used
+    if (appliedCoupon) {
+      appliedCoupon.redemptions += 1;
+      await appliedCoupon.save();
+    }
     return res.status(200).json({
       success: true,
       paymentIntentId: paymentIntentResult.paymentIntentId,
@@ -182,6 +228,8 @@ export const createPaymentIntent = async (req, res) => {
       amount: amount,
       currency: 'INR',
       paymentId: payment._id,
+      discountAmount,
+      couponCode: couponCode || null,
     });
   } catch (error) {
     console.error('Error creating payment intent:', error);
