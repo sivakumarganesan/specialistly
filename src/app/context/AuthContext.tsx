@@ -64,7 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(JSON.parse(savedUser));
           const userTypeValue = savedUserType || "customer";
           setUserType(userTypeValue);
-          setCurrentPage('dashboard');
+          setCurrentPage(userTypeValue === 'customer' ? 'my-learning' : 'dashboard');
         }
       } catch {
         // Malformed token — clear it
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userTypeValue = data.userType || 'customer';
       setUserType(userTypeValue);
       // Set default page based on user type
-      const defaultPage = userTypeValue === 'specialist' ? 'dashboard' : 'dashboard'; // 'browse-specialists' for customers
+      const defaultPage = userTypeValue === 'specialist' ? 'dashboard' : 'my-learning';
       setCurrentPage(defaultPage);
     } catch (error) {
       console.error('Signup error:', error);
@@ -146,7 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUserType(userTypeValue);
       // Set default page based on user type
       // Specialist: Dashboard, Customer: Browse Specialists (shown as dashboard with marketplace content)
-      const defaultPage = userTypeValue === 'specialist' ? 'dashboard' : 'dashboard';
+      const defaultPage = userTypeValue === 'specialist' ? 'dashboard' : 'my-learning';
       setCurrentPage(defaultPage);
     } catch (error) {
       console.error('Login error:', error);

@@ -26,7 +26,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick, onNavigateToSettings, searchableItems, onSearchItemClick }: HeaderProps) {
-  const { user, logout, setCurrentPage } = useAuth();
+  const { user, logout, setCurrentPage, userType } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -91,7 +91,7 @@ export function Header({ onMenuClick, onNavigateToSettings, searchableItems, onS
         {/* Logo */}
         <div 
           className="flex items-center gap-2 mr-6 cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => setCurrentPage('dashboard')}
+          onClick={() => setCurrentPage(userType === 'customer' ? 'my-learning' : 'dashboard')}
         >
           <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center">
             <span className="text-white font-bold text-sm">S</span>
