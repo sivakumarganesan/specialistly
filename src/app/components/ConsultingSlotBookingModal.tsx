@@ -15,6 +15,7 @@ interface ConsultingSlot {
   bookedCount: number;
   totalCapacity: number;
   isFullyBooked: boolean;
+  timezone?: string;
 }
 
 interface ConsultingSlotBookingModalProps {
@@ -183,6 +184,9 @@ export function ConsultingSlotBookingModal({
                       <span className="text-sm font-medium text-gray-600">Time</span>
                     </div>
                     <p className="text-lg font-semibold text-gray-900">{timeLabel}</p>
+                    {selectedSlot.timezone && (
+                      <p className="text-xs text-gray-500 mt-1">{selectedSlot.timezone}</p>
+                    )}
                   </div>
 
                   {/* Duration */}

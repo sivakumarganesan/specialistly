@@ -225,6 +225,9 @@ export const createSlot = async (req, res) => {
     const finalSpecialistId = req.user?.userId || specialistId || specialist._id;
     console.log(`   final specialistId to store: ${finalSpecialistId}`);
     
+    // Fall back to specialist's saved timezone preference if none provided
+    const slotTimezone = timezone || specialist.timezone || 'Asia/Kolkata';
+
     const newSlot = new ConsultingSlot({
       specialistId: finalSpecialistId,
       specialistEmail,
@@ -233,7 +236,7 @@ export const createSlot = async (req, res) => {
       startTime,
       endTime,
       totalCapacity: totalCapacity || 1,
-      timezone: timezone || 'UTC',
+      timezone: slotTimezone,
       notes,
       price,
       currency,

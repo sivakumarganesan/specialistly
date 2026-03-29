@@ -297,6 +297,9 @@ export function ConsultingSlotCalendar({
                         <span className="font-medium">
                           {selectedSlot.startTime} - {selectedSlot.endTime}
                         </span>
+                        {selectedSlot.timezone && (
+                          <span className="text-gray-500 text-xs ml-1">({selectedSlot.timezone})</span>
+                        )}
                       </p>
                       <p>
                         <span className="text-gray-600">Duration:</span>{' '}

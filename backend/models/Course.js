@@ -151,6 +151,10 @@ const courseSchema = new mongoose.Schema({
   startDate: Date,
   endDate: Date,
   schedule: String,
+  timezone: {
+    type: String,
+    default: 'Asia/Kolkata',
+  },
   meetingPlatform: {
     type: String,
     default: 'Zoom',

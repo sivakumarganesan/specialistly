@@ -1,6 +1,37 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video, Trash2, Eye, EyeOff } from "lucide-react";
+import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video, Trash2, Eye, EyeOff, Globe } from "lucide-react";
+
+const TIMEZONE_OPTIONS = [
+  { value: 'Asia/Kolkata', label: '(GMT+5:30) India - Kolkata' },
+  { value: 'Asia/Dubai', label: '(GMT+4:00) Dubai' },
+  { value: 'Asia/Singapore', label: '(GMT+8:00) Singapore' },
+  { value: 'Asia/Tokyo', label: '(GMT+9:00) Tokyo' },
+  { value: 'Asia/Shanghai', label: '(GMT+8:00) Shanghai' },
+  { value: 'Asia/Hong_Kong', label: '(GMT+8:00) Hong Kong' },
+  { value: 'Asia/Dhaka', label: '(GMT+6:00) Dhaka' },
+  { value: 'Asia/Karachi', label: '(GMT+5:00) Karachi' },
+  { value: 'Asia/Colombo', label: '(GMT+5:30) Colombo' },
+  { value: 'Asia/Kathmandu', label: '(GMT+5:45) Kathmandu' },
+  { value: 'Asia/Jakarta', label: '(GMT+7:00) Jakarta' },
+  { value: 'Asia/Seoul', label: '(GMT+9:00) Seoul' },
+  { value: 'Australia/Sydney', label: '(GMT+11:00) Sydney' },
+  { value: 'Australia/Melbourne', label: '(GMT+11:00) Melbourne' },
+  { value: 'Pacific/Auckland', label: '(GMT+13:00) Auckland' },
+  { value: 'Europe/London', label: '(GMT+0:00) London' },
+  { value: 'Europe/Paris', label: '(GMT+1:00) Paris' },
+  { value: 'Europe/Berlin', label: '(GMT+1:00) Berlin' },
+  { value: 'Europe/Moscow', label: '(GMT+3:00) Moscow' },
+  { value: 'Africa/Cairo', label: '(GMT+2:00) Cairo' },
+  { value: 'Africa/Lagos', label: '(GMT+1:00) Lagos' },
+  { value: 'America/New_York', label: '(GMT-5:00) New York' },
+  { value: 'America/Chicago', label: '(GMT-6:00) Chicago' },
+  { value: 'America/Denver', label: '(GMT-7:00) Denver' },
+  { value: 'America/Los_Angeles', label: '(GMT-8:00) Los Angeles' },
+  { value: 'America/Toronto', label: '(GMT-5:00) Toronto' },
+  { value: 'America/Sao_Paulo', label: '(GMT-3:00) São Paulo' },
+  { value: 'UTC', label: '(GMT+0:00) UTC' },
+];
 import { Button } from "@/app/components/ui/button";
 import { creatorAPI, subscriptionAPI, API_BASE_URL } from "@/app/api/apiClient";
 import { specialistRazorpayAPI } from "@/app/api/paymentAPI";
@@ -116,6 +147,7 @@ function UserProfile() {
     phone: "+91 98765 43210",
     bio: "Creator and educator helping people learn new skills",
     location: "San Francisco, CA",
+    timezone: "Asia/Kolkata",
     company: "Specialistly",
     website: "https://specialistly.com",
     profileImage: null as string | null,
@@ -146,6 +178,7 @@ function UserProfile() {
             phone: profile.phone || prev.phone,
             bio: profile.bio || prev.bio,
             location: profile.location || prev.location,
+            timezone: profile.timezone || prev.timezone,
             company: profile.company || prev.company,
             website: profile.website || prev.website,
             profileImage: profile.profileImage || null,
@@ -263,6 +296,7 @@ function UserProfile() {
         bio: profileData.bio,
         phone: profileData.phone,
         location: profileData.location,
+        timezone: profileData.timezone,
         company: profileData.company,
         website: profileData.website,
         profileImage: profileData.profileImage, // Store as base64
@@ -460,6 +494,22 @@ function UserProfile() {
                 onChange={(e) => handleChange("location", e.target.value)}
                 className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2 flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                Timezone
+              </label>
+              <select
+                value={profileData.timezone}
+                onChange={(e) => handleChange("timezone", e.target.value)}
+                className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 bg-white"
+              >
+                {TIMEZONE_OPTIONS.map((tz) => (
+                  <option key={tz.value} value={tz.value}>{tz.label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">Your appointments and course schedules will use this timezone</p>
             </div>
           </div>
 

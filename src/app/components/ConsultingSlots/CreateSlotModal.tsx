@@ -14,6 +14,33 @@ import { Textarea } from '@/app/components/ui/textarea';
 import { Alert, AlertDescription } from '@/app/components/ui/alert';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
+const TIMEZONE_OPTIONS = [
+  { value: 'Asia/Kolkata', label: '(GMT+5:30) India - Kolkata' },
+  { value: 'Asia/Dubai', label: '(GMT+4:00) Dubai' },
+  { value: 'Asia/Singapore', label: '(GMT+8:00) Singapore' },
+  { value: 'Asia/Tokyo', label: '(GMT+9:00) Tokyo' },
+  { value: 'Asia/Shanghai', label: '(GMT+8:00) Shanghai' },
+  { value: 'Asia/Dhaka', label: '(GMT+6:00) Dhaka' },
+  { value: 'Asia/Karachi', label: '(GMT+5:00) Karachi' },
+  { value: 'Asia/Colombo', label: '(GMT+5:30) Colombo' },
+  { value: 'Asia/Jakarta', label: '(GMT+7:00) Jakarta' },
+  { value: 'Asia/Seoul', label: '(GMT+9:00) Seoul' },
+  { value: 'Australia/Sydney', label: '(GMT+11:00) Sydney' },
+  { value: 'Pacific/Auckland', label: '(GMT+13:00) Auckland' },
+  { value: 'Europe/London', label: '(GMT+0:00) London' },
+  { value: 'Europe/Paris', label: '(GMT+1:00) Paris' },
+  { value: 'Europe/Berlin', label: '(GMT+1:00) Berlin' },
+  { value: 'Europe/Moscow', label: '(GMT+3:00) Moscow' },
+  { value: 'Africa/Cairo', label: '(GMT+2:00) Cairo' },
+  { value: 'America/New_York', label: '(GMT-5:00) New York' },
+  { value: 'America/Chicago', label: '(GMT-6:00) Chicago' },
+  { value: 'America/Denver', label: '(GMT-7:00) Denver' },
+  { value: 'America/Los_Angeles', label: '(GMT-8:00) Los Angeles' },
+  { value: 'America/Toronto', label: '(GMT-5:00) Toronto' },
+  { value: 'America/Sao_Paulo', label: '(GMT-3:00) São Paulo' },
+  { value: 'UTC', label: '(GMT+0:00) UTC' },
+];
+
 interface CreateSlotModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -35,7 +62,7 @@ export function CreateSlotModal({
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [capacity, setCapacity] = useState('1');
-  const [timezone, setTimezone] = useState('UTC');
+  const [timezone, setTimezone] = useState('Asia/Kolkata');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [conflictingSlots, setConflictingSlots] = useState<any[]>([]);
@@ -48,7 +75,7 @@ export function CreateSlotModal({
       setStartTime('');
       setEndTime('');
       setCapacity('1');
-      setTimezone('UTC');
+      setTimezone('Asia/Kolkata');
       setNotes('');
       setError(null);
       setConflictingSlots([]);
@@ -210,15 +237,9 @@ export function CreateSlotModal({
               disabled={submitting}
               className="w-full px-3 py-2 border border-gray-300 rounded-md"
             >
-              <option>UTC</option>
-              <option>America/New_York</option>
-              <option>America/Chicago</option>
-              <option>America/Denver</option>
-              <option>America/Los_Angeles</option>
-              <option>Europe/London</option>
-              <option>Europe/Paris</option>
-              <option>Asia/Tokyo</option>
-              <option>Asia/Singapore</option>
+              {TIMEZONE_OPTIONS.map((tz) => (
+                <option key={tz.value} value={tz.value}>{tz.label}</option>
+              ))}
             </select>
           </div>
 

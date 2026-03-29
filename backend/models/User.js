@@ -64,6 +64,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  timezone: {
+    type: String,
+    default: 'Asia/Kolkata',
+  },
   // Specialist/Creator profile fields (unified)
   profileImage: String,
   phone: String,
