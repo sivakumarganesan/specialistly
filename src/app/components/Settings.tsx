@@ -140,7 +140,7 @@ export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) 
 }
 
 function UserProfile() {
-  const { user } = useAuth();
+  const { user, userType } = useAuth();
   const [profileData, setProfileData] = useState({
     name: user?.name || "User",
     email: user?.email || "user@example.com",
@@ -589,8 +589,8 @@ function UserProfile() {
         </CardContent>
       </Card>
 
-      {/* Zoom Integration */}
-      <Card className="lg:col-span-2">
+      {/* Zoom Integration - Specialists only */}
+      {userType === 'specialist' && <Card className="lg:col-span-2">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Video className="w-5 h-5" />
@@ -670,7 +670,7 @@ function UserProfile() {
             )}
           </div>
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   );
 }
