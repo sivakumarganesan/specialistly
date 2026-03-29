@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Loader, Menu, X, MapPin, Phone, Facebook, Instagram, Youtube, Twitter, Linkedin } from 'lucide-react';
+import { Loader, Menu, X, MapPin, Phone, Facebook, Instagram, Youtube, Twitter, Linkedin, LogIn, BookOpen, User, LogOut, Eye, EyeOff } from 'lucide-react';
 import { pageBuilderAPI } from '@/app/api/pageBuilderAPI';
 import { PublicPageViewer } from './PublicPageViewer';
+import { PublicMyLearning } from './PublicMyLearning';
+import { PublicCourseViewer } from './PublicCourseViewer';
 import { getSubdomainInfo } from '@/app/utils/subdomainUtils';
+
+const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "/api";
+
+type ActiveView = 'pages' | 'my-learning' | 'course-viewer';
 
 interface PublicWebsiteProps {
   subdomain?: string;
@@ -16,6 +22,137 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
   const [currentPageSlug, setCurrentPageSlug] = useState<string>('');
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<any>(null);
+
+  // Auth state
+  const [authToken, setAuthToken] = useState<string | null>(() => localStorage.getItem('authToken'));
+  const [authUser, setAuthUser] = useState<{ id: string; name: string; email: string } | null>(() => {
+    try { const u = localStorage.getItem('user'); return u ? JSON.parse(u) : null; } catch { return null; }
+  });
+  const isLoggedIn = !!(authToken && authUser);
+
+  // View routing
+  const [activeView, setActiveView] = useState<ActiveView>('pages');
+  const [selectedEnrollmentId, setSelectedEnrollmentId] = useState<string | null>(null);
+
+  // Login modal
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginTab, setLoginTab] = useState<'login' | 'signup'>('login');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [signupName, setSignupName] = useState('');
+  const [signupEmail, setSignupEmail] = useState('');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirm, setSignupConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Listen for auth changes from other components (e.g. PublicCourseCheckout)
+  useEffect(() => {
+    const onStorage = () => {
+      const token = localStorage.getItem('authToken');
+      setAuthToken(token);
+      try { const u = localStorage.getItem('user'); setAuthUser(u ? JSON.parse(u) : null); } catch { setAuthUser(null); }
+    };
+    window.addEventListener('storage', onStorage);
+    // Also poll once on focus (same-tab localStorage changes don't fire storage event)
+    const onFocus = () => onStorage();
+    window.addEventListener('focus', onFocus);
+
+    // Listen for "Go to My Learning" from checkout modal
+    const onNavigateMyLearning = () => {
+      onStorage(); // Refresh auth state from localStorage
+      setActiveView('my-learning');
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener('navigate-my-learning', onNavigateMyLearning);
+
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('focus', onFocus);
+      window.removeEventListener('navigate-my-learning', onNavigateMyLearning);
+    };
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setAuthLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAuthError(data.error || 'Login failed'); return; }
+      setAuthToken(data.token);
+      setAuthUser({ id: data.user.id, name: data.user.name, email: data.user.email });
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('userType', data.userType || 'customer');
+      setShowLoginModal(false);
+      setLoginEmail(''); setLoginPassword('');
+      setActiveView('my-learning');
+    } catch (err: any) {
+      setAuthError(err.message || 'Login failed');
+    } finally { setAuthLoading(false); }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    if (signupPassword !== signupConfirm) { setAuthError('Passwords do not match'); return; }
+    if (signupPassword.length < 6) { setAuthError('Password must be at least 6 characters'); return; }
+    setAuthLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: signupName, email: signupEmail, password: signupPassword, confirmPassword: signupConfirm, isSpecialist: false, userType: 'customer' }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAuthError(data.error || 'Signup failed'); return; }
+      setAuthToken(data.token);
+      setAuthUser({ id: data.user.id, name: data.user.name, email: data.user.email });
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('userType', data.userType || 'customer');
+      setShowLoginModal(false);
+      setSignupName(''); setSignupEmail(''); setSignupPassword(''); setSignupConfirm('');
+      setActiveView('my-learning');
+    } catch (err: any) {
+      setAuthError(err.message || 'Signup failed');
+    } finally { setAuthLoading(false); }
+  };
+
+  const handleLogout = () => {
+    setAuthToken(null);
+    setAuthUser(null);
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userType');
+    setActiveView('pages');
+  };
+
+  const navigateToMyLearning = () => {
+    if (!isLoggedIn) { setShowLoginModal(true); return; }
+    setActiveView('my-learning');
+    setIsMobileNavOpen(false);
+    window.scrollTo(0, 0);
+  };
+
+  const navigateToPages = () => {
+    setActiveView('pages');
+    setIsMobileNavOpen(false);
+    window.scrollTo(0, 0);
+  };
+
+  const openCourseViewer = (enrollmentId: string) => {
+    setSelectedEnrollmentId(enrollmentId);
+    setActiveView('course-viewer');
+    window.scrollTo(0, 0);
+  };
 
   const subdomainInfo = getSubdomainInfo();
   const actualSubdomain = propSubdomain || subdomainInfo.subdomain;
@@ -75,6 +212,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
   const handlePageClick = (page: any) => {
     setCurrentPageSlug(page.slug);
     setCurrentPage(page);
+    setActiveView('pages');
     setIsMobileNavOpen(false);
     window.scrollTo(0, 0);
   };
@@ -93,6 +231,95 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
       e.preventDefault();
       handlePageClick(matchedPage);
     }
+  };
+
+  // Auth buttons for navbars
+  const renderAuthButton = (color: string, textColor: string) => {
+    if (isLoggedIn) {
+      return (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={navigateToMyLearning}
+            className={`flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-80 ${activeView === 'my-learning' ? 'opacity-100' : 'opacity-80'}`}
+            style={{ color: textColor }}
+          >
+            <BookOpen className="w-4 h-4" /> My Learning
+          </button>
+          <div className="relative group">
+            <button className="flex items-center gap-1.5 text-sm font-medium opacity-80 hover:opacity-100 transition" style={{ color: textColor }}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style={{ backgroundColor: color, color: '#fff' }}>
+                {authUser?.name?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+            </button>
+            <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[140px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+              <p className="px-3 py-1.5 text-xs text-gray-500 truncate border-b">{authUser?.email}</p>
+              <button onClick={handleLogout} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                <LogOut className="w-3.5 h-3.5" /> Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <button
+        onClick={() => { setAuthError(null); setShowLoginModal(true); }}
+        className="flex items-center gap-1.5 text-sm font-medium opacity-80 hover:opacity-100 transition"
+        style={{ color: textColor }}
+      >
+        <LogIn className="w-4 h-4" /> Login
+      </button>
+    );
+  };
+
+  // Login/Signup modal
+  const renderLoginModal = () => {
+    if (!showLoginModal) return null;
+    const brandColor = website?.branding?.primaryColor || '#3B82F6';
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowLoginModal(false)}>
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-lg font-bold text-gray-900">{loginTab === 'login' ? 'Sign In' : 'Create Account'}</h2>
+            <button onClick={() => setShowLoginModal(false)} className="p-1 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5 text-gray-400" /></button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 mb-4 bg-gray-100 p-1 rounded-lg">
+            <button onClick={() => { setLoginTab('login'); setAuthError(null); }} className={`flex-1 text-sm font-medium py-1.5 rounded-md transition ${loginTab === 'login' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>Login</button>
+            <button onClick={() => { setLoginTab('signup'); setAuthError(null); }} className={`flex-1 text-sm font-medium py-1.5 rounded-md transition ${loginTab === 'signup' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`}>Sign Up</button>
+          </div>
+
+          {authError && <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{authError}</div>}
+
+          {loginTab === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-3">
+              <input type="email" placeholder="Email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:outline-none" style={{ '--tw-ring-color': brandColor } as any} />
+              <div className="relative">
+                <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-sm pr-10 focus:ring-2 focus:outline-none" style={{ '--tw-ring-color': brandColor } as any} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+              </div>
+              <button type="submit" disabled={authLoading} className="w-full text-white font-medium py-2 rounded-lg text-sm disabled:opacity-50" style={{ backgroundColor: brandColor }}>
+                {authLoading ? 'Signing in...' : 'Sign In'}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSignup} className="space-y-3">
+              <input type="text" placeholder="Full name" value={signupName} onChange={e => setSignupName(e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:outline-none" style={{ '--tw-ring-color': brandColor } as any} />
+              <input type="email" placeholder="Email" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:outline-none" style={{ '--tw-ring-color': brandColor } as any} />
+              <div className="relative">
+                <input type={showPassword ? 'text' : 'password'} placeholder="Password" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-sm pr-10 focus:ring-2 focus:outline-none" style={{ '--tw-ring-color': brandColor } as any} />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-gray-400">{showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+              </div>
+              <input type="password" placeholder="Confirm password" value={signupConfirm} onChange={e => setSignupConfirm(e.target.value)} required className="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:outline-none" style={{ '--tw-ring-color': brandColor } as any} />
+              <button type="submit" disabled={authLoading} className="w-full text-white font-medium py-2 rounded-lg text-sm disabled:opacity-50" style={{ backgroundColor: brandColor }}>
+                {authLoading ? 'Creating account...' : 'Create Account'}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -243,12 +470,14 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                       <button
                         key={page._id}
                         onClick={() => handlePageClick(page)}
-                        className={`text-sm font-medium transition-opacity ${currentPageSlug === page.slug ? 'opacity-100' : 'opacity-80 hover:opacity-100'}`}
-                        style={{ color: currentPageSlug === page.slug ? brandColor : navLinkColor }}
+                        className={`text-sm font-medium transition-opacity ${currentPageSlug === page.slug && activeView === 'pages' ? 'opacity-100' : 'opacity-80 hover:opacity-100'}`}
+                        style={{ color: currentPageSlug === page.slug && activeView === 'pages' ? brandColor : navLinkColor }}
                       >
                         {page.title}
                       </button>
                     ))}
+                    {/* Auth button */}
+                    {renderAuthButton(brandColor, navLinkColor)}
                   </div>
 
                   {/* Mobile hamburger */}
@@ -271,12 +500,29 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                       <button
                         key={page._id}
                         onClick={() => handlePageClick(page)}
-                        className={`block w-full text-left text-sm font-medium py-2 ${currentPageSlug === page.slug ? '' : 'opacity-80'}`}
-                        style={{ color: currentPageSlug === page.slug ? brandColor : navLinkColor }}
+                        className={`block w-full text-left text-sm font-medium py-2 ${currentPageSlug === page.slug && activeView === 'pages' ? '' : 'opacity-80'}`}
+                        style={{ color: currentPageSlug === page.slug && activeView === 'pages' ? brandColor : navLinkColor }}
                       >
                         {page.title}
                       </button>
                     ))}
+                    {/* Mobile auth */}
+                    <div className="pt-2 border-t border-gray-200 mt-2">
+                      {isLoggedIn ? (
+                        <>
+                          <button onClick={navigateToMyLearning} className="block w-full text-left text-sm font-medium py-2" style={{ color: navLinkColor }}>
+                            <BookOpen className="w-4 h-4 inline mr-1.5" />My Learning
+                          </button>
+                          <button onClick={handleLogout} className="block w-full text-left text-sm font-medium py-2 text-red-500">
+                            <LogOut className="w-4 h-4 inline mr-1.5" />Sign out
+                          </button>
+                        </>
+                      ) : (
+                        <button onClick={() => { setAuthError(null); setShowLoginModal(true); setIsMobileNavOpen(false); }} className="block w-full text-left text-sm font-medium py-2" style={{ color: navLinkColor }}>
+                          <LogIn className="w-4 h-4 inline mr-1.5" />Login
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </nav>
@@ -304,7 +550,7 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
           <div className="hidden md:flex items-center gap-6 flex-1 justify-end">
             {pages.map((page) => {
               const headerText = website?.branding?.headerTextColor || '#ffffff';
-              const isActive = currentPageSlug === page.slug;
+              const isActive = currentPageSlug === page.slug && activeView === 'pages';
               return (
                 <button
                   key={page._id}
@@ -321,6 +567,8 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                 </button>
               );
             })}
+            {/* Auth button */}
+            {renderAuthButton(website?.branding?.primaryColor || '#3B82F6', website?.branding?.headerTextColor || '#ffffff')}
           </div>
 
           <button
@@ -341,24 +589,58 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                 className="block w-full text-left px-4 py-2 text-sm font-medium transition-opacity"
                 style={{
                   color: website?.branding?.headerTextColor || '#ffffff',
-                  opacity: currentPageSlug === page.slug ? 1 : 0.7,
+                  opacity: currentPageSlug === page.slug && activeView === 'pages' ? 1 : 0.7,
                 }}
               >
                 {page.title}
               </button>
             ))}
+            {/* Mobile auth */}
+            <div className="pt-2 border-t border-white border-opacity-20 mt-2">
+              {isLoggedIn ? (
+                <>
+                  <button onClick={navigateToMyLearning} className="block w-full text-left px-4 py-2 text-sm font-medium" style={{ color: website?.branding?.headerTextColor || '#ffffff' }}>
+                    <BookOpen className="w-4 h-4 inline mr-1.5" />My Learning
+                  </button>
+                  <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm font-medium opacity-80" style={{ color: website?.branding?.headerTextColor || '#ffffff' }}>
+                    <LogOut className="w-4 h-4 inline mr-1.5" />Sign out
+                  </button>
+                </>
+              ) : (
+                <button onClick={() => { setAuthError(null); setShowLoginModal(true); setIsMobileNavOpen(false); }} className="block w-full text-left px-4 py-2 text-sm font-medium" style={{ color: website?.branding?.headerTextColor || '#ffffff' }}>
+                  <LogIn className="w-4 h-4 inline mr-1.5" />Login
+                </button>
+              )}
+            </div>
           </div>
         )}
       </header>
       )}
 
+      {/* Login Modal */}
+      {renderLoginModal()}
+
       {/* Page Content */}
-      <main className="flex-1" onClick={handleInternalLinkClick}>
-        {currentPageSlug && currentPage && (
+      <main className="flex-1" onClick={activeView === 'pages' ? handleInternalLinkClick : undefined}>
+        {activeView === 'pages' && currentPageSlug && currentPage && (
           <PublicPageViewer
             subdomain={actualSubdomain || ''}
             pageSlug={currentPageSlug}
             pageData={currentPage}
+          />
+        )}
+        {activeView === 'my-learning' && isLoggedIn && (
+          <PublicMyLearning
+            specialistEmail={website?.creatorEmail || ''}
+            onOpenCourse={openCourseViewer}
+            brandColor={website?.branding?.primaryColor}
+          />
+        )}
+        {activeView === 'course-viewer' && isLoggedIn && selectedEnrollmentId && (
+          <PublicCourseViewer
+            enrollmentId={selectedEnrollmentId}
+            onBack={() => setActiveView('my-learning')}
+            brandColor={website?.branding?.primaryColor}
           />
         )}
       </main>

@@ -169,7 +169,7 @@ export const getMyCourses = async (req, res) => {
     }
 
     // Filter out enrollments where course doesn't exist (deleted courses)
-    const validEnrollments = enrollments.filter((e) => {
+    let validEnrollments = enrollments.filter((e) => {
       // Check if courseId exists after populate
       if (!e.courseId) {
         // Silently filter out - course was deleted
@@ -177,6 +177,14 @@ export const getMyCourses = async (req, res) => {
       }
       return true;
     });
+
+    // Optional: filter by specialist email (used by branded pages)
+    const specialistEmail = req.query.specialistEmail;
+    if (specialistEmail) {
+      validEnrollments = validEnrollments.filter(
+        (e) => e.courseId.specialistEmail === specialistEmail
+      );
+    }
 
     const formatted = validEnrollments.map((e) => {
       try {
