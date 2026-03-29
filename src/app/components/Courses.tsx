@@ -551,6 +551,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
   };
 
   const uploadVideoToCloudflare = async (lessonIndex: number, file: File) => {
+    let uploadedStreamId: string | null = null;
+    
     try {
       if (!selectedCourse) {
         throw new Error("No course selected");
@@ -596,6 +598,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       }
 
       const { uploadUrl, streamId } = tokenResponse;
+      uploadedStreamId = streamId;
 
       // Step 2: Upload video using TUS resumable upload (supports large files)
       const tus = await import("tus-js-client");
@@ -639,9 +642,26 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       alert("✓ Video uploaded! Cloudflare is processing it. Check back in a few minutes.");
     } catch (error) {
       console.error("Video upload error:", error);
-      alert(
-        `Video upload failed: ${error instanceof Error ? error.message : "Please try again."}`
-      );
+      
+      // Even if TUS reports an error, the video may have been received by Cloudflare.
+      // Save the streamId so the user can check status later.
+      if (uploadedStreamId) {
+        const updatedLessons = [...lessons];
+        updatedLessons[lessonIndex] = {
+          ...updatedLessons[lessonIndex],
+          cloudflareStreamId: uploadedStreamId,
+          cloudflareStatus: "pending",
+        };
+        setLessons(updatedLessons);
+        alert(
+          `⚠️ Upload completed with a warning: ${error instanceof Error ? error.message : "Unknown error"}\n\n` +
+          "The video may still be processing in Cloudflare. Save the lesson and check back in a few minutes."
+        );
+      } else {
+        alert(
+          `Video upload failed: ${error instanceof Error ? error.message : "Please try again."}`
+        );
+      }
     } finally {
       setUploadingVideoFor(null);
       setVideoUploadProgress({});
@@ -896,27 +916,22 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         }
       }
 
-      // Fallback: Try to get playback URL from Cloudflare Stream ID
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(
-        `${API_BASE_URL}/videos/playback-url/${lesson.cloudflareStreamId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
+      // Fallback: Get video details directly from Cloudflare via backend
+      try {
+        const videoDetails = await videoAPI.getVideoDetails(lesson.cloudflareStreamId);
+        if (videoDetails?.success && videoDetails.video) {
+          const hlsUrl = videoDetails.video.hlsPlaybackUrl || videoDetails.video.hlsUrl;
+          if (hlsUrl) {
+            setPreviewHlsUrl(hlsUrl);
+            setShowVideoPreview(true);
+            return;
+          }
         }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.hlsUrl) {
-          setPreviewHlsUrl(data.hlsUrl);
-        } else if (data.playbackUrl) {
-          setPreviewHlsUrl(data.playbackUrl);
-        }
-      } else {
-        alert("Video is still being processed or not available yet. Please try again in a moment.");
+      } catch (err) {
+        console.warn("Could not fetch video details:", err);
       }
+      
+      alert("Video is still being processed or not available yet. Please try again in a moment.");
       
       setShowVideoPreview(true);
     } catch (error) {
