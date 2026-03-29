@@ -68,6 +68,7 @@ export interface UpdatePageRequest {
   slug?: string;
   description?: string;
   order?: number;
+  isHomePage?: boolean;
 }
 
 export interface CreateSectionRequest {

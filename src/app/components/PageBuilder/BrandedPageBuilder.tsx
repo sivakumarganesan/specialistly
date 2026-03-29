@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Loader2, AlertCircle, Edit2, Eye, X, Check } from 'lucide-react';
+import { Plus, Loader2, AlertCircle, Edit2, Eye, X, Check, Home } from 'lucide-react';
 import { TemplateGallery } from './TemplateGallery';
 import { CreatePageFromTemplate } from './CreatePageFromTemplate';
 import PageBuilderEditor from '../PageBuilderEditor';
@@ -311,7 +311,7 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
                   </div>
 
                   {/* Status Badge */}
-                  <div className="mt-3 flex gap-2">
+                  <div className="mt-3 flex flex-wrap gap-2">
                     <span
                       className={`text-xs font-medium px-2 py-1 rounded-full ${
                         page.isPublished
@@ -321,6 +321,9 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
                     >
                       {page.isPublished ? '✓ Published' : '○ Draft'}
                     </span>
+                    {page.isHomePage && (
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-blue-50 text-blue-700">🏠 Landing Page</span>
+                    )}
                   </div>
 
                   {/* Actions */}
@@ -340,6 +343,37 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
                       View
                     </button>
                   </div>
+                  {!page.isHomePage && (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
+                          const authToken = localStorage.getItem('authToken');
+                          const res = await fetch(
+                            `${apiUrl}/page-builder/websites/${websiteId}/pages/${page._id}`,
+                            {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${authToken}`,
+                              },
+                              body: JSON.stringify({ isHomePage: true }),
+                            }
+                          );
+                          const result = await res.json();
+                          if (result.success) {
+                            setPages((prev: any[]) => prev.map((p: any) => ({ ...p, isHomePage: p._id === page._id })));
+                          }
+                        } catch (err) {
+                          console.error('Failed to set as landing page:', err);
+                        }
+                      }}
+                      className="w-full mt-2 px-3 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 text-sm font-medium rounded-lg transition flex items-center justify-center gap-1"
+                    >
+                      <Home className="w-4 h-4" />
+                      Set as Default Landing Page
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

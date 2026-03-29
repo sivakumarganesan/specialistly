@@ -22,6 +22,7 @@ import {
   Pencil,
   ChevronUp,
   ChevronDown,
+  Home,
 } from 'lucide-react';
 
 interface PageBuilderEditorProps {
@@ -597,6 +598,33 @@ const PageBuilderEditor: React.FC<PageBuilderEditorProps> = ({ websiteId }) => {
                       <Upload className="w-3 h-3" />
                       {page.isPublished ? 'Unpub' : 'Pub'}
                     </Button>
+                    {!page.isHomePage && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={async () => {
+                          try {
+                            setLoading(true);
+                            await pageBuilderAPI.updatePage(
+                              website?._id || websiteId,
+                              page._id,
+                              { isHomePage: true }
+                            );
+                            setPages(pages.map(p => ({ ...p, isHomePage: p._id === page._id })));
+                            if (selectedPage?._id === page._id) selectPage({ ...page, isHomePage: true });
+                          } catch (err) {
+                            setError(err instanceof Error ? err.message : 'Failed to set as landing page');
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                        disabled={isLoading}
+                        className="text-xs px-2 text-blue-600 hover:text-blue-700"
+                        title="Set as default landing page"
+                      >
+                        <Home className="w-3 h-3" />
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"

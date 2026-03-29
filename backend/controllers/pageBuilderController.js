@@ -788,7 +788,16 @@ export const updatePage = async (req, res) => {
     }
     if (description !== undefined) page.description = description;
     if (order !== undefined) page.order = order;
-    if (isHomePage !== undefined) page.isHomePage = isHomePage;
+    if (isHomePage !== undefined) {
+      // If setting as homepage, unset any existing homepage for this website
+      if (isHomePage) {
+        await Page.updateMany(
+          { websiteId, _id: { $ne: pageId }, isHomePage: true },
+          { isHomePage: false }
+        );
+      }
+      page.isHomePage = isHomePage;
+    }
 
     await page.save();
 
