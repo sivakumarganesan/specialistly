@@ -216,6 +216,16 @@ export const customerAPI = {
   // Customer interests
   updateInterests: (data: any) => apiCall("/customers/interests", "PUT", data),
   getInterests: (email: string) => apiCall(`/customers/interests/${email}`),
+  // Enriched customers with segmentation
+  getEnriched: (filters: { specialistEmail: string; segment?: string }) => {
+    const params = new URLSearchParams();
+    params.append('specialistEmail', filters.specialistEmail);
+    if (filters.segment) params.append('segment', filters.segment);
+    return apiCall(`/customers/enriched?${params.toString()}`);
+  },
+  // Send email to selected customers
+  sendEmail: (data: { emails: string[]; subject: string; body: string; specialistName?: string }) =>
+    apiCall("/customers/send-email", "POST", data),
 };
 
 // Appointment API calls

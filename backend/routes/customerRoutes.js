@@ -13,7 +13,10 @@ import {
   getBookingsByEmail,
   updateCustomerInterests,
   getCustomerInterests,
+  getEnrichedCustomers,
+  sendBulkEmail,
 } from '../controllers/customerController.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -25,6 +28,12 @@ router.post('/book-webinar', bookWebinar);
 // Customer interests routes
 router.put('/interests', updateCustomerInterests);
 router.get('/interests/:email', getCustomerInterests);
+
+// Enriched customers with segmentation (auth required)
+router.get('/enriched', authMiddleware, getEnrichedCustomers);
+
+// Send email to selected customers (auth required)
+router.post('/send-email', authMiddleware, sendBulkEmail);
 
 // Email-based retrieval routes (before ID-based routes)
 router.get('/:email/enrollments', getEnrollmentsByEmail);

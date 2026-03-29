@@ -1,5 +1,10 @@
 import mongoose from 'mongoose';
 import Customer from '../models/Customer.js';
+import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
+import CohortEnrollment from '../models/CohortEnrollment.js';
+import Course from '../models/Course.js';
+import ConsultingSlot from '../models/ConsultingSlot.js';
+import { sendEmail } from '../services/gmailApiService.js';
 import zoomService from '../services/zoomService.js';
 
 // Create a new customer
@@ -691,3 +696,179 @@ export const getCustomerInterests = async (req, res) => {
   }
 };
 
+/**
+ * Get customers with enriched enrollment/booking data for segmentation
+ * GET /api/customers/enriched?specialistEmail=...&segment=all|course-enrolled|appointment-booked|no-activity
+ */
+export const getEnrichedCustomers = async (req, res) => {
+  try {
+    const { specialistEmail, segment } = req.query;
+    if (!specialistEmail) {
+      return res.status(400).json({ success: false, message: 'specialistEmail is required' });
+    }
+
+    // Get all customers for this specialist
+    const customers = await Customer.find({ 'specialists.specialistEmail': specialistEmail }).lean();
+
+    // Get all courses by this specialist
+    const courses = await Course.find({ specialistEmail }).lean();
+    const courseMap = {};
+    courses.forEach(c => { courseMap[c._id.toString()] = c; });
+    const courseIds = courses.map(c => c._id);
+
+    // Get all self-paced enrollments for specialist's courses
+    const selfPacedEnrollments = await SelfPacedEnrollment.find({
+      courseId: { $in: courseIds },
+    }).lean();
+
+    // Get all cohort enrollments — need cohorts for specialist's courses
+    const Cohort = mongoose.models.Cohort;
+    let cohortEnrollments = [];
+    if (Cohort) {
+      const cohorts = await Cohort.find({ courseId: { $in: courseIds } }).lean();
+      const cohortIds = cohorts.map(c => c._id);
+      const cohortMap = {};
+      cohorts.forEach(c => { cohortMap[c._id.toString()] = c; });
+      if (cohortIds.length > 0) {
+        const rawCohortEnrollments = await CohortEnrollment.find({
+          cohortId: { $in: cohortIds },
+        }).lean();
+        cohortEnrollments = rawCohortEnrollments.map(e => ({
+          ...e,
+          courseId: cohortMap[e.cohortId.toString()]?.courseId,
+        }));
+      }
+    }
+
+    // Get all consulting slot bookings for this specialist
+    const slots = await ConsultingSlot.find({ specialistEmail }).lean();
+    const allBookings = [];
+    slots.forEach(slot => {
+      (slot.bookings || []).forEach(b => {
+        allBookings.push({
+          customerEmail: b.customerEmail,
+          customerName: b.customerName,
+          slotDate: slot.date,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          status: b.status,
+          bookedAt: b.bookedAt,
+          title: slot.title || '1:1 Consultation',
+        });
+      });
+    });
+
+    // Build a lookup by customer email
+    const enrollmentsByEmail = {};
+    const bookingsByEmail = {};
+
+    [...selfPacedEnrollments, ...cohortEnrollments].forEach(e => {
+      const email = e.customerEmail?.toLowerCase();
+      if (!email) return;
+      if (!enrollmentsByEmail[email]) enrollmentsByEmail[email] = [];
+      const course = courseMap[e.courseId?.toString()];
+      enrollmentsByEmail[email].push({
+        courseTitle: course?.title || 'Unknown Course',
+        courseType: course?.courseType || 'self-paced',
+        enrolledAt: e.createdAt || e.paidAt,
+        status: e.completed ? 'completed' : (e.status || 'active'),
+        amount: e.amount || 0,
+      });
+    });
+
+    allBookings.forEach(b => {
+      const email = b.customerEmail?.toLowerCase();
+      if (!email) return;
+      if (!bookingsByEmail[email]) bookingsByEmail[email] = [];
+      bookingsByEmail[email].push({
+        title: b.title,
+        date: b.slotDate,
+        startTime: b.startTime,
+        endTime: b.endTime,
+        status: b.status,
+        bookedAt: b.bookedAt,
+      });
+    });
+
+    // Enrich customers
+    let enriched = customers.map(c => {
+      const email = c.email?.toLowerCase();
+      const courseEnrollments = enrollmentsByEmail[email] || [];
+      const appointments = bookingsByEmail[email] || [];
+      return {
+        ...c,
+        id: c._id,
+        courseEnrollments,
+        appointments,
+        hasEnrollments: courseEnrollments.length > 0,
+        hasAppointments: appointments.length > 0,
+      };
+    });
+
+    // Apply segment filter
+    if (segment === 'course-enrolled') {
+      enriched = enriched.filter(c => c.hasEnrollments);
+    } else if (segment === 'appointment-booked') {
+      enriched = enriched.filter(c => c.hasAppointments);
+    } else if (segment === 'no-activity') {
+      enriched = enriched.filter(c => !c.hasEnrollments && !c.hasAppointments);
+    }
+
+    res.json({ success: true, data: enriched });
+  } catch (error) {
+    console.error('Error in getEnrichedCustomers:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * Send email to selected customers
+ * POST /api/customers/send-email
+ * Body: { emails: string[], subject: string, body: string, specialistName: string }
+ */
+export const sendBulkEmail = async (req, res) => {
+  try {
+    const { emails, subject, body, specialistName } = req.body;
+
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      return res.status(400).json({ success: false, message: 'At least one email is required' });
+    }
+    if (!subject || !body) {
+      return res.status(400).json({ success: false, message: 'Subject and body are required' });
+    }
+
+    // Limit to prevent abuse
+    if (emails.length > 50) {
+      return res.status(400).json({ success: false, message: 'Maximum 50 recipients per batch' });
+    }
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="white-space: pre-wrap; line-height: 1.6; color: #333;">${body.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div>
+        <hr style="margin-top: 30px; border: none; border-top: 1px solid #eee;" />
+        <p style="color: #888; font-size: 12px;">Sent by ${(specialistName || 'Your Specialist').replace(/</g, '&lt;').replace(/>/g, '&gt;')} via Specialistly</p>
+      </div>
+    `;
+
+    const results = { sent: 0, failed: 0, errors: [] };
+
+    for (const email of emails) {
+      try {
+        await sendEmail({ to: email, subject, html });
+        results.sent++;
+      } catch (err) {
+        results.failed++;
+        results.errors.push({ email, error: err.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `${results.sent} email(s) sent successfully${results.failed > 0 ? `, ${results.failed} failed` : ''}`,
+      data: results,
+    });
+  } catch (error) {
+    console.error('Error in sendBulkEmail:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
