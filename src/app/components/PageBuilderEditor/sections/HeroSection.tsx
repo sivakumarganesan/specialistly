@@ -328,7 +328,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
         <div className="order-2 lg:order-1">
           {slide?.title && (
             <h1
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold leading-tight mb-2"
+              className="text-2xl sm:text-3xl lg:text-4xl font-bold leading-tight mb-2"
               style={{ color: titleColor, whiteSpace: 'pre-line' }}
             >
               {slide.title}
@@ -336,7 +336,7 @@ export const HeroSectionPreview: React.FC<{ section: PageSection }> = ({
           )}
           {slide?.accentText && (
             <p
-              className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6"
+              className="text-xl sm:text-2xl lg:text-3xl font-bold mb-4 sm:mb-6"
               style={{ color: accentColor }}
             >
               {slide.accentText}
