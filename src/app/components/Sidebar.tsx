@@ -39,7 +39,6 @@ const creatorMenuItems = [
 const customerMenuItems = [
   { id: "my-learning", label: "My Learning & Bookings", icon: ShoppingCart },
   { id: "browse-courses", label: "Browse Courses", icon: GraduationCap },
-  { id: "messages", label: "Messages", icon: MessageSquare },
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
