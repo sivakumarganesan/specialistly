@@ -37,6 +37,7 @@ import publicRoutes from './routes/publicRoutes.js';
 import newsletterRoutes from './routes/newsletterRoutes.js';
 import { serveMedia } from './controllers/serveMediaController.js';
 import couponRoutes from './routes/couponRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
 
 // Load environment-specific .env file
 const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
@@ -202,6 +203,7 @@ app.use('/api/page-templates', pageTemplateRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Public media serving endpoint (for R2 images)
 app.get('/api/media/serve/:mediaId', serveMedia);

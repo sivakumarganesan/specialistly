@@ -172,6 +172,11 @@ export const couponAPI = {
     apiCall(`/coupons/validate/${encodeURIComponent(code)}?course=${courseId}`),
 };
 
+// Report API calls
+export const reportAPI = {
+  getSpecialistOverview: () => apiCall('/reports/specialist-overview'),
+};
+
 // Service API calls
 export const serviceAPI = {
   getAll: (filters?: { creator?: string }) => {

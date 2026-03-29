@@ -27,6 +27,7 @@ import { CoursesBrowse } from "@/app/components/CoursesBrowse";
 import { MyLearning } from "@/app/components/MyLearning";
 import { CourseDetail } from "@/app/components/CourseDetail";
 import { MySite } from "@/app/components/MySite";
+import { MyAppointments } from "@/app/components/MyAppointments";
 import PaymentModal from "@/app/components/PaymentModal";
 import { PrivacyPolicy } from "@/app/components/PrivacyPolicy";
 import { TermsOfUse } from "@/app/components/TermsOfUse";
@@ -293,6 +294,7 @@ export function AppContent() {
         )}
         {currentPage === "page-builder" && <PageBuilder />}
         {currentPage === "my-site" && userType === "specialist" && <MySite />}
+        {currentPage === "my-appointments" && userType === "specialist" && <MyAppointments />}
         {currentPage === "services" && userType === "specialist" && <Services onUpdateSearchableItems={updateOfferingItems} onUpdateCourseItems={updateCourseItems} />}
         {currentPage === "browse-courses" && userType === "customer" && <CoursesBrowse />}
         {currentPage === "my-learning" && userType === "customer" && <MyLearning />}
