@@ -332,12 +332,12 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         price: parseInt(formData.price) || 0,
         currency: formData.currency || "USD",
         duration: formData.duration,
+        startDate: formData.startDate || "",
+        endDate: formData.endDate || "",
         specialistId: user?.id,
         specialistEmail: user?.email,
         ...((selectedCourse.type === "cohort-based" || selectedCourse.type === "cohort") && {
           cohortSize: formData.cohortSize,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
           schedule: formData.schedule,
           meetingPlatform: formData.meetingPlatform,
           zoomLink: formData.zoomLink,
@@ -1308,7 +1308,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   </div>
                 )}
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-wrap gap-2 pt-2">
                   <Button
                     variant="outline"
                     size="sm"

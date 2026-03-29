@@ -36,6 +36,9 @@ export const createCourse = async (req, res) => {
       status: 'draft',
     };
 
+    // Include thumbnail if provided
+    if (req.body.thumbnail) courseData.thumbnail = req.body.thumbnail;
+
     // Add cohort-specific fields
     if (courseType === 'cohort' || courseType === 'cohort-based') {
       if (cohortSize) courseData.cohortSize = cohortSize;

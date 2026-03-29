@@ -40,6 +40,7 @@ export const ZoomDocumentation: React.FC<ZoomDocumentationProps> = ({ onBack }) 
             <li><a href="#overview" className="text-blue-600 hover:underline">Overview</a></li>
             <li><a href="#prerequisites" className="text-blue-600 hover:underline">Prerequisites</a></li>
             <li><a href="#adding-the-app" className="text-blue-600 hover:underline">Adding the App</a></li>
+            <li><a href="#personal-consulting" className="text-blue-600 hover:underline">Personal Consulting (1:1 Booking)</a></li>
             <li><a href="#usage" className="text-blue-600 hover:underline">Usage Guide</a></li>
             <li><a href="#removing-the-app" className="text-blue-600 hover:underline">Removing the App</a></li>
             <li><a href="#troubleshooting" className="text-blue-600 hover:underline">Troubleshooting</a></li>
@@ -52,11 +53,17 @@ export const ZoomDocumentation: React.FC<ZoomDocumentationProps> = ({ onBack }) 
           <p className="text-gray-700 leading-relaxed mb-4">
             Specialistly is a platform that connects specialists (consultants, educators, professionals) with customers
             seeking their expertise. The Zoom integration enables specialists to automatically create Zoom meetings
-            for their consultation sessions, so both parties get a seamless video conferencing experience.
+            for their <strong>Personal Consulting</strong> (1:1) sessions, so both parties get a seamless video conferencing experience.
+          </p>
+          <p className="text-gray-700 leading-relaxed mb-4">
+            Specialists create <strong>Personal Consulting</strong> offerings via <strong>Offerings → Add Service → 1:1 Consulting</strong>,
+            configure their weekly availability in <strong>Settings → Manage Availability</strong>, and the platform automatically
+            generates bookable time slots. Customers browse available slots on the specialist's branded website and book appointments
+            directly.
           </p>
           <p className="text-gray-700 leading-relaxed">
             When a customer books a consulting slot, a Zoom meeting is automatically generated and the meeting link
-            is shared with both the specialist and the customer. No manual meeting setup is required.
+            is shared with both the specialist and the customer via email and the platform dashboard. No manual meeting setup is required.
           </p>
         </section>
 
@@ -66,7 +73,8 @@ export const ZoomDocumentation: React.FC<ZoomDocumentationProps> = ({ onBack }) 
           <ul className="list-disc list-inside text-gray-700 space-y-2 leading-relaxed">
             <li>A Specialistly account registered as a <strong>Specialist</strong></li>
             <li>A Zoom account (free or paid)</li>
-            <li>At least one consulting service published on your Specialistly profile</li>
+            <li>At least one <strong>Personal Consulting (1:1)</strong> service created under <strong>Offerings</strong></li>
+            <li>Availability configured via <strong>Settings → Manage Availability</strong></li>
           </ul>
         </section>
 
@@ -148,6 +156,80 @@ export const ZoomDocumentation: React.FC<ZoomDocumentationProps> = ({ onBack }) 
           </div>
         </section>
 
+        {/* Personal Consulting */}
+        <section id="personal-consulting" className="mb-12">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-4">Personal Consulting (1:1 Booking)</h2>
+          <p className="text-gray-700 leading-relaxed mb-6">
+            Personal Consulting is the core offering type on Specialistly. It allows specialists to offer 1:1 consultation
+            sessions that customers can book directly from the specialist's branded website or profile.
+          </p>
+
+          <div className="space-y-6">
+            {/* Step 1: Create offering */}
+            <div className="border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Step 1: Create a Personal Consulting Offering</h3>
+              <ol className="list-decimal list-inside text-gray-600 text-sm mt-2 space-y-2 ml-4 leading-relaxed">
+                <li>Go to <strong>Offerings</strong> in the left sidebar.</li>
+                <li>Click <strong>Add Service</strong>.</li>
+                <li>Select <strong>1:1 Consulting</strong> as the service type.</li>
+                <li>Fill in the title, description, duration, price, and currency (USD or INR).</li>
+                <li>Optionally upload a thumbnail image.</li>
+                <li>Click <strong>Create</strong> to save. The service is created in <strong>Active</strong> status.</li>
+              </ol>
+              <p className="text-gray-500 text-sm mt-3">
+                When you activate a consulting service, bookable time slots are automatically generated based on your availability schedule.
+              </p>
+            </div>
+
+            {/* Step 2: Configure availability */}
+            <div className="border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Step 2: Configure Your Availability</h3>
+              <ol className="list-decimal list-inside text-gray-600 text-sm mt-2 space-y-2 ml-4 leading-relaxed">
+                <li>Go to <strong>Settings → Manage Availability</strong>.</li>
+                <li>Set your weekly schedule — choose which days you're available and the time ranges for each day.</li>
+                <li>Configure slot duration (30, 45, 60, or 90 minutes), buffer time between sessions, and break periods.</li>
+                <li>Set booking rules: minimum notice, maximum advance booking window, and cancellation deadline.</li>
+                <li>Click <strong>Save</strong>. Bookable consulting slots are automatically regenerated to match your updated schedule.</li>
+              </ol>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                <p className="text-blue-800 text-sm">
+                  <strong>Note:</strong> Whenever you update your availability, all future unbooked slots are automatically regenerated.
+                  Existing bookings are never affected — only unused slots are refreshed.
+                </p>
+              </div>
+            </div>
+
+            {/* Step 3: Branded website booking */}
+            <div className="border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Step 3: Customers Book from Your Website</h3>
+              <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                Customers can book a personal consultation from your branded website in two ways:
+              </p>
+              <ul className="list-disc list-inside text-gray-600 text-sm space-y-2 ml-4 leading-relaxed">
+                <li><strong>Services Section:</strong> Your consulting services appear on the Services page with a <strong>Book Now</strong> button that opens the consulting calendar.</li>
+                <li><strong>Book Appointment Section:</strong> You can add a dedicated <strong>Book Appointment</strong> section to any page via the Page Builder. This shows a prominent call-to-action that opens the booking calendar.</li>
+              </ul>
+              <p className="text-gray-600 text-sm leading-relaxed mt-3">
+                The booking calendar displays your available time slots. The customer selects a date, picks a slot, provides their name and email, and confirms the booking.
+              </p>
+            </div>
+
+            {/* Step 4: Zoom meeting auto-created */}
+            <div className="border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Step 4: Zoom Meeting is Auto-Created</h3>
+              <p className="text-gray-600 text-sm leading-relaxed mb-3">
+                When a booking is confirmed, the following happens automatically:
+              </p>
+              <ol className="list-decimal list-inside text-gray-600 text-sm space-y-2 ml-4 leading-relaxed">
+                <li>A Zoom meeting is created for the booked date and time using the specialist's connected Zoom account.</li>
+                <li>The Zoom meeting link, meeting ID, and passcode are attached to the booking record.</li>
+                <li>Both the specialist and the customer receive email confirmations with the meeting details.</li>
+                <li>The booking appears on the specialist's dashboard with the Zoom link ready to use.</li>
+              </ol>
+            </div>
+          </div>
+        </section>
+
         {/* Usage */}
         <section id="usage" className="mb-12">
           <h2 className="text-2xl font-semibold text-gray-900 mb-4">Usage Guide</h2>
@@ -161,26 +243,31 @@ export const ZoomDocumentation: React.FC<ZoomDocumentationProps> = ({ onBack }) 
               </p>
               <p className="text-sm text-gray-500"><strong>How it works:</strong></p>
               <ol className="list-decimal list-inside text-gray-600 text-sm mt-2 space-y-1 ml-4">
-                <li>A customer visits your profile and books an available consulting slot.</li>
+                <li>A customer visits your branded website and books an available consulting slot via the Services page or a Book Appointment section.</li>
                 <li>Specialistly automatically creates a Zoom meeting for the scheduled date and time.</li>
-                <li>Both you and the customer receive the Zoom meeting link via the platform.</li>
+                <li>Both you and the customer receive the Zoom meeting link via email confirmation.</li>
                 <li>At the scheduled time, both parties join using the provided Zoom link.</li>
               </ol>
             </div>
 
             {/* Feature: Consulting Slots */}
             <div className="border border-gray-200 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Managing Consulting Slots</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Managing Availability &amp; Consulting Slots</h3>
               <p className="text-gray-600 text-sm leading-relaxed mb-3">
-                Set your availability so customers can book sessions with you.
+                Set your weekly availability so the platform can generate bookable consulting slots for your customers.
               </p>
               <p className="text-sm text-gray-500"><strong>Steps:</strong></p>
               <ol className="list-decimal list-inside text-gray-600 text-sm mt-2 space-y-1 ml-4">
-                <li>Go to <strong>Settings → Consulting Slots</strong> in your dashboard.</li>
-                <li>Set your available days, times, and session duration.</li>
-                <li>Publish your consulting service so customers can browse and book.</li>
+                <li>Go to <strong>Settings → Manage Availability</strong> in your dashboard.</li>
+                <li>Set your available days, time ranges, slot duration, and buffer time.</li>
+                <li>Click Save — bookable slots are automatically generated for the next 90 days.</li>
+                <li>Create a <strong>1:1 Consulting</strong> service under <strong>Offerings → Add Service</strong>.</li>
+                <li>Your branded website's Services page and any Book Appointment sections will display the booking calendar.</li>
                 <li>When a customer books a slot, a Zoom meeting is automatically scheduled.</li>
               </ol>
+              <p className="text-gray-500 text-sm mt-3">
+                Updating your availability at any time will regenerate all future unbooked slots to match the new schedule.
+              </p>
             </div>
 
             {/* Feature: Meeting Management */}
@@ -205,9 +292,9 @@ export const ZoomDocumentation: React.FC<ZoomDocumentationProps> = ({ onBack }) 
               </p>
               <p className="text-sm text-gray-500"><strong>Features:</strong></p>
               <ul className="list-disc list-inside text-gray-600 text-sm mt-2 space-y-1 ml-4">
-                <li>Drag-and-drop page builder with hero, about, services, gallery, and more sections.</li>
+                <li>Drag-and-drop page builder with hero, about, services, gallery, Book Appointment, and more sections.</li>
                 <li>Custom subdomain (yourname.specialistly.com).</li>
-                <li>Consulting booking calendar embedded on your website.</li>
+                <li>Consulting booking calendar embedded on your Services page and Book Appointment sections.</li>
                 <li>Course creation and sales.</li>
               </ul>
             </div>
