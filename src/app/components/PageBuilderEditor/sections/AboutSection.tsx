@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { PageSection } from '@/app/hooks/usePageBuilder';
 import { Card } from '@/app/components/ui/card';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Upload, X } from 'lucide-react';
+import { Upload, X, Bold, Italic, List } from 'lucide-react';
 
 interface AboutSectionEditorProps {
   section: PageSection;
@@ -17,6 +17,54 @@ export const AboutSectionEditor: React.FC<AboutSectionEditorProps> = ({
   const [imagePreview, setImagePreview] = useState<string | null>(
     section.content?.image || null
   );
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const wrapSelection = (before: string, after: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const text = ta.value;
+    const selected = text.slice(start, end);
+    // Toggle: if already wrapped, unwrap
+    const isBefore = text.slice(start - before.length, start) === before;
+    const isAfter = text.slice(end, end + after.length) === after;
+    let newText: string;
+    let newStart: number;
+    let newEnd: number;
+    if (isBefore && isAfter) {
+      newText = text.slice(0, start - before.length) + selected + text.slice(end + after.length);
+      newStart = start - before.length;
+      newEnd = end - before.length;
+    } else {
+      newText = text.slice(0, start) + before + selected + after + text.slice(end);
+      newStart = start + before.length;
+      newEnd = end + before.length;
+    }
+    onChange({ content: { ...section.content, description: newText } });
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(newStart, newEnd);
+    });
+  };
+
+  const insertPrefix = (prefix: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const text = ta.value;
+    // Find start of current line
+    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+    const line = text.slice(lineStart, text.indexOf('\n', start) === -1 ? text.length : text.indexOf('\n', start));
+    let newText: string;
+    if (line.startsWith(prefix)) {
+      newText = text.slice(0, lineStart) + line.slice(prefix.length) + text.slice(lineStart + line.length);
+    } else {
+      newText = text.slice(0, lineStart) + prefix + text.slice(lineStart);
+    }
+    onChange({ content: { ...section.content, description: newText } });
+    requestAnimationFrame(() => ta.focus());
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,19 +107,50 @@ export const AboutSectionEditor: React.FC<AboutSectionEditorProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2">Description</label>
-            <Textarea
-              placeholder="Tell your story..."
-              value={section.content?.description || ''}
-              onChange={(e) =>
-                onChange({
-                  content: {
-                    ...section.content,
-                    description: e.target.value,
-                  },
-                })
-              }
-              rows={5}
-            />
+            <div className="border border-gray-300 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+              {/* Formatting toolbar */}
+              <div className="flex items-center gap-0.5 px-2 py-1.5 bg-gray-50 border-b border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => wrapSelection('**', '**')}
+                  className="p-1.5 rounded hover:bg-gray-200 transition" title="Bold (**text**)"
+                >
+                  <Bold className="w-4 h-4 text-gray-700" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => wrapSelection('*', '*')}
+                  className="p-1.5 rounded hover:bg-gray-200 transition" title="Italic (*text*)"
+                >
+                  <Italic className="w-4 h-4 text-gray-700" />
+                </button>
+                <div className="w-px h-5 bg-gray-300 mx-1" />
+                <button
+                  type="button"
+                  onClick={() => insertPrefix('- ')}
+                  className="p-1.5 rounded hover:bg-gray-200 transition" title="Bullet list"
+                >
+                  <List className="w-4 h-4 text-gray-700" />
+                </button>
+                <div className="w-px h-5 bg-gray-300 mx-1" />
+                <span className="text-[10px] text-gray-400 ml-1">**bold** &nbsp; *italic* &nbsp; - list</span>
+              </div>
+              <Textarea
+                ref={textareaRef}
+                placeholder="Tell your story... Use **text** for bold, *text* for italic, - for bullet points"
+                value={section.content?.description || ''}
+                onChange={(e) =>
+                  onChange({
+                    content: {
+                      ...section.content,
+                      description: e.target.value,
+                    },
+                  })
+                }
+                rows={8}
+                className="border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-y"
+              />
+            </div>
           </div>
         </div>
       </Card>
@@ -142,6 +221,23 @@ export const AboutSectionEditor: React.FC<AboutSectionEditorProps> = ({
   );
 };
 
+// Helper: parse inline **bold** and *italic* in a string
+const parseInlineFormatting = (line: string, lineIdx: number) => {
+  const parts: React.ReactNode[] = [];
+  const regex = /\*\*(.*?)\*\*|\*(.*?)\*|([^*]+)/g;
+  let match;
+  while ((match = regex.exec(line)) !== null) {
+    if (match[1] != null) {
+      parts.push(<strong key={`${lineIdx}-b-${match.index}`}>{match[1]}</strong>);
+    } else if (match[2] != null) {
+      parts.push(<em key={`${lineIdx}-i-${match.index}`}>{match[2]}</em>);
+    } else if (match[3]) {
+      parts.push(match[3]);
+    }
+  }
+  return parts.length > 0 ? parts : [line];
+};
+
 // Helper function to render formatted text with markdown support
 const renderFormattedText = (text: string) => {
   if (!text) return null;
@@ -153,37 +249,18 @@ const renderFormattedText = (text: string) => {
 
     // Handle lists
     if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
+      const listText = line.replace(/^[\s]*[-*]\s/, '');
       return (
         <div key={lineIdx} className="ml-4 my-2 flex">
           <span className="mr-2">•</span>
-          <span>{line.replace(/^[\s]*[-*]\s/, '')}</span>
+          <span>{parseInlineFormatting(listText, lineIdx)}</span>
         </div>
       );
     }
 
-    // Parse inline formatting: **bold**, *italic*
-    const parts = [];
-    let regex = /\*\*(.*?)\*\*|\*(.*?)\*|([^*]+)/g;
-    let match;
-    let lastIndex = 0;
-
-    while ((match = regex.exec(line)) !== null) {
-      const bold = match[1];
-      const italic = match[2];
-      const text = match[3];
-
-      if (bold) {
-        parts.push(<strong key={`${lineIdx}-${match.index}`}>{bold}</strong>);
-      } else if (italic) {
-        parts.push(<em key={`${lineIdx}-${match.index}`}>{italic}</em>);
-      } else if (text) {
-        parts.push(text);
-      }
-    }
-
     return (
       <div key={lineIdx} className="my-2">
-        {parts.length > 0 ? parts : line}
+        {parseInlineFormatting(line, lineIdx)}
       </div>
     );
   });
