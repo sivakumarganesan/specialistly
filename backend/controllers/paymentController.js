@@ -123,6 +123,7 @@ export const createPaymentIntent = async (req, res) => {
         courseId: serviceId,
         paymentStatus: 'completed',
         status: 'active',
+        amount: 0,
       });
       // Increment coupon redemptions if coupon was used
       if (appliedCoupon) {
@@ -312,6 +313,7 @@ export const confirmPayment = async (req, res) => {
           status: 'active',
           paymentId: payment._id,
           paymentDate: new Date(),
+          amount: payment.amount ? Math.round(payment.amount / 100) : 0,
         });
       } else {
         // Update existing enrollment

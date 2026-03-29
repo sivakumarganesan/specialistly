@@ -506,6 +506,10 @@ export const getCourseEnrollments = async (req, res) => {
       const totalLessons = course.lessons ? course.lessons.length : 0;
       const completedCount = enrollment.completedLessons ? enrollment.completedLessons.length : 0;
       const completionPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+      // Fall back to course price when enrollment amount was not stored
+      const amount = (enrollment.amount != null && enrollment.amount > 0)
+        ? enrollment.amount
+        : (enrollment.paymentStatus === 'completed' ? (course.price || 0) : 0);
 
       return {
         _id: enrollment._id,
@@ -517,7 +521,7 @@ export const getCourseEnrollments = async (req, res) => {
         completed: enrollment.completed,
         createdAt: enrollment.createdAt,
         paidAt: enrollment.paidAt,
-        amount: enrollment.amount,
+        amount,
       };
     });
 

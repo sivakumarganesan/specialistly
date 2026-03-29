@@ -140,6 +140,7 @@ async function handlePaymentSucceeded(event) {
         paymentId: payment._id,
         paymentDate: new Date(),
         webhookVerified: true,
+        amount: payment.amount ? Math.round(payment.amount / 100) : 0,
       });
     }
 

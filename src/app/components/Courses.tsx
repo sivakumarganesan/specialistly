@@ -2240,7 +2240,9 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                           </span>
                         </td>
                         <td className="py-3 px-3 text-center font-semibold">
-                          {enrollment.amount > 0 ? `$${enrollment.amount}` : 'Free'}
+                          {enrollment.amount > 0
+                            ? `${selectedCourse?.currency === 'INR' ? '₹' : '$'}${enrollment.amount}`
+                            : 'Free'}
                         </td>
                       </tr>
                     ))}

@@ -75,18 +75,25 @@ export const getSpecialistOverview = async (req, res) => {
     }
 
     // Combine enrollments with course info
-    const courseEnrollments = enrollments.map(e => ({
-      enrollmentId: e._id,
-      courseId: e.courseId,
-      courseTitle: courseMap[e.courseId?.toString()]?.title || 'Unknown Course',
-      courseType: courseMap[e.courseId?.toString()]?.courseType || 'self-paced',
-      customerEmail: e.customerEmail || '',
-      paymentStatus: e.paymentStatus || 'pending',
-      status: e.status || 'active',
-      amount: e.amount || 0,
-      currency: courseMap[e.courseId?.toString()]?.currency || 'INR',
-      enrolledAt: e.createdAt,
-    }));
+    const courseEnrollments = enrollments.map(e => {
+      const course = courseMap[e.courseId?.toString()];
+      // Fall back to course price when enrollment amount was not stored
+      const amount = (e.amount != null && e.amount > 0)
+        ? e.amount
+        : (e.paymentStatus === 'completed' ? (course?.price || 0) : 0);
+      return {
+        enrollmentId: e._id,
+        courseId: e.courseId,
+        courseTitle: course?.title || 'Unknown Course',
+        courseType: course?.courseType || 'self-paced',
+        customerEmail: e.customerEmail || '',
+        paymentStatus: e.paymentStatus || 'pending',
+        status: e.status || 'active',
+        amount,
+        currency: course?.currency || 'INR',
+        enrolledAt: e.createdAt,
+      };
+    });
 
     // 4. Summary stats
     const now = new Date();

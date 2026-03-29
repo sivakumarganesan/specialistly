@@ -227,6 +227,7 @@ export const createPublicPaymentIntent = async (req, res) => {
         courseId,
         paymentStatus: 'completed',
         status: 'active',
+        amount: 0,
       });
 
       // Send confirmation emails for free course
@@ -546,6 +547,7 @@ export const confirmPublicPayment = async (req, res) => {
           paymentStatus: 'completed',
           status: 'active',
           stripePaymentId: paymentIntentId,
+          amount: commission.grossAmount ? Math.round(commission.grossAmount / 100) : 0,
         });
       }
 
@@ -716,6 +718,7 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
         paymentGateway: 'razorpay',
         razorpayOrderId,
         razorpayPaymentId,
+        amount: commission.grossAmount ? Math.round(commission.grossAmount / 100) : 0,
       });
     } else if (enrollment.status !== 'active') {
       enrollment.paymentStatus = 'completed';

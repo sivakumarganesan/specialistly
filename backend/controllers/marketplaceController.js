@@ -121,6 +121,7 @@ export const createMarketplacePaymentIntent = async (req, res) => {
         courseId,
         paymentStatus: 'completed',
         status: 'active',
+        amount: 0,
       });
 
       return res.status(200).json({
@@ -516,6 +517,7 @@ export const confirmMarketplacePayment = async (req, res) => {
             paymentStatus: 'completed',
             status: 'active',
             paymentIntentId: paymentIntentId,
+            amount: commission.grossAmount ? Math.round(commission.grossAmount / 100) : 0,
           });
           console.log('[Marketplace Payment Confirmation] Enrollment created:', { id: enrollment._id });
         } else {
