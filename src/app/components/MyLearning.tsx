@@ -4,7 +4,7 @@ import { courseAPI } from "@/app/api/apiClient";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
-import { Award, ArrowRight, BookOpen, Video } from "lucide-react";
+import { Award, ArrowRight, BookOpen, Play, Video } from "lucide-react";
 
 interface EnrolledCourse {
   enrollmentId: string;
