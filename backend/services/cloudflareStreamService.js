@@ -86,7 +86,6 @@ class CloudflareStreamService {
       if (videoMetadata.fileName) {
         metaParts.push(`filename ${Buffer.from(videoMetadata.fileName).toString('base64')}`);
       }
-      metaParts.push(`maxDurationSeconds ${Buffer.from('21600').toString('base64')}`);
       if (metaParts.length > 0) {
         tusHeaders['Upload-Metadata'] = metaParts.join(',');
       }
