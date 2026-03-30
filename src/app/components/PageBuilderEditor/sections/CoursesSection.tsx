@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PageSection } from '@/app/hooks/usePageBuilder';
 import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
@@ -6,6 +6,9 @@ import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
 import { Plus, Trash2, LayoutGrid, List, ShoppingCart, Calendar, Clock, Video, Users } from 'lucide-react';
 import { PublicCourseCheckout } from '@/app/components/PublicCourseCheckout';
+
+import { courseAPI } from '@/app/api/apiClient';
+import { useAuth } from '@/app/context/AuthContext';
 
 interface Course {
   id: string;
@@ -260,26 +263,23 @@ export const CoursesSectionEditor: React.FC<CoursesSectionEditorProps> = ({
 };
 
 // Preview Component
-export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
-  section,
-}) => {
+
+export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ section }) => {
+  const { user } = useAuth();
   const [fetchedCourses, setFetchedCourses] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [checkoutCourse, setCheckoutCourse] = React.useState<any | null>(null);
+  const [enrolledCourseIds, setEnrolledCourseIds] = React.useState<Set<string>>(new Set());
   const courses = (section.content?.courses || []) as Course[];
   const layout = section.content?.layout || 'grid';
-
-  // Use backend-enriched courses (from public page) if available
   const backendCourses = section.content?.fetchedCourses || [];
 
   // Fetch specialist's courses from API (only in editor, when logged in)
-  React.useEffect(() => {
-    // If backend already provided courses (public page), skip fetch
+  useEffect(() => {
     if (backendCourses.length > 0) {
       setIsLoading(false);
       return;
     }
-
     const fetchCourses = async () => {
       try {
         const authToken = localStorage.getItem('authToken');
@@ -287,18 +287,14 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
           setIsLoading(false);
           return;
         }
-
-        // Get specialist email to filter courses
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const specialistEmail = user.email || '';
-
         const apiUrl = (import.meta.env.VITE_API_URL as string) || '/api';
         const response = await fetch(`${apiUrl}/courses/my-courses?specialistEmail=${encodeURIComponent(specialistEmail)}`, {
           headers: {
             'Authorization': `Bearer ${authToken}`,
           },
         });
-
         if (response.ok) {
           const data = await response.json();
           if (data.success && Array.isArray(data.data)) {
@@ -311,13 +307,33 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
         setIsLoading(false);
       }
     };
-
     fetchCourses();
   }, [backendCourses.length]);
 
+  // Fetch enrolled course IDs for the logged-in customer
+  useEffect(() => {
+    const fetchEnrolled = async () => {
+      try {
+        if (!user?.id) {
+          setEnrolledCourseIds(new Set());
+          return;
+        }
+        const res = await courseAPI.getMySelfPacedCourses(user.id);
+        if (Array.isArray(res?.data)) {
+          const ids = new Set(res.data.map((enr: any) => enr.courseId || enr._id));
+          setEnrolledCourseIds(ids);
+        } else {
+          setEnrolledCourseIds(new Set());
+        }
+      } catch (err) {
+        setEnrolledCourseIds(new Set());
+      }
+    };
+    fetchEnrolled();
+  }, [user?.id]);
+
   // Priority: manual courses > backend-enriched courses > fetched courses
   const displayCourses = courses.length > 0 ? courses : backendCourses.length > 0 ? backendCourses : fetchedCourses;
-
   const gridClasses =
     layout === 'grid'
       ? 'grid grid-cols-3 gap-6'
@@ -356,113 +372,126 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({
 
         {!isLoading && displayCourses.length > 0 && (
           <div className={gridClasses}>
-            {displayCourses.map((course: any) => (
-              <div
-                key={course._id || course.id}
-                className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow ${
-                  layout === 'list' ? 'flex gap-4' : ''
-                }`}
-              >
+            {displayCourses.map((course: any) => {
+              const courseId = course._id || course.id;
+              const isEnrolled = enrolledCourseIds.has(courseId);
+              const isCohortClosed = (course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate && new Date(course.startDate) <= new Date();
+              return (
                 <div
-                  className={`overflow-hidden ${
-                    layout === 'list' ? 'w-32 h-32' : 'w-full'
-                  }`}
+                  key={courseId}
+                  className={`bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow ${layout === 'list' ? 'flex gap-4' : ''}`}
                 >
-                  {(course.thumbnail || course.courseImage) ? (
-                    <img
-                      src={course.thumbnail || course.courseImage}
-                      alt={course.title || course.name || 'Course'}
-                      className={`w-full ${layout === 'list' ? 'h-full object-cover' : ''}`}
-                    />
-                  ) : (
-                    <div className={`bg-gradient-to-br from-blue-400 to-gray-900 ${layout === 'list' ? 'w-full h-full' : 'w-full h-48'} flex items-center justify-center text-white/80`}>
-                      <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
-                    </div>
-                  )}
-                </div>
-                <div className={`p-4 ${layout === 'list' ? 'flex-1' : ''}`}>
-                  <h3 className="font-bold text-lg mb-2">{course.title || course.name}</h3>
-                  <p className="text-gray-600 text-sm mb-3">{course.description || course.courseDescription}</p>
-                  <div className="flex flex-wrap gap-2 mb-3 text-xs">
-                    {course.level && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
-                        {course.level}
-                      </span>
-                    )}
-                    {course.duration && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
-                        {course.duration}
-                      </span>
-                    )}
-                    {(course.courseType === 'cohort' || course.courseType === 'cohort-based') && (
-                      <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded font-semibold">
-                        Live Course
-                      </span>
+                  <div
+                    className={`overflow-hidden ${layout === 'list' ? 'w-32 h-32' : 'w-full'}`}
+                  >
+                    {(course.thumbnail || course.courseImage) ? (
+                      <img
+                        src={course.thumbnail || course.courseImage}
+                        alt={course.title || course.name || 'Course'}
+                        className={`w-full ${layout === 'list' ? 'h-full object-cover' : ''}`}
+                      />
+                    ) : (
+                      <div className={`bg-gradient-to-br from-blue-400 to-gray-900 ${layout === 'list' ? 'w-full h-full' : 'w-full h-48'} flex items-center justify-center text-white/80`}>
+                        <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+                      </div>
                     )}
                   </div>
-
-                  {/* Cohort course details */}
-                  {(course.courseType === 'cohort' || course.courseType === 'cohort-based') && (course.startDate || course.schedule || course.meetingPlatform) && (
-                    <div className="mb-3 p-2.5 bg-gray-50 rounded-lg border border-gray-200 text-xs space-y-1.5">
-                      {course.startDate && (
-                        <div className="flex items-center gap-1.5 text-gray-900">
-                          <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                          {course.endDate && (
-                            <span> — Ends: {new Date(course.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                          )}
-                        </div>
+                  <div className={`p-4 ${layout === 'list' ? 'flex-1' : ''}`}>
+                    <h3 className="font-bold text-lg mb-2">{course.title || course.name}</h3>
+                    <p className="text-gray-600 text-sm mb-3">{course.description || course.courseDescription}</p>
+                    <div className="flex flex-wrap gap-2 mb-3 text-xs">
+                      {course.level && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">
+                          {course.level}
+                        </span>
                       )}
-                      {course.schedule && (
-                        <div className="flex items-center gap-1.5 text-gray-900">
-                          <Clock className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span>{course.schedule}</span>
-                        </div>
+                      {course.duration && (
+                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded">
+                          {course.duration}
+                        </span>
                       )}
-                      {course.meetingPlatform && (
-                        <div className="flex items-center gap-1.5 text-gray-900">
-                          <Video className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span>Via {course.meetingPlatform}</span>
-                        </div>
-                      )}
-                      {course.cohortSize && (
-                        <div className="flex items-center gap-1.5 text-gray-900">
-                          <Users className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span>Max {course.cohortSize} students</span>
-                        </div>
+                      {(course.courseType === 'cohort' || course.courseType === 'cohort-based') && (
+                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded font-semibold">
+                          Live Course
+                        </span>
                       )}
                     </div>
-                  )}
 
-                  {Number(course.price || course.coursePrice || 0) > 0 ? (
-                    <div className="font-bold text-lg text-gray-900">
-                      {course.currency === 'INR' ? '₹' : '$'}{course.price || course.coursePrice}
-                    </div>
-                  ) : (
-                    <div className="font-bold text-lg text-green-600">Free</div>
-                  )}
-                  {/* Buy/Enroll button - only on public pages (when backend courses are present) */}
-                  {backendCourses.length > 0 && (() => {
-                    const isCohortClosed = (course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate && new Date(course.startDate) <= new Date();
-                    return isCohortClosed ? (
-                      <div className={`mt-3 py-2 px-4 bg-gray-400 text-white text-sm font-semibold rounded-lg text-center ${layout === 'list' ? 'w-fit' : 'w-full'}`}>
-                        Enrollment Closed
+                    {/* Cohort course details */}
+                    {(course.courseType === 'cohort' || course.courseType === 'cohort-based') && (course.startDate || course.schedule || course.meetingPlatform) && (
+                      <div className="mb-3 p-2.5 bg-gray-50 rounded-lg border border-gray-200 text-xs space-y-1.5">
+                        {course.startDate && (
+                          <div className="flex items-center gap-1.5 text-gray-900">
+                            <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            {course.endDate && (
+                              <span> — Ends: {new Date(course.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                            )}
+                          </div>
+                        )}
+                        {course.schedule && (
+                          <div className="flex items-center gap-1.5 text-gray-900">
+                            <Clock className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>{course.schedule}</span>
+                          </div>
+                        )}
+                        {course.meetingPlatform && (
+                          <div className="flex items-center gap-1.5 text-gray-900">
+                            <Video className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>Via {course.meetingPlatform}</span>
+                          </div>
+                        )}
+                        {course.cohortSize && (
+                          <div className="flex items-center gap-1.5 text-gray-900">
+                            <Users className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span>Max {course.cohortSize} students</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {Number(course.price || course.coursePrice || 0) > 0 ? (
+                      <div className="font-bold text-lg text-gray-900">
+                        {course.currency === 'INR' ? '₹' : '$'}{course.price || course.coursePrice}
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setCheckoutCourse(course)}
-                        className={`mt-3 py-2 px-4 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 ${layout === 'list' ? 'w-fit' : 'w-full'}`}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                        {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
-                          ? 'Enroll Free'
-                          : (course.courseType === 'cohort' || course.courseType === 'cohort-based') ? 'Enroll Now' : 'Buy Now'}
-                      </button>
-                    );
-                  })()}
+                      <div className="font-bold text-lg text-green-600">Free</div>
+                    )}
+                    {/* Button logic: show 'Go to My Learning' if enrolled, else Buy/Enroll/Closed */}
+                    {backendCourses.length > 0 && (() => {
+                      if (isEnrolled) {
+                        return (
+                          <a
+                            href="/my-learning"
+                            className={`mt-3 py-2 px-4 bg-green-600 text-white text-sm font-semibold rounded-lg text-center block hover:bg-green-700 transition-colors ${layout === 'list' ? 'w-fit' : 'w-full'}`}
+                          >
+                            Go to My Learning
+                          </a>
+                        );
+                      }
+                      if (isCohortClosed) {
+                        return (
+                          <div className={`mt-3 py-2 px-4 bg-gray-400 text-white text-sm font-semibold rounded-lg text-center ${layout === 'list' ? 'w-fit' : 'w-full'}`}>
+                            Enrollment Closed
+                          </div>
+                        );
+                      }
+                      return (
+                        <button
+                          onClick={() => setCheckoutCourse(course)}
+                          className={`mt-3 py-2 px-4 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 ${layout === 'list' ? 'w-fit' : 'w-full'}`}
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                          {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
+                            ? 'Enroll Free'
+                            : (course.courseType === 'cohort' || course.courseType === 'cohort-based') ? 'Enroll Now' : 'Buy Now'}
+                        </button>
+                      );
+                    })()}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
