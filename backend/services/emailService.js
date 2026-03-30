@@ -547,10 +547,10 @@ export const sendCourseReminder = async (options) => {
 
     await gmailApiService.sendEmail({
       to: customerEmail,
-      subject: \`🔔 Reminder: \${courseName}\${formattedStartDate ? \` - \${formattedStartDate}\` : ''}\`,
+      subject: `🔔 Reminder: ${courseName}${formattedStartDate ? ` - ${formattedStartDate}` : ''}`,
       html: html,
     });
-    console.log(\`✓ Course reminder sent to \${customerEmail}\`);
+    console.log(`✓ Course reminder sent to ${customerEmail}`);
   } catch (error) {
     console.error('❌ Error sending course reminder email:', error.message);
   }
