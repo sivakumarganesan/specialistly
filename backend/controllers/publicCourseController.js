@@ -243,6 +243,7 @@ export const createPublicPaymentIntent = async (req, res) => {
             schedule: course.schedule,
             meetingPlatform: course.meetingPlatform,
             zoomLink: course.zoomLink,
+            purchaseNote: course.purchaseNote,
           });
         } else {
           await sendEnrollmentConfirmation({
@@ -250,6 +251,7 @@ export const createPublicPaymentIntent = async (req, res) => {
             customerName: customerName || customerEmail.split('@')[0],
             courseName: course.title,
             enrollmentId: enrollment._id.toString(),
+            purchaseNote: course.purchaseNote,
           });
         }
         await sendSpecialistNotification({
@@ -565,6 +567,7 @@ export const confirmPublicPayment = async (req, res) => {
             schedule: course.schedule,
             meetingPlatform: course.meetingPlatform,
             zoomLink: course.zoomLink,
+            purchaseNote: course.purchaseNote,
           });
         } else if (course) {
           await sendEnrollmentConfirmation({
@@ -572,6 +575,7 @@ export const confirmPublicPayment = async (req, res) => {
             customerName: commission.customerEmail.split('@')[0],
             courseName: course.title,
             enrollmentId: enrollment._id.toString(),
+            purchaseNote: course.purchaseNote,
           });
         }
         // Notify specialist
@@ -742,6 +746,7 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
           schedule: course.schedule,
           meetingPlatform: course.meetingPlatform,
           zoomLink: course.zoomLink,
+          purchaseNote: course.purchaseNote,
         });
       } else if (course) {
         await sendEnrollmentConfirmation({
@@ -749,6 +754,7 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
           customerName: commission.customerEmail.split('@')[0],
           courseName: course.title,
           enrollmentId: enrollment._id.toString(),
+          purchaseNote: course.purchaseNote,
         });
       }
       // Notify specialist

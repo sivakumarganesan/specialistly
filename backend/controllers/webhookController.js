@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import { razorpayService } from '../services/razorpayService.js';
 import Payment from '../models/Payment.js';
+import Course from '../models/Course.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import { sendEnrollmentConfirmation, sendSpecialistNotification } from '../services/emailService.js';
 import fs from 'fs';
@@ -285,6 +286,7 @@ async function handleDispute(event) {
  */
 async function sendConfirmationEmails(payment, enrollment) {
   try {
+    const course = await Course.findById(payment.serviceId);
     await Promise.all([
       sendEnrollmentConfirmation({
         customerEmail: payment.customerEmail,
@@ -292,6 +294,7 @@ async function sendConfirmationEmails(payment, enrollment) {
         courseName: payment.serviceName,
         enrollmentId: enrollment._id,
         amount: payment.amount / 100,
+        purchaseNote: course?.purchaseNote,
       }),
       sendSpecialistNotification({
         specialistEmail: payment.specialistEmail,

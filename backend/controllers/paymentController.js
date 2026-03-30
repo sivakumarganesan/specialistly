@@ -325,12 +325,14 @@ export const confirmPayment = async (req, res) => {
       }
 
       // Send confirmation emails
+      const course = await Course.findById(payment.serviceId);
       await Promise.all([
         sendEnrollmentConfirmation({
           customerEmail: payment.customerEmail,
           customerName: req.user?.name || payment.customerEmail,
           courseName: payment.serviceName,
           enrollmentId: enrollment._id,
+          purchaseNote: course?.purchaseNote,
         }),
         sendSpecialistNotification({
           specialistEmail: payment.specialistEmail,

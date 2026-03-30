@@ -168,6 +168,9 @@ const courseSchema = new mongoose.Schema({
     default: null,
   },
   liveSessions: Number,
+
+  // Additional instructions appended to purchase confirmation email
+  purchaseNote: String,
   
   // Status
   status: {

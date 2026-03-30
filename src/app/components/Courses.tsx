@@ -79,6 +79,7 @@ interface Course {
   zoomLink?: string;
   zoomStartUrl?: string;
   liveSessions?: number;
+  purchaseNote?: string;
 }
 
 interface SearchableItem {
@@ -132,6 +133,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
             zoomLink: course.zoomLink || "",
             zoomStartUrl: course.zoomStartUrl || "",
             liveSessions: course.liveSessions,
+            purchaseNote: course.purchaseNote || "",
           }));
           setCourses(transformedCourses);
         }
@@ -272,6 +274,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
     meetingPlatform: "Zoom",
     zoomLink: "",
     liveSessions: "",
+    purchaseNote: "",
   });
 
   const [modules, setModules] = useState<Module[]>([
@@ -288,6 +291,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         price: parseInt(formData.price) || 0,
         currency: formData.currency || "USD",
         duration: formData.duration,
+        purchaseNote: formData.purchaseNote || "",
         status: "draft",
         specialistId: user?.id,
         specialistEmail: user?.email,
@@ -334,6 +338,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         duration: formData.duration,
         startDate: formData.startDate || "",
         endDate: formData.endDate || "",
+        purchaseNote: formData.purchaseNote || "",
         specialistId: user?.id,
         specialistEmail: user?.email,
         ...((selectedCourse.type === "cohort-based" || selectedCourse.type === "cohort") && {
@@ -472,6 +477,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       meetingPlatform: course.meetingPlatform || "Zoom",
       zoomLink: course.zoomLink || "",
       liveSessions: course.liveSessions?.toString() || "",
+      purchaseNote: course.purchaseNote || "",
     });
     if (course.modules && course.modules.length > 0) {
       setModules(course.modules);
@@ -496,6 +502,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       meetingPlatform: "Zoom",
       zoomLink: "",
       liveSessions: "",
+      purchaseNote: "",
     });
     setModules([{ id: "1", title: "Introduction to Course", duration: "2 hours", lessonsCount: 5 }]);
   };
@@ -1528,6 +1535,20 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               </div>
             )}
 
+            <div>
+              <Label htmlFor="purchaseNote">Purchase Note</Label>
+              <Textarea
+                id="purchaseNote"
+                placeholder="e.g., Please join our WhatsApp group at... / Download materials from..."
+                value={formData.purchaseNote}
+                onChange={(e) =>
+                  setFormData({ ...formData, purchaseNote: e.target.value })
+                }
+                rows={3}
+              />
+              <p className="text-xs text-gray-500 mt-1">This note will be included in the purchase confirmation email sent to students.</p>
+            </div>
+
           </div>
 
           <DialogFooter>
@@ -1700,6 +1721,20 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                 <p className="text-xs text-gray-500 mt-1">Paste your Zoom meeting or personal meeting link. Students will see this after enrollment.</p>
               </div>
             )}
+
+            <div>
+              <Label htmlFor="edit-purchaseNote">Purchase Note</Label>
+              <Textarea
+                id="edit-purchaseNote"
+                placeholder="e.g., Please join our WhatsApp group at... / Download materials from..."
+                value={formData.purchaseNote}
+                onChange={(e) =>
+                  setFormData({ ...formData, purchaseNote: e.target.value })
+                }
+                rows={3}
+              />
+              <p className="text-xs text-gray-500 mt-1">This note will be included in the purchase confirmation email sent to students.</p>
+            </div>
 
           </div>
 

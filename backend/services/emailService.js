@@ -19,7 +19,7 @@ dotenv.config();
  */
 export const sendEnrollmentConfirmation = async (options) => {
   try {
-    const { customerEmail, customerName, courseName, enrollmentId } = options;
+    const { customerEmail, customerName, courseName, enrollmentId, purchaseNote } = options;
 
     if (!customerEmail || !customerName || !courseName) {
       console.warn('⚠️  Missing required email parameters for enrollment confirmation');
@@ -50,6 +50,13 @@ export const sendEnrollmentConfirmation = async (options) => {
             
             <p>You can now access all course materials and start learning at your own pace.</p>
             
+            ${purchaseNote ? `
+            <div style="background-color: #fff3cd; padding: 15px; margin: 20px 0; border-radius: 5px; border-left: 4px solid #ffc107;">
+              <p style="margin: 0 0 5px 0;"><strong>📌 Note from your instructor:</strong></p>
+              <p style="margin: 0; white-space: pre-line;">${purchaseNote}</p>
+            </div>
+            ` : ''}
+
             <p style="margin-top: 30px;">If you have any questions, please don't hesitate to contact our support team.</p>
             
             <p>Best regards,<br/>The Specialistly Team</p>
@@ -356,7 +363,7 @@ export const sendPasswordResetEmail = async (options) => {
  */
 export const sendCohortEnrollmentConfirmation = async (options) => {
   try {
-    const { customerEmail, customerName, courseName, enrollmentId, startDate, endDate, schedule, meetingPlatform, zoomLink } = options;
+    const { customerEmail, customerName, courseName, enrollmentId, startDate, endDate, schedule, meetingPlatform, zoomLink, purchaseNote } = options;
 
     if (!customerEmail || !customerName || !courseName) {
       console.warn('⚠️  Missing required email parameters for cohort enrollment confirmation');
@@ -437,6 +444,13 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
                 <li style="margin-bottom: 8px;">Check your email for updates and reminders</li>
               </ul>
             </div>
+
+            ${purchaseNote ? `
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+              <h4 style="color: #856404; margin-top: 0; margin-bottom: 10px;">\ud83d\udccc Note from your instructor</h4>
+              <p style="margin: 0; color: #856404; white-space: pre-line;">${purchaseNote}</p>
+            </div>
+            ` : ''}
 
             <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; text-align: center; color: #666; font-size: 13px;">
               <p style="margin: 0 0 10px 0;">Have questions? Contact our support team.</p>
