@@ -1287,7 +1287,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                       className="flex items-center gap-2 text-sm text-white bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded transition font-medium w-full justify-center"
                     >
                       <Video className="h-4 w-4" />
-                      Start / Host Zoom Meeting
+                      Start / Host Meeting
                     </a>
                     <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded border border-gray-200">
                       <span className="truncate">Join link: {course.zoomLink}</span>
@@ -1303,7 +1303,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                     onClick={() => handleGenerateZoom(course.id)}
                   >
                     <Video className="h-4 w-4 mr-1" />
-                    Generate Zoom Meeting Link
+                    Generate Meeting Link
                   </Button>
                 )}
 
@@ -1522,16 +1522,16 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
 
             {courseType === "cohort-based" && (
               <div>
-                <Label htmlFor="zoomLink">Zoom Meeting Link</Label>
+                <Label htmlFor="zoomLink">Meeting Link</Label>
                 <Input
                   id="zoomLink"
-                  placeholder="https://us06web.zoom.us/j/... or your Personal Meeting URL"
+                  placeholder="e.g., https://zoom.us/j/... or https://meet.google.com/..."
                   value={formData.zoomLink}
                   onChange={(e) =>
                     setFormData({ ...formData, zoomLink: e.target.value })
                   }
                 />
-                <p className="text-xs text-gray-500 mt-1">Paste your Zoom meeting or personal meeting link. Students will see this after enrollment.</p>
+                <p className="text-xs text-gray-500 mt-1">Paste your Zoom, Google Meet, or any video meeting link. Students will see this after enrollment.</p>
               </div>
             )}
 
@@ -1709,16 +1709,16 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
 
             {selectedCourse?.type === "cohort-based" && (
               <div>
-                <Label htmlFor="edit-zoomLink">Zoom Meeting Link</Label>
+                <Label htmlFor="edit-zoomLink">Meeting Link</Label>
                 <Input
                   id="edit-zoomLink"
-                  placeholder="https://us06web.zoom.us/j/... or your Personal Meeting URL"
+                  placeholder="e.g., https://zoom.us/j/... or https://meet.google.com/..."
                   value={formData.zoomLink}
                   onChange={(e) =>
                     setFormData({ ...formData, zoomLink: e.target.value })
                   }
                 />
-                <p className="text-xs text-gray-500 mt-1">Paste your Zoom meeting or personal meeting link. Students will see this after enrollment.</p>
+                <p className="text-xs text-gray-500 mt-1">Paste your Zoom, Google Meet, or any video meeting link. Students will see this after enrollment.</p>
               </div>
             )}
 
