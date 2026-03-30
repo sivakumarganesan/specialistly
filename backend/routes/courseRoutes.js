@@ -14,6 +14,7 @@ import {
   uploadFileToLesson,
   deleteFileFromLesson,
   generateZoomMeeting,
+  sendReminder,
 } from '../controllers/courseController.js';
 import {
   enrollSelfPaced,
@@ -174,6 +175,9 @@ router.get('/:courseId/cohorts', getCohortsByCourse);
 
 // Get course enrollments (specialist view)
 router.get('/:courseId/enrollments', getCourseEnrollments);
+
+// Send reminder to enrolled students
+router.post('/:id/send-reminder', sendReminder);
 
 // Update course
 router.put('/:id', updateCourse);

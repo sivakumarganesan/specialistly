@@ -156,6 +156,8 @@ export const courseAPI = {
     apiCall(`/courses/verify/${certificateId}`),
   getMyCertificates: () => 
     apiCall("/courses/certificates/my-certificates"),
+  sendReminder: (courseId: string, message?: string) =>
+    apiCall(`/courses/${courseId}/send-reminder`, { method: "POST", body: JSON.stringify({ message }) }),
 };
 
 // Coupon API calls

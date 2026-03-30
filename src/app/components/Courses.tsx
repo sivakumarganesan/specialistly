@@ -41,6 +41,7 @@ import {
   Play,
   Award,
   Tag,
+  Bell,
 } from "lucide-react";
 import { Checkbox } from "@/app/components/ui/checkbox";
 
@@ -1354,6 +1355,26 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                     <Tag className="h-4 w-4 mr-1" />
                     Coupons
                   </Button>
+                  {course.type === "cohort-based" && course.status === "published" && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        if (!confirm(`Send a reminder email to all enrolled students for "${course.title}"?`)) return;
+                        try {
+                          const result = await courseAPI.sendReminder(course.id);
+                          alert(`✓ ${result.message || 'Reminders sent!'}`);
+                        } catch (error) {
+                          alert(`Failed to send reminders: ${error instanceof Error ? error.message : 'Please try again.'}`);
+                        }
+                      }}
+                      title="Send reminder email to all enrolled students"
+                      className="text-indigo-600 hover:bg-indigo-50"
+                    >
+                      <Bell className="h-4 w-4 mr-1" />
+                      Remind
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"

@@ -478,10 +478,89 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
   }
 };
 
+/**
+ * Send on-demand course reminder email to enrolled student
+ */
+export const sendCourseReminder = async (options) => {
+  try {
+    const { customerEmail, customerName, courseName, startDate, schedule, meetingPlatform, zoomLink, purchaseNote, customMessage } = options;
+
+    if (!customerEmail || !courseName) {
+      console.warn('⚠️  Missing required email parameters for course reminder');
+      return;
+    }
+
+    const formattedStartDate = startDate
+      ? new Date(startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      : null;
+
+    const html = `
+      <html>
+        <body style="font-family: Arial, sans-serif; color: #333; margin: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; border: 1px solid #ddd; padding: 20px; border-radius: 8px; background-color: #f9fafb;">
+            
+            <div style="text-align: center; margin-bottom: 25px;">
+              <h1 style="color: #4F46E5; margin: 0;">Course Reminder 🔔</h1>
+            </div>
+
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
+              <p style="margin-top: 0;">Hi <strong>${customerName}</strong>,</p>
+              <p>This is a reminder for your course: <strong>${courseName}</strong>.</p>
+              ${customMessage ? `<p style="margin-top: 10px;">${customMessage}</p>` : ''}
+            </div>
+
+            ${formattedStartDate || schedule ? `
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
+              <h3 style="color: #1F2937; margin-top: 0;">📋 Session Details</h3>
+              <table style="width: 100%; border-collapse: collapse;">
+                ${formattedStartDate ? `<tr><td style="padding: 8px 0; color: #666; width: 35%;">Date:</td><td style="padding: 8px 0; font-weight: bold; color: #4F46E5;">${formattedStartDate}</td></tr>` : ''}
+                ${schedule ? `<tr><td style="padding: 8px 0; color: #666;">Schedule:</td><td style="padding: 8px 0;">${schedule}</td></tr>` : ''}
+                ${meetingPlatform ? `<tr><td style="padding: 8px 0; color: #666;">Platform:</td><td style="padding: 8px 0;">${meetingPlatform}</td></tr>` : ''}
+              </table>
+            </div>
+            ` : ''}
+
+            ${zoomLink ? `
+            <div style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+              <h3 style="margin-top: 0; margin-bottom: 10px;">🔗 Meeting Link</h3>
+              <a href="${zoomLink}" style="display: inline-block; background-color: white; color: #4F46E5; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                Join Meeting
+              </a>
+              <p style="margin: 15px 0 0 0; font-size: 12px; opacity: 0.8; word-break: break-all;">${zoomLink}</p>
+            </div>
+            ` : ''}
+
+            ${purchaseNote ? `
+            <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
+              <p style="margin: 0 0 5px 0;"><strong>📌 Note from your instructor:</strong></p>
+              <p style="margin: 0; white-space: pre-line;">${purchaseNote}</p>
+            </div>
+            ` : ''}
+
+            <div style="border-top: 1px solid #e5e7eb; padding-top: 15px; text-align: center; color: #666; font-size: 13px;">
+              <p style="margin: 0;">Best regards,<br/>The Specialistly Team</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    await gmailApiService.sendEmail({
+      to: customerEmail,
+      subject: \`🔔 Reminder: \${courseName}\${formattedStartDate ? \` - \${formattedStartDate}\` : ''}\`,
+      html: html,
+    });
+    console.log(\`✓ Course reminder sent to \${customerEmail}\`);
+  } catch (error) {
+    console.error('❌ Error sending course reminder email:', error.message);
+  }
+};
+
 export default {
   sendEnrollmentConfirmation,
   sendCohortEnrollmentConfirmation,
   sendSpecialistNotification,
   sendWelcomeEmail,
   sendPasswordResetEmail,
+  sendCourseReminder,
 };

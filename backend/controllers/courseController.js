@@ -1,6 +1,8 @@
 import Course from '../models/Course.js';
+import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import cloudflareR2Service from '../services/cloudflareR2Service.js';
 import { createCohortCourseMeeting } from '../services/zoomService.js';
+import { sendCourseReminder } from '../services/emailService.js';
 
 // Create a new course (specialist only)
 export const createCourse = async (req, res) => {
@@ -623,5 +625,48 @@ export const removeFileFromLesson = async (req, res) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+// Send reminder email to all enrolled students
+export const sendReminder = async (req, res) => {
+  try {
+    const course = await Course.findById(req.params.id);
+    if (!course) {
+      return res.status(404).json({ success: false, message: 'Course not found' });
+    }
+
+    const enrollments = await SelfPacedEnrollment.find({
+      courseId: course._id,
+      status: 'active',
+    });
+
+    if (enrollments.length === 0) {
+      return res.status(200).json({ success: true, message: 'No active enrollments to notify', sent: 0 });
+    }
+
+    let sent = 0;
+    for (const enrollment of enrollments) {
+      try {
+        await sendCourseReminder({
+          customerEmail: enrollment.customerEmail,
+          customerName: enrollment.customerEmail.split('@')[0],
+          courseName: course.title,
+          startDate: course.startDate,
+          schedule: course.schedule,
+          meetingPlatform: course.meetingPlatform,
+          zoomLink: course.zoomLink,
+          purchaseNote: course.purchaseNote,
+          customMessage: req.body.message || '',
+        });
+        sent++;
+      } catch (emailErr) {
+        console.error(`Failed to send reminder to ${enrollment.customerEmail}:`, emailErr.message);
+      }
+    }
+
+    res.status(200).json({ success: true, message: `Reminder sent to ${sent} student(s)`, sent });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
   }
 };
