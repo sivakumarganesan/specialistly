@@ -333,7 +333,19 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
   }, [user?.id]);
 
   // Priority: manual courses > backend-enriched courses > fetched courses
-  const displayCourses = courses.length > 0 ? courses : backendCourses.length > 0 ? backendCourses : fetchedCourses;
+  let displayCourses = courses.length > 0 ? courses : backendCourses.length > 0 ? backendCourses : fetchedCourses;
+  // Sort: paid courses first, then by earliest start date (if present)
+  displayCourses = [...displayCourses].sort((a, b) => {
+    // Paid courses first
+    const priceA = Number(a.price || a.coursePrice || 0);
+    const priceB = Number(b.price || b.coursePrice || 0);
+    if ((priceA > 0 && priceB === 0)) return -1;
+    if ((priceA === 0 && priceB > 0)) return 1;
+    // If both paid or both free, sort by earliest start date (if available)
+    const startA = a.startDate ? new Date(a.startDate).getTime() : Infinity;
+    const startB = b.startDate ? new Date(b.startDate).getTime() : Infinity;
+    return startA - startB;
+  });
   const gridClasses =
     layout === 'grid'
       ? 'grid grid-cols-3 gap-6'
