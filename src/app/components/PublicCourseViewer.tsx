@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Play, CheckCircle, Award, Loader, Video, Calendar, Clock, Users, ExternalLink } from 'lucide-react';
+import { ChevronLeft, CheckCircle, Award, Loader, Video, Calendar, Clock, Users, ExternalLink } from 'lucide-react';
 import { HLSVideoPlayer } from '@/app/components/HLSVideoPlayer';
 
 const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || "/api";
@@ -283,26 +283,29 @@ export const PublicCourseViewer: React.FC<PublicCourseViewerProps> = ({
           {/* Video area */}
           <div className="lg:col-span-2">
             {currentLesson ? (
-              <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
-                <div className="bg-black aspect-video flex items-center justify-center relative">
-                  {loadingVideo ? (
-                    <Loader className="w-8 h-8 animate-spin text-gray-500" />
-                  ) : hlsUrl ? (
-                    <HLSVideoPlayer
-                      hlsUrl={hlsUrl}
-                      posterUrl={videoThumb || undefined}
-                      title={currentLesson.title}
-                      className="w-full h-full"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center text-white">
-                      <Play className="w-14 h-14 opacity-40 mb-2" />
-                      <p className="text-gray-400 text-sm">Video not available</p>
+              <>
+                {/* Video Player - Only show if video exists */}
+                {hlsUrl && (
+                  <div className="bg-white border rounded-xl overflow-hidden shadow-sm mb-5">
+                    <div className="bg-black aspect-video flex items-center justify-center relative">
+                      {loadingVideo ? (
+                        <Loader className="w-8 h-8 animate-spin text-gray-500" />
+                      ) : (
+                        <HLSVideoPlayer
+                          hlsUrl={hlsUrl}
+                          posterUrl={videoThumb || undefined}
+                          title={currentLesson.title}
+                          className="w-full h-full"
+                        />
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="p-5">
-                  <h2 className="text-xl font-bold text-gray-900 mb-3">{currentLesson.title}</h2>
+                  </div>
+                )}
+
+                {/* Lesson Content */}
+                <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
+                  <div className="p-5">
+                    <h2 className="text-xl font-bold text-gray-900 mb-3">{currentLesson.title}</h2>
                   <div className="flex gap-3 mb-4">
                     {!currentLesson.completed ? (
                       <button
@@ -345,13 +348,6 @@ export const PublicCourseViewer: React.FC<PublicCourseViewerProps> = ({
                                 <source src={file.downloadLink || file.fileUrl} type="audio/mpeg" />
                                 Your browser does not support the audio element.
                               </audio>
-                              <a
-                                href={file.downloadLink || file.fileUrl}
-                                download={file.fileName}
-                                className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
-                              >
-                                <span>⬇️</span> Download
-                              </a>
                             </div>
                           ) : (
                             // Download Link
@@ -372,7 +368,7 @@ export const PublicCourseViewer: React.FC<PublicCourseViewerProps> = ({
                     </div>
                   )}
                 </div>
-              </div>
+              </>
             ) : (
               <div className="bg-white border rounded-xl p-8 text-center text-gray-500">
                 No lessons available.
