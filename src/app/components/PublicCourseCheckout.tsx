@@ -159,7 +159,7 @@ function StripeCardForm({
                 fontSize: '16px',
                 color: '#1a1a1a',
                 '::placeholder': { color: '#9ca3af' },
-  const initiatePayment = async (name: string, email: string, token: string | null) => {
+              },
               invalid: { color: '#ef4444' },
             },
           }}
