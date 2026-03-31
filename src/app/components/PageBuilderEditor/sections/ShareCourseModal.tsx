@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Copy, Check } from 'lucide-react';
+import { X, Copy, Check, Mail, Twitter, MessageCircle, Facebook } from 'lucide-react';
 
 interface ShareCourseModalProps {
   course: {
@@ -27,11 +27,15 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
 
   const courseId = course._id || course.id;
   const courseTitle = course.title || course.name || 'Course';
+  const courseDescription = course.description || course.courseDescription || 'A great course awaits!';
   const courseImage = course.thumbnail || course.courseImage;
 
   // Generate shareable URL
   const baseUrl = window.location.origin;
   const shareUrl = `${baseUrl}?shareCourseid=${courseId}`;
+  const encodedTitle = encodeURIComponent(courseTitle);
+  const encodedDescription = encodeURIComponent(courseDescription);
+  const encodedUrl = encodeURIComponent(shareUrl);
 
   const handleCopyLink = async () => {
     try {
@@ -42,6 +46,39 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
       console.error('Failed to copy link:', err);
       alert('Failed to copy link. Please try again.');
     }
+  };
+
+  const handleShareEmail = () => {
+    const subject = `Check out this course: ${courseTitle}`;
+    const body = `I found this great course you might be interested in:\n\n${courseTitle}\n${courseDescription}\n\n${shareUrl}`;
+    window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleShareTwitter = () => {
+    const text = `Check out this amazing course: ${courseTitle} ${shareUrl}`;
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodedDescription}&url=${encodedUrl}`,
+      'twitter-share',
+      'width=550,height=420'
+    );
+  };
+
+  const handleShareWhatsApp = () => {
+    const message = `Check out this course: ${courseTitle}\n${courseDescription}\n\n${shareUrl}`;
+    const encodedMessage = encodeURIComponent(message);
+    window.open(
+      `https://wa.me/?text=${encodedMessage}`,
+      'whatsapp-share',
+      'width=550,height=420'
+    );
+  };
+
+  const handleShareFacebook = () => {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+      'facebook-share',
+      'width=550,height=420'
+    );
   };
 
   return (
@@ -138,6 +175,47 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
               </>
             )}
           </button>
+
+          {/* Social Share Buttons */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              Share on Social Media
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              <button
+                onClick={handleShareEmail}
+                className="py-3 px-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex flex-col items-center justify-center gap-1 text-xs font-semibold"
+                title="Share via Email"
+              >
+                <Mail className="h-5 w-5" />
+                <span>Email</span>
+              </button>
+              <button
+                onClick={handleShareTwitter}
+                className="py-3 px-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex flex-col items-center justify-center gap-1 text-xs font-semibold"
+                title="Share on Twitter"
+              >
+                <Twitter className="h-5 w-5" />
+                <span>Twitter</span>
+              </button>
+              <button
+                onClick={handleShareWhatsApp}
+                className="py-3 px-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors flex flex-col items-center justify-center gap-1 text-xs font-semibold"
+                title="Share on WhatsApp"
+              >
+                <MessageCircle className="h-5 w-5" />
+                <span>WhatsApp</span>
+              </button>
+              <button
+                onClick={handleShareFacebook}
+                className="py-3 px-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex flex-col items-center justify-center gap-1 text-xs font-semibold"
+                title="Share on Facebook"
+              >
+                <Facebook className="h-5 w-5" />
+                <span>Facebook</span>
+              </button>
+            </div>
+          </div>
 
           {/* Close Button */}
           <button
