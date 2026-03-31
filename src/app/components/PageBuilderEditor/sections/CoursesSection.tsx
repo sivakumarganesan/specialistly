@@ -473,12 +473,15 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                     {backendCourses.length > 0 && (() => {
                       if (isEnrolled) {
                         return (
-                          <a
-                            href="/my-learning"
+                          <button
+                            type="button"
+                            onClick={() => {
+                              window.dispatchEvent(new CustomEvent('navigate-my-learning'));
+                            }}
                             className={`mt-3 py-2 px-4 bg-green-600 text-white text-sm font-semibold rounded-lg text-center block hover:bg-green-700 transition-colors ${layout === 'list' ? 'w-fit' : 'w-full'}`}
                           >
                             Go to My Learning
-                          </a>
+                          </button>
                         );
                       }
                       if (isCohortClosed) {
