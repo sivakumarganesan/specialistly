@@ -1965,14 +1965,62 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                             id={`lesson-files-${index}`}
                             type="file"
                             multiple={false}
-                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.jpg,.jpeg,.png,.gif"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.jpg,.jpeg,.png,.gif,.mp3,.m4a,.aac,.wav,.ogg,.flac"
                             className="flex-1 text-xs border rounded px-2 py-2 file:text-xs file:px-3 file:py-1 file:border file:border-gray-300 file:rounded file:bg-gray-50 hover:file:bg-gray-100"
-                            onChange={(e) => {
+                            onChange={async (e) => {
                               const file = e.currentTarget.files?.[0];
-                              if (file) {
-                                uploadFileToLesson(index, file);
-                                e.currentTarget.value = '';
+                              if (!file) return;
+                              // Audio file types
+                              const audioTypes = [
+                                'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/flac', 'audio/x-flac',
+                              ];
+                              if (audioTypes.includes(file.type)) {
+                                // Validate size (100MB max)
+                                if (file.size > 100 * 1024 * 1024) {
+                                  alert('Audio file size exceeds 100MB limit');
+                                  return;
+                                }
+                                setUploadingFileFor(index);
+                                try {
+                                  if (!selectedCourse || !lesson._id) {
+                                    alert('Please save the lesson before uploading audio.');
+                                    return;
+                                  }
+                                  const formData = new FormData();
+                                  formData.append('file', file);
+                                  const token = localStorage.getItem('authToken');
+                                  const response = await fetch(
+                                    `${API_BASE_URL}/videos/lessons/${selectedCourse.id}/${lesson._id}/media`,
+                                    {
+                                      method: 'POST',
+                                      headers: { 'Authorization': `Bearer ${token}` },
+                                      body: formData,
+                                    }
+                                  );
+                                  const data = await response.json();
+                                  if (!response.ok) throw new Error(data.message || 'Failed to upload audio');
+                                  lesson.files = lesson.files || [];
+                                  lesson.files.push({
+                                    fileName: file.name,
+                                    fileUrl: data.file.downloadUrl,
+                                    fileType: 'audio',
+                                    fileSize: file.size,
+                                    mimeType: file.type,
+                                    uploadedAt: new Date().toISOString(),
+                                  });
+                                  setLessons([...lessons]);
+                                  alert(`✓ Audio "${file.name}" uploaded successfully!`);
+                                } catch (err) {
+                                  alert(`Failed to upload audio: ${err instanceof Error ? err.message : 'Please try again.'}`);
+                                } finally {
+                                  setUploadingFileFor(null);
+                                  e.currentTarget.value = '';
+                                }
+                                return;
                               }
+                              // Fallback to original upload for other types
+                              uploadFileToLesson(index, file);
+                              e.currentTarget.value = '';
                             }}
                             disabled={uploadingFileFor === index}
                           />
@@ -1988,7 +2036,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                           </Button>
                         </div>
                         <p className="text-xs text-gray-500">
-                          PDF, Word, Excel, PowerPoint, Images, ZIP • Max 100MB
+                          PDF, Word, Excel, PowerPoint, Images, ZIP, Audio (MP3, M4A, AAC, WAV, OGG, FLAC) • Max 100MB
                         </p>
                       </div>
 
