@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
-import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video, Trash2, Eye, EyeOff, Globe } from "lucide-react";
+import { User, CreditCard, Clock, Package, Save, Camera, Mail, Phone, MapPin, Building, AlertCircle, Video, Trash2, Eye, EyeOff, Globe, Lock } from "lucide-react";
 
 const TIMEZONE_OPTIONS = [
   { value: 'Asia/Kolkata', label: '(GMT+5:30) India - Kolkata' },
@@ -33,7 +33,7 @@ const TIMEZONE_OPTIONS = [
   { value: 'UTC', label: '(GMT+0:00) UTC' },
 ];
 import { Button } from "@/app/components/ui/button";
-import { creatorAPI, subscriptionAPI, API_BASE_URL } from "@/app/api/apiClient";
+import { creatorAPI, subscriptionAPI, API_BASE_URL, authAPI } from "@/app/api/apiClient";
 import { specialistRazorpayAPI } from "@/app/api/paymentAPI";
 import { ManageAvailability } from "@/app/components/ManageAvailability";
 import { DeleteAccountModal } from "@/app/components/DeleteAccountModal";
@@ -45,7 +45,7 @@ import {
   CardTitle,
 } from "@/app/components/ui/card";
 
-type SettingsTab = "profile" | "payment" | "availability" | "subscriptions" | "danger";
+type SettingsTab = "profile" | "security" | "payment" | "availability" | "subscriptions" | "danger";
 
 interface SettingsProps {
   initialTab?: SettingsTab;
@@ -59,6 +59,7 @@ export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) 
 
   const allTabs = [
     { id: "profile" as SettingsTab, label: "User Profile", icon: User },
+    { id: "security" as SettingsTab, label: "Security", icon: Lock },
     { id: "payment" as SettingsTab, label: "Payment Settings", icon: CreditCard, specialistOnly: true },
     { id: "availability" as SettingsTab, label: "Manage Availability", icon: Clock, specialistOnly: true },
     { id: "subscriptions" as SettingsTab, label: "My Subscriptions", icon: Package, specialistOnly: true },
@@ -123,6 +124,7 @@ export function Settings({ initialTab = "profile", onNavigate }: SettingsProps) 
       {/* Tab Content */}
       <div>
         {activeTab === "profile" && <UserProfile />}
+        {activeTab === "security" && <ChangePassword />}
         {activeTab === "payment" && <PaymentSettings />}
         {activeTab === "availability" && <ManageAvailability />}
         {activeTab === "subscriptions" && <MySubscriptions />}
@@ -1411,6 +1413,271 @@ function DangerZone({ onDeleteClick }: { onDeleteClick: () => void }) {
           >
             Delete My Account
           </Button>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function ChangePassword() {
+  const { user, token } = useAuth();
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
+  const handleChange = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+    setErrorMessage('');
+    setSuccessMessage('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    // Validation
+    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+      setErrorMessage('All fields are required');
+      return;
+    }
+
+    if (formData.newPassword.length < 6) {
+      setErrorMessage('New password must be at least 6 characters long');
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      setErrorMessage('New passwords do not match');
+      return;
+    }
+
+    if (formData.currentPassword === formData.newPassword) {
+      setErrorMessage('New password must be different from current password');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await authAPI.changePassword(
+        token || '',
+        formData.currentPassword,
+        formData.newPassword,
+        formData.confirmPassword
+      );
+
+      if (response.success) {
+        setSuccessMessage('✓ Your password has been changed successfully!');
+        setFormData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        setTimeout(() => setSuccessMessage(''), 5000);
+      } else {
+        setErrorMessage(response.error || 'Failed to change password');
+      }
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error ? err.message : 'Failed to change password. Please try again.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-2xl">
+      <Card>
+        <CardHeader>
+          <CardTitle>Change Password</CardTitle>
+          <CardDescription>
+            Update your password to keep your account secure
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Success Message */}
+            {successMessage && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-700">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span>{successMessage}</span>
+              </div>
+            )}
+
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Current Password */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-900">
+                Current Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPasswords.current ? 'text' : 'password'}
+                  value={formData.currentPassword}
+                  onChange={(e) => handleChange('currentPassword', e.target.value)}
+                  placeholder="Enter your current password"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPasswords((prev) => ({
+                      ...prev,
+                      current: !prev.current,
+                    }))
+                  }
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPasswords.current ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-900">
+                New Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPasswords.new ? 'text' : 'password'}
+                  value={formData.newPassword}
+                  onChange={(e) => handleChange('newPassword', e.target.value)}
+                  placeholder="Enter your new password"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPasswords((prev) => ({
+                      ...prev,
+                      new: !prev.new,
+                    }))
+                  }
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPasswords.new ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              <p className="text-xs text-gray-600">
+                Must be at least 6 characters long
+              </p>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-gray-900">
+                Confirm New Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showPasswords.confirm ? 'text' : 'password'}
+                  value={formData.confirmPassword}
+                  onChange={(e) => handleChange('confirmPassword', e.target.value)}
+                  placeholder="Confirm your new password"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  disabled={isLoading}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPasswords((prev) => ({
+                      ...prev,
+                      confirm: !prev.confirm,
+                    }))
+                  }
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPasswords.confirm ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Security Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+              <h3 className="text-sm font-semibold text-blue-900">
+                🔒 Password Security Tips
+              </h3>
+              <ul className="text-xs text-blue-800 space-y-1">
+                <li>• Use a combination of uppercase, lowercase, numbers, and symbols</li>
+                <li>• Avoid common words or personal information</li>
+                <li>• Use unique passwords for different accounts</li>
+                <li>• Never share your password with anyone</li>
+              </ul>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 bg-gray-900 hover:bg-gray-800 gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    Update Password
+                  </>
+                )}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setFormData({
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: '',
+                  });
+                  setErrorMessage('');
+                  setSuccessMessage('');
+                }}
+                disabled={isLoading}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>

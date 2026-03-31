@@ -375,6 +375,8 @@ export const authAPI = {
   requestPasswordReset: (email: string) => apiCall("/auth/request-password-reset", "POST", { email }),
   resetPassword: (resetToken: string, newPassword: string, confirmPassword: string) => 
     apiCall("/auth/reset-password", "POST", { resetToken, newPassword, confirmPassword }),
+  changePassword: (token: string, currentPassword: string, newPassword: string, confirmPassword: string) =>
+    apiCall("/auth/change-password", "PUT", { currentPassword, newPassword, confirmPassword }, token),
 };
 
 // Messages API calls

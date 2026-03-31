@@ -551,3 +551,68 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+/**
+ * Change password for logged-in user
+ * Requires current password verification for security
+ * PUT /api/auth/change-password
+ */
+export const changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body;
+    const userId = req.user?.id;
+
+    // Validate inputs
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return res.status(400).json({
+        error: 'Current password, new password, and confirmation are required',
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        error: 'New passwords do not match',
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({
+        error: 'Password must be at least 6 characters long',
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        error: 'New password must be different from current password',
+      });
+    }
+
+    // Get user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+      });
+    }
+
+    // Verify current password
+    const isPasswordValid = await user.comparePassword(currentPassword);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        error: 'Current password is incorrect',
+      });
+    }
+
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully',
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
