@@ -4,8 +4,9 @@ import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Plus, Trash2, LayoutGrid, List, ShoppingCart, Calendar, Clock, Video, Users, Copy, Check } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, ShoppingCart, Calendar, Clock, Video, Users, Share2 } from 'lucide-react';
 import { PublicCourseCheckout } from '@/app/components/PublicCourseCheckout';
+import { ShareCourseModal } from './ShareCourseModal';
 
 import { courseAPI } from '@/app/api/apiClient';
 import { useAuth } from '@/app/context/AuthContext';
@@ -270,27 +271,20 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
   const [isLoading, setIsLoading] = React.useState(true);
   const [checkoutCourse, setCheckoutCourse] = React.useState<any | null>(null);
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState<Set<string>>(new Set());
-  const [copiedCourseId, setCopiedCourseId] = React.useState<string | null>(null);
+  const [shareModalCourse, setShareModalCourse] = React.useState<any | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = React.useState(false);
   const courses = (section.content?.courses || []) as Course[];
   const layout = section.content?.layout || 'grid';
   const backendCourses = section.content?.fetchedCourses || [];
 
-  const generateShareUrl = (courseId: string) => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}?courseId=${courseId}`;
+  const handleOpenShareModal = (course: any) => {
+    setShareModalCourse(course);
+    setIsShareModalOpen(true);
   };
 
-  const handleCopyLink = async (courseId: string, courseTitle: string) => {
-    const shareUrl = generateShareUrl(courseId);
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedCourseId(courseId);
-      // Reset after 2 seconds
-      setTimeout(() => setCopiedCourseId(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy link:', err);
-      alert('Failed to copy link. Try again.');
-    }
+  const handleCloseShareModal = () => {
+    setIsShareModalOpen(false);
+    setShareModalCourse(null);
   };
 
   // Fetch specialist's courses from API (only in editor, when logged in)
@@ -504,15 +498,11 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleCopyLink(courseId, course.title || course.name)}
+                                onClick={() => handleOpenShareModal(course)}
                                 className="py-2 px-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
-                                title="Copy shareable link"
+                                title="Share course"
                               >
-                                {copiedCourseId === courseId ? (
-                                  <Check className="h-4 w-4" />
-                                ) : (
-                                  <Copy className="h-4 w-4" />
-                                )}
+                                <Share2 className="h-4 w-4" />
                               </button>
                             </>
                           );
@@ -525,15 +515,11 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                               </div>
                               <button
                                 type="button"
-                                onClick={() => handleCopyLink(courseId, course.title || course.name)}
+                                onClick={() => handleOpenShareModal(course)}
                                 className="py-2 px-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
-                                title="Copy shareable link"
+                                title="Share course"
                               >
-                                {copiedCourseId === courseId ? (
-                                  <Check className="h-4 w-4" />
-                                ) : (
-                                  <Copy className="h-4 w-4" />
-                                )}
+                                <Share2 className="h-4 w-4" />
                               </button>
                             </>
                           );
@@ -551,15 +537,11 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleCopyLink(courseId, course.title || course.name)}
+                              onClick={() => handleOpenShareModal(course)}
                               className="py-2 px-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors flex items-center gap-1"
-                              title="Copy shareable link"
+                              title="Share course"
                             >
-                              {copiedCourseId === courseId ? (
-                                <Check className="h-4 w-4" />
-                              ) : (
-                                <Copy className="h-4 w-4" />
-                              )}
+                              <Share2 className="h-4 w-4" />
                             </button>
                           </>
                         );
@@ -594,6 +576,13 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
             onClose={() => setCheckoutCourse(null)}
           />
         )}
+
+        {/* Share Course Modal */}
+        <ShareCourseModal
+          course={shareModalCourse || {}}
+          isOpen={isShareModalOpen}
+          onClose={handleCloseShareModal}
+        />
       </div>
     </div>
   );

@@ -19,7 +19,6 @@ const upload = multer({
   },
   fileFilter: (req, file, cb) => {
     // Allow both image and video files
-    const allowedMimes = [
       // Images
       'image/jpeg',
       'image/png',
@@ -38,6 +37,41 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error(`File type ${file.mimetype} not allowed. Only image and video files are supported.`), false);
+    }
+  },
+});
+
+// Protected routes
+    const allowedMimes = [
+      // Images
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/svg+xml',
+      // Videos
+      'video/mp4',
+      'video/webm',
+      'video/quicktime',
+      'video/x-msvideo',
+      'video/x-matroska',
+      // Audio
+      'audio/mpeg', // .mp3
+      'audio/mp4', // .mp4, .m4a
+      'audio/x-m4a', // .m4a
+      'audio/aac', // .aac
+      'audio/wav', // .wav
+      'audio/x-wav', // .wav
+      'audio/ogg', // .ogg
+      'audio/webm', // .webm audio
+      'audio/flac', // .flac
+      'audio/x-flac', // .flac
+    ];
+
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} not allowed. Only image, video, and audio files are supported.`), false);
     }
   },
 });
