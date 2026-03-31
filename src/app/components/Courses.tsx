@@ -985,20 +985,34 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
           }
 
           await courseAPI.addLesson(selectedCourse.id, lessonData);
-        } else if (lesson.cloudflareStreamId && typeof lesson._id === 'string' && lesson._id.length === 24) {
-          // UPDATE EXISTING lessons with video metadata ONLY if _id is valid MongoDB ObjectId
-          try {
-            await videoAPI.saveLessonVideo({
-              courseId: selectedCourse.id,
-              lessonId: lesson._id,
-              videoId: lesson.cloudflareStreamId,
-              title: lesson.title,
-              duration: lesson.duration,
-              thumbnail: lesson.videoThumbnail,
-            });
-          } catch (videoError) {
-            console.error(`Video save error for lesson ${lesson.title}:`, videoError);
-            // Don't fail the whole save if video metadata save fails
+        } else if (typeof lesson._id === 'string' && lesson._id.length === 24) {
+          // UPDATE EXISTING lessons
+          // Handle video save (if video exists)
+          if (lesson.cloudflareStreamId) {
+            try {
+              await videoAPI.saveLessonVideo({
+                courseId: selectedCourse.id,
+                lessonId: lesson._id,
+                videoId: lesson.cloudflareStreamId,
+                title: lesson.title,
+                duration: lesson.duration,
+                thumbnail: lesson.videoThumbnail,
+              });
+            } catch (videoError) {
+              console.error(`Video save error for lesson ${lesson.title}:`, videoError);
+              // Don't fail the whole save if video metadata save fails
+            }
+          } else {
+            // Handle video removal (if cloudflareStreamId is now empty/undefined)
+            try {
+              await videoAPI.clearLessonVideo({
+                courseId: selectedCourse.id,
+                lessonId: lesson._id,
+              });
+            } catch (videoClearError) {
+              console.error(`Video clear error for lesson ${lesson.title}:`, videoClearError);
+              // Don't fail the whole save if video clear fails
+            }
           }
         }
       }

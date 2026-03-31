@@ -396,6 +396,9 @@ export const videoAPI = {
   // Save video reference after upload
   saveLessonVideo: (data: any) => apiCall("/videos/save-lesson-video", "POST", data),
   
+  // Clear video from lesson
+  clearLessonVideo: (data: any) => apiCall("/videos/clear-lesson-video", "POST", data),
+  
   // Get video details
   getVideoDetails: (videoId: string) => apiCall(`/videos/${videoId}`),
   

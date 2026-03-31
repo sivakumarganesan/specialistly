@@ -10,6 +10,7 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 import {
   getVideoUploadToken,
   saveLessonVideo,
+  clearLessonVideo,
   getVideoDetails,
   getLessonVideoUrl,
   deleteVideo,
@@ -125,6 +126,9 @@ router.post('/upload-token', getVideoUploadToken);
 
 // Save video reference after upload
 router.post('/save-lesson-video', saveLessonVideo);
+
+// Clear video from lesson
+router.post('/clear-lesson-video', clearLessonVideo);
 
 // Get video details
 router.get('/:videoId', getVideoDetails);

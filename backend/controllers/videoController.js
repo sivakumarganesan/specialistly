@@ -223,6 +223,67 @@ export const saveLessonVideo = async (req, res) => {
 };
 
 /**
+ * Clear lesson video (remove video from lesson)
+ * POST /api/videos/clear-lesson-video
+ */
+export const clearLessonVideo = async (req, res) => {
+  try {
+    const { courseId, lessonId } = req.body;
+
+    if (!courseId || !lessonId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Course ID and lesson ID are required',
+      });
+    }
+
+    // Update course lesson to remove video information
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    const lesson = course.lessons.find(l => l._id.toString() === lessonId);
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lesson not found',
+      });
+    }
+
+    // Note: We DON'T delete from Cloudflare Stream itself.
+    // We just remove the reference from the lesson.
+    // The video remains in Cloudflare for potential recovery if needed.
+    
+    // Clear all video-related fields from the lesson
+    lesson.cloudflareStreamId = null;
+    lesson.cloudflarePlaybackUrl = null;
+    lesson.cloudflareStatus = null;
+    lesson.videoDuration = 0;
+    lesson.videoThumbnail = null;
+
+    await course.save();
+
+    res.json({
+      success: true,
+      message: 'Video removed from lesson successfully',
+      lesson: {
+        lessonId: lesson._id,
+      },
+    });
+  } catch (error) {
+    console.error('Error clearing lesson video:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+/**
  * Get video details
  * GET /api/videos/:videoId
  */
