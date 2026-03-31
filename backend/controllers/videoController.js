@@ -4,8 +4,76 @@
  */
 
 import cloudflareStreamService from '../services/cloudflareStreamService.js';
+import cloudflareR2Service from '../services/cloudflareR2Service.js';
 import cloudflareConfig from '../config/cloudflareConfig.js';
 import Course from '../models/Course.js';
+
+// Helper: check if file is audio
+const isAudioMime = (mime) =>
+  mime.startsWith('audio/') ||
+  [
+    'audio/mpeg',
+    'audio/mp4',
+    'audio/x-m4a',
+    'audio/aac',
+    'audio/wav',
+    'audio/x-wav',
+    'audio/ogg',
+    'audio/webm',
+    'audio/flac',
+    'audio/x-flac',
+  ].includes(mime);
+
+// Unified lesson media upload (audio to R2, video not handled here)
+export const uploadLessonMedia = async (req, res) => {
+  try {
+    const { courseId, lessonId } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ success: false, message: 'No file provided' });
+    }
+
+    if (isAudioMime(file.mimetype)) {
+      // AUDIO: Upload to R2
+      const uploadResult = await cloudflareR2Service.uploadFile(
+        courseId,
+        lessonId,
+        file.originalname,
+        file.buffer,
+        file.mimetype
+      );
+
+      // Save file reference to lesson.files
+      const course = await Course.findById(courseId);
+      if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
+      const lesson = course.lessons.id(lessonId);
+      if (!lesson) return res.status(404).json({ success: false, message: 'Lesson not found' });
+
+      lesson.files = lesson.files || [];
+      lesson.files.push({
+        fileName: file.originalname,
+        fileUrl: uploadResult.downloadUrl,
+        fileKey: uploadResult.fileKey,
+        fileType: 'audio',
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        uploadedAt: new Date(),
+      });
+      await course.save();
+
+      return res.json({ success: true, message: 'Audio uploaded to R2', file: uploadResult });
+    } else if (file.mimetype.startsWith('video/')) {
+      // VIDEO: Not handled here, use existing video upload flow
+      return res.status(400).json({ success: false, message: 'Video upload should use the existing video endpoint.' });
+    } else {
+      return res.status(400).json({ success: false, message: 'Unsupported file type.' });
+    }
+  } catch (error) {
+    console.error('Error uploading lesson media:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
 
 /**
  * Get upload token for client-side video upload
