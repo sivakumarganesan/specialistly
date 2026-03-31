@@ -176,10 +176,24 @@ app.post(
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Connect to MongoDB
+// Connect to MongoDB BEFORE accepting requests
+let dbReady = false;
 connectDB().then(() => {
-  // Pre-load custom domain cache after DB connects
+  dbReady = true;
   refreshCustomDomainCache();
+  console.log('✓ Database connected, API routes ready');
+}).catch(err => {
+  console.error('Database connection failed, starting server anyway:', err.message);
+});
+
+// Reject API requests until DB is connected (prevents hanging queries)
+app.use('/api', (req, res, next) => {
+  // Allow health check even without DB
+  if (req.path === '/health') return next();
+  if (!dbReady) {
+    return res.status(503).json({ success: false, message: 'Server starting up, please retry in a few seconds' });
+  }
+  next();
 });
 
 // Request timeout middleware — respond before Cloudflare 524 (100s)
