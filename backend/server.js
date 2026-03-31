@@ -95,10 +95,19 @@ const isOriginAllowed = (origin) => {
     return true;
   }
 
-  // Allow custom domains registered in the database
+  // Allow custom domains registered in the database (including subdomains of custom domains)
   try {
     const originHost = new URL(origin).hostname.toLowerCase().replace(/^www\./, '');
+    
+    // Check exact custom domain match
     if (customDomainCache.has(originHost)) return true;
+    
+    // Check if origin is a subdomain of any registered custom domain
+    for (const customDomain of customDomainCache) {
+      if (originHost.endsWith('.' + customDomain)) {
+        return true;
+      }
+    }
   } catch (e) {
     // Invalid URL, ignore
   }

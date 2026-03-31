@@ -239,14 +239,9 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
         setIsLoading(true);
         setError(null);
 
-        // Fetch website and pages data
-        // Important: Use API_BASE_URL to get to the main domain, not the subdomain
-        const apiUrl = API_BASE_URL.startsWith('http')
-          ? API_BASE_URL
-          : `${window.location.protocol}//${window.location.hostname.split('.').slice(-2).join('.')}${window.location.port ? ':' + window.location.port : ''}${API_BASE_URL}`;
-        
+        // Fetch website and pages data - use relative path to respect same-origin
         const response = await fetch(
-          `${apiUrl}/page-builder/public/websites/${actualSubdomain}`
+          `/api/page-builder/public/websites/${actualSubdomain}`
         );
 
         if (!response.ok) {
