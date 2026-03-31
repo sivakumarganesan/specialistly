@@ -492,17 +492,17 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                                 onClick={() => {
                                   window.dispatchEvent(new CustomEvent('navigate-my-learning'));
                                 }}
-                                className={`py-2 px-4 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors flex-1`}
+                                className={`py-1 px-2.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 transition-colors flex-1`}
                               >
                                 Go to My Learning
                               </button>
                               <button
                                 type="button"
                                 onClick={() => handleOpenShareModal(course)}
-                                className="py-2 px-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
+                                className="py-1 px-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
                                 title="Share course"
                               >
-                                <Share2 className="h-4 w-4" />
+                                <Share2 className="h-3.5 w-3.5" />
                               </button>
                             </>
                           );
@@ -510,16 +510,16 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                         if (isCohortClosed) {
                           return (
                             <>
-                              <div className="py-2 px-4 bg-gray-400 text-white text-sm font-semibold rounded-lg text-center flex-1">
+                              <div className="py-1 px-2.5 bg-gray-400 text-white text-xs font-semibold rounded-lg text-center flex-1">
                                 Enrollment Closed
                               </div>
                               <button
                                 type="button"
                                 onClick={() => handleOpenShareModal(course)}
-                                className="py-2 px-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
+                                className="py-1 px-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
                                 title="Share course"
                               >
-                                <Share2 className="h-4 w-4" />
+                                <Share2 className="h-3.5 w-3.5" />
                               </button>
                             </>
                           );
@@ -528,9 +528,9 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                           <>
                             <button
                               onClick={() => setCheckoutCourse(course)}
-                              className="py-1.5 px-3 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 flex-1"
+                              className="py-1 px-2.5 bg-gray-900 text-white text-xs font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-1.5 flex-1"
                             >
-                              <ShoppingCart className="h-4 w-4" />
+                              <ShoppingCart className="h-3.5 w-3.5" />
                               {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
                                 ? 'Enroll Free'
                                 : (course.courseType === 'cohort' || course.courseType === 'cohort-based') ? 'Enroll Now' : 'Buy Now'}
@@ -538,10 +538,10 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                             <button
                               type="button"
                               onClick={() => handleOpenShareModal(course)}
-                              className="py-1.5 px-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors flex items-center gap-1"
+                              className="py-1 px-2.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors flex items-center gap-1"
                               title="Share course"
                             >
-                              <Share2 className="h-4 w-4" />
+                              <Share2 className="h-3.5 w-3.5" />
                             </button>
                           </>
                         );
