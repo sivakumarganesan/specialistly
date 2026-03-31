@@ -159,7 +159,7 @@ function StripeCardForm({
                 fontSize: '16px',
                 color: '#1a1a1a',
                 '::placeholder': { color: '#9ca3af' },
-              },
+  const initiatePayment = async (name: string, email: string, token: string | null) => {
               invalid: { color: '#ef4444' },
             },
           }}
@@ -176,6 +176,14 @@ function StripeCardForm({
       <button
         type="submit"
         disabled={loading || !stripe}
+      // If already enrolled, redirect to My Learning
+      if (data.code === 'DUPLICATE_ENROLLMENT' || (data.message && /already enrolled/i.test(data.message))) {
+        setLoading(false);
+        onClose();
+        window.dispatchEvent(new CustomEvent('navigate-my-learning'));
+        return;
+      }
+
         className="w-full py-3 px-4 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
