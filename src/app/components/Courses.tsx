@@ -282,8 +282,11 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
     { id: "1", title: "Introduction to Course", duration: "2 hours", lessonsCount: 5 },
   ]);
 
+  const [creatingCourse, setCreatingCourse] = useState(false);
   const handleCreateCourse = async () => {
+    if (creatingCourse) return;
     if (courseType && formData.title) {
+      setCreatingCourse(true);
       const courseData = {
         title: formData.title,
         courseType: courseType,
@@ -306,7 +309,6 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
           liveSessions: parseInt(formData.liveSessions) || 0,
         }),
       };
-      
       try {
         const response = await courseAPI.create(courseData);
         const newCourse: Course = {
@@ -322,6 +324,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       } catch (error) {
         console.error("Failed to create course:", error);
         alert(`Failed to create course: ${error instanceof Error ? error.message : "Please try again."}`);
+      } finally {
+        setCreatingCourse(false);
       }
     }
   };
@@ -1579,8 +1583,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
             >
               Cancel
             </Button>
-            <Button onClick={handleCreateCourse}>
-              Create Course
+            <Button onClick={handleCreateCourse} disabled={creatingCourse}>
+              {creatingCourse ? 'Creating...' : 'Create Course'}
             </Button>
           </DialogFooter>
         </DialogContent>
