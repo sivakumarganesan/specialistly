@@ -311,6 +311,16 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
       });
       const data = await res.json();
 
+      // If already enrolled, redirect to My Learning and do not show error
+      if (data.code === 'DUPLICATE_ENROLLMENT' || (data.message && /already enrolled/i.test(data.message))) {
+        setTimeout(() => {
+          onClose();
+          window.dispatchEvent(new CustomEvent('navigate-my-learning'));
+        }, 100);
+        setLoading(false);
+        return;
+      }
+
       if (!data.success) {
         setError(data.message || 'Failed to initialize payment');
         setLoading(false);
