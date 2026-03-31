@@ -117,18 +117,14 @@ const isOriginAllowed = (origin) => {
 
 const corsOptions = {
   origin: (origin, callback) => {
-    // Refresh cache if stale
+    // Check origin immediately without waiting for cache refresh
+    // This prevents DB query hangs from blocking ALL requests (causing 524 timeouts)
+    const allowed = isOriginAllowed(origin);
+    callback(null, allowed);
+
+    // Refresh cache in the background (non-blocking) if stale
     if (Date.now() - lastCacheRefresh > CACHE_TTL) {
-      refreshCustomDomainCache()
-        .then(() => {
-          callback(null, isOriginAllowed(origin) ? true : false);
-        })
-        .catch(() => {
-          // On cache refresh failure, still allow the request through
-          callback(null, isOriginAllowed(origin) ? true : false);
-        });
-    } else {
-      callback(null, isOriginAllowed(origin) ? true : false);
+      refreshCustomDomainCache().catch(() => {});
     }
   },
   credentials: true,
@@ -184,6 +180,17 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 connectDB().then(() => {
   // Pre-load custom domain cache after DB connects
   refreshCustomDomainCache();
+});
+
+// Request timeout middleware — respond before Cloudflare 524 (100s)
+app.use('/api', (req, res, next) => {
+  req.setTimeout(90000); // 90 seconds
+  res.setTimeout(90000, () => {
+    if (!res.headersSent) {
+      res.status(504).json({ success: false, message: 'Request timed out' });
+    }
+  });
+  next();
 });
 
 // Routes

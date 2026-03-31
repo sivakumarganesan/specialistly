@@ -198,4 +198,7 @@ const courseSchema = new mongoose.Schema({
   },
 });
 
+courseSchema.index({ specialistEmail: 1 });
+courseSchema.index({ specialistEmail: 1, status: 1 });
+
 export default mongoose.model('Course', courseSchema);

@@ -17,7 +17,10 @@ const connectDB = async () => {
     console.log('Database name extracted from URI:', mongoUri.includes('specialistlydb_prod') ? 'specialistlydb_prod' : 'specialistlydb');
     
     // Don't override dbName - let it come from the URI
-    await mongoose.connect(mongoUri);
+    await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+    });
 
     console.log('✓ MongoDB connected successfully');
 

@@ -125,4 +125,6 @@ const customerSchema = new mongoose.Schema({
   },
 });
 
+customerSchema.index({ 'specialists.specialistEmail': 1 });
+
 export default mongoose.model('Customer', customerSchema);

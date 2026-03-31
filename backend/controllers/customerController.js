@@ -707,41 +707,38 @@ export const getEnrichedCustomers = async (req, res) => {
       return res.status(400).json({ success: false, message: 'specialistEmail is required' });
     }
 
-    // Get all customers for this specialist
-    const customers = await Customer.find({ 'specialists.specialistEmail': specialistEmail }).lean();
+    // Run independent queries in parallel to avoid Cloudflare 524 timeouts
+    const [customers, courses, slots] = await Promise.all([
+      Customer.find({ 'specialists.specialistEmail': specialistEmail }).lean(),
+      Course.find({ specialistEmail }).lean(),
+      ConsultingSlot.find({ specialistEmail }).lean(),
+    ]);
 
-    // Get all courses by this specialist
-    const courses = await Course.find({ specialistEmail }).lean();
     const courseMap = {};
     courses.forEach(c => { courseMap[c._id.toString()] = c; });
     const courseIds = courses.map(c => c._id);
 
-    // Get all self-paced enrollments for specialist's courses
-    const selfPacedEnrollments = await SelfPacedEnrollment.find({
-      courseId: { $in: courseIds },
-    }).lean();
-
-    // Get all cohort enrollments — need cohorts for specialist's courses
+    // Run enrollment queries in parallel
     const Cohort = mongoose.models.Cohort;
-    let cohortEnrollments = [];
-    if (Cohort) {
-      const cohorts = await Cohort.find({ courseId: { $in: courseIds } }).lean();
-      const cohortIds = cohorts.map(c => c._id);
-      const cohortMap = {};
-      cohorts.forEach(c => { cohortMap[c._id.toString()] = c; });
-      if (cohortIds.length > 0) {
+    const [selfPacedEnrollments, cohortData] = await Promise.all([
+      SelfPacedEnrollment.find({ courseId: { $in: courseIds } }).lean(),
+      (async () => {
+        if (!Cohort) return [];
+        const cohorts = await Cohort.find({ courseId: { $in: courseIds } }).lean();
+        const cohortIds = cohorts.map(c => c._id);
+        const cohortMap = {};
+        cohorts.forEach(c => { cohortMap[c._id.toString()] = c; });
+        if (cohortIds.length === 0) return [];
         const rawCohortEnrollments = await CohortEnrollment.find({
           cohortId: { $in: cohortIds },
         }).lean();
-        cohortEnrollments = rawCohortEnrollments.map(e => ({
+        return rawCohortEnrollments.map(e => ({
           ...e,
           courseId: cohortMap[e.cohortId.toString()]?.courseId,
         }));
-      }
-    }
-
-    // Get all consulting slot bookings for this specialist
-    const slots = await ConsultingSlot.find({ specialistEmail }).lean();
+      })(),
+    ]);
+    const cohortEnrollments = cohortData;
     const allBookings = [];
     slots.forEach(slot => {
       (slot.bookings || []).forEach(b => {

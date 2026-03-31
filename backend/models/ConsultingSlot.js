@@ -143,6 +143,7 @@ const consultingSlotSchema = new mongoose.Schema(
 consultingSlotSchema.index({ specialistId: 1, date: 1 });
 consultingSlotSchema.index({ date: 1, status: 1, isFullyBooked: 1 });
 consultingSlotSchema.index({ specialistId: 1, status: 1 });
+consultingSlotSchema.index({ specialistEmail: 1 });
 
 // Pre-save middleware to validate slot times
 consultingSlotSchema.pre('save', async function (next) {
