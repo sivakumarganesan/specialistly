@@ -7,6 +7,7 @@ import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import Customer from '../models/Customer.js';
 import Coupon from '../models/Coupon.js';
 import { sendEnrollmentConfirmation, sendCohortEnrollmentConfirmation, sendSpecialistNotification } from '../services/emailService.js';
+import { isCouponExpired } from '../utils/couponUtils.js';
 import mongoose from 'mongoose';
 
 /**
