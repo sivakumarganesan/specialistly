@@ -47,7 +47,25 @@ interface PublicCourseViewerProps {
 
 const fileIcons: Record<string, string> = {
   pdf: '📄', doc: '📝', docx: '📝', xls: '📊', xlsx: '📊',
-  ppt: '🎯', pptx: '🎯', txt: '📄', zip: '📦',
+  ppt: '🎯', pptx: '🎯', txt: '📄', zip: '📦', audio: '🎵',
+};
+
+// Helper to detect if file is audio
+const isAudioFile = (file: LessonFile): boolean => {
+  const audioMimes = [
+    'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 
+    'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/webm', 'audio/flac', 
+    'audio/x-flac'
+  ];
+  const audioExtensions = ['.mp3', '.m4a', '.aac', '.wav', '.ogg', '.flac', '.webm'];
+  
+  // Check by MIME type if available
+  if (file.fileType === 'audio') return true;
+  if (audioMimes.includes((file as any).mimeType || '')) return true;
+  
+  // Check by file extension
+  const ext = file.fileName.toLowerCase().match(/\.[^.]*$/)?.[0] || '';
+  return audioExtensions.includes(ext);
 };
 
 export const PublicCourseViewer: React.FC<PublicCourseViewerProps> = ({
@@ -303,23 +321,52 @@ export const PublicCourseViewer: React.FC<PublicCourseViewerProps> = ({
                     )}
                   </div>
 
-                  {/* Files */}
+                  {/* Files - Audio Player + Downloads */}
                   {currentLesson.files && currentLesson.files.length > 0 && (
                     <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                      <h3 className="font-semibold text-blue-900 mb-2 text-sm">📎 Lesson Materials</h3>
-                      <div className="space-y-1.5">
+                      <h3 className="font-semibold text-blue-900 mb-3 text-sm">📎 Lesson Materials</h3>
+                      <div className="space-y-3">
                         {currentLesson.files.map((file, i) => (
-                          <a
-                            key={i}
-                            href={file.downloadLink || file.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 p-2 bg-white rounded border border-blue-100 hover:border-blue-300 transition text-sm"
-                          >
-                            <span>{fileIcons[file.fileType] || '📎'}</span>
-                            <span className="truncate flex-1 text-gray-900">{file.fileName}</span>
-                            <span className="text-blue-500 flex-shrink-0">↓</span>
-                          </a>
+                          isAudioFile(file) ? (
+                            // Audio Player
+                            <div key={i} className="bg-white rounded border border-blue-200 p-3">
+                              <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                                <span>🎵</span>
+                                <span className="truncate">{file.fileName}</span>
+                              </p>
+                              <audio
+                                controls
+                                className="w-full h-8"
+                                style={{
+                                  accentColor: brandColor,
+                                }}
+                              >
+                                <source src={file.downloadLink || file.fileUrl} type="audio/mp4" />
+                                <source src={file.downloadLink || file.fileUrl} type="audio/mpeg" />
+                                Your browser does not support the audio element.
+                              </audio>
+                              <a
+                                href={file.downloadLink || file.fileUrl}
+                                download={file.fileName}
+                                className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                              >
+                                <span>⬇️</span> Download
+                              </a>
+                            </div>
+                          ) : (
+                            // Download Link
+                            <a
+                              key={i}
+                              href={file.downloadLink || file.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 p-2 bg-white rounded border border-blue-100 hover:border-blue-300 transition text-sm"
+                            >
+                              <span>{fileIcons[file.fileType] || '📎'}</span>
+                              <span className="truncate flex-1 text-gray-900">{file.fileName}</span>
+                              <span className="text-blue-500 flex-shrink-0">↓</span>
+                            </a>
+                          )
                         ))}
                       </div>
                     </div>
