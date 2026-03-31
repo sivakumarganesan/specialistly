@@ -87,6 +87,8 @@ export const courseAPI = {
   update: (id: string, data: any) => apiCall(`/courses/${id}`, "PUT", data),
   addLesson: (courseId: string, lessonData: any) => 
     apiCall(`/courses/${courseId}/lessons`, "POST", lessonData),
+  updateLesson: (courseId: string, lessonId: string, lessonData: any) =>
+    apiCall(`/courses/${courseId}/lessons/${lessonId}`, "PUT", lessonData),
   publishCourse: (courseId: string) => 
     apiCall(`/courses/${courseId}/publish`, "POST"),
   archiveCourse: (courseId: string) => 

@@ -987,7 +987,19 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
           await courseAPI.addLesson(selectedCourse.id, lessonData);
         } else if (typeof lesson._id === 'string' && lesson._id.length === 24) {
           // UPDATE EXISTING lessons
-          // Handle video save (if video exists)
+          // First, update lesson title and files
+          try {
+            await courseAPI.updateLesson(selectedCourse.id, lesson._id, {
+              title: lesson.title,
+              files: lesson.files || [],
+              order: lesson.order,
+            });
+          } catch (updateError) {
+            console.error(`Lesson update error for lesson ${lesson.title}:`, updateError);
+            // Don't fail the whole save if lesson metadata update fails
+          }
+
+          // Then handle video save or clear
           if (lesson.cloudflareStreamId) {
             try {
               await videoAPI.saveLessonVideo({

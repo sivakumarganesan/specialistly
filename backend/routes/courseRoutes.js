@@ -8,6 +8,7 @@ import {
   updateCourse,
   deleteCourse,
   addLesson,
+  updateLesson,
   publishCourse,
   archiveCourse,
   browseCourses,
@@ -160,6 +161,9 @@ router.delete('/:courseId/lessons/:lessonId/files/:fileKey', deleteFileFromLesso
 
 // Add lesson to course
 router.post('/:id/lessons', addLesson);
+
+// Update existing lesson
+router.put('/:courseId/lessons/:lessonId', updateLesson);
 
 // Publish course (make available)
 router.post('/:id/publish', publishCourse);

@@ -248,6 +248,48 @@ export const addLesson = async (req, res) => {
   }
 };
 
+// Update existing lesson
+export const updateLesson = async (req, res) => {
+  try {
+    const { courseId, lessonId } = req.params;
+    const { title, files, order } = req.body;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: 'Course not found',
+      });
+    }
+
+    const lesson = course.lessons.id(lessonId);
+    if (!lesson) {
+      return res.status(404).json({
+        success: false,
+        message: 'Lesson not found',
+      });
+    }
+
+    // Update lesson properties
+    if (title !== undefined) lesson.title = title;
+    if (order !== undefined) lesson.order = order;
+    if (files !== undefined) lesson.files = files;
+
+    await course.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Lesson updated successfully',
+      lesson,
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // Publish course
 export const publishCourse = async (req, res) => {
   try {
