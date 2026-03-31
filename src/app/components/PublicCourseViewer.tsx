@@ -368,7 +368,8 @@ export const PublicCourseViewer: React.FC<PublicCourseViewerProps> = ({
                     </div>
                   )}
                 </div>
-              </>
+              </div>
+            </>
             ) : (
               <div className="bg-white border rounded-xl p-8 text-center text-gray-500">
                 No lessons available.
