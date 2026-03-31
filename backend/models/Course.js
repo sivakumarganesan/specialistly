@@ -15,8 +15,16 @@ const fileSchema = new mongoose.Schema({
   },
   fileType: {
     type: String,
-    enum: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'other'],
+    enum: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'audio', 'video', 'other'],
     default: 'other',
+  },
+  mimeType: {
+    type: String,
+    default: null, // MIME type (e.g., 'audio/mpeg', 'video/mp4')
+  },
+  fileKey: {
+    type: String,
+    default: null, // R2 object key or reference
   },
   fileSize: Number, // in bytes
   // Google Drive integration
