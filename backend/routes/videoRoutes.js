@@ -4,6 +4,7 @@
  */
 
 import express from 'express';
+import multer from 'multer';
 import cloudflareConfig from '../config/cloudflareConfig.js';
 import {
   getVideoUploadToken,
@@ -12,9 +13,16 @@ import {
   getLessonVideoUrl,
   deleteVideo,
   updateVideoMetadata,
+  uploadLessonMedia,
 } from '../controllers/videoController.js';
 
 const router = express.Router();
+
+// Multer setup for memory storage (for audio uploads)
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Unified lesson media upload (audio to R2)
+router.post('/lessons/:courseId/:lessonId/media', upload.single('file'), uploadLessonMedia);
 
 /**
  * Diagnostic endpoint - check Cloudflare configuration

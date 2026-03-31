@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { Badge } from "@/app/components/ui/badge";
@@ -259,6 +259,9 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
   const [showFilePreview, setShowFilePreview] = useState(false);
   const [previewHlsUrl, setPreviewHlsUrl] = useState<string | null>(null);
   const [loadingPreviewVideo, setLoadingPreviewVideo] = useState(false);
+
+  // File input refs for resetting
+  const fileInputRefs = useRef<{ [key: number]: HTMLInputElement | null }>({});
 
   const [formData, setFormData] = useState({
     title: "",
@@ -1962,6 +1965,9 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                       <div className="mb-4">
                         <div className="flex gap-2 mb-2">
                           <input
+                            ref={(el) => {
+                              if (el) fileInputRefs.current[index] = el;
+                            }}
                             id={`lesson-files-${index}`}
                             type="file"
                             multiple={false}
@@ -1978,6 +1984,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                                 // Validate size (100MB max)
                                 if (file.size > 100 * 1024 * 1024) {
                                   alert('Audio file size exceeds 100MB limit');
+                                  if (fileInputRefs.current[index]) fileInputRefs.current[index]!.value = '';
                                   return;
                                 }
                                 setUploadingFileFor(index);
@@ -2014,13 +2021,13 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                                   alert(`Failed to upload audio: ${err instanceof Error ? err.message : 'Please try again.'}`);
                                 } finally {
                                   setUploadingFileFor(null);
-                                  e.currentTarget.value = '';
+                                  if (fileInputRefs.current[index]) fileInputRefs.current[index]!.value = '';
                                 }
                                 return;
                               }
                               // Fallback to original upload for other types
                               uploadFileToLesson(index, file);
-                              e.currentTarget.value = '';
+                              if (fileInputRefs.current[index]) fileInputRefs.current[index]!.value = '';
                             }}
                             disabled={uploadingFileFor === index}
                           />
