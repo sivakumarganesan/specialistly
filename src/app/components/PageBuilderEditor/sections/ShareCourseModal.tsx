@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Copy, Check, Mail, Instagram, MessageCircle, Facebook } from 'lucide-react';
 
 interface ShareCourseModalProps {
@@ -35,6 +35,47 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   const shareUrl = `${baseUrl}?shareCourseid=${courseId}`;
   const encodedUrl = encodeURIComponent(shareUrl);
 
+  // Set Open Graph meta tags for social sharing when modal opens
+  useEffect(() => {
+    if (!isOpen || !courseImage) return;
+
+    // Update og:image meta tag
+    let ogImage = document.querySelector('meta[property="og:image"]');
+    if (!ogImage) {
+      ogImage = document.createElement('meta');
+      ogImage.setAttribute('property', 'og:image');
+      document.head.appendChild(ogImage);
+    }
+    ogImage.setAttribute('content', courseImage);
+
+    // Update og:title meta tag
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+      ogTitle = document.createElement('meta');
+      ogTitle.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.setAttribute('content', courseTitle);
+
+    // Update og:description meta tag
+    let ogDescription = document.querySelector('meta[property="og:description"]');
+    if (!ogDescription) {
+      ogDescription = document.createElement('meta');
+      ogDescription.setAttribute('property', 'og:description');
+      document.head.appendChild(ogDescription);
+    }
+    ogDescription.setAttribute('content', courseDescription);
+
+    // Update og:url meta tag
+    let ogUrl = document.querySelector('meta[property="og:url"]');
+    if (!ogUrl) {
+      ogUrl = document.createElement('meta');
+      ogUrl.setAttribute('property', 'og:url');
+      document.head.appendChild(ogUrl);
+    }
+    ogUrl.setAttribute('content', shareUrl);
+  }, [isOpen, courseImage, courseTitle, courseDescription, shareUrl]);
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -48,19 +89,20 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
 
   const handleShareEmail = () => {
     const subject = `Check out this course: ${courseTitle}`;
-    const body = `I found this great course you might be interested in:\n\n${courseTitle}\n${courseDescription}\n\n${shareUrl}`;
+    const body = `I found this great course you might be interested in:\n\n${courseTitle}\n${courseDescription}\n\nCourse Image: ${courseImage}\n\nExplore it here: ${shareUrl}`;
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const handleShareInstagram = () => {
-    // Instagram doesn't have a direct share dialog, but we can copy the link
-    // and show a message to paste it
-    handleCopyLink();
-    alert('Link copied! Open Instagram and paste it in your bio link, story, or message.');
+    // Instagram doesn't have a direct share dialog, but we can copy the link with image
+    const messageWithImage = `Check out this course!\n${courseTitle}\n${courseDescription}\n\nImage: ${courseImage}\n\nLink: ${shareUrl}`;
+    navigator.clipboard.writeText(messageWithImage);
+    alert('Course details copied! Open Instagram and paste it in your bio link, story, or message. (Include the image URL to display the course image)');
   };
 
   const handleShareWhatsApp = () => {
-    const message = `Check out this course: ${courseTitle}\n${courseDescription}\n\n${shareUrl}`;
+    // Include course details and image URL in the WhatsApp message
+    const message = `📚 *${courseTitle}*\n\n${courseDescription}\n\n🖼️ Image: ${courseImage}\n\n🔗 Explore the course:\n${shareUrl}`;
     const encodedMessage = encodeURIComponent(message);
     window.open(
       `https://wa.me/?text=${encodedMessage}`,
