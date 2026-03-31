@@ -35,13 +35,14 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   const shareUrl = `${baseUrl}?shareCourseid=${courseId}`;
   const encodedUrl = encodeURIComponent(shareUrl);
 
-  const generateRichHTML = (imageDataUrl?: string) => {
+  const generateRichHTML = (imageSource?: string) => {
+    // imageSource can be either a data URL or a regular URL
     return `
       <div style="max-width: 500px; font-family: Arial, sans-serif; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
-        ${imageDataUrl ? `<img src="${imageDataUrl}" alt="${courseTitle}" style="width: 100%; height: 300px; object-fit: cover;" />` : '<div style="width: 100%; height: 300px; background: linear-gradient(135deg, #60a5fa 0%, #1a202c 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">📚</div>'}
+        ${imageSource ? `<img src="${imageSource}" alt="${courseTitle}" style="width: 100%; height: 300px; object-fit: cover;" />` : '<div style="width: 100%; height: 300px; background: linear-gradient(135deg, #60a5fa 0%, #1a202c 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">📚</div>'}
         <div style="padding: 24px;">
           <h2 style="margin: 0 0 12px 0; font-size: 24px; font-weight: bold; color: #111827;">${courseTitle}</h2>
-          <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">${courseDescription}</p>
+          <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b7280; line-height: 1.5; max-height: 100px; overflow: hidden;">${courseDescription}</p>
           <a href="${shareUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">Explore Course</a>
         </div>
       </div>
@@ -50,17 +51,38 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
 
   const imageToDataUrl = async (imageUrl: string): Promise<string> => {
     try {
-      const response = await fetch(imageUrl);
+      const response = await fetch(imageUrl, {
+        mode: 'cors',
+        credentials: 'omit'
+      });
+      
+      if (!response.ok) {
+        console.warn('Image fetch failed with status:', response.status, 'Falling back to URL');
+        return imageUrl; // Return the original URL as fallback
+      }
+      
       const blob = await response.blob();
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          if (result && result.startsWith('data:')) {
+            resolve(result);
+          } else {
+            console.warn('DataURL conversion resulted in unexpected format, using original URL');
+            resolve(imageUrl);
+          }
+        };
+        reader.onerror = () => {
+          console.warn('FileReader error, falling back to URL');
+          resolve(imageUrl);
+        };
         reader.readAsDataURL(blob);
       });
     } catch (err) {
-      console.error('Failed to convert image to data URL:', err);
-      return ''; // Return empty string if image conversion fails
+      console.warn('Failed to convert image to data URL:', err, 'Using original URL as fallback');
+      // Return the original image URL - Gmail will fetch it when pasting
+      return imageUrl;
     }
   };
 
@@ -115,15 +137,44 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
     });
   };
 
-  const handleShareWhatsApp = () => {
-    // WhatsApp - simple message with link and image
-    const message = `📚 ${courseTitle}\n\n${courseDescription}\n\n🖼️ ${courseImage}\n\n🔗 ${shareUrl}`;
-    const encodedMessage = encodeURIComponent(message);
-    window.open(
-      `https://wa.me/?text=${encodedMessage}`,
-      'whatsapp-share',
-      'width=550,height=420'
-    );
+  const handleShareWhatsApp = async () => {
+    try {
+      // First copy the rich HTML to clipboard
+      let imageSource = '';
+      if (courseImage) {
+        imageSource = await imageToDataUrl(courseImage);
+      }
+      
+      const richHTML = generateRichHTML(imageSource);
+      const plainText = `${courseTitle}\n${courseDescription}\n\n${shareUrl}`;
+      
+      const blob = new Blob([richHTML], { type: 'text/html' });
+      const data = [new ClipboardItem({
+        'text/html': blob,
+        'text/plain': new Blob([plainText], { type: 'text/plain' })
+      })];
+      
+      await navigator.clipboard.write(data);
+      
+      // Then open WhatsApp Web
+      const message = `📚 ${courseTitle}\n\n${courseDescription}\n\n${shareUrl}`;
+      const encodedMessage = encodeURIComponent(message);
+      window.open(
+        `https://wa.me/?text=${encodedMessage}`,
+        'whatsapp-share',
+        'width=550,height=420'
+      );
+    } catch (err) {
+      console.error('Failed to share on WhatsApp:', err);
+      // Fallback to just opening WhatsApp
+      const message = `📚 ${courseTitle}\n\n${courseDescription}\n\n${shareUrl}`;
+      const encodedMessage = encodeURIComponent(message);
+      window.open(
+        `https://wa.me/?text=${encodedMessage}`,
+        'whatsapp-share',
+        'width=550,height=420'
+      );
+    }
   };
 
   const handleShareFacebook = () => {
