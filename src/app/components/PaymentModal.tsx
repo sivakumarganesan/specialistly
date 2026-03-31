@@ -67,17 +67,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
   const [stripeError, setStripeError] = useState<string>('');
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
-  // Fetch Stripe key from backend on mount
+  // Fetch Stripe key from backend only when modal opens
   useEffect(() => {
+    if (!isOpen) return;
     const promise = getStripePromise();
     setStripePromise(promise);
     promise.then(s => {
       if (!s) setStripeError('Stripe is not configured. Please contact the administrator.');
     });
-  }, []);
+  }, [isOpen]);
 
-  // Check available payment gateways on mount
+  // Check available payment gateways only when modal opens
   useEffect(() => {
+    if (!isOpen) return;
     const checkGateways = async () => {
       try {
         const apiBaseUrl = (import.meta.env.VITE_API_URL as string) || '/api';
@@ -104,7 +106,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen: propIsOpen, onClose
     };
     
     checkGateways();
-  }, []);
+  }, [isOpen]);
 
   // Auto-select payment gateway based on currency when modal opens
   useEffect(() => {
