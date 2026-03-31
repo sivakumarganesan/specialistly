@@ -1267,12 +1267,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   )}
                 </div>
 
-                  <div className="flex items-center gap-2 text-sm text-green-600">
-                    <Award className="h-4 w-4" />
-                    <span>Certificate included</span>
-                  </div>
-                )}
-                {/* Certificate included text hidden as per request */}
+                {/* Certificate included text removed as per request */}
 
                 {course.type === "cohort-based" && course.startDate && (
                   <div className="flex items-center gap-2 text-sm">
