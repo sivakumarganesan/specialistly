@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Copy, Check, Mail, Twitter, MessageCircle, Facebook } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Copy, Check, Mail, Instagram, MessageCircle, Facebook } from 'lucide-react';
 
 interface ShareCourseModalProps {
   course: {
@@ -30,12 +30,44 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   const courseDescription = course.description || course.courseDescription || 'A great course awaits!';
   const courseImage = course.thumbnail || course.courseImage;
 
-  // Generate shareable URL
-  const baseUrl = window.location.origin;
-  const shareUrl = `${baseUrl}?shareCourseid=${courseId}`;
+  // Generate shareable URL with image parameter for Open Graph tags
   const encodedTitle = encodeURIComponent(courseTitle);
   const encodedDescription = encodeURIComponent(courseDescription);
+  const baseUrl = window.location.origin;
+  const shareUrl = `${baseUrl}?shareCourseid=${courseId}&image=${encodeURIComponent(courseImage || '')}&title=${encodedTitle}&desc=${encodedDescription}`;
   const encodedUrl = encodeURIComponent(shareUrl);
+
+  // Update page meta tags for better social sharing
+  useEffect(() => {
+    if (!courseImage) return;
+
+    // Create or update og:image meta tag
+    let ogImage = document.querySelector('meta[property="og:image"]');
+    if (!ogImage) {
+      ogImage = document.createElement('meta');
+      ogImage.setAttribute('property', 'og:image');
+      document.head.appendChild(ogImage);
+    }
+    ogImage.setAttribute('content', courseImage);
+
+    // Create or update og:title meta tag
+    let ogTitle = document.querySelector('meta[property="og:title"]');
+    if (!ogTitle) {
+      ogTitle = document.createElement('meta');
+      ogTitle.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitle);
+    }
+    ogTitle.setAttribute('content', courseTitle);
+
+    // Create or update og:description meta tag
+    let ogDesc = document.querySelector('meta[property="og:description"]');
+    if (!ogDesc) {
+      ogDesc = document.createElement('meta');
+      ogDesc.setAttribute('property', 'og:description');
+      document.head.appendChild(ogDesc);
+    }
+    ogDesc.setAttribute('content', courseDescription);
+  }, [courseImage, courseTitle, courseDescription]);
 
   const handleCopyLink = async () => {
     try {
@@ -54,13 +86,11 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
-  const handleShareTwitter = () => {
-    const text = `Check out this amazing course: ${courseTitle} ${shareUrl}`;
-    window.open(
-      `https://twitter.com/intent/tweet?text=${encodedDescription}&url=${encodedUrl}`,
-      'twitter-share',
-      'width=550,height=420'
-    );
+  const handleShareInstagram = () => {
+    // Instagram doesn't have a direct share dialog, but we can copy the link
+    // and show a message to paste it
+    handleCopyLink();
+    alert('Link copied! Open Instagram and paste it in your bio link, story, or message.');
   };
 
   const handleShareWhatsApp = () => {
@@ -191,12 +221,12 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
                 <span>Email</span>
               </button>
               <button
-                onClick={handleShareTwitter}
-                className="py-3 px-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors flex flex-col items-center justify-center gap-1 text-xs font-semibold"
-                title="Share on Twitter"
+                onClick={handleShareInstagram}
+                className="py-3 px-2 bg-pink-100 text-pink-700 rounded-lg hover:bg-pink-200 transition-colors flex flex-col items-center justify-center gap-1 text-xs font-semibold"
+                title="Share on Instagram"
               >
-                <Twitter className="h-5 w-5" />
-                <span>Twitter</span>
+                <Instagram className="h-5 w-5" />
+                <span>Instagram</span>
               </button>
               <button
                 onClick={handleShareWhatsApp}

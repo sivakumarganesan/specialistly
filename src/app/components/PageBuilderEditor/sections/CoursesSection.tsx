@@ -528,7 +528,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                           <>
                             <button
                               onClick={() => setCheckoutCourse(course)}
-                              className="py-2 px-4 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 flex-1"
+                              className="py-1.5 px-3 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 flex-1"
                             >
                               <ShoppingCart className="h-4 w-4" />
                               {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
@@ -538,7 +538,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                             <button
                               type="button"
                               onClick={() => handleOpenShareModal(course)}
-                              className="py-2 px-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors flex items-center gap-1"
+                              className="py-1.5 px-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors flex items-center gap-1"
                               title="Share course"
                             >
                               <Share2 className="h-4 w-4" />
