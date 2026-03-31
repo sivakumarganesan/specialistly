@@ -74,7 +74,7 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
       document.head.appendChild(ogUrl);
     }
     ogUrl.setAttribute('content', shareUrl);
-  }, [isOpen, courseImage, courseTitle, courseDescription, shareUrl]);
+  }, [isOpen, courseId]);
 
   const handleCopyLink = async () => {
     try {
@@ -89,20 +89,21 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
 
   const handleShareEmail = () => {
     const subject = `Check out this course: ${courseTitle}`;
-    const body = `I found this great course you might be interested in:\n\n${courseTitle}\n${courseDescription}\n\nCourse Image: ${courseImage}\n\nExplore it here: ${shareUrl}`;
+    // Keep it simple with just the image URL, not heavily encoded
+    const body = `I found this great course you might be interested in:\n\n${courseTitle}\n${courseDescription}\n\nCourse Image:\n${courseImage}\n\nExplore it here:\n${shareUrl}`;
     window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   const handleShareInstagram = () => {
-    // Instagram doesn't have a direct share dialog, but we can copy the link with image
-    const messageWithImage = `Check out this course!\n${courseTitle}\n${courseDescription}\n\nImage: ${courseImage}\n\nLink: ${shareUrl}`;
-    navigator.clipboard.writeText(messageWithImage);
-    alert('Course details copied! Open Instagram and paste it in your bio link, story, or message. (Include the image URL to display the course image)');
+    // Instagram - copy simple link with course info
+    const message = `${courseTitle}\n${courseDescription}\n\nImage: ${courseImage}\n\nLink: ${shareUrl}`;
+    navigator.clipboard.writeText(message);
+    alert('Course details copied! Open Instagram and paste it in your bio link, story, or message.');
   };
 
   const handleShareWhatsApp = () => {
-    // Include course details and image URL in the WhatsApp message
-    const message = `📚 *${courseTitle}*\n\n${courseDescription}\n\n🖼️ Image: ${courseImage}\n\n🔗 Explore the course:\n${shareUrl}`;
+    // WhatsApp - simple message with link and image
+    const message = `📚 ${courseTitle}\n\n${courseDescription}\n\n🖼️ ${courseImage}\n\n🔗 ${shareUrl}`;
     const encodedMessage = encodeURIComponent(message);
     window.open(
       `https://wa.me/?text=${encodedMessage}`,
