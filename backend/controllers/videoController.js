@@ -34,8 +34,11 @@ export const uploadLessonMedia = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No file provided' });
     }
 
+    console.log('[uploadLessonMedia] File upload started:', { courseId, lessonId, fileName: file.originalname, mimeType: file.mimetype });
+
     if (isAudioMime(file.mimetype)) {
       // AUDIO: Upload to R2
+      console.log('[uploadLessonMedia] Uploading audio to R2...');
       const uploadResult = await cloudflareR2Service.uploadFile(
         courseId,
         lessonId,
@@ -43,13 +46,22 @@ export const uploadLessonMedia = async (req, res) => {
         file.buffer,
         file.mimetype
       );
+      console.log('[uploadLessonMedia] R2 upload successful:', uploadResult.fileKey);
 
       // Save file reference to lesson.files
       const course = await Course.findById(courseId);
-      if (!course) return res.status(404).json({ success: false, message: 'Course not found' });
-      const lesson = course.lessons.id(lessonId);
-      if (!lesson) return res.status(404).json({ success: false, message: 'Lesson not found' });
+      if (!course) {
+        console.error('[uploadLessonMedia] Course not found:', courseId);
+        return res.status(404).json({ success: false, message: 'Course not found' });
+      }
 
+      const lesson = course.lessons.find(l => l._id.toString() === lessonId);
+      if (!lesson) {
+        console.error('[uploadLessonMedia] Lesson not found:', lessonId);
+        return res.status(404).json({ success: false, message: 'Lesson not found' });
+      }
+
+      console.log('[uploadLessonMedia] Found lesson, adding file to files array...');
       lesson.files = lesson.files || [];
       lesson.files.push({
         fileName: file.originalname,
@@ -60,7 +72,9 @@ export const uploadLessonMedia = async (req, res) => {
         mimeType: file.mimetype,
         uploadedAt: new Date(),
       });
+
       await course.save();
+      console.log('[uploadLessonMedia] Course saved successfully');
 
       return res.json({ success: true, message: 'Audio uploaded to R2', file: uploadResult });
     } else if (file.mimetype.startsWith('video/')) {
@@ -70,8 +84,13 @@ export const uploadLessonMedia = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Unsupported file type.' });
     }
   } catch (error) {
-    console.error('Error uploading lesson media:', error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error('[uploadLessonMedia] ERROR:', error);
+    console.error('[uploadLessonMedia] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    res.status(500).json({ 
+      success: false, 
+      message: error instanceof Error ? error.message : 'Failed to upload audio',
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 };
 

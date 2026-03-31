@@ -6,6 +6,7 @@
 import express from 'express';
 import multer from 'multer';
 import cloudflareConfig from '../config/cloudflareConfig.js';
+import { authMiddleware } from '../middleware/authMiddleware.js';
 import {
   getVideoUploadToken,
   saveLessonVideo,
@@ -19,10 +20,15 @@ import {
 const router = express.Router();
 
 // Multer setup for memory storage (for audio uploads)
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 100 * 1024 * 1024, // 100MB max for audio files
+  }
+});
 
-// Unified lesson media upload (audio to R2)
-router.post('/lessons/:courseId/:lessonId/media', upload.single('file'), uploadLessonMedia);
+// Unified lesson media upload (audio to R2) - Protected route
+router.post('/lessons/:courseId/:lessonId/media', authMiddleware, upload.single('file'), uploadLessonMedia);
 
 /**
  * Diagnostic endpoint - check Cloudflare configuration
