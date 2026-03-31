@@ -33,7 +33,13 @@ const apiCall = async (
       options.body = JSON.stringify(data);
     }
 
+    // Abort after 30s to avoid hanging requests (Cloudflare times out at 100s)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    options.signal = controller.signal;
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    clearTimeout(timeoutId);
     const result = await response.json();
 
     if (!response.ok) {

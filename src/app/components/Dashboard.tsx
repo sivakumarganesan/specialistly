@@ -52,65 +52,66 @@ export function Dashboard({
       try {
         setLoading(true);
         
-        // Fetch creator profile for full name and sync to auth
-        if (user?.email) {
-          try {
-            const creatorResponse = await creatorAPI.getByEmail(user.email);
-            if (creatorResponse?.data?.creatorName) {
-              const creatorName = creatorResponse.data.creatorName;
-              setFullName(creatorName);
-              if (creatorName !== user.name) {
-                updateUserName(creatorName);
-              }
-            }
-          } catch {
-            setFullName(user.name || "Creator");
+        // Run all fetches in parallel so one slow call doesn't block the rest
+        const [creatorResult, customersResult, coursesResult, servicesResult, slotsResult] = await Promise.allSettled([
+          // Fetch creator profile
+          (async () => {
+            if (!user?.email) return null;
+            const res = await creatorAPI.getByEmail(user.email);
+            return res?.data?.creatorName || null;
+          })(),
+          // Fetch customers
+          customerAPI.getAll({ specialistEmail: user?.email }),
+          // Fetch courses
+          courseAPI.getAll({ specialistEmail: user?.email }),
+          // Fetch services
+          serviceAPI.getAll({ creator: user?.email }),
+          // Fetch consulting slot stats
+          consultingSlotAPI.getStats(user?.email || ""),
+        ]);
+
+        // Process creator profile
+        if (creatorResult.status === 'fulfilled' && creatorResult.value) {
+          setFullName(creatorResult.value);
+          if (creatorResult.value !== user?.name) {
+            updateUserName(creatorResult.value);
           }
         }
 
-        // Fetch customers
-        const customersResponse = await customerAPI.getAll({ specialistEmail: user?.email });
-        const customersArray = Array.isArray(customersResponse) 
-          ? customersResponse 
-          : (Array.isArray(customersResponse?.data) ? customersResponse.data : []);
-        setTotalCustomers(customersArray.length);
+        // Process customers
+        if (customersResult.status === 'fulfilled') {
+          const arr = Array.isArray(customersResult.value)
+            ? customersResult.value
+            : (Array.isArray(customersResult.value?.data) ? customersResult.value.data : []);
+          setTotalCustomers(arr.length);
+        }
 
-        // Fetch courses
-        try {
-          const coursesResponse = await courseAPI.getAll({ specialistEmail: user?.email });
-          const coursesArray = Array.isArray(coursesResponse)
-            ? coursesResponse
-            : (Array.isArray(coursesResponse?.data) ? coursesResponse.data : []);
-          setTotalCourses(coursesArray.length);
-          setPublishedCourses(coursesArray.filter((c: any) => c.status === "published").length);
-          // Most recent 3 courses
+        // Process courses
+        if (coursesResult.status === 'fulfilled') {
+          const arr = Array.isArray(coursesResult.value)
+            ? coursesResult.value
+            : (Array.isArray(coursesResult.value?.data) ? coursesResult.value.data : []);
+          setTotalCourses(arr.length);
+          setPublishedCourses(arr.filter((c: any) => c.status === "published").length);
           setRecentCourses(
-            coursesArray
+            arr
               .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
               .slice(0, 3)
           );
-        } catch {
-          setTotalCourses(0);
-          setPublishedCourses(0);
         }
 
-        // Fetch services (consulting offerings)
-        const servicesResponse = await serviceAPI.getAll({ creator: user?.email });
-        const servicesArray = Array.isArray(servicesResponse)
-          ? servicesResponse
-          : (Array.isArray(servicesResponse?.data) ? servicesResponse.data : []);
-        setTotalOfferings(servicesArray.length);
+        // Process services
+        if (servicesResult.status === 'fulfilled') {
+          const arr = Array.isArray(servicesResult.value)
+            ? servicesResult.value
+            : (Array.isArray(servicesResult.value?.data) ? servicesResult.value.data : []);
+          setTotalOfferings(arr.length);
+        }
 
-        // Fetch consulting slot stats
-        try {
-          const statsResponse = await consultingSlotAPI.getStats(user?.email || "");
-          if (statsResponse?.data) {
-            setTotalBookings(statsResponse.data.totalBookings || 0);
-            setUpcomingSlots(statsResponse.data.upcomingAvailable || 0);
-          }
-        } catch {
-          setTotalBookings(0);
-          setUpcomingSlots(0);
+        // Process consulting slots
+        if (slotsResult.status === 'fulfilled' && slotsResult.value?.data) {
+          setTotalBookings(slotsResult.value.data.totalBookings || 0);
+          setUpcomingSlots(slotsResult.value.data.upcomingAvailable || 0);
         }
 
       } catch (error) {
