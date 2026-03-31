@@ -30,11 +30,9 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   const courseDescription = course.description || course.courseDescription || 'A great course awaits!';
   const courseImage = course.thumbnail || course.courseImage;
 
-  // Generate shareable URL with image and course details as parameters
-  const encodedTitle = encodeURIComponent(courseTitle);
-  const encodedDescription = encodeURIComponent(courseDescription);
+  // Generate clean, readable shareable URL (course ID only)
   const baseUrl = window.location.origin;
-  const shareUrl = `${baseUrl}?shareCourseid=${courseId}&image=${encodeURIComponent(courseImage || '')}&title=${encodedTitle}&desc=${encodedDescription}`;
+  const shareUrl = `${baseUrl}?shareCourseid=${courseId}`;
   const encodedUrl = encodeURIComponent(shareUrl);
 
   const handleCopyLink = async () => {
