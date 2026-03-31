@@ -560,7 +560,7 @@ export const resetPassword = async (req, res) => {
 export const changePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmPassword } = req.body;
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
 
     // Validate inputs
     if (!currentPassword || !newPassword || !confirmPassword) {
