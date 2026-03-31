@@ -35,10 +35,10 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   const shareUrl = `${baseUrl}?shareCourseid=${courseId}`;
   const encodedUrl = encodeURIComponent(shareUrl);
 
-  const generateRichHTML = () => {
+  const generateRichHTML = (imageDataUrl?: string) => {
     return `
       <div style="max-width: 500px; font-family: Arial, sans-serif; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
-        ${courseImage ? `<img src="${courseImage}" alt="${courseTitle}" style="width: 100%; height: 300px; object-fit: cover;" />` : '<div style="width: 100%; height: 300px; background: linear-gradient(135deg, #60a5fa 0%, #1a202c 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">📚</div>'}
+        ${imageDataUrl ? `<img src="${imageDataUrl}" alt="${courseTitle}" style="width: 100%; height: 300px; object-fit: cover;" />` : '<div style="width: 100%; height: 300px; background: linear-gradient(135deg, #60a5fa 0%, #1a202c 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">📚</div>'}
         <div style="padding: 24px;">
           <h2 style="margin: 0 0 12px 0; font-size: 24px; font-weight: bold; color: #111827;">${courseTitle}</h2>
           <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">${courseDescription}</p>
@@ -48,9 +48,32 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
     `;
   };
 
+  const imageToDataUrl = async (imageUrl: string): Promise<string> => {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (err) {
+      console.error('Failed to convert image to data URL:', err);
+      return ''; // Return empty string if image conversion fails
+    }
+  };
+
   const handleCopyRichHTML = async () => {
     try {
-      const richHTML = generateRichHTML();
+      let imageDataUrl = '';
+      
+      // If we have a course image, convert it to data URL so it's embedded
+      if (courseImage) {
+        imageDataUrl = await imageToDataUrl(courseImage);
+      }
+      
+      const richHTML = generateRichHTML(imageDataUrl);
       const plainText = `${courseTitle}\n${courseDescription}\n\n${shareUrl}`;
       
       const blob = new Blob([richHTML], { type: 'text/html' });
