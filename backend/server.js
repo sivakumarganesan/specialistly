@@ -183,7 +183,10 @@ connectDB().then(() => {
   refreshCustomDomainCache();
   console.log('✓ Database connected, API routes ready');
 }).catch(err => {
-  console.error('Database connection failed, starting server anyway:', err.message);
+  // Set dbReady true even on failure so requests fail fast with proper errors
+  // instead of returning 503 forever
+  dbReady = true;
+  console.error('Database connection failed, API routes enabled (queries may fail):', err?.message);
 });
 
 // Reject API requests until DB is connected (prevents hanging queries)

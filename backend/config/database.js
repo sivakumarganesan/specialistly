@@ -5,34 +5,43 @@ import Customer from '../models/Customer.js';
 import AppointmentSlot from '../models/AppointmentSlot.js';
 import User from '../models/User.js';
 
-const connectDB = async () => {
-  try {
-    const mongoUri = process.env.MONGODB_URI;
-    
-    if (!mongoUri) {
-      throw new Error('MONGODB_URI environment variable is not defined');
-    }
-
-    console.log('Attempting to connect to MongoDB...');
-    console.log('Database name extracted from URI:', mongoUri.includes('specialistlydb_prod') ? 'specialistlydb_prod' : 'specialistlydb');
-    
-    // Don't override dbName - let it come from the URI
-    await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
-    });
-
-    console.log('✓ MongoDB connected successfully');
-
-    // Initialize collections
-    await initializeCollections();
-
-    return mongoose.connection;
-  } catch (error) {
-    console.error('✗ MongoDB connection failed:', error.message);
-    // Don't exit, allow server to run without DB for now
-    console.log('Server will continue running without DB connection');
+const connectDB = async (retries = 5) => {
+  const mongoUri = process.env.MONGODB_URI;
+  
+  if (!mongoUri) {
+    throw new Error('MONGODB_URI environment variable is not defined');
   }
+
+  console.log('Attempting to connect to MongoDB...');
+  console.log('Database name extracted from URI:', mongoUri.includes('specialistlydb_prod') ? 'specialistlydb_prod' : 'specialistlydb');
+
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await mongoose.connect(mongoUri, {
+        serverSelectionTimeoutMS: 15000,
+        socketTimeoutMS: 30000,
+        connectTimeoutMS: 15000,
+      });
+
+      console.log(`✓ MongoDB connected successfully (attempt ${attempt})`);
+
+      // Initialize collections (non-blocking — don't let index creation block startup)
+      initializeCollections().catch(err => {
+        console.warn('Collection initialization warning (non-blocking):', err.message);
+      });
+
+      return mongoose.connection;
+    } catch (error) {
+      console.error(`✗ MongoDB connection attempt ${attempt}/${retries} failed:`, error.message);
+      if (attempt < retries) {
+        const delay = Math.min(2000 * attempt, 10000);
+        console.log(`  Retrying in ${delay / 1000}s...`);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+  }
+
+  console.error('✗ All MongoDB connection attempts failed. Server will run without DB.');
 };
 
 const initializeCollections = async () => {

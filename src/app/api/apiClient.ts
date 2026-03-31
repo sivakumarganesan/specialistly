@@ -38,8 +38,18 @@ const apiCall = async (
     const timeoutId = setTimeout(() => controller.abort(), 30000);
     options.signal = controller.signal;
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    let response = await fetch(`${API_BASE_URL}${endpoint}`, options);
     clearTimeout(timeoutId);
+
+    // Retry once on 502/503 (server starting up or deploying)
+    if ((response.status === 502 || response.status === 503) && method === "GET") {
+      await new Promise(r => setTimeout(r, 3000));
+      const retryController = new AbortController();
+      const retryTimeout = setTimeout(() => retryController.abort(), 30000);
+      response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, signal: retryController.signal });
+      clearTimeout(retryTimeout);
+    }
+
     const result = await response.json();
 
     if (!response.ok) {
