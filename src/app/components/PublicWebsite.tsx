@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Loader, Menu, X, MapPin, Phone, Facebook, Instagram, Youtube, Twitter, Linkedin, LogIn, BookOpen, User, LogOut, Eye, EyeOff } from 'lucide-react';
-import { pageBuilderAPI } from '@/app/api/pageBuilderAPI';
+import { Loader, Menu, X, MapPin, Phone, Facebook, Instagram, Youtube, Twitter, Linkedin, LogIn, BookOpen, User, LogOut, Eye, EyeOff, Lock, AlertCircle } from 'lucide-react';
+import { pageBuilderAPI, authAPI } from '@/app/api/apiClient';
 import { PublicPageViewer } from './PublicPageViewer';
 import { PublicMyLearning } from './PublicMyLearning';
 import { PublicCourseViewer } from './PublicCourseViewer';
@@ -46,6 +46,21 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
   const [showPassword, setShowPassword] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  // Change password modal
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [changePasswordData, setChangePasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showChangePasswordFields, setShowChangePasswordFields] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+  const [changePasswordLoading, setChangePasswordLoading] = useState(false);
+  const [changePasswordMessage, setChangePasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Listen for auth changes from other components (e.g. PublicCourseCheckout)
   useEffect(() => {
@@ -133,6 +148,60 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
     localStorage.removeItem('user');
     localStorage.removeItem('userType');
     setActiveView('pages');
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChangePasswordMessage(null);
+
+    // Validation
+    if (!changePasswordData.currentPassword || !changePasswordData.newPassword || !changePasswordData.confirmPassword) {
+      setChangePasswordMessage({ type: 'error', text: 'All fields are required' });
+      return;
+    }
+
+    if (changePasswordData.newPassword.length < 6) {
+      setChangePasswordMessage({ type: 'error', text: 'New password must be at least 6 characters' });
+      return;
+    }
+
+    if (changePasswordData.newPassword !== changePasswordData.confirmPassword) {
+      setChangePasswordMessage({ type: 'error', text: 'New passwords do not match' });
+      return;
+    }
+
+    if (changePasswordData.currentPassword === changePasswordData.newPassword) {
+      setChangePasswordMessage({ type: 'error', text: 'New password must be different from current password' });
+      return;
+    }
+
+    setChangePasswordLoading(true);
+    try {
+      const response = await authAPI.changePassword(
+        authToken || '',
+        changePasswordData.currentPassword,
+        changePasswordData.newPassword,
+        changePasswordData.confirmPassword
+      );
+
+      if (response.success) {
+        setChangePasswordMessage({ type: 'success', text: '✓ Your password has been changed successfully!' });
+        setChangePasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setTimeout(() => {
+          setShowChangePasswordModal(false);
+          setChangePasswordMessage(null);
+        }, 2000);
+      } else {
+        setChangePasswordMessage({ type: 'error', text: response.error || 'Failed to change password' });
+      }
+    } catch (err) {
+      setChangePasswordMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Failed to change password'
+      });
+    } finally {
+      setChangePasswordLoading(false);
+    }
   };
 
   const navigateToMyLearning = () => {
@@ -251,8 +320,11 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
                 {authUser?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
             </button>
-            <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[140px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+            <div className="absolute right-0 top-full mt-1 bg-white border rounded-lg shadow-lg py-1 min-w-[160px] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
               <p className="px-3 py-1.5 text-xs text-gray-500 truncate border-b">{authUser?.email}</p>
+              <button onClick={() => { setShowChangePasswordModal(true); setChangePasswordMessage(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                <Lock className="w-3.5 h-3.5" /> Change Password
+              </button>
               <button onClick={handleLogout} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
                 <LogOut className="w-3.5 h-3.5" /> Sign out
               </button>
@@ -269,6 +341,141 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
       >
         <LogIn className="w-4 h-4" /> Login
       </button>
+    );
+  };
+
+  // Change password modal
+  const renderChangePasswordModal = () => {
+    if (!showChangePasswordModal) return null;
+    const brandColor = website?.branding?.primaryColor || '#3B82F6';
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowChangePasswordModal(false)}>
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <Lock className="w-5 h-5" /> Change Password
+            </h2>
+            <button onClick={() => setShowChangePasswordModal(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+              <X className="w-5 h-5 text-gray-400" />
+            </button>
+          </div>
+
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            {/* Error/Success Message */}
+            {changePasswordMessage && (
+              <div className={`p-3 rounded-lg text-sm flex items-center gap-2 ${
+                changePasswordMessage.type === 'error'
+                  ? 'bg-red-50 text-red-700 border border-red-200'
+                  : 'bg-green-50 text-green-700 border border-green-200'
+              }`}>
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                <span>{changePasswordMessage.text}</span>
+              </div>
+            )}
+
+            {/* Current Password */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-700">Current Password</label>
+              <div className="relative">
+                <input
+                  type={showChangePasswordFields.current ? 'text' : 'password'}
+                  value={changePasswordData.currentPassword}
+                  onChange={(e) => setChangePasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  placeholder="Enter current password"
+                  disabled={changePasswordLoading}
+                  className="w-full border rounded-lg px-3 py-2 text-sm pr-10 focus:ring-2 focus:outline-none"
+                  style={{ '--tw-ring-color': brandColor } as any}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowChangePasswordFields(prev => ({ ...prev, current: !prev.current }))}
+                  className="absolute right-3 top-2.5 text-gray-400"
+                >
+                  {showChangePasswordFields.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* New Password */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-700">New Password</label>
+              <div className="relative">
+                <input
+                  type={showChangePasswordFields.new ? 'text' : 'password'}
+                  value={changePasswordData.newPassword}
+                  onChange={(e) => setChangePasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                  placeholder="Enter new password"
+                  disabled={changePasswordLoading}
+                  className="w-full border rounded-lg px-3 py-2 text-sm pr-10 focus:ring-2 focus:outline-none"
+                  style={{ '--tw-ring-color': brandColor } as any}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowChangePasswordFields(prev => ({ ...prev, new: !prev.new }))}
+                  className="absolute right-3 top-2.5 text-gray-400"
+                >
+                  {showChangePasswordFields.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">Min. 6 characters</p>
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1">
+              <label className="text-xs font-semibold text-gray-700">Confirm Password</label>
+              <div className="relative">
+                <input
+                  type={showChangePasswordFields.confirm ? 'text' : 'password'}
+                  value={changePasswordData.confirmPassword}
+                  onChange={(e) => setChangePasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Confirm new password"
+                  disabled={changePasswordLoading}
+                  className="w-full border rounded-lg px-3 py-2 text-sm pr-10 focus:ring-2 focus:outline-none"
+                  style={{ '--tw-ring-color': brandColor } as any}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowChangePasswordFields(prev => ({ ...prev, confirm: !prev.confirm }))}
+                  className="absolute right-3 top-2.5 text-gray-400"
+                >
+                  {showChangePasswordFields.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 pt-2">
+              <button
+                type="submit"
+                disabled={changePasswordLoading}
+                className="flex-1 text-white font-medium py-2 rounded-lg text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                style={{ backgroundColor: brandColor }}
+              >
+                {changePasswordLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    Update Password
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowChangePasswordModal(false)}
+                disabled={changePasswordLoading}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     );
   };
 
@@ -619,6 +826,9 @@ export const PublicWebsite: React.FC<PublicWebsiteProps> = ({ subdomain: propSub
 
       {/* Login Modal */}
       {renderLoginModal()}
+
+      {/* Change Password Modal */}
+      {renderChangePasswordModal()}
 
       {/* Page Content */}
       <main className="flex-1" onClick={activeView === 'pages' ? handleInternalLinkClick : undefined}>
