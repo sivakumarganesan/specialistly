@@ -35,14 +35,44 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   const shareUrl = `${baseUrl}?shareCourseid=${courseId}`;
   const encodedUrl = encodeURIComponent(shareUrl);
 
-  const handleCopyLink = async () => {
+  const generateRichHTML = () => {
+    return `
+      <div style="max-width: 500px; font-family: Arial, sans-serif; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden;">
+        ${courseImage ? `<img src="${courseImage}" alt="${courseTitle}" style="width: 100%; height: 300px; object-fit: cover;" />` : '<div style="width: 100%; height: 300px; background: linear-gradient(135deg, #60a5fa 0%, #1a202c 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 48px;">📚</div>'}
+        <div style="padding: 24px;">
+          <h2 style="margin: 0 0 12px 0; font-size: 24px; font-weight: bold; color: #111827;">${courseTitle}</h2>
+          <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b7280; line-height: 1.5;">${courseDescription}</p>
+          <a href="${shareUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">Explore Course</a>
+        </div>
+      </div>
+    `;
+  };
+
+  const handleCopyRichHTML = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      const richHTML = generateRichHTML();
+      const plainText = `${courseTitle}\n${courseDescription}\n\n${shareUrl}`;
+      
+      const blob = new Blob([richHTML], { type: 'text/html' });
+      const data = [new ClipboardItem({
+        'text/html': blob,
+        'text/plain': new Blob([plainText], { type: 'text/plain' })
+      })];
+      
+      await navigator.clipboard.write(data);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {
-      console.error('Failed to copy link:', err);
-      alert('Failed to copy link. Please try again.');
+      console.error('Failed to copy rich HTML:', err);
+      // Fallback to plain text
+      try {
+        await navigator.clipboard.writeText(`${courseTitle}\n${courseDescription}\n\n${shareUrl}`);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      } catch (fallbackErr) {
+        console.error('Fallback copy also failed:', fallbackErr);
+        alert('Failed to copy. Please try again.');
+      }
     }
   };
 
@@ -54,10 +84,12 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   };
 
   const handleShareInstagram = () => {
-    // Instagram - copy simple link with course info
-    const message = `${courseTitle}\n${courseDescription}\n\nImage: ${courseImage}\n\nLink: ${shareUrl}`;
-    navigator.clipboard.writeText(message);
-    alert('Course details copied! Open Instagram and paste it in your bio link, story, or message.');
+    // Instagram - copy rich HTML with course info
+    handleCopyRichHTML().then(() => {
+      alert('Course card copied with rich formatting! Open Instagram and paste it in your bio link, story, or message.');
+    }).catch(() => {
+      alert('Failed to copy. Please try again.');
+    });
   };
 
   const handleShareWhatsApp = () => {
@@ -138,23 +170,27 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
           <div className="bg-blue-50 rounded-lg p-4 space-y-2">
             <p className="text-sm text-blue-900 font-semibold">Ready to share?</p>
             <p className="text-sm text-blue-800">
-              Click the button below to copy the shareable link. Paste it anywhere to let others discover this course!
+              Copy the course card with rich formatting below. Paste it into email, docs, or messages to share with beautiful formatting!
             </p>
           </div>
 
           {/* Share Link Display */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-              Shareable Link
+              What you'll copy
             </p>
-            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 break-all">
-              <p className="text-sm text-gray-700 font-mono">{shareUrl}</p>
+            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <p className="text-sm font-semibold text-gray-900 mb-2">Formatted Course Card</p>
+              <p className="text-xs text-gray-600">• Course image</p>
+              <p className="text-xs text-gray-600">• Title & description</p>
+              <p className="text-xs text-gray-600">• Clickable "Explore Course" button</p>
+              <p className="text-xs text-gray-600 mt-2">Pastes beautifully into email, Google Docs, Notion, and more!</p>
             </div>
           </div>
 
           {/* Copy Button */}
           <button
-            onClick={handleCopyLink}
+            onClick={handleCopyRichHTML}
             className={`w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
               isCopied
                 ? 'bg-green-600 text-white'
@@ -169,7 +205,7 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
             ) : (
               <>
                 <Copy className="h-5 w-5" />
-                Copy Shareable Link
+                Copy Rich HTML
               </>
             )}
           </button>
