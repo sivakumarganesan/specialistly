@@ -2,6 +2,7 @@ import express from 'express';
 import Coupon from '../models/Coupon.js';
 import User from '../models/User.js';
 import { authMiddleware } from '../middleware/authMiddleware.js';
+import { isCouponExpired } from '../utils/couponUtils.js';
 
 const router = express.Router();
 
@@ -62,7 +63,7 @@ router.get('/validate/:code', async (req, res) => {
     const { course } = req.query;
     const coupon = await Coupon.findOne({ code: code.toUpperCase(), course, isActive: true });
     if (!coupon) return res.status(404).json({ error: 'Coupon not found or inactive' });
-    if (coupon.expiresAt && coupon.expiresAt < new Date()) return res.status(400).json({ error: 'Coupon expired' });
+    if (isCouponExpired(coupon.expiresAt)) return res.status(400).json({ error: 'Coupon expired' });
     if (coupon.maxRedemptions && coupon.redemptions >= coupon.maxRedemptions) return res.status(400).json({ error: 'Coupon fully redeemed' });
     res.json(coupon);
   } catch (err) {

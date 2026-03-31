@@ -3,6 +3,7 @@ import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import Course from '../models/Course.js';
 import CommissionConfig from '../models/CommissionConfig.js';
 import Coupon from '../models/Coupon.js';
+import { isCouponExpired } from '../utils/couponUtils.js';
 import { stripeService } from '../services/stripeService.js';
 import { sendEnrollmentConfirmation, sendSpecialistNotification } from '../services/emailService.js';
 import mongoose from 'mongoose';
@@ -94,7 +95,7 @@ export const createPaymentIntent = async (req, res) => {
       if (!coupon) {
         return res.status(400).json({ success: false, message: 'Invalid or inactive coupon code' });
       }
-      if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+      if (isCouponExpired(coupon.expiresAt)) {
         return res.status(400).json({ success: false, message: 'Coupon expired' });
       }
       if (coupon.maxRedemptions && coupon.redemptions >= coupon.maxRedemptions) {

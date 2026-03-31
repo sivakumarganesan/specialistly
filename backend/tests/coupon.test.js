@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
+import { isCouponExpired } from '../utils/couponUtils.js';
+
 /**
  * Unit tests for coupon discount logic.
  * These validate the core calculation without requiring a running database.
@@ -8,7 +10,7 @@ import { describe, it, expect } from 'vitest';
 function applyCouponDiscount(price, coupon) {
   if (!coupon || !coupon.isActive) return { amount: price, discountAmount: 0, error: null };
 
-  if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+  if (isCouponExpired(coupon.expiresAt)) {
     return { amount: price, discountAmount: 0, error: 'Coupon expired' };
   }
   if (coupon.maxRedemptions && coupon.redemptions >= coupon.maxRedemptions) {

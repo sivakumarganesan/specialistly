@@ -201,7 +201,7 @@ export const createPublicPaymentIntent = async (req, res) => {
       if (!coupon) {
         return res.status(400).json({ success: false, message: 'Invalid or inactive coupon code' });
       }
-      if (coupon.expiresAt && coupon.expiresAt < new Date()) {
+      if (isCouponExpired(coupon.expiresAt)) {
         return res.status(400).json({ success: false, message: 'Coupon expired' });
       }
       if (coupon.maxRedemptions && coupon.redemptions >= coupon.maxRedemptions) {
