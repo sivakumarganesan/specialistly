@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Copy, Check, Mail, Instagram, MessageCircle, Facebook } from 'lucide-react';
 
 interface ShareCourseModalProps {
@@ -30,44 +30,12 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   const courseDescription = course.description || course.courseDescription || 'A great course awaits!';
   const courseImage = course.thumbnail || course.courseImage;
 
-  // Generate shareable URL with image parameter for Open Graph tags
+  // Generate shareable URL with image and course details as parameters
   const encodedTitle = encodeURIComponent(courseTitle);
   const encodedDescription = encodeURIComponent(courseDescription);
   const baseUrl = window.location.origin;
   const shareUrl = `${baseUrl}?shareCourseid=${courseId}&image=${encodeURIComponent(courseImage || '')}&title=${encodedTitle}&desc=${encodedDescription}`;
   const encodedUrl = encodeURIComponent(shareUrl);
-
-  // Update page meta tags for better social sharing
-  useEffect(() => {
-    if (!courseImage) return;
-
-    // Create or update og:image meta tag
-    let ogImage = document.querySelector('meta[property="og:image"]');
-    if (!ogImage) {
-      ogImage = document.createElement('meta');
-      ogImage.setAttribute('property', 'og:image');
-      document.head.appendChild(ogImage);
-    }
-    ogImage.setAttribute('content', courseImage);
-
-    // Create or update og:title meta tag
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (!ogTitle) {
-      ogTitle = document.createElement('meta');
-      ogTitle.setAttribute('property', 'og:title');
-      document.head.appendChild(ogTitle);
-    }
-    ogTitle.setAttribute('content', courseTitle);
-
-    // Create or update og:description meta tag
-    let ogDesc = document.querySelector('meta[property="og:description"]');
-    if (!ogDesc) {
-      ogDesc = document.createElement('meta');
-      ogDesc.setAttribute('property', 'og:description');
-      document.head.appendChild(ogDesc);
-    }
-    ogDesc.setAttribute('content', courseDescription);
-  }, [courseImage, courseTitle, courseDescription]);
 
   const handleCopyLink = async () => {
     try {
