@@ -37,16 +37,7 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
 
   // Set Open Graph meta tags for social sharing when modal opens
   useEffect(() => {
-    if (!isOpen || !courseImage) return;
-
-    // Update og:image meta tag
-    let ogImage = document.querySelector('meta[property="og:image"]');
-    if (!ogImage) {
-      ogImage = document.createElement('meta');
-      ogImage.setAttribute('property', 'og:image');
-      document.head.appendChild(ogImage);
-    }
-    ogImage.setAttribute('content', courseImage);
+    if (!isOpen) return;
 
     // Update og:title meta tag
     let ogTitle = document.querySelector('meta[property="og:title"]');
@@ -74,7 +65,18 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
       document.head.appendChild(ogUrl);
     }
     ogUrl.setAttribute('content', shareUrl);
-  }, [isOpen, courseId]);
+    
+    // Update og:image meta tag if courseImage is available
+    if (courseImage) {
+      let ogImage = document.querySelector('meta[property="og:image"]');
+      if (!ogImage) {
+        ogImage = document.createElement('meta');
+        ogImage.setAttribute('property', 'og:image');
+        document.head.appendChild(ogImage);
+      }
+      ogImage.setAttribute('content', courseImage);
+    }
+  }, [isOpen]);
 
   const handleCopyLink = async () => {
     try {
