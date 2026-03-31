@@ -4,7 +4,7 @@ import { Card } from '@/app/components/ui/card';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Textarea } from '@/app/components/ui/textarea';
-import { Plus, Trash2, LayoutGrid, List, ShoppingCart, Calendar, Clock, Video, Users } from 'lucide-react';
+import { Plus, Trash2, LayoutGrid, List, ShoppingCart, Calendar, Clock, Video, Users, Copy, Check } from 'lucide-react';
 import { PublicCourseCheckout } from '@/app/components/PublicCourseCheckout';
 
 import { courseAPI } from '@/app/api/apiClient';
@@ -270,9 +270,28 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
   const [isLoading, setIsLoading] = React.useState(true);
   const [checkoutCourse, setCheckoutCourse] = React.useState<any | null>(null);
   const [enrolledCourseIds, setEnrolledCourseIds] = React.useState<Set<string>>(new Set());
+  const [copiedCourseId, setCopiedCourseId] = React.useState<string | null>(null);
   const courses = (section.content?.courses || []) as Course[];
   const layout = section.content?.layout || 'grid';
   const backendCourses = section.content?.fetchedCourses || [];
+
+  const generateShareUrl = (courseId: string) => {
+    const baseUrl = window.location.origin;
+    return `${baseUrl}?courseId=${courseId}`;
+  };
+
+  const handleCopyLink = async (courseId: string, courseTitle: string) => {
+    const shareUrl = generateShareUrl(courseId);
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedCourseId(courseId);
+      // Reset after 2 seconds
+      setTimeout(() => setCopiedCourseId(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+      alert('Failed to copy link. Try again.');
+    }
+  };
 
   // Fetch specialist's courses from API (only in editor, when logged in)
   useEffect(() => {
@@ -469,40 +488,83 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                     ) : (
                       <div className="font-bold text-lg text-green-600">Free</div>
                     )}
-                    {/* Button logic: show 'Go to My Learning' if enrolled, else Buy/Enroll/Closed */}
-                    {backendCourses.length > 0 && (() => {
-                      if (isEnrolled) {
+                    <div className="flex gap-2 mt-3">
+                      {backendCourses.length > 0 && (() => {
+                        if (isEnrolled) {
+                          return (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  window.dispatchEvent(new CustomEvent('navigate-my-learning'));
+                                }}
+                                className={`py-2 px-4 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors flex-1`}
+                              >
+                                Go to My Learning
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyLink(courseId, course.title || course.name)}
+                                className="py-2 px-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
+                                title="Copy shareable link"
+                              >
+                                {copiedCourseId === courseId ? (
+                                  <Check className="h-4 w-4" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </button>
+                            </>
+                          );
+                        }
+                        if (isCohortClosed) {
+                          return (
+                            <>
+                              <div className="py-2 px-4 bg-gray-400 text-white text-sm font-semibold rounded-lg text-center flex-1">
+                                Enrollment Closed
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyLink(courseId, course.title || course.name)}
+                                className="py-2 px-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center gap-1"
+                                title="Copy shareable link"
+                              >
+                                {copiedCourseId === courseId ? (
+                                  <Check className="h-4 w-4" />
+                                ) : (
+                                  <Copy className="h-4 w-4" />
+                                )}
+                              </button>
+                            </>
+                          );
+                        }
                         return (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              window.dispatchEvent(new CustomEvent('navigate-my-learning'));
-                            }}
-                            className={`mt-3 py-2 px-4 bg-green-600 text-white text-sm font-semibold rounded-lg text-center block hover:bg-green-700 transition-colors ${layout === 'list' ? 'w-fit' : 'w-full'}`}
-                          >
-                            Go to My Learning
-                          </button>
+                          <>
+                            <button
+                              onClick={() => setCheckoutCourse(course)}
+                              className="py-2 px-4 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 flex-1"
+                            >
+                              <ShoppingCart className="h-4 w-4" />
+                              {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
+                                ? 'Enroll Free'
+                                : (course.courseType === 'cohort' || course.courseType === 'cohort-based') ? 'Enroll Now' : 'Buy Now'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyLink(courseId, course.title || course.name)}
+                              className="py-2 px-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors flex items-center gap-1"
+                              title="Copy shareable link"
+                            >
+                              {copiedCourseId === courseId ? (
+                                <Check className="h-4 w-4" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
+                            </button>
+                          </>
                         );
-                      }
-                      if (isCohortClosed) {
-                        return (
-                          <div className={`mt-3 py-2 px-4 bg-gray-400 text-white text-sm font-semibold rounded-lg text-center ${layout === 'list' ? 'w-fit' : 'w-full'}`}>
-                            Enrollment Closed
-                          </div>
-                        );
-                      }
-                      return (
-                        <button
-                          onClick={() => setCheckoutCourse(course)}
-                          className={`mt-3 py-2 px-4 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 ${layout === 'list' ? 'w-fit' : 'w-full'}`}
-                        >
-                          <ShoppingCart className="h-4 w-4" />
-                          {(!course.price && !course.coursePrice) || Number(course.price || course.coursePrice) === 0
-                            ? 'Enroll Free'
-                            : (course.courseType === 'cohort' || course.courseType === 'cohort-based') ? 'Enroll Now' : 'Buy Now'}
-                        </button>
-                      );
-                    })()}
+                      })()}
+                    </div>
                   </div>
                 </div>
               );
