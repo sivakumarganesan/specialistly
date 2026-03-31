@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Copy, Check, Mail, Instagram, MessageCircle, Facebook } from 'lucide-react';
 
 interface ShareCourseModalProps {
@@ -34,49 +34,6 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   const baseUrl = window.location.origin;
   const shareUrl = `${baseUrl}?shareCourseid=${courseId}`;
   const encodedUrl = encodeURIComponent(shareUrl);
-
-  // Set Open Graph meta tags for social sharing when modal opens
-  useEffect(() => {
-    if (!isOpen) return;
-
-    // Update og:title meta tag
-    let ogTitle = document.querySelector('meta[property="og:title"]');
-    if (!ogTitle) {
-      ogTitle = document.createElement('meta');
-      ogTitle.setAttribute('property', 'og:title');
-      document.head.appendChild(ogTitle);
-    }
-    ogTitle.setAttribute('content', courseTitle);
-
-    // Update og:description meta tag
-    let ogDescription = document.querySelector('meta[property="og:description"]');
-    if (!ogDescription) {
-      ogDescription = document.createElement('meta');
-      ogDescription.setAttribute('property', 'og:description');
-      document.head.appendChild(ogDescription);
-    }
-    ogDescription.setAttribute('content', courseDescription);
-
-    // Update og:url meta tag
-    let ogUrl = document.querySelector('meta[property="og:url"]');
-    if (!ogUrl) {
-      ogUrl = document.createElement('meta');
-      ogUrl.setAttribute('property', 'og:url');
-      document.head.appendChild(ogUrl);
-    }
-    ogUrl.setAttribute('content', shareUrl);
-    
-    // Update og:image meta tag if courseImage is available
-    if (courseImage) {
-      let ogImage = document.querySelector('meta[property="og:image"]');
-      if (!ogImage) {
-        ogImage = document.createElement('meta');
-        ogImage.setAttribute('property', 'og:image');
-        document.head.appendChild(ogImage);
-      }
-      ogImage.setAttribute('content', courseImage);
-    }
-  }, [isOpen]);
 
   const handleCopyLink = async () => {
     try {
