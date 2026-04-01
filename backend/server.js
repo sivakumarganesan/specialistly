@@ -8,7 +8,6 @@ import { fileURLToPath } from 'url';
 import connectDB from './config/database.js';
 import { subdomainMiddleware } from './middleware/subdomainMiddleware.js';
 import Website from './models/Website.js';
-import Course from './models/Course.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import courseRoutes from './routes/courseRoutes.js';
@@ -388,55 +387,8 @@ if (distPath && fs.existsSync(distPath)) {
 // No need for special subdomain handlers here
 
 // ============ SPA FALLBACK ============
-
-// Helper: Inject Open Graph meta tags into index.html for social media link previews
-// WhatsApp, Facebook, Twitter etc. crawl the URL and read OG tags (they don't execute JS)
-
-async function serveWithOGTags(res, indexPath, courseId) {
-  try {
-    const course = await Course.findById(courseId).select('title description thumbnail').lean();
-    if (!course) {
-      // Course not found — serve plain index.html
-      return res.sendFile(indexPath);
-    }
-
-    let html = fs.readFileSync(indexPath, 'utf-8');
-
-    const ogTitle = (course.title || 'Course on Specialistly').replace(/[<>"'&]/g, '');
-    const ogDescription = (course.description || 'Check out this course!').replace(/[<>"'&]/g, '').slice(0, 200);
-    const ogImage = course.thumbnail
-      ? (course.thumbnail.startsWith('http') ? course.thumbnail : `${process.env.FRONTEND_URL || 'https://specialistly.com'}${course.thumbnail}`)
-      : '';
-    const ogUrl = `${process.env.FRONTEND_URL || 'https://specialistly.com'}?shareCourseid=${courseId}`;
-
-    const ogTags = `
-    <!-- Open Graph / Social Media Preview -->
-    <meta property="og:type" content="website" />
-    <meta property="og:title" content="${ogTitle}" />
-    <meta property="og:description" content="${ogDescription}" />
-    <meta property="og:url" content="${ogUrl}" />
-    ${ogImage ? `<meta property="og:image" content="${ogImage}" />` : ''}
-    ${ogImage ? `<meta property="og:image:width" content="1200" />` : ''}
-    ${ogImage ? `<meta property="og:image:height" content="630" />` : ''}
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${ogTitle}" />
-    <meta name="twitter:description" content="${ogDescription}" />
-    ${ogImage ? `<meta name="twitter:image" content="${ogImage}" />` : ''}`;
-
-    // Inject OG tags right before </head>
-    html = html.replace('</head>', ogTags + '\n  </head>');
-
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    return res.send(html);
-  } catch (err) {
-    console.error('[OG] Error injecting OG tags for course', courseId, ':', err.message);
-    // Fallback to plain index.html
-    return res.sendFile(indexPath);
-  }
-}
-
 // SPA fallback
-app.get('*', async (req, res, next) => {
+app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) {
     console.log('[API]', req.method, req.path);
     return next();
@@ -451,13 +403,6 @@ app.get('*', async (req, res, next) => {
       message: 'React app not found',
       details: 'dist/ folder or index.html missing'
     });
-  }
-
-  // If this is a shared course link, inject OG meta tags for social media previews
-  const shareCourseid = req.query.shareCourseid;
-  if (shareCourseid && /^[a-f0-9]{24}$/i.test(shareCourseid)) {
-    console.log('[SPA+OG]', req.method, req.path, '→ index.html with OG tags for course', shareCourseid);
-    return serveWithOGTags(res, indexPath, shareCourseid);
   }
   
   console.log('[SPA]', req.method, req.path, '→ index.html');
