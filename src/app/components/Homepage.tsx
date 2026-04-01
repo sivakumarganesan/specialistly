@@ -231,8 +231,8 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
         </div>
       </section>
 
-      {/* Creator Stories */}
-      <section id="creators" className="py-24 md:py-32">
+      {/* Creator Stories - Hidden for now, can be enabled later */}
+      {/* <section id="creators" className="py-24 md:py-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-5 tracking-tight">
@@ -287,7 +287,7 @@ export function Homepage({ onSignup, onLogin }: HomepageProps) {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* What you can sell */}
       <section className="bg-gray-50 py-24 md:py-32">
