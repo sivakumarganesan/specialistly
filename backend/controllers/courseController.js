@@ -74,13 +74,18 @@ export const createCourse = async (req, res) => {
 // Get all courses (with optional filter)
 export const getAllCourses = async (req, res) => {
   try {
-    const { specialistEmail, status } = req.query;
+    const { specialistEmail, status, page = 1, limit = 20 } = req.query;
     const filter = {};
 
     if (specialistEmail) filter.specialistEmail = specialistEmail;
     if (status) filter.status = status;
 
-    const courses = await Course.find(filter).sort({ createdAt: -1 });
+    const skip = (page - 1) * limit;
+    const courses = await Course.find(filter)
+      .select('_id title description thumbnail specialistEmail courseType price status createdAt')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
 
     res.status(200).json({
       success: true,
@@ -97,18 +102,30 @@ export const getAllCourses = async (req, res) => {
 // Get published courses for browsing (customer view)
 export const browseCourses = async (req, res) => {
   try {
-    const { courseType } = req.query;
+    const { courseType, page = 1, limit = 20 } = req.query;
     const filter = { status: 'published' };
 
     if (courseType) filter.courseType = courseType;
 
+    const skip = (page - 1) * limit;
     const courses = await Course.find(filter)
       .select('_id title description thumbnail specialistEmail courseType price currency lessons startDate endDate schedule meetingPlatform zoomLink cohortSize liveSessions')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit));
+
+    // Get total count for pagination
+    const total = await Course.countDocuments(filter);
 
     res.status(200).json({
       success: true,
       data: courses,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     res.status(500).json({

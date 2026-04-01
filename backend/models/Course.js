@@ -198,7 +198,14 @@ const courseSchema = new mongoose.Schema({
   },
 });
 
+// Single field indexes for fast filtering
+courseSchema.index({ status: 1 });
 courseSchema.index({ specialistEmail: 1 });
-courseSchema.index({ specialistEmail: 1, status: 1 });
+courseSchema.index({ createdAt: -1 });
+
+// Compound indexes for common query patterns
+courseSchema.index({ status: 1, createdAt: -1 });  // For browseCourses with sorting
+courseSchema.index({ status: 1, courseType: 1, createdAt: -1 });  // Browse by type
+courseSchema.index({ specialistEmail: 1, status: 1 });  // For getAllCourses filtering
 
 export default mongoose.model('Course', courseSchema);

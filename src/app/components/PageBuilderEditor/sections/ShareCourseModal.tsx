@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Copy, Check, Mail, Instagram, MessageCircle, Facebook } from 'lucide-react';
+import { X, Copy, Check, Mail, Instagram, MessageCircle, Facebook, Download, Share2 } from 'lucide-react';
 
 interface ShareCourseModalProps {
   course: {
@@ -22,6 +22,7 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   onClose,
 }) => {
   const [isCopied, setIsCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   if (!isOpen) return null;
 
@@ -34,6 +35,147 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
   const baseUrl = window.location.origin;
   const shareUrl = `${baseUrl}?shareCourseid=${courseId}`;
   const encodedUrl = encodeURIComponent(shareUrl);
+
+  // Generate a course card image using Canvas API
+  const generateCardImage = async (): Promise<Blob> => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    const width = 600;
+    const height = 400;
+    canvas.width = width;
+    canvas.height = height;
+
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    // Try to draw thumbnail
+    const imgHeight = 240;
+    if (courseImage) {
+      try {
+        const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const i = new Image();
+          i.crossOrigin = 'anonymous';
+          i.onload = () => resolve(i);
+          i.onerror = reject;
+          i.src = courseImage;
+        });
+        // Draw image covering top portion
+        const scale = Math.max(width / img.width, imgHeight / img.height);
+        const sw = width / scale;
+        const sh = imgHeight / scale;
+        const sx = (img.width - sw) / 2;
+        const sy = (img.height - sh) / 2;
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, width, imgHeight);
+      } catch {
+        // Fallback gradient if image fails to load
+        const grad = ctx.createLinearGradient(0, 0, width, imgHeight);
+        grad.addColorStop(0, '#60a5fa');
+        grad.addColorStop(1, '#1e293b');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, width, imgHeight);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '48px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('📚', width / 2, imgHeight / 2 + 16);
+      }
+    } else {
+      const grad = ctx.createLinearGradient(0, 0, width, imgHeight);
+      grad.addColorStop(0, '#60a5fa');
+      grad.addColorStop(1, '#1e293b');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, imgHeight);
+    }
+
+    // Title
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#111827';
+    ctx.font = 'bold 22px Arial, sans-serif';
+    const title = courseTitle.length > 50 ? courseTitle.slice(0, 47) + '...' : courseTitle;
+    ctx.fillText(title, 20, imgHeight + 36);
+
+    // Description
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '14px Arial, sans-serif';
+    const desc = courseDescription.length > 90 ? courseDescription.slice(0, 87) + '...' : courseDescription;
+    ctx.fillText(desc, 20, imgHeight + 60);
+
+    // Bottom bar with branding
+    ctx.fillStyle = '#2563eb';
+    const btnY = height - 50;
+    const btnW = 160;
+    const btnH = 36;
+    const btnX = 20;
+    // Rounded rect button
+    const r = 8;
+    ctx.beginPath();
+    ctx.moveTo(btnX + r, btnY);
+    ctx.lineTo(btnX + btnW - r, btnY);
+    ctx.quadraticCurveTo(btnX + btnW, btnY, btnX + btnW, btnY + r);
+    ctx.lineTo(btnX + btnW, btnY + btnH - r);
+    ctx.quadraticCurveTo(btnX + btnW, btnY + btnH, btnX + btnW - r, btnY + btnH);
+    ctx.lineTo(btnX + r, btnY + btnH);
+    ctx.quadraticCurveTo(btnX, btnY + btnH, btnX, btnY + btnH - r);
+    ctx.lineTo(btnX, btnY + r);
+    ctx.quadraticCurveTo(btnX, btnY, btnX + r, btnY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 14px Arial, sans-serif';
+    ctx.fillText('Explore Course', btnX + 20, btnY + 23);
+
+    // URL text
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '11px Arial, sans-serif';
+    ctx.fillText(shareUrl, btnX + btnW + 16, btnY + 23);
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob!), 'image/png');
+    });
+  };
+
+  const handleShareWithImage = async () => {
+    setIsGenerating(true);
+    try {
+      const blob = await generateCardImage();
+      const file = new File([blob], `${courseTitle.replace(/[^a-zA-Z0-9]/g, '_')}.png`, { type: 'image/png' });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: courseTitle,
+          text: `${courseTitle}\n${courseDescription}\n${shareUrl}`,
+          files: [file],
+        });
+      } else {
+        // Fallback: download the image
+        downloadCardImage(blob);
+      }
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') {
+        console.error('Share failed:', err);
+        // Fallback: download
+        try {
+          const blob = await generateCardImage();
+          downloadCardImage(blob);
+        } catch {
+          alert('Failed to generate image. Please try again.');
+        }
+      }
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const downloadCardImage = (blob: Blob) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${courseTitle.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const generateRichHTML = (imageSource?: string) => {
     // imageSource can be either a data URL or a regular URL
@@ -137,52 +279,22 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
     });
   };
 
-  const handleShareWhatsApp = async () => {
-    try {
-      // First copy the rich HTML to clipboard
-      let imageSource = '';
-      if (courseImage) {
-        imageSource = await imageToDataUrl(courseImage);
-      }
-      
-      const richHTML = generateRichHTML(imageSource);
-      const plainText = `${courseTitle}\n${courseDescription}\n\n${shareUrl}`;
-      
-      const blob = new Blob([richHTML], { type: 'text/html' });
-      const data = [new ClipboardItem({
-        'text/html': blob,
-        'text/plain': new Blob([plainText], { type: 'text/plain' })
-      })];
-      
-      await navigator.clipboard.write(data);
-      
-      // Then open WhatsApp Web
-      const message = `📚 ${courseTitle}\n\n${courseDescription}\n\n${shareUrl}`;
-      const encodedMessage = encodeURIComponent(message);
-      window.open(
-        `https://wa.me/?text=${encodedMessage}`,
-        'whatsapp-share',
-        'width=550,height=420'
-      );
-    } catch (err) {
-      console.error('Failed to share on WhatsApp:', err);
-      // Fallback to just opening WhatsApp
-      const message = `📚 ${courseTitle}\n\n${courseDescription}\n\n${shareUrl}`;
-      const encodedMessage = encodeURIComponent(message);
-      window.open(
-        `https://wa.me/?text=${encodedMessage}`,
-        'whatsapp-share',
-        'width=550,height=420'
-      );
-    }
+  const handleShareWhatsApp = () => {
+    // Use Web Share API with image on supported devices (mobile)
+    handleShareWithImage();
   };
 
   const handleShareFacebook = () => {
-    window.open(
-      `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-      'facebook-share',
-      'width=550,height=420'
-    );
+    // Facebook sharer uses OG tags from URL; also try Web Share API for image
+    if (navigator.share) {
+      handleShareWithImage();
+    } else {
+      window.open(
+        `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+        'facebook-share',
+        'width=550,height=420'
+      );
+    }
   };
 
   return (
@@ -283,6 +395,36 @@ export const ShareCourseModal: React.FC<ShareCourseModalProps> = ({
               </>
             )}
           </button>
+
+          {/* Share / Download Image */}
+          <div className="flex gap-2">
+            <button
+              onClick={handleShareWithImage}
+              disabled={isGenerating}
+              className="flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 bg-green-600 text-white hover:bg-green-700 active:scale-95 disabled:opacity-50"
+            >
+              <Share2 className="h-5 w-5" />
+              {isGenerating ? 'Generating...' : 'Share as Image'}
+            </button>
+            <button
+              onClick={async () => {
+                setIsGenerating(true);
+                try {
+                  const blob = await generateCardImage();
+                  downloadCardImage(blob);
+                } catch {
+                  alert('Failed to generate image.');
+                } finally {
+                  setIsGenerating(false);
+                }
+              }}
+              disabled={isGenerating}
+              className="py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 hover:bg-gray-200 active:scale-95 disabled:opacity-50"
+              title="Download course card image"
+            >
+              <Download className="h-5 w-5" />
+            </button>
+          </div>
 
           {/* Social Share Buttons */}
           <div className="space-y-3">
