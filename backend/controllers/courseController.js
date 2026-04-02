@@ -9,6 +9,7 @@ export const createCourse = async (req, res) => {
   try {
     const { title, description, courseType, price, currency = 'USD',
       cohortSize, startDate, endDate, schedule, meetingPlatform, zoomLink, liveSessions,
+      purchaseNote,
     } = req.body;
     
     if (!title || !courseType) {
@@ -40,6 +41,9 @@ export const createCourse = async (req, res) => {
 
     // Include thumbnail if provided
     if (req.body.thumbnail) courseData.thumbnail = req.body.thumbnail;
+
+    // Add purchaseNote for all course types
+    if (purchaseNote) courseData.purchaseNote = purchaseNote;
 
     // Add date fields for all course types
     if (startDate) courseData.startDate = startDate;
