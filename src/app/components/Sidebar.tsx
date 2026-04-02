@@ -43,8 +43,7 @@ const customerMenuItems = [
 ];
 
 const adminMenuItems = [
-  { id: "admin-dashboard", label: "Admin Dashboard", icon: LayoutDashboard },
-  { id: "settings", label: "Settings", icon: Settings },
+  { id: "admin-dashboard", label: "Admin Dashboard", icon: BarChart3 },
 ];
 
 export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userType = "customer", unreadMessageCount = 0 }: SidebarProps) {
@@ -55,7 +54,10 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userTyp
     }
   };
 
-  const menuItems = userType === "admin" ? adminMenuItems : userType === "specialist" ? creatorMenuItems : customerMenuItems;
+  // Admin users get admin items + their specialist/customer items
+  const isAdmin = userType === "admin";
+  const baseItems = creatorMenuItems; // admin is also a specialist
+  const menuItems = isAdmin ? [...adminMenuItems, ...baseItems] : userType === "specialist" ? creatorMenuItems : customerMenuItems;
 
 
 
