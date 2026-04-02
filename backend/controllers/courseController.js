@@ -112,7 +112,7 @@ export const browseCourses = async (req, res) => {
     if (courseType) filter.courseType = courseType;
 
     const courses = await Course.find(filter)
-      .select('_id title description thumbnail specialistEmail courseType price currency lessons startDate endDate schedule meetingPlatform zoomLink cohortSize liveSessions')
+      .select('_id title description thumbnail specialistEmail courseType price currency lessons startDate endDate startTime endTime timezone schedule meetingPlatform zoomLink cohortSize liveSessions')
       .sort({ createdAt: -1 });
 
     res.status(200).json({
