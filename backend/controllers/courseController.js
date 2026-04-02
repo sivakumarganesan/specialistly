@@ -41,11 +41,13 @@ export const createCourse = async (req, res) => {
     // Include thumbnail if provided
     if (req.body.thumbnail) courseData.thumbnail = req.body.thumbnail;
 
+    // Add date fields for all course types
+    if (startDate) courseData.startDate = startDate;
+    if (endDate) courseData.endDate = endDate;
+
     // Add cohort-specific fields
     if (courseType === 'cohort' || courseType === 'cohort-based') {
       if (cohortSize) courseData.cohortSize = cohortSize;
-      if (startDate) courseData.startDate = startDate;
-      if (endDate) courseData.endDate = endDate;
       if (schedule) courseData.schedule = schedule;
       if (meetingPlatform) courseData.meetingPlatform = meetingPlatform;
       if (zoomLink) courseData.zoomLink = zoomLink;
