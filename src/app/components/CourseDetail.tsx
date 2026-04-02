@@ -326,7 +326,8 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                       <Calendar className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">Start Date</p>
-                        <p className="font-semibold text-gray-900">{new Date(enrollment.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p className="font-semibold text-gray-900">{new Date(enrollment.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}{enrollment.startTime ? ` at ${enrollment.startTime}` : ''}</p>
+                        {enrollment.timezone && <p className="text-xs text-gray-500">{enrollment.timezone}</p>}
                       </div>
                     </div>
                   )}

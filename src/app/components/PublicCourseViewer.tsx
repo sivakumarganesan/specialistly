@@ -31,6 +31,8 @@ interface Enrollment {
   meetingPlatform?: string;
   startDate?: string;
   endDate?: string;
+  startTime?: string;
+  timezone?: string;
   schedule?: string;
   liveSessions?: number;
   lessons: Lesson[];
@@ -247,7 +249,8 @@ export const PublicCourseViewer: React.FC<PublicCourseViewerProps> = ({
                 <Calendar className="w-5 h-5 text-gray-600 mt-0.5" />
                 <div>
                   <p className="text-xs text-gray-400">Start Date</p>
-                  <p className="font-medium text-gray-900">{new Date(enrollment.startDate).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                  <p className="font-medium text-gray-900">{new Date(enrollment.startDate).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}{enrollment.startTime ? ` at ${enrollment.startTime}` : ''}</p>
+                  {enrollment.timezone && <p className="text-xs text-gray-500">{enrollment.timezone}</p>}
                 </div>
               </div>
             )}

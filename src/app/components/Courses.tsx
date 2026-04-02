@@ -75,6 +75,8 @@ interface Course {
   cohortSize?: string;
   startDate?: string;
   endDate?: string;
+  startTime?: string;
+  timezone?: string;
   schedule?: string;
   meetingPlatform?: string;
   zoomLink?: string;
@@ -129,6 +131,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
             cohortSize: course.cohortSize || "",
             startDate: course.startDate || "",
             endDate: course.endDate || "",
+            startTime: course.startTime || "",
+            timezone: course.timezone || "Asia/Kolkata",
             schedule: course.schedule || "",
             meetingPlatform: course.meetingPlatform || "Zoom",
             zoomLink: course.zoomLink || "",
@@ -274,6 +278,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
     cohortSize: "",
     startDate: "",
     endDate: "",
+    startTime: "",
+    timezone: "Asia/Kolkata",
     schedule: "",
     meetingPlatform: "Zoom",
     zoomLink: "",
@@ -301,6 +307,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         purchaseNote: formData.purchaseNote || "",
         startDate: formData.startDate || "",
         endDate: formData.endDate || "",
+        startTime: formData.startTime || "",
+        timezone: formData.timezone || "Asia/Kolkata",
         status: "draft",
         specialistId: user?.id,
         specialistEmail: user?.email,
@@ -346,6 +354,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         duration: formData.duration,
         startDate: formData.startDate || "",
         endDate: formData.endDate || "",
+        startTime: formData.startTime || "",
+        timezone: formData.timezone || "Asia/Kolkata",
         purchaseNote: formData.purchaseNote || "",
         specialistId: user?.id,
         specialistEmail: user?.email,
@@ -481,6 +491,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       cohortSize: course.cohortSize || "",
       startDate: formatDate(course.startDate || ""),
       endDate: formatDate(course.endDate || ""),
+      startTime: course.startTime || "",
+      timezone: course.timezone || "Asia/Kolkata",
       schedule: course.schedule || "",
       meetingPlatform: course.meetingPlatform || "Zoom",
       zoomLink: course.zoomLink || "",
@@ -506,6 +518,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       cohortSize: "",
       startDate: "",
       endDate: "",
+      startTime: "",
+      timezone: "Asia/Kolkata",
       schedule: "",
       meetingPlatform: "Zoom",
       zoomLink: "",
@@ -1055,6 +1069,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
           cohortSize: course.cohortSize || "",
           startDate: course.startDate || "",
           endDate: course.endDate || "",
+          startTime: course.startTime || "",
+          timezone: course.timezone || "Asia/Kolkata",
           schedule: course.schedule || "",
           meetingPlatform: course.meetingPlatform || "Zoom",
           liveSessions: course.liveSessions,
@@ -1302,7 +1318,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-gray-600" />
                     <span className="text-gray-600">
-                      Starts: {new Date(course.startDate).toLocaleDateString()}
+                      Starts: {new Date(course.startDate).toLocaleDateString()}{course.startTime ? ` at ${course.startTime}` : ''}{course.timezone ? ` (${course.timezone})` : ''}
                     </span>
                   </div>
                 )}
@@ -1569,6 +1585,49 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="startTime">Start Time</Label>
+                <Input
+                  id="startTime"
+                  type="time"
+                  value={formData.startTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startTime: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="timezone">Timezone</Label>
+                <select
+                  id="timezone"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={formData.timezone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, timezone: e.target.value })
+                  }
+                >
+                  <option value="Asia/Kolkata">(GMT+5:30) India - Kolkata</option>
+                  <option value="Asia/Dubai">(GMT+4:00) Dubai</option>
+                  <option value="Asia/Singapore">(GMT+8:00) Singapore</option>
+                  <option value="Asia/Tokyo">(GMT+9:00) Tokyo</option>
+                  <option value="Asia/Shanghai">(GMT+8:00) Shanghai</option>
+                  <option value="Europe/London">(GMT+0:00) London</option>
+                  <option value="Europe/Paris">(GMT+1:00) Paris</option>
+                  <option value="Europe/Berlin">(GMT+1:00) Berlin</option>
+                  <option value="America/New_York">(GMT-5:00) New York</option>
+                  <option value="America/Chicago">(GMT-6:00) Chicago</option>
+                  <option value="America/Los_Angeles">(GMT-8:00) Los Angeles</option>
+                  <option value="America/Toronto">(GMT-5:00) Toronto</option>
+                  <option value="America/Sao_Paulo">(GMT-3:00) São Paulo</option>
+                  <option value="Australia/Sydney">(GMT+11:00) Sydney</option>
+                  <option value="Pacific/Auckland">(GMT+13:00) Auckland</option>
+                  <option value="UTC">(GMT+0:00) UTC</option>
+                </select>
+              </div>
+            </div>
+
             {courseType === "cohort-based" && (
               <div>
                 <Label htmlFor="zoomLink">Meeting Link</Label>
@@ -1753,6 +1812,49 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                     setFormData({ ...formData, endDate: e.target.value })
                   }
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="edit-startTime">Start Time</Label>
+                <Input
+                  id="edit-startTime"
+                  type="time"
+                  value={formData.startTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, startTime: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-timezone">Timezone</Label>
+                <select
+                  id="edit-timezone"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  value={formData.timezone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, timezone: e.target.value })
+                  }
+                >
+                  <option value="Asia/Kolkata">(GMT+5:30) India - Kolkata</option>
+                  <option value="Asia/Dubai">(GMT+4:00) Dubai</option>
+                  <option value="Asia/Singapore">(GMT+8:00) Singapore</option>
+                  <option value="Asia/Tokyo">(GMT+9:00) Tokyo</option>
+                  <option value="Asia/Shanghai">(GMT+8:00) Shanghai</option>
+                  <option value="Europe/London">(GMT+0:00) London</option>
+                  <option value="Europe/Paris">(GMT+1:00) Paris</option>
+                  <option value="Europe/Berlin">(GMT+1:00) Berlin</option>
+                  <option value="America/New_York">(GMT-5:00) New York</option>
+                  <option value="America/Chicago">(GMT-6:00) Chicago</option>
+                  <option value="America/Los_Angeles">(GMT-8:00) Los Angeles</option>
+                  <option value="America/Toronto">(GMT-5:00) Toronto</option>
+                  <option value="America/Sao_Paulo">(GMT-3:00) São Paulo</option>
+                  <option value="Australia/Sydney">(GMT+11:00) Sydney</option>
+                  <option value="Pacific/Auckland">(GMT+13:00) Auckland</option>
+                  <option value="UTC">(GMT+0:00) UTC</option>
+                </select>
               </div>
             </div>
 

@@ -925,7 +925,8 @@ export function PublicCourseCheckout({ course, isOpen, onClose }: PublicCourseCh
                     {course.startDate && (
                       <div className="flex items-center gap-2 text-gray-900">
                         <span className="font-medium">Starts:</span>
-                        <span>{new Date(course.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        <span>{new Date(course.startDate).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}{course.startTime ? ` at ${course.startTime}` : ''}</span>
+                        {course.timezone && <span className="text-gray-500 ml-1">({course.timezone})</span>}
                       </div>
                     )}
                     {course.schedule && (

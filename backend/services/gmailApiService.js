@@ -78,7 +78,7 @@ export const sendEmail = async (emailData) => {
       throw new Error(error);
     }
 
-    const { to, subject, html } = emailData;
+    const { to, subject, html, attachments } = emailData;
 
     if (!to || !subject || !html) {
       throw new Error('Missing required email fields: to, subject, html');
@@ -90,14 +90,18 @@ export const sendEmail = async (emailData) => {
     // Production: Update to your verified domain
     const fromEmail = process.env.FROM_EMAIL || 'notifications@resend.dev';
 
-    const result = await resend.emails.send({
+    const emailPayload = {
       from: fromEmail,
       to: to,
       subject: subject,
       html: html,
-      // For future: add reply-to address if needed
-      // replyTo: process.env.REPLY_TO_EMAIL,
-    });
+    };
+
+    if (attachments && attachments.length > 0) {
+      emailPayload.attachments = attachments;
+    }
+
+    const result = await resend.emails.send(emailPayload);
 
     // Check if Resend API returned an error
     if (result.error) {

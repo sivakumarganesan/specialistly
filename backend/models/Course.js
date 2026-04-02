@@ -158,6 +158,7 @@ const courseSchema = new mongoose.Schema({
   cohortSize: String,
   startDate: Date,
   endDate: Date,
+  startTime: String, // e.g. "09:00", "14:30" — 24h format
   schedule: String,
   timezone: {
     type: String,

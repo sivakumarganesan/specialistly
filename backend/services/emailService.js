@@ -363,15 +363,18 @@ export const sendPasswordResetEmail = async (options) => {
  */
 export const sendCohortEnrollmentConfirmation = async (options) => {
   try {
-    const { customerEmail, customerName, courseName, enrollmentId, startDate, endDate, schedule, meetingPlatform, zoomLink, purchaseNote, thumbnail, description } = options;
+    const { customerEmail, customerName, courseName, enrollmentId, startDate, endDate, startTime, timezone, schedule, meetingPlatform, zoomLink, purchaseNote, thumbnail, description } = options;
 
     if (!customerEmail || !customerName || !courseName) {
       console.warn('⚠️  Missing required email parameters for cohort enrollment confirmation');
       return;
     }
 
-    const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'To be announced';
-    const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : 'To be announced';
+    const tz = timezone || 'Asia/Kolkata';
+    const formattedStartDate = startDate ? new Date(startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz }) : 'To be announced';
+    const formattedEndDate = endDate ? new Date(endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: tz }) : 'To be announced';
+    const timeDisplay = startTime ? ` at ${startTime}` : '';
+    const tzAbbr = tz.replace(/_/g, ' ');
     const hasScheduledDates = !!startDate;
 
     const html = `
@@ -405,11 +408,15 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #666;">Start Date:</td>
-                  <td style="padding: 8px 0; font-weight: bold; color: #4F46E5;">${formattedStartDate}</td>
+                  <td style="padding: 8px 0; font-weight: bold; color: #4F46E5;">${formattedStartDate}${timeDisplay}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #666;">End Date:</td>
                   <td style="padding: 8px 0;">${formattedEndDate}</td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; color: #666;">Timezone:</td>
+                  <td style="padding: 8px 0;">${tzAbbr}</td>
                 </tr>
                 ${schedule ? `
                 <tr>
@@ -479,22 +486,24 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
  */
 export const sendCourseReminder = async (options) => {
   try {
-    const { customerEmail, customerName, courseName, startDate, endDate, schedule, zoomLink, purchaseNote, customMessage, thumbnail, description } = options;
+    const { customerEmail, customerName, courseName, startDate, endDate, startTime, timezone, schedule, zoomLink, purchaseNote, customMessage, thumbnail, description } = options;
 
     if (!customerEmail || !courseName) {
       console.warn('⚠️  Missing required email parameters for course reminder');
       return;
     }
 
+    const tz = timezone || 'Asia/Kolkata';
+    const tzAbbr = tz.replace(/_/g, ' ');
 
-
-    const dateFormat = { month: 'short', day: 'numeric', year: 'numeric' };
+    const dateFormat = { month: 'short', day: 'numeric', year: 'numeric', timeZone: tz };
     const formattedStartDate = startDate
       ? new Date(startDate).toLocaleDateString('en-US', dateFormat)
       : null;
     const formattedEndDate = endDate
       ? new Date(endDate).toLocaleDateString('en-US', dateFormat)
       : null;
+    const timeDisplay = startTime ? ` at ${startTime}` : '';
 
     const html = `
       <html>
@@ -515,7 +524,8 @@ export const sendCourseReminder = async (options) => {
             ${formattedStartDate || formattedEndDate || schedule ? `
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
               ${formattedStartDate || formattedEndDate ? `
-              <p style="margin: 0 0 10px 0; font-size: 15px; color: #333;">📅 Starts: <strong>${formattedStartDate || 'TBD'}</strong> — Ends: <strong>${formattedEndDate || 'TBD'}</strong></p>
+              <p style="margin: 0 0 10px 0; font-size: 15px; color: #333;">📅 Starts: <strong>${formattedStartDate || 'TBD'}${timeDisplay}</strong> — Ends: <strong>${formattedEndDate || 'TBD'}</strong></p>
+              <p style="margin: 0 0 10px 0; font-size: 13px; color: #666;">🕐 Timezone: ${tzAbbr}</p>
               ` : ''}
               ${schedule ? `<p style="margin: 0; color: #666;">Schedule: ${schedule}</p>` : ''}
             </div>

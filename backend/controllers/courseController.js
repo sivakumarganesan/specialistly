@@ -8,8 +8,8 @@ import { sendCourseReminder } from '../services/emailService.js';
 export const createCourse = async (req, res) => {
   try {
     const { title, description, courseType, price, currency = 'USD',
-      cohortSize, startDate, endDate, schedule, meetingPlatform, zoomLink, liveSessions,
-      purchaseNote,
+      cohortSize, startDate, endDate, startTime, schedule, meetingPlatform, zoomLink, liveSessions,
+      purchaseNote, timezone,
     } = req.body;
     
     if (!title || !courseType) {
@@ -48,6 +48,8 @@ export const createCourse = async (req, res) => {
     // Add date fields for all course types
     if (startDate) courseData.startDate = startDate;
     if (endDate) courseData.endDate = endDate;
+    if (startTime) courseData.startTime = startTime;
+    if (timezone) courseData.timezone = timezone;
 
     // Add cohort-specific fields
     if (courseType === 'cohort' || courseType === 'cohort-based') {
@@ -702,6 +704,8 @@ export const sendReminder = async (req, res) => {
           courseName: course.title,
           startDate: course.startDate,
           endDate: course.endDate,
+          startTime: course.startTime,
+          timezone: course.timezone,
           schedule: course.schedule,
           zoomLink: course.zoomLink,
           purchaseNote: course.purchaseNote,
@@ -724,6 +728,8 @@ export const sendReminder = async (req, res) => {
           courseName: course.title,
           startDate: course.startDate,
           endDate: course.endDate,
+          startTime: course.startTime,
+          timezone: course.timezone,
           schedule: course.schedule,
           zoomLink: course.zoomLink,
           purchaseNote: course.purchaseNote,

@@ -236,7 +236,7 @@ const MyCourses: React.FC = () => {
                                 {course.sessionsAttended} of {course.sessionsTotal} sessions attended
                               </p>
                               <p className="text-xs text-gray-400 mt-1">
-                                Starts: {new Date(course.startDate).toLocaleDateString()}
+                                Starts: {new Date(course.startDate).toLocaleDateString()}{course.startTime ? ` at ${course.startTime}` : ''}{course.timezone ? ` (${course.timezone})` : ''}
                               </p>
                             </div>
                             <div className="text-right">
