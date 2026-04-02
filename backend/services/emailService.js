@@ -363,7 +363,7 @@ export const sendPasswordResetEmail = async (options) => {
  */
 export const sendCohortEnrollmentConfirmation = async (options) => {
   try {
-    const { customerEmail, customerName, courseName, enrollmentId, startDate, endDate, schedule, meetingPlatform, zoomLink, purchaseNote } = options;
+    const { customerEmail, customerName, courseName, enrollmentId, startDate, endDate, schedule, meetingPlatform, zoomLink, purchaseNote, thumbnail, description } = options;
 
     if (!customerEmail || !customerName || !courseName) {
       console.warn('⚠️  Missing required email parameters for cohort enrollment confirmation');
@@ -390,16 +390,24 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
               <p>This is a <strong>live cohort course</strong> — you'll attend live sessions with your instructor${schedule ? ` (${schedule})` : ''}. There are no pre-recorded video lessons; all learning happens in real-time!</p>
             </div>
 
+            ${thumbnail ? `
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="${thumbnail}" alt="${courseName}" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #e5e7eb;" />
+            </div>
+            ` : ''}
+
+            ${description ? `
+            <div style="background-color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb; color: #555; font-size: 14px; line-height: 1.6;">
+              ${description}
+            </div>
+            ` : ''}
+
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
               <h3 style="color: #1F2937; margin-top: 0; margin-bottom: 15px;">📋 Course Details</h3>
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td style="padding: 8px 0; color: #666; width: 40%;">Course:</td>
                   <td style="padding: 8px 0; font-weight: bold;">${courseName}</td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0; color: #666;">Enrollment ID:</td>
-                  <td style="padding: 8px 0;">${enrollmentId}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px 0; color: #666;">Start Date:</td>
@@ -415,12 +423,6 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
                   <td style="padding: 8px 0;">${schedule}</td>
                 </tr>
                 ` : ''}
-                ${meetingPlatform ? `
-                <tr>
-                  <td style="padding: 8px 0; color: #666;">Platform:</td>
-                  <td style="padding: 8px 0;">${meetingPlatform}</td>
-                </tr>
-                ` : ''}
               </table>
             </div>
 
@@ -429,7 +431,7 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
               <h3 style="margin-top: 0; margin-bottom: 10px;">🔗 Your Meeting Link</h3>
               <p style="margin: 0 0 15px 0; font-size: 14px; opacity: 0.9;">Use this link to join your live sessions:</p>
               <a href="${zoomLink}" style="display: inline-block; background-color: white; color: #4F46E5; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">
-                Join ${meetingPlatform || 'Meeting'}
+                Join
               </a>
               <p style="margin: 15px 0 0 0; font-size: 12px; opacity: 0.8; word-break: break-all;">${zoomLink}</p>
             </div>

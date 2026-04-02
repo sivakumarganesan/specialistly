@@ -245,6 +245,8 @@ export const createPublicPaymentIntent = async (req, res) => {
             meetingPlatform: course.meetingPlatform,
             zoomLink: course.zoomLink,
             purchaseNote: course.purchaseNote,
+            thumbnail: course.thumbnail,
+            description: course.description,
           });
         } else {
           await sendEnrollmentConfirmation({
@@ -569,6 +571,8 @@ export const confirmPublicPayment = async (req, res) => {
             meetingPlatform: course.meetingPlatform,
             zoomLink: course.zoomLink,
             purchaseNote: course.purchaseNote,
+            thumbnail: course.thumbnail,
+            description: course.description,
           });
         } else if (course) {
           await sendEnrollmentConfirmation({
@@ -748,6 +752,8 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
           meetingPlatform: course.meetingPlatform,
           zoomLink: course.zoomLink,
           purchaseNote: course.purchaseNote,
+          thumbnail: course.thumbnail,
+          description: course.description,
         });
       } else if (course) {
         await sendEnrollmentConfirmation({
