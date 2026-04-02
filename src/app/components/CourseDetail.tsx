@@ -7,6 +7,15 @@ import { Badge } from "@/app/components/ui/badge";
 import { ChevronLeft, Play, CheckCircle, Award, AlertCircle, Video, Calendar, Clock, Users, ExternalLink } from "lucide-react";
 import { HLSVideoPlayer } from "@/app/components/HLSVideoPlayer";
 
+const tzAbbrMap: Record<string, string> = {
+  'Asia/Kolkata': 'IST', 'Asia/Dubai': 'GST', 'Asia/Singapore': 'SGT',
+  'Asia/Tokyo': 'JST', 'Asia/Shanghai': 'CST', 'Europe/London': 'GMT',
+  'Europe/Paris': 'CET', 'Europe/Berlin': 'CET', 'America/New_York': 'EST',
+  'America/Chicago': 'CST', 'America/Los_Angeles': 'PST', 'America/Toronto': 'EST',
+  'America/Sao_Paulo': 'BRT', 'Australia/Sydney': 'AEST', 'Pacific/Auckland': 'NZST', 'UTC': 'UTC',
+};
+const getTzAbbr = (tz?: string) => tzAbbrMap[tz || ''] || tz?.replace(/_/g, ' ') || '';
+
 interface Lesson {
   _id: string;
   title: string;
@@ -41,6 +50,9 @@ interface EnrollmentDetails {
   meetingPlatform?: string;
   startDate?: string;
   endDate?: string;
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
   schedule?: string;
   liveSessions?: number;
   lessons: Lesson[];
@@ -301,7 +313,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                 <div className="p-8 text-center">
                   <Video className="w-14 h-14 text-blue-600 mx-auto mb-4" />
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Join Live Session</h2>
-                  <p className="text-gray-600 mb-6">Click the button below to join your live session on {enrollment.meetingPlatform || 'Zoom'}.</p>
+                  <p className="text-gray-600 mb-6">Click the button below to join your live session.</p>
                   <a
                     href={enrollment.zoomLink}
                     target="_blank"
@@ -309,7 +321,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                     className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-lg shadow-md"
                   >
                     <Video className="w-5 h-5" />
-                    Join {enrollment.meetingPlatform || 'Zoom'} Meeting
+                    Join Meeting
                     <ExternalLink className="w-4 h-4" />
                   </a>
                 </div>
@@ -326,8 +338,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                       <Calendar className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">Start Date</p>
-                        <p className="font-semibold text-gray-900">{new Date(enrollment.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}{enrollment.startTime ? ` at ${enrollment.startTime}` : ''}</p>
-                        {enrollment.timezone && <p className="text-xs text-gray-500">{enrollment.timezone}</p>}
+                        <p className="font-semibold text-gray-900">{new Date(enrollment.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}{enrollment.startTime ? ` at ${enrollment.startTime}` : ''}{enrollment.endTime ? ` to ${enrollment.endTime}` : ''}{enrollment.timezone ? ` ${getTzAbbr(enrollment.timezone)}` : ''}</p>
                       </div>
                     </div>
                   )}
@@ -358,12 +369,12 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                       </div>
                     </div>
                   )}
-                  {enrollment.meetingPlatform && (
+                  {(enrollment.meetingPlatform || enrollment.zoomLink) && (
                     <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
                       <Video className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
-                        <p className="text-sm text-gray-500">Platform</p>
-                        <p className="font-semibold text-gray-900">{enrollment.meetingPlatform}</p>
+                        <p className="text-sm text-gray-500">Mode</p>
+                        <p className="font-semibold text-gray-900">Online</p>
                       </div>
                     </div>
                   )}

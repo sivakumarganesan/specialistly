@@ -76,6 +76,7 @@ interface Course {
   startDate?: string;
   endDate?: string;
   startTime?: string;
+  endTime?: string;
   timezone?: string;
   schedule?: string;
   meetingPlatform?: string;
@@ -279,6 +280,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
     startDate: "",
     endDate: "",
     startTime: "",
+    endTime: "",
     timezone: "Asia/Kolkata",
     schedule: "",
     meetingPlatform: "Zoom",
@@ -308,6 +310,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         startDate: formData.startDate || "",
         endDate: formData.endDate || "",
         startTime: formData.startTime || "",
+        endTime: formData.endTime || "",
         timezone: formData.timezone || "Asia/Kolkata",
         status: "draft",
         specialistId: user?.id,
@@ -355,6 +358,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         startDate: formData.startDate || "",
         endDate: formData.endDate || "",
         startTime: formData.startTime || "",
+        endTime: formData.endTime || "",
         timezone: formData.timezone || "Asia/Kolkata",
         purchaseNote: formData.purchaseNote || "",
         specialistId: user?.id,
@@ -492,6 +496,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       startDate: formatDate(course.startDate || ""),
       endDate: formatDate(course.endDate || ""),
       startTime: course.startTime || "",
+      endTime: course.endTime || "",
       timezone: course.timezone || "Asia/Kolkata",
       schedule: course.schedule || "",
       meetingPlatform: course.meetingPlatform || "Zoom",
@@ -519,6 +524,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       startDate: "",
       endDate: "",
       startTime: "",
+      endTime: "",
       timezone: "Asia/Kolkata",
       schedule: "",
       meetingPlatform: "Zoom",
@@ -1070,6 +1076,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
           startDate: course.startDate || "",
           endDate: course.endDate || "",
           startTime: course.startTime || "",
+          endTime: course.endTime || "",
           timezone: course.timezone || "Asia/Kolkata",
           schedule: course.schedule || "",
           meetingPlatform: course.meetingPlatform || "Zoom",
@@ -1585,7 +1592,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="startTime">Start Time</Label>
                 <Input
@@ -1594,6 +1601,18 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   value={formData.startTime}
                   onChange={(e) =>
                     setFormData({ ...formData, startTime: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="endTime">End Time</Label>
+                <Input
+                  id="endTime"
+                  type="time"
+                  value={formData.endTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, endTime: e.target.value })
                   }
                 />
               </div>
@@ -1815,7 +1834,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="edit-startTime">Start Time</Label>
                 <Input
@@ -1824,6 +1843,18 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   value={formData.startTime}
                   onChange={(e) =>
                     setFormData({ ...formData, startTime: e.target.value })
+                  }
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="edit-endTime">End Time</Label>
+                <Input
+                  id="edit-endTime"
+                  type="time"
+                  value={formData.endTime}
+                  onChange={(e) =>
+                    setFormData({ ...formData, endTime: e.target.value })
                   }
                 />
               </div>

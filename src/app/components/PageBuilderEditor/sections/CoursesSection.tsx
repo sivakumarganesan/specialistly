@@ -11,6 +11,15 @@ import { ShareCourseModal } from './ShareCourseModal';
 import { courseAPI } from '@/app/api/apiClient';
 import { useAuth } from '@/app/context/AuthContext';
 
+const tzAbbrMap: Record<string, string> = {
+  'Asia/Kolkata': 'IST', 'Asia/Dubai': 'GST', 'Asia/Singapore': 'SGT',
+  'Asia/Tokyo': 'JST', 'Asia/Shanghai': 'CST', 'Europe/London': 'GMT',
+  'Europe/Paris': 'CET', 'Europe/Berlin': 'CET', 'America/New_York': 'EST',
+  'America/Chicago': 'CST', 'America/Los_Angeles': 'PST', 'America/Toronto': 'EST',
+  'America/Sao_Paulo': 'BRT', 'Australia/Sydney': 'AEST', 'Pacific/Auckland': 'NZST', 'UTC': 'UTC',
+};
+const getTzAbbr = (tz?: string) => tzAbbrMap[tz || ''] || tz?.replace(/_/g, ' ') || '';
+
 interface Course {
   id: string;
   title: string;
@@ -448,11 +457,10 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                         {course.startDate && (
                           <div className="flex items-center gap-1.5 text-gray-900">
                             <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}{course.startTime ? ` at ${course.startTime}` : ''}</span>
+                            <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}{course.startTime ? ` at ${course.startTime}` : ''}{course.endTime ? ` to ${course.endTime}` : ''}{course.timezone ? ` ${getTzAbbr(course.timezone)}` : ''}</span>
                             {course.endDate && (
                               <span> — Ends: {new Date(course.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                             )}
-                            {course.timezone && <span className="text-gray-500">({course.timezone})</span>}
                           </div>
                         )}
                         {course.schedule && (
@@ -461,10 +469,10 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                             <span>{course.schedule}</span>
                           </div>
                         )}
-                        {course.meetingPlatform && (
+                        {(course.meetingPlatform || course.zoomLink) && (
                           <div className="flex items-center gap-1.5 text-gray-900">
                             <Video className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span>Via {course.meetingPlatform}</span>
+                            <span>Online</span>
                           </div>
                         )}
                         {course.cohortSize && (

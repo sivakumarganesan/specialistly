@@ -159,6 +159,7 @@ const courseSchema = new mongoose.Schema({
   startDate: Date,
   endDate: Date,
   startTime: String, // e.g. "09:00", "14:30" — 24h format
+  endTime: String,
   schedule: String,
   timezone: {
     type: String,

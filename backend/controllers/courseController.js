@@ -8,7 +8,7 @@ import { sendCourseReminder } from '../services/emailService.js';
 export const createCourse = async (req, res) => {
   try {
     const { title, description, courseType, price, currency = 'USD',
-      cohortSize, startDate, endDate, startTime, schedule, meetingPlatform, zoomLink, liveSessions,
+      cohortSize, startDate, endDate, startTime, endTime, schedule, meetingPlatform, zoomLink, liveSessions,
       purchaseNote, timezone,
     } = req.body;
     
@@ -49,6 +49,7 @@ export const createCourse = async (req, res) => {
     if (startDate) courseData.startDate = startDate;
     if (endDate) courseData.endDate = endDate;
     if (startTime) courseData.startTime = startTime;
+    if (endTime) courseData.endTime = endTime;
     if (timezone) courseData.timezone = timezone;
 
     // Add cohort-specific fields
