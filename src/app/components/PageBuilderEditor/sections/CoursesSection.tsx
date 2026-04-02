@@ -39,12 +39,37 @@ const calculateEnrollmentCloseTime = (course: any): Date | null => {
       if (period === 'AM' && hours === 12) hours = 0;
     }
     
-    // Create a date string: YYYY-MM-DD HH:mm
-    const dateStr = course.startDate.split('T')[0]; // Get just the date part
-    const datetimeStr = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00Z`;
-    const startDatetime = new Date(datetimeStr);
+    // Create date in the course's timezone
+    // First create a UTC date from the ISO string
+    const startDate = new Date(course.startDate);
     
-    // Get enrollment close minutes (default 1 if not specified, or parse from enrollmentClosesAt)
+    // Get timezone offset for the course's timezone
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: course.timezone || 'UTC',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    });
+    
+    const parts = formatter.formatToParts(startDate);
+    const tzYear = parseInt(parts.find(p => p.type === 'year')?.value || '1970', 10);
+    const tzMonth = parseInt(parts.find(p => p.type === 'month')?.value || '01', 10) - 1;
+    const tzDay = parseInt(parts.find(p => p.type === 'day')?.value || '01', 10);
+    
+    // Calculate the difference between UTC and the course's timezone
+    const utcDate = new Date(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate());
+    const tzDate = new Date(tzYear, tzMonth, tzDay);
+    const tzOffset = utcDate.getTime() - tzDate.getTime();
+    
+    // Create start datetime in the course's timezone
+    const startDatetimeUTC = new Date(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate(), hours, minutes, 0);
+    const startDatetimeInTz = new Date(startDatetimeUTC.getTime() + tzOffset);
+    
+    // Get enrollment close minutes
     let closeMinutes = 1;
     if (course.enrollmentClosesAt) {
       if (typeof course.enrollmentClosesAt === 'number') {
@@ -56,7 +81,7 @@ const calculateEnrollmentCloseTime = (course: any): Date | null => {
     }
     
     // Subtract close minutes from start time
-    const closeTime = new Date(startDatetime.getTime() - closeMinutes * 60000);
+    const closeTime = new Date(startDatetimeInTz.getTime() - closeMinutes * 60000);
     return closeTime;
   } catch (e) {
     return null;
@@ -455,7 +480,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
               // Check if enrollment is closed based on enrollment close time (e.g., 1 min before start)
               const isCohortClosed = (course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate ? (() => {
                 const closeTime = calculateEnrollmentCloseTime(course);
-                return closeTime ? new Date() >= closeTime : new Date(course.startDate) <= new Date();
+                return closeTime ? new Date() >= closeTime : new Date(course.startDate) < new Date();
               })() : false;
               return (
                 <div
@@ -504,9 +529,9 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                         {course.startDate && (
                           <div className="flex items-center gap-1.5 text-gray-900">
                             <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}{course.startTime ? ` at ${course.startTime}` : ''}{course.endTime ? ` to ${course.endTime}` : ''}{course.timezone ? ` ${getTzAbbr(course.timezone)}` : ''}</span>
+                            <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: course.timezone || 'UTC' })}{course.startTime ? ` at ${course.startTime}` : ''}{course.endTime ? ` to ${course.endTime}` : ''}{course.timezone ? ` ${getTzAbbr(course.timezone)}` : ''}</span>
                             {course.endDate && (
-                              <span> — Ends: {new Date(course.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</span>
+                              <span> — Ends: {new Date(course.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: course.timezone || 'UTC' })}</span>
                             )}
                           </div>
                         )}
