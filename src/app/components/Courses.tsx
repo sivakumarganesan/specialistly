@@ -84,6 +84,8 @@ interface Course {
   zoomStartUrl?: string;
   liveSessions?: number;
   purchaseNote?: string;
+  enrollmentClosesAt?: string;
+  customEnrollmentCloseMinutes?: number;
 }
 
 interface SearchableItem {
@@ -140,6 +142,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
             zoomStartUrl: course.zoomStartUrl || "",
             liveSessions: course.liveSessions,
             purchaseNote: course.purchaseNote || "",
+            enrollmentClosesAt: course.enrollmentClosesAt || "oneMinBeforeStart",
+            customEnrollmentCloseMinutes: course.customEnrollmentCloseMinutes || 1,
           }));
           setCourses(transformedCourses);
         }
@@ -287,6 +291,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
     zoomLink: "",
     liveSessions: "",
     purchaseNote: "",
+    enrollmentClosesAt: "oneMinBeforeStart",
+    customEnrollmentCloseMinutes: 1,
   });
 
   const [modules, setModules] = useState<Module[]>([
@@ -312,6 +318,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         startTime: formData.startTime || "",
         endTime: formData.endTime || "",
         timezone: formData.timezone || "Asia/Kolkata",
+        enrollmentClosesAt: formData.enrollmentClosesAt || "oneMinBeforeStart",
+        customEnrollmentCloseMinutes: formData.customEnrollmentCloseMinutes || 1,
         status: "draft",
         specialistId: user?.id,
         specialistEmail: user?.email,
@@ -360,6 +368,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         startTime: formData.startTime || "",
         endTime: formData.endTime || "",
         timezone: formData.timezone || "Asia/Kolkata",
+        enrollmentClosesAt: formData.enrollmentClosesAt || "oneMinBeforeStart",
+        customEnrollmentCloseMinutes: formData.customEnrollmentCloseMinutes || 1,
         purchaseNote: formData.purchaseNote || "",
         specialistId: user?.id,
         specialistEmail: user?.email,
@@ -503,6 +513,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       zoomLink: course.zoomLink || "",
       liveSessions: course.liveSessions?.toString() || "",
       purchaseNote: course.purchaseNote || "",
+      enrollmentClosesAt: course.enrollmentClosesAt || "oneMinBeforeStart",
+      customEnrollmentCloseMinutes: course.customEnrollmentCloseMinutes || 1,
     });
     if (course.modules && course.modules.length > 0) {
       setModules(course.modules);
@@ -531,6 +543,8 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
       zoomLink: "",
       liveSessions: "",
       purchaseNote: "",
+      enrollmentClosesAt: "oneMinBeforeStart",
+      customEnrollmentCloseMinutes: 1,
     });
     setModules([{ id: "1", title: "Introduction to Course", duration: "2 hours", lessonsCount: 5 }]);
   };
@@ -1676,6 +1690,37 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               <p className="text-xs text-gray-500 mt-1">This note will be included in the purchase confirmation email sent to students.</p>
             </div>
 
+            {courseType === "cohort-based" && (
+              <div>
+                <Label htmlFor="enrollmentClosesAt">Enrollment Closes</Label>
+                <Select value={formData.enrollmentClosesAt || "oneMinBeforeStart"} onValueChange={(value) => setFormData({ ...formData, enrollmentClosesAt: value })}>
+                  <SelectTrigger id="enrollmentClosesAt">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="oneMinBeforeStart">1 minute before start</SelectItem>
+                    <SelectItem value="fiveMinBeforeStart">5 minutes before start</SelectItem>
+                    <SelectItem value="tenMinBeforeStart">10 minutes before start</SelectItem>
+                    <SelectItem value="oneHourBeforeStart">1 hour before start</SelectItem>
+                    <SelectItem value="sixHoursBeforeStart">6 hours before start</SelectItem>
+                    <SelectItem value="oneDayBeforeStart">1 day before start</SelectItem>
+                    <SelectItem value="custom">Custom (minutes)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {formData.enrollmentClosesAt === "custom" && (
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Minutes before start"
+                    value={formData.customEnrollmentCloseMinutes || ""}
+                    onChange={(e) => setFormData({ ...formData, customEnrollmentCloseMinutes: parseInt(e.target.value) || 0 })}
+                    className="mt-2"
+                  />
+                )}
+                <p className="text-xs text-gray-500 mt-1">Enrollment will automatically close at this time for the cohort course.</p>
+              </div>
+            )}
+
           </div>
 
           <DialogFooter>
@@ -1917,6 +1962,37 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               />
               <p className="text-xs text-gray-500 mt-1">This note will be included in the purchase confirmation email sent to students.</p>
             </div>
+
+            {(selectedCourse?.type === "cohort-based" || selectedCourse?.type === "cohort") && (
+              <div>
+                <Label htmlFor="edit-enrollmentClosesAt">Enrollment Closes</Label>
+                <Select value={formData.enrollmentClosesAt || "oneMinBeforeStart"} onValueChange={(value) => setFormData({ ...formData, enrollmentClosesAt: value })}>
+                  <SelectTrigger id="edit-enrollmentClosesAt">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="oneMinBeforeStart">1 minute before start</SelectItem>
+                    <SelectItem value="fiveMinBeforeStart">5 minutes before start</SelectItem>
+                    <SelectItem value="tenMinBeforeStart">10 minutes before start</SelectItem>
+                    <SelectItem value="oneHourBeforeStart">1 hour before start</SelectItem>
+                    <SelectItem value="sixHoursBeforeStart">6 hours before start</SelectItem>
+                    <SelectItem value="oneDayBeforeStart">1 day before start</SelectItem>
+                    <SelectItem value="custom">Custom (minutes)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {formData.enrollmentClosesAt === "custom" && (
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Minutes before start"
+                    value={formData.customEnrollmentCloseMinutes || ""}
+                    onChange={(e) => setFormData({ ...formData, customEnrollmentCloseMinutes: parseInt(e.target.value) || 0 })}
+                    className="mt-2"
+                  />
+                )}
+                <p className="text-xs text-gray-500 mt-1">Enrollment will automatically close at this time for the cohort course.</p>
+              </div>
+            )}
 
           </div>
 

@@ -178,6 +178,14 @@ const courseSchema = new mongoose.Schema({
     default: null,
   },
   liveSessions: Number,
+  
+  // Enrollment close time configuration for cohort courses
+  enrollmentClosesAt: {
+    type: String,
+    enum: ['oneMinBeforeStart', 'fiveMinBeforeStart', 'tenMinBeforeStart', 'oneHourBeforeStart', 'sixHoursBeforeStart', 'oneDayBeforeStart', 'custom'],
+    default: 'oneMinBeforeStart',
+  },
+  customEnrollmentCloseMinutes: Number, // minutes before start time (for custom option)
 
   // Additional instructions appended to purchase confirmation email
   purchaseNote: String,
