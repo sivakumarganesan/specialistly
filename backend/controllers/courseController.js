@@ -713,7 +713,26 @@ export const sendReminder = async (req, res) => {
       }
     }
 
-    res.status(200).json({ success: true, message: `Reminder sent to ${sent} student(s)`, sent });
+    // Also send reminder to the specialist (course creator)
+    try {
+      if (course.specialistEmail) {
+        await sendCourseReminder({
+          customerEmail: course.specialistEmail,
+          customerName: course.specialistEmail.split('@')[0],
+          courseName: course.title,
+          startDate: course.startDate,
+          schedule: course.schedule,
+          meetingPlatform: course.meetingPlatform,
+          zoomLink: course.zoomLink,
+          purchaseNote: course.purchaseNote,
+          customMessage: req.body.message || '',
+        });
+      }
+    } catch (emailErr) {
+      console.error(`Failed to send reminder to specialist ${course.specialistEmail}:`, emailErr.message);
+    }
+
+    res.status(200).json({ success: true, message: `Reminder sent to ${sent} student(s) and specialist`, sent });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

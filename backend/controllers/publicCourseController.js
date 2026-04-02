@@ -248,6 +248,21 @@ export const createPublicPaymentIntent = async (req, res) => {
             thumbnail: course.thumbnail,
             description: course.description,
           });
+          // Send same enrollment email to specialist
+          await sendCohortEnrollmentConfirmation({
+            customerEmail: course.specialistEmail,
+            customerName: course.specialistEmail.split('@')[0],
+            courseName: course.title,
+            enrollmentId: enrollment._id.toString(),
+            startDate: course.startDate,
+            endDate: course.endDate,
+            schedule: course.schedule,
+            meetingPlatform: course.meetingPlatform,
+            zoomLink: course.zoomLink,
+            purchaseNote: course.purchaseNote,
+            thumbnail: course.thumbnail,
+            description: course.description,
+          });
         } else {
           await sendEnrollmentConfirmation({
             customerEmail,
@@ -574,6 +589,21 @@ export const confirmPublicPayment = async (req, res) => {
             thumbnail: course.thumbnail,
             description: course.description,
           });
+          // Send same enrollment email to specialist
+          await sendCohortEnrollmentConfirmation({
+            customerEmail: commission.specialistEmail,
+            customerName: commission.specialistEmail.split('@')[0],
+            courseName: course.title,
+            enrollmentId: enrollment._id.toString(),
+            startDate: course.startDate,
+            endDate: course.endDate,
+            schedule: course.schedule,
+            meetingPlatform: course.meetingPlatform,
+            zoomLink: course.zoomLink,
+            purchaseNote: course.purchaseNote,
+            thumbnail: course.thumbnail,
+            description: course.description,
+          });
         } else if (course) {
           await sendEnrollmentConfirmation({
             customerEmail: commission.customerEmail,
@@ -744,6 +774,21 @@ export const confirmRazorpayPublicPayment = async (req, res) => {
         await sendCohortEnrollmentConfirmation({
           customerEmail: commission.customerEmail,
           customerName: commission.customerEmail.split('@')[0],
+          courseName: course.title,
+          enrollmentId: enrollment._id.toString(),
+          startDate: course.startDate,
+          endDate: course.endDate,
+          schedule: course.schedule,
+          meetingPlatform: course.meetingPlatform,
+          zoomLink: course.zoomLink,
+          purchaseNote: course.purchaseNote,
+          thumbnail: course.thumbnail,
+          description: course.description,
+        });
+        // Send same enrollment email to specialist
+        await sendCohortEnrollmentConfirmation({
+          customerEmail: commission.specialistEmail,
+          customerName: commission.specialistEmail.split('@')[0],
           courseName: course.title,
           enrollmentId: enrollment._id.toString(),
           startDate: course.startDate,
