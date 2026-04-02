@@ -20,6 +20,49 @@ const tzAbbrMap: Record<string, string> = {
 };
 const getTzAbbr = (tz?: string) => tzAbbrMap[tz || ''] || tz?.replace(/_/g, ' ') || '';
 
+// Calculate enrollment close time based on course start time and settings
+const calculateEnrollmentCloseTime = (course: any): Date | null => {
+  if (!course.startDate || !course.startTime) return null;
+  
+  try {
+    // Parse start time (e.g., "7:30 PM" or "19:30")
+    const timeMatch = course.startTime.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i);
+    if (!timeMatch) return null;
+    
+    let hours = parseInt(timeMatch[1], 10);
+    const minutes = parseInt(timeMatch[2], 10);
+    const period = timeMatch[3]?.toUpperCase();
+    
+    // Convert to 24-hour format if AM/PM provided
+    if (period) {
+      if (period === 'PM' && hours !== 12) hours += 12;
+      if (period === 'AM' && hours === 12) hours = 0;
+    }
+    
+    // Create a date string: YYYY-MM-DD HH:mm
+    const dateStr = course.startDate.split('T')[0]; // Get just the date part
+    const datetimeStr = `${dateStr}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00Z`;
+    const startDatetime = new Date(datetimeStr);
+    
+    // Get enrollment close minutes (default 1 if not specified, or parse from enrollmentClosesAt)
+    let closeMinutes = 1;
+    if (course.enrollmentClosesAt) {
+      if (typeof course.enrollmentClosesAt === 'number') {
+        closeMinutes = course.enrollmentClosesAt;
+      } else if (typeof course.enrollmentClosesAt === 'string') {
+        const match = course.enrollmentClosesAt.match(/(\d+)/);
+        if (match) closeMinutes = parseInt(match[1], 10);
+      }
+    }
+    
+    // Subtract close minutes from start time
+    const closeTime = new Date(startDatetime.getTime() - closeMinutes * 60000);
+    return closeTime;
+  } catch (e) {
+    return null;
+  }
+};
+
 interface Course {
   id: string;
   title: string;
@@ -409,7 +452,11 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
             {displayCourses.map((course: any) => {
               const courseId = course._id || course.id;
               const isEnrolled = enrolledCourseIds.has(courseId);
-              const isCohortClosed = (course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate && new Date(course.startDate) <= new Date();
+              // Check if enrollment is closed based on enrollment close time (e.g., 1 min before start)
+              const isCohortClosed = (course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate ? (() => {
+                const closeTime = calculateEnrollmentCloseTime(course);
+                return closeTime ? new Date() >= closeTime : new Date(course.startDate) <= new Date();
+              })() : false;
               return (
                 <div
                   key={courseId}
