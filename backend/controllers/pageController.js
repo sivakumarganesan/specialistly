@@ -536,7 +536,7 @@ export const getPublicPage = async (req, res) => {
               specialistEmail: website.creatorEmail,
               status: 'published',
             })
-              .select('_id title description thumbnail courseType price currency lessons startDate endDate schedule meetingPlatform zoomLink cohortSize liveSessions')
+              .select('_id title description thumbnail courseType price currency lessons startDate endDate startTime endTime timezone schedule meetingPlatform zoomLink cohortSize liveSessions')
               .sort({ createdAt: -1 });
 
             const sectionObj = section.toObject();
@@ -681,7 +681,7 @@ export const getPublicPageViaSubdomain = async (req, res) => {
               specialistEmail: website.creatorEmail,
               status: 'published',
             })
-              .select('_id title description thumbnail courseType price currency lessons startDate endDate schedule meetingPlatform zoomLink cohortSize liveSessions')
+              .select('_id title description thumbnail courseType price currency lessons startDate endDate startTime endTime timezone schedule meetingPlatform zoomLink cohortSize liveSessions')
               .sort({ createdAt: -1 });
 
             console.log('[Public Page] Found', specialistCourses.length, 'published courses');
