@@ -485,15 +485,19 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
  */
 export const sendCourseReminder = async (options) => {
   try {
-    const { customerEmail, customerName, courseName, startDate, schedule, zoomLink, purchaseNote, customMessage, thumbnail, description } = options;
+    const { customerEmail, customerName, courseName, startDate, endDate, schedule, zoomLink, purchaseNote, customMessage, thumbnail, description } = options;
 
     if (!customerEmail || !courseName) {
       console.warn('⚠️  Missing required email parameters for course reminder');
       return;
     }
 
+    const dateFormat = { month: 'short', day: 'numeric', year: 'numeric' };
     const formattedStartDate = startDate
-      ? new Date(startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+      ? new Date(startDate).toLocaleDateString('en-US', dateFormat)
+      : null;
+    const formattedEndDate = endDate
+      ? new Date(endDate).toLocaleDateString('en-US', dateFormat)
       : null;
 
     const html = `
@@ -518,13 +522,12 @@ export const sendCourseReminder = async (options) => {
               ${customMessage ? `<p style="margin-top: 10px;">${customMessage}</p>` : ''}
             </div>
 
-            ${formattedStartDate || schedule ? `
+            ${formattedStartDate || formattedEndDate || schedule ? `
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
-              <h3 style="color: #1F2937; margin-top: 0;">📋 Session Details</h3>
-              <table style="width: 100%; border-collapse: collapse;">
-                ${formattedStartDate ? `<tr><td style="padding: 8px 0; color: #666; width: 35%;">Date:</td><td style="padding: 8px 0; font-weight: bold; color: #4F46E5;">${formattedStartDate}</td></tr>` : ''}
-                ${schedule ? `<tr><td style="padding: 8px 0; color: #666;">Schedule:</td><td style="padding: 8px 0;">${schedule}</td></tr>` : ''}
-              </table>
+              ${formattedStartDate || formattedEndDate ? `
+              <p style="margin: 0 0 10px 0; font-size: 15px; color: #333;">📅 Starts: <strong>${formattedStartDate || 'TBD'}</strong> — Ends: <strong>${formattedEndDate || 'TBD'}</strong></p>
+              ` : ''}
+              ${schedule ? `<p style="margin: 0; color: #666;">Schedule: ${schedule}</p>` : ''}
             </div>
             ` : ''}
 
