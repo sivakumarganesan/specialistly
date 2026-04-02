@@ -135,6 +135,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
             startDate: course.startDate || "",
             endDate: course.endDate || "",
             startTime: course.startTime || "",
+            endTime: course.endTime || "",
             timezone: course.timezone || "Asia/Kolkata",
             schedule: course.schedule || "",
             meetingPlatform: course.meetingPlatform || "Zoom",
