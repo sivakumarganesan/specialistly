@@ -353,7 +353,20 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
   };
 
   const handleEditCourse = async () => {
-    if (selectedCourse && formData.title) {
+    // For cohort courses, require start/end dates. For self-paced, they're optional.
+    if (selectedCourse?.type === "cohort-based" || selectedCourse?.type === "cohort") {
+      if (!formData.title || !formData.startDate || !formData.endDate) {
+        alert("For cohort-based courses, Title, Start Date, and End Date are required.");
+        return;
+      }
+    } else {
+      if (!formData.title) {
+        alert("Course Title is required.");
+        return;
+      }
+    }
+
+    if (selectedCourse) {
       // Remove _id from modules to let backend generate them for new modules
       const modulesData = modules.map(({ id, ...rest }) => rest);
       const updatedData = {
@@ -1855,7 +1868,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="edit-startDate">Start Date *</Label>
+                <Label htmlFor="edit-startDate">Start Date {(selectedCourse?.type === "cohort-based" || selectedCourse?.type === "cohort") && "*"}</Label>
                 <Input
                   id="edit-startDate"
                   type="date"
@@ -1864,10 +1877,13 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                     setFormData({ ...formData, startDate: e.target.value })
                   }
                 />
+                {(selectedCourse?.type === "self-paced") && (
+                  <p className="text-xs text-gray-500 mt-1">Optional for self-paced courses. Leave empty to keep enrollment open indefinitely.</p>
+                )}
               </div>
 
               <div>
-                <Label htmlFor="edit-endDate">End Date *</Label>
+                <Label htmlFor="edit-endDate">End Date {(selectedCourse?.type === "cohort-based" || selectedCourse?.type === "cohort") && "*"}</Label>
                 <Input
                   id="edit-endDate"
                   type="date"

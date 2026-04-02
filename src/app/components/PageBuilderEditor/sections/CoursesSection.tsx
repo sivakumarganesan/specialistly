@@ -477,11 +477,18 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
             {displayCourses.map((course: any) => {
               const courseId = course._id || course.id;
               const isEnrolled = enrolledCourseIds.has(courseId);
-              // Check if enrollment is closed based on enrollment close time (e.g., 1 min before start)
+              // For cohort courses: check if enrollment is closed based on enrollment close time (e.g., 1 min before start)
+              // For self-paced courses: enrollment stays open as long as course is published
               const isCohortClosed = (course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate ? (() => {
                 const closeTime = calculateEnrollmentCloseTime(course);
                 return closeTime ? new Date() >= closeTime : new Date(course.startDate) < new Date();
               })() : false;
+              
+              // Self-paced courses are only closed if they're in draft status or not published
+              const isSelfPacedClosed = course.courseType === 'self-paced' && course.status !== 'published';
+              
+              // Combined enrollment closed check
+              const isEnrollmentClosed = isCohortClosed || isSelfPacedClosed;
               return (
                 <div
                   key={courseId}
@@ -588,7 +595,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                             </>
                           );
                         }
-                        if (isCohortClosed) {
+                        if (isEnrollmentClosed) {
                           return (
                             <>
                               <div className="py-2 px-3 bg-gray-400 text-white text-xs font-semibold rounded-lg text-center whitespace-nowrap">
