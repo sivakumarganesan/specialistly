@@ -390,12 +390,6 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
               <p>This is a <strong>live cohort course</strong> — you'll attend live sessions with your instructor${schedule ? ` (${schedule})` : ''}. There are no pre-recorded video lessons; all learning happens in real-time!</p>
             </div>
 
-            ${thumbnail ? `
-            <div style="text-align: center; margin-bottom: 20px;">
-              <img src="${thumbnail}" alt="${courseName}" style="max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #e5e7eb;" />
-            </div>
-            ` : ''}
-
             ${description ? `
             <div style="background-color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb; color: #555; font-size: 14px; line-height: 1.6;">
               ${description}
@@ -492,6 +486,8 @@ export const sendCourseReminder = async (options) => {
       return;
     }
 
+
+
     const dateFormat = { month: 'short', day: 'numeric', year: 'numeric' };
     const formattedStartDate = startDate
       ? new Date(startDate).toLocaleDateString('en-US', dateFormat)
@@ -508,12 +504,6 @@ export const sendCourseReminder = async (options) => {
             <div style="text-align: center; margin-bottom: 25px;">
               <h1 style="color: #4F46E5; margin: 0;">Course Reminder 🔔</h1>
             </div>
-
-            ${thumbnail ? `
-            <div style="text-align: center; margin-bottom: 20px;">
-              <img src="${thumbnail}" alt="${courseName}" style="max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: cover;" />
-            </div>
-            ` : ''}
 
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
               <p style="margin-top: 0;">Hi <strong>${customerName}</strong>,</p>
