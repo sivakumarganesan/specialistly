@@ -122,14 +122,41 @@ export const createPublicPaymentIntent = async (req, res) => {
     const customerId = req.user?.userId || `guest_${customerEmail}`;
     const isAuthenticated = !!req.user?.userId;
 
-    // For cohort courses, block enrollment after start date
-    if ((course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate) {
+    // For cohort courses, check enrollment close time
+    if ((course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate && course.startTime) {
       const now = new Date();
       const startDate = new Date(course.startDate);
-      if (now >= startDate) {
+      
+      // Parse startTime (HH:MM format) and add to start date
+      const [hours, minutes] = course.startTime.split(':');
+      const startDateTime = new Date(startDate);
+      startDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      
+      // Calculate enrollment close time based on configuration
+      let enrollmentCloseTime = new Date(startDateTime);
+      const minutesBeforeStart = course.customEnrollmentCloseMinutes || 1;
+      
+      if (course.enrollmentClosesAt === 'oneMinBeforeStart' || !course.enrollmentClosesAt) {
+        enrollmentCloseTime.setMinutes(enrollmentCloseTime.getMinutes() - 1);
+      } else if (course.enrollmentClosesAt === 'fiveMinBeforeStart') {
+        enrollmentCloseTime.setMinutes(enrollmentCloseTime.getMinutes() - 5);
+      } else if (course.enrollmentClosesAt === 'tenMinBeforeStart') {
+        enrollmentCloseTime.setMinutes(enrollmentCloseTime.getMinutes() - 10);
+      } else if (course.enrollmentClosesAt === 'oneHourBeforeStart') {
+        enrollmentCloseTime.setHours(enrollmentCloseTime.getHours() - 1);
+      } else if (course.enrollmentClosesAt === 'sixHoursBeforeStart') {
+        enrollmentCloseTime.setHours(enrollmentCloseTime.getHours() - 6);
+      } else if (course.enrollmentClosesAt === 'oneDayBeforeStart') {
+        enrollmentCloseTime.setDate(enrollmentCloseTime.getDate() - 1);
+      } else if (course.enrollmentClosesAt === 'custom') {
+        enrollmentCloseTime.setMinutes(enrollmentCloseTime.getMinutes() - minutesBeforeStart);
+      }
+      
+      // Check if current time is past enrollment close time
+      if (now >= enrollmentCloseTime) {
         return res.status(400).json({
           success: false,
-          message: 'Enrollment for this course has closed. The course has already started.',
+          message: 'Enrollment for this course has closed.',
           code: 'ENROLLMENT_CLOSED',
         });
       }
