@@ -702,10 +702,11 @@ export const sendReminder = async (req, res) => {
           courseName: course.title,
           startDate: course.startDate,
           schedule: course.schedule,
-          meetingPlatform: course.meetingPlatform,
           zoomLink: course.zoomLink,
           purchaseNote: course.purchaseNote,
           customMessage: req.body.message || '',
+          thumbnail: course.thumbnail,
+          description: course.description,
         });
         sent++;
       } catch (emailErr) {
@@ -722,10 +723,11 @@ export const sendReminder = async (req, res) => {
           courseName: course.title,
           startDate: course.startDate,
           schedule: course.schedule,
-          meetingPlatform: course.meetingPlatform,
           zoomLink: course.zoomLink,
           purchaseNote: course.purchaseNote,
           customMessage: req.body.message || '',
+          thumbnail: course.thumbnail,
+          description: course.description,
         });
       }
     } catch (emailErr) {

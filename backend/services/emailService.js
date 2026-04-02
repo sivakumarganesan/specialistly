@@ -485,7 +485,7 @@ export const sendCohortEnrollmentConfirmation = async (options) => {
  */
 export const sendCourseReminder = async (options) => {
   try {
-    const { customerEmail, customerName, courseName, startDate, schedule, meetingPlatform, zoomLink, purchaseNote, customMessage } = options;
+    const { customerEmail, customerName, courseName, startDate, schedule, zoomLink, purchaseNote, customMessage, thumbnail, description } = options;
 
     if (!customerEmail || !courseName) {
       console.warn('⚠️  Missing required email parameters for course reminder');
@@ -505,9 +505,16 @@ export const sendCourseReminder = async (options) => {
               <h1 style="color: #4F46E5; margin: 0;">Course Reminder 🔔</h1>
             </div>
 
+            ${thumbnail ? `
+            <div style="text-align: center; margin-bottom: 20px;">
+              <img src="${thumbnail}" alt="${courseName}" style="max-width: 100%; max-height: 200px; border-radius: 8px; object-fit: cover;" />
+            </div>
+            ` : ''}
+
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e5e7eb;">
               <p style="margin-top: 0;">Hi <strong>${customerName}</strong>,</p>
               <p>This is a reminder for your course: <strong>${courseName}</strong>.</p>
+              ${description ? `<p style="color: #555; font-size: 14px;">${description}</p>` : ''}
               ${customMessage ? `<p style="margin-top: 10px;">${customMessage}</p>` : ''}
             </div>
 
@@ -517,7 +524,6 @@ export const sendCourseReminder = async (options) => {
               <table style="width: 100%; border-collapse: collapse;">
                 ${formattedStartDate ? `<tr><td style="padding: 8px 0; color: #666; width: 35%;">Date:</td><td style="padding: 8px 0; font-weight: bold; color: #4F46E5;">${formattedStartDate}</td></tr>` : ''}
                 ${schedule ? `<tr><td style="padding: 8px 0; color: #666;">Schedule:</td><td style="padding: 8px 0;">${schedule}</td></tr>` : ''}
-                ${meetingPlatform ? `<tr><td style="padding: 8px 0; color: #666;">Platform:</td><td style="padding: 8px 0;">${meetingPlatform}</td></tr>` : ''}
               </table>
             </div>
             ` : ''}
@@ -526,7 +532,7 @@ export const sendCourseReminder = async (options) => {
             <div style="background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
               <h3 style="margin-top: 0; margin-bottom: 10px;">🔗 Meeting Link</h3>
               <a href="${zoomLink}" style="display: inline-block; background-color: white; color: #4F46E5; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                Join Meeting
+                Join
               </a>
               <p style="margin: 15px 0 0 0; font-size: 12px; opacity: 0.8; word-break: break-all;">${zoomLink}</p>
             </div>
