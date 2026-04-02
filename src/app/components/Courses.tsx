@@ -1325,7 +1325,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
                   <div className="flex items-center gap-2 text-sm">
                     <Calendar className="h-4 w-4 text-gray-600" />
                     <span className="text-gray-600">
-                      Starts: {new Date(course.startDate).toLocaleDateString()}{course.startTime ? ` at ${course.startTime}` : ''}{course.timezone ? ` (${course.timezone})` : ''}
+                      Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}{course.startTime ? ` at ${course.startTime}` : ''}{course.endTime ? ` to ${course.endTime}` : ''}{course.timezone ? ` ${({'Asia/Kolkata':'IST','America/New_York':'EST','America/Chicago':'CST','America/Denver':'MST','America/Los_Angeles':'PST','Europe/London':'GMT','Europe/Paris':'CET','Europe/Berlin':'CET','Australia/Sydney':'AEST','Pacific/Auckland':'NZST','Asia/Tokyo':'JST','Asia/Shanghai':'CST','Asia/Dubai':'GST','Asia/Singapore':'SGT'} as Record<string,string>)[course.timezone] || course.timezone}` : ''}
                     </span>
                   </div>
                 )}

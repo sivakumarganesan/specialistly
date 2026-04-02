@@ -457,9 +457,9 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                         {course.startDate && (
                           <div className="flex items-center gap-1.5 text-gray-900">
                             <Calendar className="h-3.5 w-3.5 flex-shrink-0" />
-                            <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}{course.startTime ? ` at ${course.startTime}` : ''}{course.endTime ? ` to ${course.endTime}` : ''}{course.timezone ? ` ${getTzAbbr(course.timezone)}` : ''}</span>
+                            <span>Starts: {new Date(course.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}{course.startTime ? ` at ${course.startTime}` : ''}{course.endTime ? ` to ${course.endTime}` : ''}{course.timezone ? ` ${getTzAbbr(course.timezone)}` : ''}</span>
                             {course.endDate && (
-                              <span> — Ends: {new Date(course.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                              <span> — Ends: {new Date(course.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' })}</span>
                             )}
                           </div>
                         )}

@@ -338,7 +338,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                       <Calendar className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">Start Date</p>
-                        <p className="font-semibold text-gray-900">{new Date(enrollment.startDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}{enrollment.startTime ? ` at ${enrollment.startTime}` : ''}{enrollment.endTime ? ` to ${enrollment.endTime}` : ''}{enrollment.timezone ? ` ${getTzAbbr(enrollment.timezone)}` : ''}</p>
+                        <p className="font-semibold text-gray-900">{new Date(enrollment.startDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}{enrollment.startTime ? ` at ${enrollment.startTime}` : ''}{enrollment.endTime ? ` to ${enrollment.endTime}` : ''}{enrollment.timezone ? ` ${getTzAbbr(enrollment.timezone)}` : ''}</p>
                       </div>
                     </div>
                   )}
@@ -347,7 +347,7 @@ export function CourseDetail({ enrollmentId }: CourseDetailProps) {
                       <Calendar className="w-5 h-5 text-gray-900 mt-0.5" />
                       <div>
                         <p className="text-sm text-gray-500">End Date</p>
-                        <p className="font-semibold text-gray-900">{new Date(enrollment.endDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p className="font-semibold text-gray-900">{new Date(enrollment.endDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}</p>
                       </div>
                     </div>
                   )}
