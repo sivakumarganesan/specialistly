@@ -178,12 +178,22 @@ export const login = async (req, res) => {
       });
     }
 
+    // Block disabled users
+    if (user.isDisabled) {
+      return res.status(403).json({
+        error: 'Your account has been disabled. Please contact support.',
+      });
+    }
+
     const token = generateToken(user._id, user.email);
+
+    // Determine user type: admin > specialist > customer
+    const userType = user.role === 'admin' ? 'admin' : (user.isSpecialist ? 'specialist' : 'customer');
 
     res.json({
       message: 'Login successful',
       token,
-      userType: user.isSpecialist ? 'specialist' : 'customer',
+      userType,
       user: {
         id: user._id,
         name: user.name,

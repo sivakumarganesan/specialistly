@@ -139,6 +139,11 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
   zoomConnectedAt: Date,
+  // Admin: disable user account
+  isDisabled: {
+    type: Boolean,
+    default: false,
+  },
   // Password reset
   resetPasswordToken: {
     type: String,

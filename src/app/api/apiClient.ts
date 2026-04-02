@@ -436,3 +436,21 @@ export const videoAPI = {
 
 // Health check
 export const healthCheck = () => apiCall("/health");
+
+// Admin API
+export const adminAPI = {
+  getStats: () => apiCall("/admin/stats"),
+  getUsers: (params?: { page?: number; limit?: number; role?: string; search?: string; sortBy?: string; sortOrder?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.role) query.set('role', params.role);
+    if (params?.search) query.set('search', params.search);
+    if (params?.sortBy) query.set('sortBy', params.sortBy);
+    if (params?.sortOrder) query.set('sortOrder', params.sortOrder);
+    return apiCall(`/admin/users?${query.toString()}`);
+  },
+  getUserDetail: (id: string) => apiCall(`/admin/users/${id}`),
+  toggleUserStatus: (id: string) => apiCall(`/admin/users/${id}/toggle-status`, "PUT"),
+  getRecentActivity: () => apiCall("/admin/recent-activity"),
+};

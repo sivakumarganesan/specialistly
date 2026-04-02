@@ -25,9 +25,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   currentPage: string;
-  userType: "specialist" | "customer" | null;
+  userType: "specialist" | "customer" | "admin" | null;
   setCurrentPage: (page: string) => void;
-  setUserType: (type: "specialist" | "customer") => void;
+  setUserType: (type: "specialist" | "customer" | "admin") => void;
   signup: (data: any) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -42,13 +42,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState('homepage');
-  const [userType, setUserType] = useState<"specialist" | "customer" | null>(null);
+  const [userType, setUserType] = useState<"specialist" | "customer" | "admin" | null>(null);
 
   // Load auth data from localStorage on mount
   useEffect(() => {
     const savedToken = localStorage.getItem('authToken');
     const savedUser = localStorage.getItem('user');
-    const savedUserType = localStorage.getItem('userType') as "specialist" | "customer" | null;
+    const savedUserType = localStorage.getItem('userType') as "specialist" | "customer" | "admin" | null;
     
     if (savedToken && savedUser) {
       // Check if token is expired before restoring the session
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userTypeValue = data.userType || 'customer';
       setUserType(userTypeValue);
       // Set default page based on user type
-      const defaultPage = userTypeValue === 'specialist' ? 'dashboard' : 'my-learning';
+      const defaultPage = userTypeValue === 'admin' ? 'admin-dashboard' : (userTypeValue === 'specialist' ? 'dashboard' : 'my-learning');
       setCurrentPage(defaultPage);
     } catch (error) {
       console.error('Signup error:', error);
@@ -145,8 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const userTypeValue = result.userType || 'customer';
       setUserType(userTypeValue);
       // Set default page based on user type
-      // Specialist: Dashboard, Customer: Browse Specialists (shown as dashboard with marketplace content)
-      const defaultPage = userTypeValue === 'specialist' ? 'dashboard' : 'my-learning';
+      const defaultPage = userTypeValue === 'admin' ? 'admin-dashboard' : (userTypeValue === 'specialist' ? 'dashboard' : 'my-learning');
       setCurrentPage(defaultPage);
     } catch (error) {
       console.error('Login error:', error);

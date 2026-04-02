@@ -28,6 +28,7 @@ import { MyLearning } from "@/app/components/MyLearning";
 import { CourseDetail } from "@/app/components/CourseDetail";
 import { MySite } from "@/app/components/MySite";
 import { MyAppointments } from "@/app/components/MyAppointments";
+import { AdminDashboard } from "@/app/components/AdminDashboard";
 import PaymentModal from "@/app/components/PaymentModal";
 import { PrivacyPolicy } from "@/app/components/PrivacyPolicy";
 import { TermsOfUse } from "@/app/components/TermsOfUse";
@@ -314,6 +315,7 @@ export function AppContent() {
           setViewingSpecialist({ id, email });
         }} />}
         {currentPage === "purchases" && <MyPurchases />}
+        {currentPage === "admin-dashboard" && userType === "admin" && <AdminDashboard />}
       </main>
     </div>
   );

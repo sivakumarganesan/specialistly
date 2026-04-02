@@ -21,7 +21,7 @@ interface SidebarProps {
   onTabChange: (tab: string) => void;
   isMobileOpen?: boolean;
   onClose?: () => void;
-  userType?: "specialist" | "customer";
+  userType?: "specialist" | "customer" | "admin";
   unreadMessageCount?: number;
 }
 
@@ -42,6 +42,11 @@ const customerMenuItems = [
   { id: "settings", label: "Settings", icon: Settings },
 ];
 
+const adminMenuItems = [
+  { id: "admin-dashboard", label: "Admin Dashboard", icon: LayoutDashboard },
+  { id: "settings", label: "Settings", icon: Settings },
+];
+
 export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userType = "customer", unreadMessageCount = 0 }: SidebarProps) {
   const handleItemClick = (id: string) => {
     onTabChange(id);
@@ -50,7 +55,7 @@ export function Sidebar({ activeTab, onTabChange, isMobileOpen, onClose, userTyp
     }
   };
 
-  const menuItems = userType === "specialist" ? creatorMenuItems : customerMenuItems;
+  const menuItems = userType === "admin" ? adminMenuItems : userType === "specialist" ? creatorMenuItems : customerMenuItems;
 
 
 
