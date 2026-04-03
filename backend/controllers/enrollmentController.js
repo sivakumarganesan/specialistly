@@ -15,7 +15,7 @@ export const enrollSelfPaced = async (req, res) => {
     const { courseId, customerId, customerEmail } = req.body;
     
     // Use values from body or from auth middleware if available
-    const finalCustomerId = customerId || req.user?.userId;
+    let finalCustomerId = customerId || req.user?.userId;
     const finalCustomerEmail = customerEmail || req.user?.email;
 
     if (!courseId) {
@@ -41,6 +41,19 @@ export const enrollSelfPaced = async (req, res) => {
       });
     }
 
+    // IMPORTANT: Get or create Customer record and use its _id
+    // This ensures consistency - all enrollments store Customer._id, not User._id
+    let customer = await Customer.findOne({ email: finalCustomerEmail });
+    if (!customer) {
+      customer = await Customer.create({
+        name: finalCustomerEmail.split('@')[0],
+        email: finalCustomerEmail,
+        status: 'active',
+      });
+    }
+    // Use Customer._id for the enrollment (not User._id)
+    finalCustomerId = customer._id.toString();
+
     // Check for existing enrollment
     const existingEnrollment = await SelfPacedEnrollment.findOne({
       courseId,
@@ -54,7 +67,7 @@ export const enrollSelfPaced = async (req, res) => {
       });
     }
 
-    // Create enrollment
+    // Create enrollment with Customer._id
     const enrollment = new SelfPacedEnrollment({
       courseId,
       customerId: finalCustomerId,
@@ -69,14 +82,6 @@ export const enrollSelfPaced = async (req, res) => {
 
     // Link customer to specialist
     try {
-      let customer = await Customer.findOne({ email: finalCustomerEmail });
-      if (!customer) {
-        customer = await Customer.create({
-          name: finalCustomerEmail.split('@')[0],
-          email: finalCustomerEmail,
-          status: 'active',
-        });
-      }
 
       const hasSpecialist = customer.specialists?.some(
         (s) => s.specialistEmail === course.specialistEmail,

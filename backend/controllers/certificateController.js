@@ -7,7 +7,7 @@ import Customer from '../models/Customer.js';
 export const enrollCohort = async (req, res) => {
   try {
     const { cohortId } = req.body;
-    const customerId = req.user?.userId || req.body.customerId;
+    let customerId = req.user?.userId || req.body.customerId;
     const customerEmail = req.user?.email || req.body.customerEmail;
 
     // Check if cohort exists
@@ -27,6 +27,19 @@ export const enrollCohort = async (req, res) => {
       });
     }
 
+    // IMPORTANT: Get or create Customer record and use its _id
+    // This ensures consistency - all enrollments store Customer._id, not User._id
+    let customer = await Customer.findOne({ email: customerEmail });
+    if (!customer) {
+      customer = await Customer.create({
+        name: customerEmail.split('@')[0],
+        email: customerEmail,
+        status: 'active',
+      });
+    }
+    // Use Customer._id for the enrollment (not User._id)
+    customerId = customer._id.toString();
+
     // Check for existing enrollment
     const existingEnrollment = await CohortEnrollment.findOne({
       cohortId,
@@ -40,7 +53,7 @@ export const enrollCohort = async (req, res) => {
       });
     }
 
-    // Create enrollment
+    // Create enrollment with Customer._id
     const enrollment = new CohortEnrollment({
       cohortId,
       customerId,
