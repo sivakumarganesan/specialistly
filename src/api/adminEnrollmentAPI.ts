@@ -1,8 +1,6 @@
 // Frontend API client for admin enrollment management
 // This file provides typed methods for interacting with the enrollment management backend
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
 const getAuthHeader = () => {
   const token = localStorage.getItem('authToken');
   return {
@@ -71,7 +69,7 @@ class AdminEnrollmentAPI {
   async getCourseEnrollments(courseId: string): Promise<EnrollmentResponse[]> {
     try {
       const response = await fetch(
-        `${API_URL}/api/admin/enrollments/course/${courseId}`,
+        `/api/admin/enrollments/course/${courseId}`,
         {
           method: 'GET',
           headers: getAuthHeader(),
@@ -98,7 +96,7 @@ class AdminEnrollmentAPI {
   async addSelfPacedEnrollment(request: AddEnrollmentRequest): Promise<EnrollmentResponse> {
     try {
       const response = await fetch(
-        `${API_URL}/api/admin/enrollments/self-paced/add`,
+        `/api/admin/enrollments/self-paced/add`,
         {
           method: 'POST',
           headers: getAuthHeader(),
@@ -127,7 +125,7 @@ class AdminEnrollmentAPI {
   async addCohortEnrollment(request: AddEnrollmentRequest): Promise<EnrollmentResponse> {
     try {
       const response = await fetch(
-        `${API_URL}/api/admin/enrollments/cohort/add`,
+        `/api/admin/enrollments/cohort/add`,
         {
           method: 'POST',
           headers: getAuthHeader(),
@@ -160,7 +158,7 @@ class AdminEnrollmentAPI {
   ): Promise<{ message: string }> {
     try {
       const response = await fetch(
-        `${API_URL}/api/admin/enrollments/self-paced/${enrollmentId}`,
+        `/api/admin/enrollments/self-paced/${enrollmentId}`,
         {
           method: 'DELETE',
           headers: getAuthHeader(),
@@ -193,7 +191,7 @@ class AdminEnrollmentAPI {
   ): Promise<{ message: string }> {
     try {
       const response = await fetch(
-        `${API_URL}/api/admin/enrollments/cohort/${enrollmentId}`,
+        `/api/admin/enrollments/cohort/${enrollmentId}`,
         {
           method: 'DELETE',
           headers: getAuthHeader(),
@@ -226,7 +224,7 @@ class AdminEnrollmentAPI {
   ): Promise<PaginatedResponse<AuditLogResponse>> {
     try {
       const response = await fetch(
-        `${API_URL}/api/admin/enrollments/audit-logs?page=${page}&limit=${limit}`,
+        `/api/admin/enrollments/audit-logs?page=${page}&limit=${limit}`,
         {
           method: 'GET',
           headers: getAuthHeader(),
@@ -259,7 +257,7 @@ class AdminEnrollmentAPI {
   ): Promise<PaginatedResponse<AuditLogResponse>> {
     try {
       const response = await fetch(
-        `${API_URL}/api/admin/enrollments/${courseId}/audit-logs?page=${page}&limit=${limit}`,
+        `/api/admin/enrollments/${courseId}/audit-logs?page=${page}&limit=${limit}`,
         {
           method: 'GET',
           headers: getAuthHeader(),
