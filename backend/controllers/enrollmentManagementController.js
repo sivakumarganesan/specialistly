@@ -34,11 +34,11 @@ export const getCourseEnrollments = async (req, res) => {
       // Add customer details
       enrollments = await Promise.all(
         enrollments.map(async (enrollment) => {
-          const customer = await Customer.findOne({ customerId: enrollment.customerId }).lean();
+          const customer = await Customer.findOne({ email: enrollment.customerEmail }).lean();
           return {
             ...enrollment,
             type: 'self-paced',
-            customerName: customer?.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : 'Unknown',
+            customerName: customer?.name || 'Unknown',
             customerPhone: customer?.phone || '',
           };
         })
@@ -55,13 +55,13 @@ export const getCourseEnrollments = async (req, res) => {
       // Add customer and cohort details
       enrollments = await Promise.all(
         enrollments.map(async (enrollment) => {
-          const customer = await Customer.findOne({ customerId: enrollment.customerId }).lean();
+          const customer = await Customer.findOne({ email: enrollment.customerEmail }).lean();
           const cohort = await Cohort.findById(enrollment.cohortId).lean();
           return {
             ...enrollment,
             type: 'cohort-based',
             batchName: cohort?.batchName || 'Unknown',
-            customerName: customer?.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : 'Unknown',
+            customerName: customer?.name || 'Unknown',
             customerPhone: customer?.phone || '',
           };
         })
@@ -122,8 +122,8 @@ export const addSelfPacedEnrollment = async (req, res) => {
     }
 
     // Get customer info for audit
-    const customer = await Customer.findOne({ customerId }).lean();
-    const customerName = customer?.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : 'Unknown';
+    const customer = await Customer.findOne({ email: customerEmail }).lean();
+    const customerName = customer?.name || 'Unknown';
 
     // Create enrollment
     const enrollment = new SelfPacedEnrollment({
@@ -142,7 +142,7 @@ export const addSelfPacedEnrollment = async (req, res) => {
     // Link specialist to customer (for visibility in specialist's customer list)
     if (course.specialistEmail) {
       await Customer.updateOne(
-        { customerId },
+        { email: customerEmail },
         {
           $addToSet: {
             specialists: {
@@ -152,8 +152,7 @@ export const addSelfPacedEnrollment = async (req, res) => {
               firstBookedDate: new Date(),
             },
           },
-        },
-        { upsert: true }
+        }
       );
     }
 
@@ -217,8 +216,8 @@ export const removeSelfPacedEnrollment = async (req, res) => {
 
     // Get course and customer info
     const course = await Course.findById(enrollment.courseId);
-    const customer = await Customer.findOne({ customerId: enrollment.customerId }).lean();
-    const customerName = customer?.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : 'Unknown';
+    const customer = await Customer.findOne({ email: enrollment.customerEmail }).lean();
+    const customerName = customer?.name || 'Unknown';
 
     // Store previous state before deletion
     const previousState = {
@@ -304,8 +303,8 @@ export const addCohortEnrollment = async (req, res) => {
     }
 
     // Get customer info for audit
-    const customer = await Customer.findOne({ customerId }).lean();
-    const customerName = customer?.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : 'Unknown';
+    const customer = await Customer.findOne({ email: customerEmail }).lean();
+    const customerName = customer?.name || 'Unknown';
 
     // Get course info to access specialist
     const course = await Course.findById(cohort.courseId);
@@ -405,8 +404,8 @@ export const removeCohortEnrollment = async (req, res) => {
 
     // Get cohort and course info
     const cohort = await Cohort.findById(enrollment.cohortId).populate('courseId');
-    const customer = await Customer.findOne({ customerId: enrollment.customerId }).lean();
-    const customerName = customer?.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : 'Unknown';
+    const customer = await Customer.findOne({ email: enrollment.customerEmail }).lean();
+    const customerName = customer?.name || 'Unknown';
 
     // Store previous state
     const previousState = {
