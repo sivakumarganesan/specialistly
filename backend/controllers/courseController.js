@@ -45,12 +45,14 @@ export const createCourse = async (req, res) => {
     // Add purchaseNote for all course types
     if (purchaseNote) courseData.purchaseNote = purchaseNote;
 
-    // Add date fields for all course types
-    if (startDate) courseData.startDate = startDate;
-    if (endDate) courseData.endDate = endDate;
-    if (startTime) courseData.startTime = startTime;
-    if (endTime) courseData.endTime = endTime;
-    if (timezone) courseData.timezone = timezone;
+    // Add date/time fields only for cohort-based courses
+    if (courseType === 'cohort' || courseType === 'cohort-based') {
+      if (startDate) courseData.startDate = startDate;
+      if (endDate) courseData.endDate = endDate;
+      if (startTime) courseData.startTime = startTime;
+      if (endTime) courseData.endTime = endTime;
+      if (timezone) courseData.timezone = timezone;
+    }
 
     // Add cohort-specific fields
     if (courseType === 'cohort' || courseType === 'cohort-based') {

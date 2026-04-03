@@ -305,7 +305,7 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
     if (creatingCourse) return;
     if (courseType && formData.title) {
       setCreatingCourse(true);
-      const courseData = {
+      const courseData: any = {
         title: formData.title,
         courseType: courseType,
         description: formData.description,
@@ -314,24 +314,27 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
         currency: formData.currency || "USD",
         duration: formData.duration,
         purchaseNote: formData.purchaseNote || "",
-        startDate: formData.startDate || "",
-        endDate: formData.endDate || "",
-        startTime: formData.startTime || "",
-        endTime: formData.endTime || "",
-        timezone: formData.timezone || "Asia/Kolkata",
-        enrollmentClosesAt: formData.enrollmentClosesAt || "oneMinBeforeStart",
-        customEnrollmentCloseMinutes: formData.customEnrollmentCloseMinutes || 1,
         status: "draft",
         specialistId: user?.id,
         specialistEmail: user?.email,
-        ...(courseType === "cohort-based" && {
-          cohortSize: formData.cohortSize,
-          schedule: formData.schedule,
-          meetingPlatform: formData.meetingPlatform,
-          zoomLink: formData.zoomLink,
-          liveSessions: parseInt(formData.liveSessions) || 0,
-        }),
       };
+
+      // Only include date/time fields for cohort-based courses
+      if (courseType === "cohort-based") {
+        courseData.startDate = formData.startDate || "";
+        courseData.endDate = formData.endDate || "";
+        courseData.startTime = formData.startTime || "";
+        courseData.endTime = formData.endTime || "";
+        courseData.timezone = formData.timezone || "Asia/Kolkata";
+        courseData.enrollmentClosesAt = formData.enrollmentClosesAt || "oneMinBeforeStart";
+        courseData.customEnrollmentCloseMinutes = formData.customEnrollmentCloseMinutes || 1;
+        courseData.cohortSize = formData.cohortSize;
+        courseData.schedule = formData.schedule;
+        courseData.meetingPlatform = formData.meetingPlatform;
+        courseData.zoomLink = formData.zoomLink;
+        courseData.liveSessions = parseInt(formData.liveSessions) || 0;
+      }
+
       try {
         const response = await courseAPI.create(courseData);
         const newCourse: Course = {
@@ -370,31 +373,33 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
     if (selectedCourse) {
       // Remove _id from modules to let backend generate them for new modules
       const modulesData = modules.map(({ id, ...rest }) => rest);
-      const updatedData = {
+      const updatedData: any = {
         title: formData.title,
         description: formData.description,
         thumbnail: formData.thumbnail || "",
         price: parseInt(formData.price) || 0,
         currency: formData.currency || "USD",
         duration: formData.duration,
-        startDate: formData.startDate || "",
-        endDate: formData.endDate || "",
-        startTime: formData.startTime || "",
-        endTime: formData.endTime || "",
-        timezone: formData.timezone || "Asia/Kolkata",
-        enrollmentClosesAt: formData.enrollmentClosesAt || "oneMinBeforeStart",
-        customEnrollmentCloseMinutes: formData.customEnrollmentCloseMinutes || 1,
         purchaseNote: formData.purchaseNote || "",
         specialistId: user?.id,
         specialistEmail: user?.email,
-        ...((selectedCourse.type === "cohort-based" || selectedCourse.type === "cohort") && {
-          cohortSize: formData.cohortSize,
-          schedule: formData.schedule,
-          meetingPlatform: formData.meetingPlatform,
-          zoomLink: formData.zoomLink,
-          liveSessions: parseInt(formData.liveSessions) || 0,
-        }),
       };
+
+      // Only include date/time fields for cohort-based courses
+      if (selectedCourse.type === "cohort-based" || selectedCourse.type === "cohort") {
+        updatedData.startDate = formData.startDate || "";
+        updatedData.endDate = formData.endDate || "";
+        updatedData.startTime = formData.startTime || "";
+        updatedData.endTime = formData.endTime || "";
+        updatedData.timezone = formData.timezone || "Asia/Kolkata";
+        updatedData.enrollmentClosesAt = formData.enrollmentClosesAt || "oneMinBeforeStart";
+        updatedData.customEnrollmentCloseMinutes = formData.customEnrollmentCloseMinutes || 1;
+        updatedData.cohortSize = formData.cohortSize;
+        updatedData.schedule = formData.schedule;
+        updatedData.meetingPlatform = formData.meetingPlatform;
+        updatedData.zoomLink = formData.zoomLink;
+        updatedData.liveSessions = parseInt(formData.liveSessions) || 0;
+      }
       
       try {
         await courseAPI.update(selectedCourse.id, updatedData);
@@ -1594,86 +1599,90 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="startDate">Start Date *</Label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startDate: e.target.value })
-                  }
-                />
-              </div>
+            {courseType === "cohort-based" && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="startDate">Start Date *</Label>
+                    <Input
+                      id="startDate"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, startDate: e.target.value })
+                      }
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="endDate">End Date *</Label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endDate: e.target.value })
-                  }
-                />
-              </div>
-            </div>
+                  <div>
+                    <Label htmlFor="endDate">End Date *</Label>
+                    <Input
+                      id="endDate"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, endDate: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="startTime">Start Time</Label>
-                <Input
-                  id="startTime"
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startTime: e.target.value })
-                  }
-                />
-              </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="startTime">Start Time</Label>
+                    <Input
+                      id="startTime"
+                      type="time"
+                      value={formData.startTime}
+                      onChange={(e) =>
+                        setFormData({ ...formData, startTime: e.target.value })
+                      }
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="endTime">End Time</Label>
-                <Input
-                  id="endTime"
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endTime: e.target.value })
-                  }
-                />
-              </div>
+                  <div>
+                    <Label htmlFor="endTime">End Time</Label>
+                    <Input
+                      id="endTime"
+                      type="time"
+                      value={formData.endTime}
+                      onChange={(e) =>
+                        setFormData({ ...formData, endTime: e.target.value })
+                      }
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="timezone">Timezone</Label>
-                <select
-                  id="timezone"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={formData.timezone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, timezone: e.target.value })
-                  }
-                >
-                  <option value="Asia/Kolkata">(GMT+5:30) India - Kolkata</option>
-                  <option value="Asia/Dubai">(GMT+4:00) Dubai</option>
-                  <option value="Asia/Singapore">(GMT+8:00) Singapore</option>
-                  <option value="Asia/Tokyo">(GMT+9:00) Tokyo</option>
-                  <option value="Asia/Shanghai">(GMT+8:00) Shanghai</option>
-                  <option value="Europe/London">(GMT+0:00) London</option>
-                  <option value="Europe/Paris">(GMT+1:00) Paris</option>
-                  <option value="Europe/Berlin">(GMT+1:00) Berlin</option>
-                  <option value="America/New_York">(GMT-5:00) New York</option>
-                  <option value="America/Chicago">(GMT-6:00) Chicago</option>
-                  <option value="America/Los_Angeles">(GMT-8:00) Los Angeles</option>
-                  <option value="America/Toronto">(GMT-5:00) Toronto</option>
-                  <option value="America/Sao_Paulo">(GMT-3:00) São Paulo</option>
-                  <option value="Australia/Sydney">(GMT+11:00) Sydney</option>
-                  <option value="Pacific/Auckland">(GMT+13:00) Auckland</option>
-                  <option value="UTC">(GMT+0:00) UTC</option>
-                </select>
-              </div>
-            </div>
+                  <div>
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <select
+                      id="timezone"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={formData.timezone}
+                      onChange={(e) =>
+                        setFormData({ ...formData, timezone: e.target.value })
+                      }
+                    >
+                      <option value="Asia/Kolkata">(GMT+5:30) India - Kolkata</option>
+                      <option value="Asia/Dubai">(GMT+4:00) Dubai</option>
+                      <option value="Asia/Singapore">(GMT+8:00) Singapore</option>
+                      <option value="Asia/Tokyo">(GMT+9:00) Tokyo</option>
+                      <option value="Asia/Shanghai">(GMT+8:00) Shanghai</option>
+                      <option value="Europe/London">(GMT+0:00) London</option>
+                      <option value="Europe/Paris">(GMT+1:00) Paris</option>
+                      <option value="Europe/Berlin">(GMT+1:00) Berlin</option>
+                      <option value="America/New_York">(GMT-5:00) New York</option>
+                      <option value="America/Chicago">(GMT-6:00) Chicago</option>
+                      <option value="America/Los_Angeles">(GMT-8:00) Los Angeles</option>
+                      <option value="America/Toronto">(GMT-5:00) Toronto</option>
+                      <option value="America/Sao_Paulo">(GMT-3:00) São Paulo</option>
+                      <option value="Australia/Sydney">(GMT+11:00) Sydney</option>
+                      <option value="Pacific/Auckland">(GMT+13:00) Auckland</option>
+                      <option value="UTC">(GMT+0:00) UTC</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
 
             {courseType === "cohort-based" && (
               <div>
@@ -1867,89 +1876,90 @@ export function Courses({ onUpdateSearchableItems, embedded }: CoursesProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-startDate">Start Date {(selectedCourse?.type === "cohort-based" || selectedCourse?.type === "cohort") && "*"}</Label>
-                <Input
-                  id="edit-startDate"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startDate: e.target.value })
-                  }
-                />
-                {(selectedCourse?.type === "self-paced") && (
-                  <p className="text-xs text-gray-500 mt-1">Optional for self-paced courses. Leave empty to keep enrollment open indefinitely.</p>
-                )}
-              </div>
+            {(selectedCourse?.type === "cohort-based" || selectedCourse?.type === "cohort") && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="edit-startDate">Start Date *</Label>
+                    <Input
+                      id="edit-startDate"
+                      type="date"
+                      value={formData.startDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, startDate: e.target.value })
+                      }
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="edit-endDate">End Date {(selectedCourse?.type === "cohort-based" || selectedCourse?.type === "cohort") && "*"}</Label>
-                <Input
-                  id="edit-endDate"
-                  type="date"
-                  value={formData.endDate}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endDate: e.target.value })
-                  }
-                />
-              </div>
-            </div>
+                  <div>
+                    <Label htmlFor="edit-endDate">End Date *</Label>
+                    <Input
+                      id="edit-endDate"
+                      type="date"
+                      value={formData.endDate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, endDate: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="edit-startTime">Start Time</Label>
-                <Input
-                  id="edit-startTime"
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, startTime: e.target.value })
-                  }
-                />
-              </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label htmlFor="edit-startTime">Start Time</Label>
+                    <Input
+                      id="edit-startTime"
+                      type="time"
+                      value={formData.startTime}
+                      onChange={(e) =>
+                        setFormData({ ...formData, startTime: e.target.value })
+                      }
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="edit-endTime">End Time</Label>
-                <Input
-                  id="edit-endTime"
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) =>
-                    setFormData({ ...formData, endTime: e.target.value })
-                  }
-                />
-              </div>
+                  <div>
+                    <Label htmlFor="edit-endTime">End Time</Label>
+                    <Input
+                      id="edit-endTime"
+                      type="time"
+                      value={formData.endTime}
+                      onChange={(e) =>
+                        setFormData({ ...formData, endTime: e.target.value })
+                      }
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="edit-timezone">Timezone</Label>
-                <select
-                  id="edit-timezone"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  value={formData.timezone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, timezone: e.target.value })
-                  }
-                >
-                  <option value="Asia/Kolkata">(GMT+5:30) India - Kolkata</option>
-                  <option value="Asia/Dubai">(GMT+4:00) Dubai</option>
-                  <option value="Asia/Singapore">(GMT+8:00) Singapore</option>
-                  <option value="Asia/Tokyo">(GMT+9:00) Tokyo</option>
-                  <option value="Asia/Shanghai">(GMT+8:00) Shanghai</option>
-                  <option value="Europe/London">(GMT+0:00) London</option>
-                  <option value="Europe/Paris">(GMT+1:00) Paris</option>
-                  <option value="Europe/Berlin">(GMT+1:00) Berlin</option>
-                  <option value="America/New_York">(GMT-5:00) New York</option>
-                  <option value="America/Chicago">(GMT-6:00) Chicago</option>
-                  <option value="America/Los_Angeles">(GMT-8:00) Los Angeles</option>
-                  <option value="America/Toronto">(GMT-5:00) Toronto</option>
-                  <option value="America/Sao_Paulo">(GMT-3:00) São Paulo</option>
-                  <option value="Australia/Sydney">(GMT+11:00) Sydney</option>
-                  <option value="Pacific/Auckland">(GMT+13:00) Auckland</option>
-                  <option value="UTC">(GMT+0:00) UTC</option>
-                </select>
-              </div>
-            </div>
+                  <div>
+                    <Label htmlFor="edit-timezone">Timezone</Label>
+                    <select
+                      id="edit-timezone"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      value={formData.timezone}
+                      onChange={(e) =>
+                        setFormData({ ...formData, timezone: e.target.value })
+                      }
+                    >
+                      <option value="Asia/Kolkata">(GMT+5:30) India - Kolkata</option>
+                      <option value="Asia/Dubai">(GMT+4:00) Dubai</option>
+                      <option value="Asia/Singapore">(GMT+8:00) Singapore</option>
+                      <option value="Asia/Tokyo">(GMT+9:00) Tokyo</option>
+                      <option value="Asia/Shanghai">(GMT+8:00) Shanghai</option>
+                      <option value="Europe/London">(GMT+0:00) London</option>
+                      <option value="Europe/Paris">(GMT+1:00) Paris</option>
+                      <option value="Europe/Berlin">(GMT+1:00) Berlin</option>
+                      <option value="America/New_York">(GMT-5:00) New York</option>
+                      <option value="America/Chicago">(GMT-6:00) Chicago</option>
+                      <option value="America/Los_Angeles">(GMT-8:00) Los Angeles</option>
+                      <option value="America/Toronto">(GMT-5:00) Toronto</option>
+                      <option value="America/Sao_Paulo">(GMT-3:00) São Paulo</option>
+                      <option value="Australia/Sydney">(GMT+11:00) Sydney</option>
+                      <option value="Pacific/Auckland">(GMT+13:00) Auckland</option>
+                      <option value="UTC">(GMT+0:00) UTC</option>
+                    </select>
+                  </div>
+                </div>
+              </>
+            )}
 
             {selectedCourse?.type === "cohort-based" && (
               <div>
