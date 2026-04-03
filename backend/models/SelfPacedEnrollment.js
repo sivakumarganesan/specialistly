@@ -37,9 +37,9 @@ const selfPacedEnrollmentSchema = new mongoose.Schema({
   },
   paymentGateway: {
     type: String,
-    enum: ['stripe', 'razorpay'],
+    enum: ['stripe', 'razorpay', 'admin'],
     default: 'stripe',
-    description: 'Which payment gateway was used',
+    description: 'Which payment gateway was used (admin for manual enrollment)',
   },
   paymentId: {
     type: mongoose.Schema.Types.ObjectId,
