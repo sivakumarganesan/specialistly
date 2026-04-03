@@ -139,6 +139,24 @@ export const addSelfPacedEnrollment = async (req, res) => {
 
     await enrollment.save();
 
+    // Link specialist to customer (for visibility in specialist's customer list)
+    if (course.specialistEmail) {
+      await Customer.updateOne(
+        { customerId },
+        {
+          $addToSet: {
+            specialists: {
+              specialistId: course.specialistId,
+              specialistEmail: course.specialistEmail,
+              specialistName: course.specialistName || 'Unknown Specialist',
+              firstBookedDate: new Date(),
+            },
+          },
+        },
+        { upsert: true }
+      );
+    }
+
     // Log the action
     const auditLog = new EnrollmentAuditLog({
       action: 'add',
@@ -289,6 +307,9 @@ export const addCohortEnrollment = async (req, res) => {
     const customer = await Customer.findOne({ customerId }).lean();
     const customerName = customer?.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : 'Unknown';
 
+    // Get course info to access specialist
+    const course = await Course.findById(cohort.courseId);
+
     // Create enrollment
     const enrollment = new CohortEnrollment({
       cohortId,
@@ -302,6 +323,24 @@ export const addCohortEnrollment = async (req, res) => {
     });
 
     await enrollment.save();
+
+    // Link specialist to customer (for visibility in specialist's customer list)
+    if (course?.specialistEmail) {
+      await Customer.updateOne(
+        { customerId },
+        {
+          $addToSet: {
+            specialists: {
+              specialistId: course.specialistId,
+              specialistEmail: course.specialistEmail,
+              specialistName: course.specialistName || 'Unknown Specialist',
+              firstBookedDate: new Date(),
+            },
+          },
+        },
+        { upsert: true }
+      );
+    }
 
     // Update cohort enrolled count
     cohort.enrolledCount = (cohort.enrolledCount || 0) + 1;
