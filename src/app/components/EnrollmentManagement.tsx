@@ -4,7 +4,7 @@ import { Input } from '@/app/components/ui/input';
 import { Button } from '@/app/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/app/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/app/components/ui/select';
-import { adminEnrollmentAPI } from '@/app/api/adminEnrollmentAPI';
+import { adminEnrollmentAPI } from '@/api/adminEnrollmentAPI';
 
 const EnrollmentManagement: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
