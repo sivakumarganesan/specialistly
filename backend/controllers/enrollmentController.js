@@ -135,22 +135,32 @@ export const enrollSelfPaced = async (req, res) => {
 // Get self-paced enrollments (my courses)
 export const getMyCourses = async (req, res) => {
   try {
-    // Use authenticated user ID if available, otherwise fall back to query parameter
-    // If neither is available, return empty list (not an error) to allow unauthenticated browsing
-    const customerId = req.user?.userId || req.query.customerId;
+    // Get customer ID - need to find by email since User and Customer are separate collections
+    let customerId = req.user?.userId || req.query.customerId;
+    const userEmail = req.user?.email;
 
     // Log for debugging
     console.log('[getMyCourses] Request:', {
       hasAuth: !!req.user,
       userId: req.user?.userId,
+      userEmail: userEmail,
       queryCustomerId: req.query.customerId,
-      finalCustomerId: customerId,
+      initialCustomerId: customerId,
     });
+
+    // If we have an email but no customerId (authenticated user), look up Customer by email
+    if (!customerId && userEmail) {
+      const customer = await Customer.findOne({ email: userEmail });
+      if (customer) {
+        customerId = customer._id.toString();
+        console.log('[getMyCourses] Found customer by email:', { email: userEmail, customerId });
+      }
+    }
 
     if (!customerId) {
       // Return empty list for unauthenticated requests instead of error
       // This allows users to browse courses without an account
-      console.log('[getMyCourses] No user ID found, returning empty enrollments');
+      console.log('[getMyCourses] No customer ID found, returning empty enrollments');
       return res.status(200).json({
         success: true,
         data: [],
