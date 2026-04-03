@@ -480,7 +480,7 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
               
               // Determine if course enrollment is closed
               // For cohort courses: check if enrollment close time has passed
-              // For self-paced courses: enrollment is always open if published, closed if draft
+              // For self-paced courses: enrollment is always open unless explicitly marked as draft
               let isEnrollmentClosed = false;
               
               if (course.courseType === 'cohort' || course.courseType === 'cohort-based') {
@@ -490,8 +490,9 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
                   isEnrollmentClosed = closeTime ? new Date() >= closeTime : new Date(course.startDate) < new Date();
                 }
               } else if (course.courseType === 'self-paced') {
-                // Self-paced courses: only closed if not published
-                isEnrollmentClosed = course.status !== 'published';
+                // Self-paced courses: only closed if explicitly marked as draft
+                // If status is missing (legacy data), default to open (not closed)
+                isEnrollmentClosed = course.status === 'draft';
               }
               
               return (
