@@ -40,12 +40,17 @@ const EnrollmentManagement: React.FC = () => {
   useEffect(() => {
     const fetchCoursesAndSpecialists = async () => {
       try {
-        // Fetch all courses
-        const coursesResponse = await fetch('/api/courses', {
+        // Fetch all courses (both published and unpublished for admin view)
+        const coursesResponse = await fetch('/api/courses/my-courses', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
         });
+        
+        if (!coursesResponse.ok) {
+          throw new Error('Failed to fetch courses');
+        }
+        
         const coursesData = await coursesResponse.json();
         const allCoursesData = coursesData.data || [];
         setAllCourses(allCoursesData);
