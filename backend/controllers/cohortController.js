@@ -2,6 +2,7 @@ import Cohort from '../models/Cohort.js';
 import CohortEnrollment from '../models/CohortEnrollment.js';
 import Course from '../models/Course.js';
 import Certificate from '../models/Certificate.js';
+import Customer from '../models/Customer.js';
 
 const generateCertificateId = () => {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -340,7 +341,17 @@ export const getSessionJoinLink = async (req, res) => {
 // Get my cohorts (customer's enrolled cohorts)
 export const getMyCohorts = async (req, res) => {
   try {
-    const customerId = req.user?.userId || req.query.customerId;
+    // Get customer ID - need to find by email since User and Customer are separate collections
+    let customerId = req.user?.userId || req.query.customerId;
+    const userEmail = req.user?.email;
+
+    // If we have an email but no customerId (authenticated user), look up Customer by email
+    if (!customerId && userEmail) {
+      const customer = await Customer.findOne({ email: userEmail });
+      if (customer) {
+        customerId = customer._id.toString();
+      }
+    }
 
     if (!customerId) {
       return res.status(400).json({

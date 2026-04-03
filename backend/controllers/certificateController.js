@@ -1,6 +1,7 @@
 import Certificate from '../models/Certificate.js';
 import CohortEnrollment from '../models/CohortEnrollment.js';
 import Cohort from '../models/Cohort.js';
+import Customer from '../models/Customer.js';
 
 // Enroll in cohort course
 export const enrollCohort = async (req, res) => {
@@ -166,7 +167,17 @@ export const getCertificate = async (req, res) => {
 // List my certificates
 export const getMyCertificates = async (req, res) => {
   try {
-    const customerId = req.user?.userId || req.query.customerId;
+    // Get customer ID - need to find by email since User and Customer are separate collections
+    let customerId = req.user?.userId || req.query.customerId;
+    const userEmail = req.user?.email;
+
+    // If we have an email but no customerId (authenticated user), look up Customer by email
+    if (!customerId && userEmail) {
+      const customer = await Customer.findOne({ email: userEmail });
+      if (customer) {
+        customerId = customer._id.toString();
+      }
+    }
 
     const certificates = await Certificate.find({ customerId }).sort({
       issueDate: -1,
