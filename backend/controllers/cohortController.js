@@ -342,15 +342,20 @@ export const getSessionJoinLink = async (req, res) => {
 export const getMyCohorts = async (req, res) => {
   try {
     // Get customer ID - need to find by email since User and Customer are separate collections
-    let customerId = req.user?.userId || req.query.customerId;
     const userEmail = req.user?.email;
+    let customerId = null;
 
-    // If we have an email but no customerId (authenticated user), look up Customer by email
-    if (!customerId && userEmail) {
+    // Priority 1: If authenticated user with email, look up Customer by email (gets correct Customer._id)
+    if (userEmail) {
       const customer = await Customer.findOne({ email: userEmail });
       if (customer) {
         customerId = customer._id.toString();
       }
+    }
+
+    // Priority 2: Fallback to query parameter (for backward compatibility)
+    if (!customerId && req.query.customerId) {
+      customerId = req.query.customerId;
     }
 
     if (!customerId) {

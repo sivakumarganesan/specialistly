@@ -136,26 +136,30 @@ export const enrollSelfPaced = async (req, res) => {
 export const getMyCourses = async (req, res) => {
   try {
     // Get customer ID - need to find by email since User and Customer are separate collections
-    let customerId = req.user?.userId || req.query.customerId;
     const userEmail = req.user?.email;
+    let customerId = null;
 
-    // Log for debugging
-    console.log('[getMyCourses] Request:', {
-      hasAuth: !!req.user,
-      userId: req.user?.userId,
-      userEmail: userEmail,
-      queryCustomerId: req.query.customerId,
-      initialCustomerId: customerId,
-    });
-
-    // If we have an email but no customerId (authenticated user), look up Customer by email
-    if (!customerId && userEmail) {
+    // Priority 1: If authenticated user with email, look up Customer by email (gets correct Customer._id)
+    if (userEmail) {
       const customer = await Customer.findOne({ email: userEmail });
       if (customer) {
         customerId = customer._id.toString();
         console.log('[getMyCourses] Found customer by email:', { email: userEmail, customerId });
       }
     }
+
+    // Priority 2: Fallback to query parameter (for backward compatibility)
+    if (!customerId && req.query.customerId) {
+      customerId = req.query.customerId;
+      console.log('[getMyCourses] Using customerId from query parameter:', customerId);
+    }
+
+    // Log for debugging
+    console.log('[getMyCourses] Request:', {
+      hasAuth: !!req.user,
+      userEmail: userEmail,
+      finalCustomerId: customerId,
+    });
 
     if (!customerId) {
       // Return empty list for unauthenticated requests instead of error
