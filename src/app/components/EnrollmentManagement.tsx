@@ -8,6 +8,9 @@ import { adminEnrollmentAPI } from '@/api/adminEnrollmentAPI';
 
 const EnrollmentManagement: React.FC = () => {
   const [courses, setCourses] = useState<any[]>([]);
+  const [allCourses, setAllCourses] = useState<any[]>([]);
+  const [specialists, setSpecialists] = useState<any[]>([]);
+  const [selectedSpecialist, setSelectedSpecialist] = useState<string>('');
   const [selectedCourse, setSelectedCourse] = useState<string>('');
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -35,23 +38,58 @@ const EnrollmentManagement: React.FC = () => {
 
   // Fetch courses on mount
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchCoursesAndSpecialists = async () => {
       try {
-        const response = await fetch('/api/courses/my-courses', {
+        // Fetch all courses
+        const coursesResponse = await fetch('/api/courses', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
           },
         });
-        const data = await response.json();
-        setCourses(data.data || []);
+        const coursesData = await coursesResponse.json();
+        const allCoursesData = coursesData.data || [];
+        setAllCourses(allCoursesData);
+
+        // Extract unique specialists
+        const uniqueSpecialists = Array.from(
+          new Map(
+            allCoursesData
+              .filter((course: any) => course.specialistEmail)
+              .map((course: any) => [
+                course.specialistEmail,
+                {
+                  email: course.specialistEmail,
+                  name: course.specialistName || course.specialistEmail,
+                  id: course.specialistId,
+                },
+              ])
+          ).values()
+        );
+
+        setSpecialists(uniqueSpecialists);
+        setCourses(allCoursesData);
       } catch (error) {
         console.error('Failed to fetch courses:', error);
         setError('Failed to load courses');
       }
     };
 
-    fetchCourses();
+    fetchCoursesAndSpecialists();
   }, []);
+
+  // Filter courses when specialist is selected
+  useEffect(() => {
+    if (selectedSpecialist) {
+      const filteredCourses = allCourses.filter(
+        (course: any) => course.specialistEmail === selectedSpecialist
+      );
+      setCourses(filteredCourses);
+      setSelectedCourse(''); // Reset course selection
+    } else {
+      setCourses(allCourses);
+      setSelectedCourse('');
+    }
+  }, [selectedSpecialist, allCourses]);
 
   // Fetch enrollments when course is selected
   useEffect(() => {
@@ -217,9 +255,33 @@ const EnrollmentManagement: React.FC = () => {
           </div>
         )}
 
+        {/* Specialist Filter */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2">Filter by Specialist (Optional)</label>
+          <select
+            value={selectedSpecialist}
+            onChange={(e) => setSelectedSpecialist(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">-- All Specialists --</option>
+            {specialists.map((specialist: any) => (
+              <option key={specialist.email} value={specialist.email}>
+                {specialist.name} ({specialist.email})
+              </option>
+            ))}
+          </select>
+        </div>
+
         {/* Course Selection */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Select Course</label>
+          <label className="block text-sm font-medium mb-2">
+            Select Course
+            {selectedSpecialist && (
+              <span className="text-xs text-gray-500 ml-2">
+                ({courses.length} course{courses.length !== 1 ? 's' : ''})
+              </span>
+            )}
+          </label>
           <select
             value={selectedCourse}
             onChange={(e) => {
