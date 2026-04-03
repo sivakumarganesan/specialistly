@@ -2,6 +2,7 @@ import express from 'express';
 import {
   createCustomer,
   getAllCustomers,
+  searchCustomer,
   getCustomerById,
   updateCustomer,
   deleteCustomer,
@@ -31,6 +32,9 @@ router.get('/interests/:email', getCustomerInterests);
 
 // Enriched customers with segmentation (auth required)
 router.get('/enriched', authMiddleware, getEnrichedCustomers);
+
+// Search customer by email
+router.get('/search', searchCustomer);
 
 // Send email to selected customers (auth required)
 router.post('/send-email', authMiddleware, sendBulkEmail);

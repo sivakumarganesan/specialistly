@@ -25,6 +25,11 @@ const EnrollmentManagement: React.FC = () => {
     notes: '',
   });
 
+  // Customer search
+  const [customerSearchEmail, setCustomerSearchEmail] = useState('');
+  const [searchingCustomer, setSearchingCustomer] = useState(false);
+  const [customerFound, setCustomerFound] = useState(false);
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -82,6 +87,46 @@ const EnrollmentManagement: React.FC = () => {
     }
   };
 
+  const searchCustomer = async () => {
+    if (!customerSearchEmail) {
+      setError('Please enter customer email');
+      return;
+    }
+
+    try {
+      setSearchingCustomer(true);
+      const response = await fetch(`/api/customers/search?email=${encodeURIComponent(customerSearchEmail)}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Customer not found');
+      }
+
+      const data = await response.json();
+      if (data.data) {
+        const customer = data.data;
+        setAddForm({
+          customerId: customer._id || customer.customerId || '',
+          customerEmail: customer.email || customerSearchEmail,
+          reason: '',
+          notes: '',
+        });
+        setCustomerFound(true);
+        setError('');
+      } else {
+        setError('Customer not found');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Failed to search customer');
+      setCustomerFound(false);
+    } finally {
+      setSearchingCustomer(false);
+    }
+  };
+
   const handleAddEnrollment = async () => {
     if (!addForm.customerId || !addForm.customerEmail) {
       setError('Please fill in all required fields');
@@ -106,6 +151,8 @@ const EnrollmentManagement: React.FC = () => {
 
       setSuccess('Enrollment added successfully!');
       setAddForm({ customerId: '', customerEmail: '', reason: '', notes: '' });
+      setCustomerSearchEmail('');
+      setCustomerFound(false);
       setIsAddDialogOpen(false);
       fetchEnrollments();
 
@@ -293,61 +340,112 @@ const EnrollmentManagement: React.FC = () => {
       </div>
 
       {/* Add Enrollment Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+      <Dialog open={isAddDialogOpen} onOpenChange={(open) => {
+        setIsAddDialogOpen(open);
+        if (!open) {
+          setCustomerSearchEmail('');
+          setCustomerFound(false);
+          setAddForm({ customerId: '', customerEmail: '', reason: '', notes: '' });
+        }
+      }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Customer to Course</DialogTitle>
             <DialogDescription>
-              Manually enroll a customer in the selected course
+              Search for a customer by email to enroll them in the selected course
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Customer ID *</label>
-              <Input
-                placeholder="Enter customer ID"
-                value={addForm.customerId}
-                onChange={(e) => setAddForm({ ...addForm, customerId: e.target.value })}
-              />
-            </div>
+            {!customerFound ? (
+              <div className="space-y-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <label className="block text-sm font-medium">Search Customer by Email</label>
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="Enter customer email to search"
+                    value={customerSearchEmail}
+                    onChange={(e) => setCustomerSearchEmail(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && searchCustomer()}
+                  />
+                  <Button
+                    onClick={searchCustomer}
+                    disabled={searchingCustomer}
+                    className="bg-purple-600 hover:bg-purple-700 text-white whitespace-nowrap"
+                  >
+                    {searchingCustomer ? 'Searching...' : 'Search'}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3 p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-green-900">Customer Found</p>
+                    <p className="text-sm text-green-700 break-all">{addForm.customerEmail}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setCustomerFound(false);
+                      setCustomerSearchEmail('');
+                      setAddForm({ customerId: '', customerEmail: '', reason: '', notes: '' });
+                    }}
+                    className="text-green-600 hover:text-green-800 font-semibold text-sm"
+                  >
+                    Change
+                  </button>
+                </div>
+              </div>
+            )}
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Customer Email *</label>
-              <Input
-                type="email"
-                placeholder="Enter customer email"
-                value={addForm.customerEmail}
-                onChange={(e) => setAddForm({ ...addForm, customerEmail: e.target.value })}
-              />
-            </div>
+            {customerFound && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Customer ID</label>
+                  <Input
+                    disabled
+                    value={addForm.customerId}
+                    className="bg-gray-100"
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Reason</label>
-              <Input
-                placeholder="Reason for manual enrollment"
-                value={addForm.reason}
-                onChange={(e) => setAddForm({ ...addForm, reason: e.target.value })}
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Reason for Manual Enrollment</label>
+                  <Input
+                    placeholder="e.g., System error correction, Special request"
+                    value={addForm.reason}
+                    onChange={(e) => setAddForm({ ...addForm, reason: e.target.value })}
+                  />
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">Notes</label>
-              <textarea
-                placeholder="Additional notes"
-                value={addForm.notes}
-                onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                rows={3}
-              />
-            </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Additional Notes</label>
+                  <textarea
+                    placeholder="Any additional context or details"
+                    value={addForm.notes}
+                    onChange={(e) => setAddForm({ ...addForm, notes: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    rows={3}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsAddDialogOpen(false);
+              setCustomerSearchEmail('');
+              setCustomerFound(false);
+              setAddForm({ customerId: '', customerEmail: '', reason: '', notes: '' });
+            }}>
               Cancel
             </Button>
-            <Button onClick={handleAddEnrollment} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button
+              onClick={handleAddEnrollment}
+              disabled={!customerFound}
+              className="bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Add Enrollment
             </Button>
           </DialogFooter>

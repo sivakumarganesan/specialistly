@@ -53,6 +53,47 @@ export const getAllCustomers = async (req, res) => {
   }
 };
 
+// Search customer by email
+export const searchCustomer = async (req, res) => {
+  try {
+    const { email } = req.query;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email parameter is required',
+      });
+    }
+
+    const customer = await Customer.findOne({ email: email.toLowerCase() }).lean();
+
+    if (!customer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Customer not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        _id: customer._id,
+        customerId: customer.customerId || customer._id.toString(),
+        email: customer.email,
+        name: customer.name,
+        phone: customer.phone,
+        location: customer.location,
+      },
+    });
+  } catch (error) {
+    console.error('Error in searchCustomer:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // Get a single customer by ID
 export const getCustomerById = async (req, res) => {
   try {
