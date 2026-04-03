@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { adminAPI } from "@/app/api/apiClient";
+import EnrollmentManagement from "./EnrollmentManagement";
 import {
   Users, UserCheck, GraduationCap, Briefcase, Activity,
   Search, ChevronLeft, ChevronRight, Shield, UserX, Eye,
@@ -77,7 +78,7 @@ export function AdminDashboard() {
   const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [recentActivity, setRecentActivity] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "users">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "users" | "enrollments">("overview");
 
   const fetchStats = useCallback(async () => {
     try {
@@ -196,6 +197,14 @@ export function AdminDashboard() {
           }`}
         >
           All Users
+        </button>
+        <button
+          onClick={() => setActiveTab("enrollments")}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            activeTab === "enrollments" ? "border-purple-600 text-purple-600" : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Enrollment Management
         </button>
       </div>
 
@@ -424,6 +433,11 @@ export function AdminDashboard() {
             )}
           </div>
         </>
+      )}
+
+      {/* Enrollment Management Tab */}
+      {activeTab === "enrollments" && (
+        <EnrollmentManagement />
       )}
 
       {/* User Detail Modal */}
