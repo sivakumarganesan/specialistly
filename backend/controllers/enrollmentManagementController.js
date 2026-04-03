@@ -132,6 +132,7 @@ export const addSelfPacedEnrollment = async (req, res) => {
       customerEmail,
       paymentStatus: 'completed', // Mark as completed since admin added it
       paymentGateway: 'admin',
+      status: 'active', // Set to active for admin-created enrollments
       completedLessons: [],
       completed: false,
       enrolledAt: new Date(),
@@ -326,7 +327,7 @@ export const addCohortEnrollment = async (req, res) => {
     // Link specialist to customer (for visibility in specialist's customer list)
     if (course?.specialistEmail) {
       await Customer.updateOne(
-        { customerId },
+        { email: customerEmail },
         {
           $addToSet: {
             specialists: {
@@ -336,8 +337,7 @@ export const addCohortEnrollment = async (req, res) => {
               firstBookedDate: new Date(),
             },
           },
-        },
-        { upsert: true }
+        }
       );
     }
 
