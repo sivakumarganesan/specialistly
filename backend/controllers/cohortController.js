@@ -343,29 +343,37 @@ export const getMyCohorts = async (req, res) => {
   try {
     // Get customer ID - need to find by email since User and Customer are separate collections
     const userEmail = req.user?.email;
-    let customerId = null;
+    const userId = req.user?.userId;
+    let customerIdList = [];
 
     // Priority 1: If authenticated user with email, look up Customer by email (gets correct Customer._id)
     if (userEmail) {
       const customer = await Customer.findOne({ email: userEmail });
       if (customer) {
-        customerId = customer._id.toString();
+        customerIdList.push(customer._id.toString());
       }
     }
 
-    // Priority 2: Fallback to query parameter (for backward compatibility)
-    if (!customerId && req.query.customerId) {
-      customerId = req.query.customerId;
+    // For backward compatibility: also include User._id to find old enrollments
+    if (userId && !customerIdList.includes(userId)) {
+      customerIdList.push(userId);
     }
 
-    if (!customerId) {
+    // Priority 2: Fallback to query parameter (for backward compatibility)
+    if (req.query.customerId && !customerIdList.includes(req.query.customerId)) {
+      customerIdList.push(req.query.customerId);
+    }
+
+    if (customerIdList.length === 0) {
       return res.status(400).json({
         success: false,
         message: 'Customer ID is required',
       });
     }
 
-    const enrollments = await CohortEnrollment.find({ customerId })
+    // Query using $in to find enrollments with ANY of the possible customer IDs
+    // This handles both new (Customer._id) and old (User._id) enrollments
+    const enrollments = await CohortEnrollment.find({ customerId: { $in: customerIdList } })
       .populate('cohortId') // Get full cohort data
       .sort({ createdAt: -1 });
 

@@ -142,41 +142,53 @@ export const getMyCourses = async (req, res) => {
   try {
     // Get customer ID - need to find by email since User and Customer are separate collections
     const userEmail = req.user?.email;
+    const userId = req.user?.userId;
     let customerId = null;
+    let customerIdList = [];
 
     // Priority 1: If authenticated user with email, look up Customer by email (gets correct Customer._id)
     if (userEmail) {
       const customer = await Customer.findOne({ email: userEmail });
       if (customer) {
         customerId = customer._id.toString();
+        customerIdList.push(customerId);
         console.log('[getMyCourses] Found customer by email:', { email: userEmail, customerId });
       }
     }
 
+    // For backward compatibility: also include User._id to find old enrollments
+    if (userId && !customerIdList.includes(userId)) {
+      customerIdList.push(userId);
+      console.log('[getMyCourses] Including userId for backward compatibility:', userId);
+    }
+
     // Priority 2: Fallback to query parameter (for backward compatibility)
-    if (!customerId && req.query.customerId) {
-      customerId = req.query.customerId;
-      console.log('[getMyCourses] Using customerId from query parameter:', customerId);
+    if (req.query.customerId && !customerIdList.includes(req.query.customerId)) {
+      customerIdList.push(req.query.customerId);
+      console.log('[getMyCourses] Using customerId from query parameter:', req.query.customerId);
     }
 
     // Log for debugging
     console.log('[getMyCourses] Request:', {
       hasAuth: !!req.user,
       userEmail: userEmail,
-      finalCustomerId: customerId,
+      userId: userId,
+      customerIdList: customerIdList,
     });
 
-    if (!customerId) {
+    if (customerIdList.length === 0) {
       // Return empty list for unauthenticated requests instead of error
       // This allows users to browse courses without an account
-      console.log('[getMyCourses] No customer ID found, returning empty enrollments');
+      console.log('[getMyCourses] No customer IDs found, returning empty enrollments');
       return res.status(200).json({
         success: true,
         data: [],
       });
     }
 
-    const enrollments = await SelfPacedEnrollment.find({ customerId })
+    // Query using $in to find enrollments with ANY of the possible customer IDs
+    // This handles both new (Customer._id) and old (User._id) enrollments
+    const enrollments = await SelfPacedEnrollment.find({ customerId: { $in: customerIdList } })
       .populate('courseId')
       .sort({ createdAt: -1 });
 
