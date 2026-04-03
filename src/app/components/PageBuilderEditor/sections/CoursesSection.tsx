@@ -477,18 +477,23 @@ export const CoursesSectionPreview: React.FC<{ section: PageSection }> = ({ sect
             {displayCourses.map((course: any) => {
               const courseId = course._id || course.id;
               const isEnrolled = enrolledCourseIds.has(courseId);
-              // For cohort courses: check if enrollment is closed based on enrollment close time (e.g., 1 min before start)
-              // For self-paced courses: enrollment stays open as long as course is published
-              const isCohortClosed = (course.courseType === 'cohort' || course.courseType === 'cohort-based') && course.startDate ? (() => {
-                const closeTime = calculateEnrollmentCloseTime(course);
-                return closeTime ? new Date() >= closeTime : new Date(course.startDate) < new Date();
-              })() : false;
               
-              // Self-paced courses are only closed if they're in draft status or not published
-              const isSelfPacedClosed = course.courseType === 'self-paced' && course.status !== 'published';
+              // Determine if course enrollment is closed
+              // For cohort courses: check if enrollment close time has passed
+              // For self-paced courses: enrollment is always open if published, closed if draft
+              let isEnrollmentClosed = false;
               
-              // Combined enrollment closed check
-              const isEnrollmentClosed = isCohortClosed || isSelfPacedClosed;
+              if (course.courseType === 'cohort' || course.courseType === 'cohort-based') {
+                // Cohort-based courses: check enrollment close time based on start date
+                if (course.startDate) {
+                  const closeTime = calculateEnrollmentCloseTime(course);
+                  isEnrollmentClosed = closeTime ? new Date() >= closeTime : new Date(course.startDate) < new Date();
+                }
+              } else if (course.courseType === 'self-paced') {
+                // Self-paced courses: only closed if not published
+                isEnrollmentClosed = course.status !== 'published';
+              }
+              
               return (
                 <div
                   key={courseId}
