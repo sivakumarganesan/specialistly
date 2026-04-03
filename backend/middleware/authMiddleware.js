@@ -60,3 +60,38 @@ export const optionalAuthMiddleware = (req, res, next) => {
     next();
   }
 };
+
+// Admin authentication middleware - validates token and checks for admin role
+export const adminAuthMiddleware = (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+
+    if (!token) {
+      console.error('[adminAuthMiddleware] No token provided');
+      return res.status(401).json({ 
+        error: 'No token provided',
+      });
+    }
+
+    console.log('[adminAuthMiddleware] Verifying token...');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    
+    // Check if user has admin role
+    if (decoded.role !== 'admin') {
+      console.error('[adminAuthMiddleware] User is not admin:', decoded.role);
+      return res.status(403).json({
+        error: 'Access denied. Admin privileges required.',
+      });
+    }
+    
+    req.user = decoded;
+    console.log('[adminAuthMiddleware] Admin verified:', decoded.email);
+    next();
+  } catch (error) {
+    console.error('[adminAuthMiddleware] Verification failed:', error.message);
+    res.status(401).json({ 
+      error: 'Invalid token',
+    });
+  }
+};

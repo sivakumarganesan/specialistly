@@ -7,6 +7,7 @@ import {
   toggleUserStatus,
   getRecentActivity,
 } from '../controllers/adminController.js';
+import enrollmentManagementRoutes from './enrollmentManagementRoutes.js';
 
 const router = express.Router();
 
@@ -18,5 +19,8 @@ router.get('/users', getUsers);
 router.get('/users/:id', getUserDetail);
 router.put('/users/:id/toggle-status', toggleUserStatus);
 router.get('/recent-activity', getRecentActivity);
+
+// Enrollment management sub-routes
+router.use('/enrollments', enrollmentManagementRoutes);
 
 export default router;
