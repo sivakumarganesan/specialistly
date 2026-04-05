@@ -3,6 +3,7 @@ import Certificate from '../models/Certificate.js';
 import Course from '../models/Course.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import Customer from '../models/Customer.js';
+import mongoose from 'mongoose';
 
 const generateCertificateId = () => {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -212,7 +213,18 @@ export const getMyCourses = async (req, res) => {
 
     // Query using $in to find enrollments with ANY of the possible customer IDs
     // This handles both new (Customer._id) and old (User._id) enrollments
-    const enrollments = await SelfPacedEnrollment.find({ customerId: { $in: customerIdList } })
+    // Convert string IDs to ObjectIds for proper matching against database
+    const customerIdListAsObjectIds = customerIdList.map(id => {
+      try {
+        return mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id;
+      } catch (e) {
+        return id;  // Keep as-is if conversion fails
+      }
+    });
+    
+    const enrollments = await SelfPacedEnrollment.find({ 
+      customerId: { $in: customerIdListAsObjectIds } 
+    })
       .populate('courseId')
       .sort({ createdAt: -1 });
 
