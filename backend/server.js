@@ -41,10 +41,17 @@ import reportRoutes from './routes/reportRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 
 // Load environment-specific .env file
-const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
-dotenv.config({ path: path.resolve(__dirname, envFile) });
-// Also load base .env as fallback for any missing vars
+let envFile = '.env'; // default to development
 if (process.env.NODE_ENV === 'production') {
+  envFile = '.env.production';
+} else if (process.env.NODE_ENV === 'staging') {
+  envFile = '.env.staging';
+}
+
+dotenv.config({ path: path.resolve(__dirname, envFile) });
+
+// Also load base .env as fallback for any missing vars
+if (process.env.NODE_ENV !== 'development') {
   dotenv.config({ path: path.resolve(__dirname, '.env') });
 }
 
