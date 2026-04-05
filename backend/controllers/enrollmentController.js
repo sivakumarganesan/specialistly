@@ -168,21 +168,45 @@ export const getMyCourses = async (req, res) => {
       console.log('[getMyCourses] Using customerId from query parameter:', req.query.customerId);
     }
 
+    // Priority 3: IMPORTANT - If still no customer found and there's NO authentication,
+    // try to find customer from X-Customer-Email header (set by frontend when not authenticated)
+    // This is a workaround for when optionalAuthMiddleware doesn't provide auth
+    if (customerIdList.length === 0 && req.headers['x-customer-email']) {
+      const headerEmail = req.headers['x-customer-email'];
+      const customer = await Customer.findOne({ email: headerEmail });
+      if (customer) {
+        customerIdList.push(customer._id.toString());
+        console.log('[getMyCourses] Found customer from X-Customer-Email header:', headerEmail);
+      }
+    }
+
     // Log for debugging
     console.log('[getMyCourses] Request:', {
       hasAuth: !!req.user,
       userEmail: userEmail,
       userId: userId,
+      xCustomerEmail: req.headers['x-customer-email'],
       customerIdList: customerIdList,
+      specialistEmail: req.query.specialistEmail,
     });
 
     if (customerIdList.length === 0) {
       // Return empty list for unauthenticated requests instead of error
       // This allows users to browse courses without an account
-      console.log('[getMyCourses] No customer IDs found, returning empty enrollments');
+      console.log('[getMyCourses] No customer IDs found. Authentication issue:');
+      console.log('  - No auth token OR invalid token');
+      console.log('  - No customerId query parameter');
+      console.log('  - No X-Customer-Email header');
+      console.log('  - Frontend should either:');
+      console.log('    a) Include Authorization Bearer token in headers');
+      console.log('    b) Include ?customerId=<id> in query string');
+      console.log('    c) Include X-Customer-Email: <email> in request headers');
       return res.status(200).json({
         success: true,
         data: [],
+        debug: {
+          message: 'No customer identified. Please ensure authentication is working or pass customerId parameter.',
+        },
       });
     }
 
