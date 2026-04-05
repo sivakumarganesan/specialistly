@@ -41,6 +41,15 @@ class CloudflareR2Service {
     console.log('[R2 Service] Access Key:', this.accessKeyId ? '✓ Set' : '✗ Missing');
     console.log('[R2 Service] Secret Key:', this.secretAccessKey ? '✓ Set' : '✗ Missing');
     console.log('[R2 Service] Bucket:', this.bucketName);
+    
+    // Check if running in read-only mode (staging)
+    const isReadOnly = process.env.CLOUDFLARE_R2_READ_ONLY_MODE === 'true';
+    if (isReadOnly) {
+      console.warn('\n⚠️  WARNING: R2 Service is running in READ-ONLY MODE (STAGING)');
+      console.warn('   → File uploads are BLOCKED');
+      console.warn('   → File deletions are BLOCKED');
+      console.warn('   → Only file downloads are allowed\n');
+    }
 
     if (!this.accountId || !this.accessKeyId || !this.secretAccessKey) {
       console.warn('\n⚠️  WARNING: Cloudflare R2 is NOT properly configured!');
@@ -73,6 +82,13 @@ class CloudflareR2Service {
    * Upload file to Cloudflare R2
    */
   async uploadFile(courseId, lessonId, fileName, fileBuffer, mimeType = 'application/octet-stream') {
+    // Block uploads in staging (read-only mode)
+    if (process.env.CLOUDFLARE_R2_READ_ONLY_MODE === 'true') {
+      const error = new Error('File uploads are disabled in staging environment to protect production data');
+      error.code = 'STAGING_READ_ONLY';
+      throw error;
+    }
+
     try {
       const fileKey = this.generateFileKey(courseId, lessonId, fileName);
 
@@ -134,6 +150,13 @@ class CloudflareR2Service {
    * Delete file from Cloudflare R2
    */
   async deleteFile(fileKey) {
+    // Block deletes in staging (read-only mode)
+    if (process.env.CLOUDFLARE_R2_READ_ONLY_MODE === 'true') {
+      const error = new Error('File deletion is disabled in staging environment to protect production data');
+      error.code = 'STAGING_READ_ONLY';
+      throw error;
+    }
+
     try {
       const command = new DeleteObjectCommand({
         Bucket: this.bucketName,

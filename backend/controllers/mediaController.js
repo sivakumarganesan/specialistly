@@ -101,6 +101,17 @@ export const uploadMedia = async (req, res) => {
       });
     }
 
+    // Block uploads in staging (read-only mode)
+    if (process.env.CLOUDFLARE_R2_READ_ONLY_MODE === 'true') {
+      return res.status(403).json({
+        success: false,
+        message: 'Media uploads are disabled in staging environment to protect production data',
+        details: 'Staging uses read-only access to production R2 and Cloudflare Stream. View existing media is allowed, but new uploads are blocked.',
+        environment: 'staging',
+        recommendation: 'Test media operations in production or use a dedicated staging R2 bucket',
+      });
+    }
+
     // For YouTube: URL is provided
     if (provider === 'youtube' && videoUrl) {
       // Verify website ownership
@@ -430,6 +441,17 @@ export const updateMedia = async (req, res) => {
 export const deleteMedia = async (req, res) => {
   try {
     const { websiteId, mediaId } = req.params;
+    
+    // Block deletions in staging (read-only mode)
+    if (process.env.CLOUDFLARE_R2_READ_ONLY_MODE === 'true') {
+      return res.status(403).json({
+        success: false,
+        message: 'Media deletion is disabled in staging environment to protect production data',
+        details: 'Staging uses read-only access to production R2 and Cloudflare Stream. You cannot delete media in staging.',
+        environment: 'staging',
+      });
+    }
+    
     const specialistId = req.user.id;
 
     // Verify website ownership

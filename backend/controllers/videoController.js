@@ -102,6 +102,19 @@ export const getVideoUploadToken = async (req, res) => {
   try {
     console.log('[Video Controller] Upload token request received');
     
+    // Block video uploads in staging (read-only mode)
+    if (process.env.CLOUDFLARE_R2_READ_ONLY_MODE === 'true') {
+      console.warn('[Video Controller] Video upload blocked - staging read-only mode');
+      return res.status(403).json({
+        success: false,
+        message: 'Video uploads are disabled in staging environment to protect production data',
+        details: 'Staging uses read-only access to production Cloudflare Stream. Video playback is allowed, but new uploads are blocked.',
+        environment: 'staging',
+        recommendation: 'Test video operations in production or use a dedicated staging Cloudflare Stream account',
+        error: 'STAGING_READ_ONLY',
+      });
+    }
+    
     // Check if Cloudflare is configured
     if (!cloudflareConfig.isConfigured()) {
       console.warn('[Video Controller] Cloudflare NOT configured');
