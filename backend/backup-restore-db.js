@@ -200,7 +200,112 @@ async function restoreStagingDB(backupFile) {
 }
 
 /**
- * Step 4: Combined backup, anonymize, and restore
+ * Step 4: Validate and fix enrollment references
+ * 
+ * After restore, verify that all enrollment.customerId references point to valid customers.
+ * This is critical because during cloning, ObjectIds change and enrollment FK relationships
+ * can become invalid.
+ */
+async function validateAndFixEnrollmentReferences() {
+  console.log('\n🔍 Validating enrollment references in staging...');
+  
+  try {
+    const conn = await mongoose.connect(STAGING_DB_URI, {
+      serverSelectionTimeoutMS: 10000,
+    });
+    
+    const db = conn.connection.db;
+    const enrollmentCollection = db.collection('selfpacedenrollments');
+    const customerCollection = db.collection('customers');
+    
+    // Get all customers and build a map by email
+    const allCustomers = await customerCollection.find({}).toArray();
+    const customerByEmail = new Map();
+    const validCustomerIds = new Set();
+    
+    for (const customer of allCustomers) {
+      if (customer.email) {
+        customerByEmail.set(customer.email, customer._id);
+      }
+      validCustomerIds.add(customer._id.toString());
+    }
+    
+    console.log(`   Found ${allCustomers.length} customers in staging`);
+    
+    // Check all enrollments
+    const allEnrollments = await enrollmentCollection.find({}).toArray();
+    console.log(`   Found ${allEnrollments.length} enrollments to validate`);
+    
+    let validCount = 0;
+    let fixedCount = 0;
+    const broken = [];
+    
+    for (const enrollment of allEnrollments) {
+      // Check if customerId points to a valid customer
+      if (enrollment.customerId && validCustomerIds.has(enrollment.customerId.toString())) {
+        validCount++;
+        continue;
+      }
+      
+      // Enrollment is broken, try to fix it
+      if (enrollment.customerEmail && customerByEmail.has(enrollment.customerEmail)) {
+        const correctCustomerId = customerByEmail.get(enrollment.customerEmail);
+        
+        await enrollmentCollection.updateOne(
+          { _id: enrollment._id },
+          {
+            $set: {
+              customerId: correctCustomerId,
+              updatedAt: new Date(),
+            }
+          }
+        );
+        
+        fixedCount++;
+        console.log(`   ✓ Fixed enrollment ${enrollment._id} for customer ${enrollment.customerEmail}`);
+      } else {
+        broken.push({
+          enrollmentId: enrollment._id.toString(),
+          customerId: enrollment.customerId?.toString() || 'missing',
+          customerEmail: enrollment.customerEmail || 'unknown',
+          courseId: enrollment.courseId?.toString() || 'missing',
+        });
+      }
+    }
+    
+    console.log(`\n   📊 Enrollment Validation Results:`);
+    console.log(`      ✓ Valid references: ${validCount}`);
+    console.log(`      🔧 Fixed references: ${fixedCount}`);
+    console.log(`      ❌ Broken references: ${broken.length}`);
+    
+    if (broken.length > 0) {
+      console.log(`\n   ⚠️  Could not fix ${broken.length} enrollments:`);
+      broken.slice(0, 5).forEach(b => {
+        console.log(`      - ${b.enrollmentId}: customer ${b.customerEmail} (id: ${b.customerId})`);
+      });
+      if (broken.length > 5) {
+        console.log(`      ... and ${broken.length - 5} more`);
+      }
+    }
+    
+    await mongoose.disconnect();
+    
+    return {
+      validCount,
+      fixedCount,
+      brokenCount: broken.length,
+      success: broken.length === 0,
+    };
+    
+  } catch (error) {
+    console.error('❌ Enrollment validation failed:', error.message);
+    await mongoose.disconnect();
+    throw error;
+  }
+}
+
+/**
+ * Step 5: Combined backup, anonymize, restore, and validate
  */
 async function cloneWithAnonymize() {
   console.log('🔄 Starting production → staging clone with anonymization\n');
@@ -222,13 +327,18 @@ async function cloneWithAnonymize() {
     // Step 3: Restore to staging
     await restoreStagingDB(anonFile);
     
+    // Step 4: Validate and fix enrollment references
+    const validationResult = await validateAndFixEnrollmentReferences();
+    
     console.log('\n✅ Clone complete!');
     console.log('   Production data (anonymized) is now in Staging');
+    console.log('   Enrollment references validated and fixed');
     console.log('   Ready for QA testing\n');
     console.log('⚠️  VERIFY:');
     console.log('   - All customer data is anonymized');
     console.log('   - No real payment IDs in staging');
     console.log('   - No real emails exposed');
+    console.log(`   - All enrollments have valid references (${validationResult.validCount + validationResult.fixedCount} total)`);
     
   } catch (error) {
     console.error('❌ Clone failed:', error.message);
@@ -282,6 +392,9 @@ const action = args[0] || 'clone-with-anonymize';
         await restoreStagingDB(backupFile);
       } else if (cmd === 'clone-with-anonymize') {
         await cloneWithAnonymize();
+      } else if (cmd === 'validate-enrollments') {
+        const result = await validateAndFixEnrollmentReferences();
+        process.exit(result.success ? 0 : 1);
       } else if (cmd === 'list') {
         await listBackups();
       } else {
@@ -299,14 +412,16 @@ const action = args[0] || 'clone-with-anonymize';
         Actions:
           --action backup                  Create backup of production DB
           --action restore <file>          Restore specific backup to staging
-          --action clone-with-anonymize    Full cycle: backup → anonymize → restore
+          --action clone-with-anonymize    Full cycle: backup → anonymize → restore → validate
+          --action validate-enrollments    Validate and fix enrollment references in staging
           --action list                    List all available backups
           --help                           Show this help
         
         Examples:
           node scripts/backup-restore-db.js --action backup
-          node scripts/backup-restore-db.js --action list
           node scripts/backup-restore-db.js --action clone-with-anonymize
+          node scripts/backup-restore-db.js --action validate-enrollments
+          node scripts/backup-restore-db.js --action list
       `);
       break;
     
