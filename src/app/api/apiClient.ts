@@ -27,6 +27,21 @@ const apiCall = async (
         ...options.headers,
         "Authorization": `Bearer ${authToken}`,
       };
+    } else {
+      // Fallback: If no token, try to get customer email from localStorage
+      // This handles cross-domain access where token isn't available but user data persists
+      try {
+        const userJSON = localStorage.getItem('user');
+        const user = userJSON ? JSON.parse(userJSON) : null;
+        if (user?.email) {
+          options.headers = {
+            ...options.headers,
+            "X-Customer-Email": user.email,
+          };
+        }
+      } catch (e) {
+        // Silently handle parsing errors
+      }
     }
 
     if (data) {
