@@ -179,7 +179,7 @@ node scripts/backup-restore-db.js --action restore backups/backup-prod-2026-04-0
 
 ---
 
-### 4. Full Clone (Backup → Anonymize → Restore)
+### 4. Full Clone (Backup → Anonymize → Restore → Validate)
 
 ```bash
 node scripts/backup-restore-db.js --action clone-with-anonymize
@@ -195,7 +195,29 @@ node scripts/backup-restore-db.js --action clone-with-anonymize
 5. Connects to staging DB
 6. Clears all existing data
 7. Restores anonymized backup
-8. Verifies success
+8. VALIDATES enrollment references ✨ NEW
+9. FIXES any broken FK relationships ✨ NEW
+10. Reports validation results
+```
+
+### 5. Manual Enrollment Validation (Optional)
+
+If you need to verify or fix enrollment references without a full clone:
+
+```bash
+node scripts/backup-restore-db.js --action validate-enrollments
+```
+
+**Output example:**
+```
+🔍 Validating enrollment references in staging...
+   Found 31 customers in staging
+   Found 44 enrollments to validate
+
+   📊 Enrollment Validation Results:
+      ✓ Valid references: 44
+      🔧 Fixed references: 0
+      ❌ Broken references: 0
 ```
 
 ---
@@ -327,17 +349,34 @@ ls -lh backups/
 
 ## Data Integrity Checklist
 
-After cloning, verify:
+After cloning, the following are automatically verified:
 
+- [x] **✅ Enrollment references validated** - All `enrollment.customerId` fields now automatically checked and fixed
+- [x] **✅ FK relationships repaired** - Broken enrollment-customer references are automatically corrected
 - [ ] User count in staging = prod count
 - [ ] Customer count in staging = prod count
-- [ ] No real email addresses in staging
+- [ ] No real email addresses in staging (except for testing accounts matching the anonymization pattern)
 - [ ] No real passwords visible
 - [ ] No real Stripe/Razorpay IDs
 - [ ] Test users have anonymized data
 - [ ] All collections present
 - [ ] Indexes intact
 - [ ] No duplicate records
+
+**Validation Report:**
+
+After each clone, check the console for validation results:
+
+```
+🔍 Validating enrollment references in staging...
+   Found 31 customers in staging
+   Found 44 enrollments to validate
+
+   📊 Enrollment Validation Results:
+      ✓ Valid references: 44
+      🔧 Fixed references: 0
+      ❌ Broken references: 0
+```
 
 **Quick verification script:**
 ```bash
@@ -347,6 +386,7 @@ db.User.count()
 db.Customer.count()
 db.Course.count()
 db.SelfPacedEnrollment.count()
+db.SelfPacedEnrollment.find({ customerId: { \$regex: '^[a-f0-9]{24}\$' } }).count()
 EOF
 ```
 
@@ -383,6 +423,22 @@ EOF
 3. Use `--action restore`
 
 ---
+
+### Q: What about enrollment reference integrity after cloning?
+
+**A:** Automatically handled! The clone script now validates and fixes all `enrollment.customerId` references after restore completes. 
+
+**Why this matters:** During database cloning, ObjectIds change because new documents are inserted. Without validation, enrollments would reference old (non-existent) customer IDs. 
+
+**What happens automatically:**
+1. All enrollment references are checked
+2. Broken references are fixed by matching customer email
+3. Results are reported in the clone output
+4. You can manually validate anytime with: `node scripts/backup-restore-db.js --action validate-enrollments`
+
+**Result:** Customers in staging can always see their enrolled courses.
+
+------
 
 ### Q: How is anonymized data safe?
 
