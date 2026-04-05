@@ -201,7 +201,34 @@ The first clone will create all collections automatically. No manual setup neede
 
 ---
 
-## 🌳 Part 5: Railway Staging Project Setup
+## � Part 5: Cloudflare DNS Configuration (15 min)
+
+**Follow comprehensive guide:** [CLOUDFLARE_DNS_SETUP.md](CLOUDFLARE_DNS_SETUP.md)
+
+### Quick Setup
+
+1. **Add CNAME Record for Production:**
+   - Cloudflare DNS → Add record
+   - Name: `@` (root)
+   - Type: `CNAME`
+   - Target: `production-specialistly-production.up.railway.app` (from Railway)
+
+2. **Add CNAME Record for Staging:**
+   - Cloudflare DNS → Add record
+   - Name: `staging`
+   - Type: `CNAME`
+   - Target: `staging-specialistly-staging.up.railway.app` (from Railway)
+
+3. **Enable SSL in Cloudflare:**
+   - SSL/TLS → Set to **Full (Strict)**
+
+4. **Wait 5-15 minutes** for DNS propagation
+
+Then continue to Part 6 (Railway setup).
+
+---
+
+## 🌳 Part 6: Railway Staging Project Setup
 
 ### 5.1 Create Staging Project in Railway
 
@@ -228,8 +255,8 @@ The first clone will create all collections automatically. No manual setup neede
 ```
 NODE_ENV=staging
 DATABASE_URL=mongodb+srv://staging_user:pass@cluster-staging.mongodb.net/specialistly_staging?retryWrites=true&w=majority
-FRONTEND_URL=https://nest.unearthoneearth.com
-BACKEND_URL=https://nest.unearthoneearth.com/api
+FRONTEND_URL=https://staging.specialistly.com
+BACKEND_URL=https://staging.specialistly.com/api
 
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
@@ -248,11 +275,11 @@ JWT_SECRET=[random 32 char string]
 **Railway → Staging Project → Settings:**
 
 1. Click **Domain**
-2. Add custom domain: `nest.unearthoneearth.com`
-3. Copy CNAME value shown
-4. Go to **Wix DNS:**
-   - Add CNAME record: `nest` → `[Railway CNAME]`
-   - Wait 15-30 min for propagation
+2. Add custom domain: `staging.specialistly.com`
+3. Railway auto-configures (DNS already set in Cloudflare)
+4. Shows ✅ Domain verified
+
+**Note:** DNS is already configured in Cloudflare, so Railway should verify immediately.
 
 ---
 
@@ -322,7 +349,7 @@ git push -u origin feature/test-workflow
 
 ```bash
 # Test staging API
-curl https://nest.unearthoneearth.com/api/health
+curl https://staging.specialistly.com/api/health
 
 # Should return: 200 OK (or whatever your health endpoint returns)
 ```
@@ -480,7 +507,7 @@ After deploy to production:
 
 ```bash
 # Test production API
-curl https://next.unearthoneearth.com/api/health
+curl https://specialistly.com/api/health
 
 # Check error logs
 # Railway → production-specialistly → Logs

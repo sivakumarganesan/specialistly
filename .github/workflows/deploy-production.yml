@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: production
-      url: https://next.unearthoneearth.com
+      url: https://specialistly.com
     
     steps:
       - uses: actions/checkout@v4
