@@ -93,13 +93,13 @@ const isOriginAllowed = (origin) => {
   // Check exact matches
   if (allowedOrigins.includes(origin)) return true;
   
-  // Allow any subdomain of specialistly.com over HTTPS
-  if (origin.match(/^https:\/\/[a-z0-9-]+\.specialistly\.com(:[0-9]+)?$/)) {
+  // Allow any subdomain of specialistly.com over HTTPS (including multi-level like nest.staging.specialistly.com)
+  if (origin.match(/^https:\/\/[a-z0-9.-]+\.specialistly\.com(:[0-9]+)?$/)) {
     return true;
   }
   
   // Allow any subdomain of specialistly.local for local development
-  if (origin.match(/^https?:\/\/[a-z0-9-]+\.specialistly\.local(:[0-9]+)?$/)) {
+  if (origin.match(/^https?:\/\/[a-z0-9.-]+\.specialistly\.local(:[0-9]+)?$/)) {
     return true;
   }
 

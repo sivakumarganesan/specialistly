@@ -16,6 +16,7 @@
  */
 
 import mongoose from 'mongoose';
+import { EJSON } from 'bson';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -70,8 +71,8 @@ async function backupProductionDB() {
       console.log(`    ✓ ${docs.length} documents`);
     }
     
-    // Save backup
-    fs.writeFileSync(backupFile, JSON.stringify(backup, null, 2));
+    // Save backup (use EJSON to preserve ObjectId types)
+    fs.writeFileSync(backupFile, EJSON.stringify(backup, null, 2));
     console.log(`✅ Backup saved: ${backupFile}`);
     console.log(`   Size: ${(fs.statSync(backupFile).size / 1024 / 1024).toFixed(2)} MB`);
     
@@ -147,8 +148,8 @@ async function restoreStagingDB(backupFile) {
   console.log('\n📥 Restoring to staging database...');
   
   try {
-    // Read backup file
-    const backupData = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+    // Read backup file (use EJSON to restore ObjectId types)
+    const backupData = EJSON.parse(fs.readFileSync(backupFile, 'utf8'));
     
     // Connect to staging
     const conn = await mongoose.connect(STAGING_DB_URI, {
@@ -201,12 +202,12 @@ async function cloneWithAnonymize() {
     console.log('');
     
     // Step 2: Anonymize
-    const backupData = JSON.parse(fs.readFileSync(backupFile, 'utf8'));
+    const backupData = EJSON.parse(fs.readFileSync(backupFile, 'utf8'));
     const anonymizedData = anonymizeData(backupData);
     
     // Save anonymized backup
     const anonFile = backupFile.replace('.json', '-anonymized.json');
-    fs.writeFileSync(anonFile, JSON.stringify(anonymizedData, null, 2));
+    fs.writeFileSync(anonFile, EJSON.stringify(anonymizedData, null, 2));
     console.log(`   Anonymized backup: ${anonFile}\n`);
     
     // Step 3: Restore to staging
