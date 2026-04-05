@@ -4,6 +4,19 @@ import { TemplateGallery } from './TemplateGallery';
 import { CreatePageFromTemplate } from './CreatePageFromTemplate';
 import PageBuilderEditor from '../PageBuilderEditor';
 
+// Helper to get the brand domain based on environment
+const getBrandDomain = (subdomain: string): string => {
+  if (typeof window === 'undefined') return `${subdomain}.specialistly.com`;
+  
+  const hostname = window.location.hostname;
+  const isStaging = hostname.includes('staging');
+  
+  if (isStaging) {
+    return `${subdomain}.staging.specialistly.com`;
+  }
+  return `${subdomain}.specialistly.com`;
+};
+
 interface BrandedPageBuilderProps {
   websiteId: string;
   websiteName: string;
@@ -219,7 +232,7 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
                       <span className="font-semibold">Domain:</span>
                     </p>
                     <p className="text-lg font-mono text-blue-700 mt-1">
-                      https://{actualSubdomain}.specialistly.com
+                      https://{getBrandDomain(actualSubdomain || '')}
                     </p>
                   </div>
                   <button
@@ -336,7 +349,7 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
                       Edit
                     </button>
                     <button 
-                      onClick={() => window.open(`https://${actualSubdomain}.specialistly.com/${page.slug}`, '_blank')}
+                      onClick={() => window.open(`https://${getBrandDomain(actualSubdomain || '')}/${page.slug}`, '_blank')}
                       className="flex-1 px-3 py-2 bg-gray-50 text-gray-600 hover:bg-gray-100 text-sm font-medium rounded-lg transition flex items-center justify-center gap-1"
                     >
                       <Eye className="w-4 h-4" />
@@ -421,7 +434,7 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={subdomainLoading}
                   />
-                  <span className="text-gray-500 py-2 text-sm">.specialistly.com</span>
+                  <span className="text-gray-500 py-2 text-sm">{window.location.hostname.includes('staging') ? '.staging.specialistly.com' : '.specialistly.com'}</span>
                 </div>
                 {subdomainError && (
                   <p className="text-red-500 text-sm mt-2">{subdomainError}</p>
@@ -435,7 +448,7 @@ export const BrandedPageBuilder: React.FC<BrandedPageBuilderProps> = ({
                 <p className="text-gray-600">
                   Your website will be accessible at:<br />
                   <span className="font-mono text-blue-600 break-all">
-                    https://{newSubdomain || 'subdomain'}.specialistly.com
+                    https://{getBrandDomain(newSubdomain || 'subdomain')}
                   </span>
                 </p>
               </div>

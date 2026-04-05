@@ -25,6 +25,19 @@ import {
   Home,
 } from 'lucide-react';
 
+// Helper to get the brand domain based on environment
+const getBrandDomain = (subdomain: string): string => {
+  if (typeof window === 'undefined') return `${subdomain}.specialistly.com`;
+  
+  const hostname = window.location.hostname;
+  const isStaging = hostname.includes('staging');
+  
+  if (isStaging) {
+    return `${subdomain}.staging.specialistly.com`;
+  }
+  return `${subdomain}.specialistly.com`;
+};
+
 interface PageBuilderEditorProps {
   websiteId: string;
 }
@@ -4087,7 +4100,7 @@ const PublishDialog: React.FC<{
 }> = ({ isLoading, onPublish, onCancel, website }) => {
   const getPublicURL = () => {
     if (!website?.subdomain) return 'https://yoursite.specialistly.com';
-    return `https://${website.subdomain}.specialistly.com`;
+    return `https://${getBrandDomain(website.subdomain)}`;
   };
 
   return (
