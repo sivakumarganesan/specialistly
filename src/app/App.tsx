@@ -65,9 +65,20 @@ export function AppContent() {
     return <PublicWebsite subdomain={domain} />;
   }
 
+  // Check if user is accessing an authenticated route (login, signup, dashboard, etc.)
+  // These should ALWAYS show the admin app, never the public website
+  const pathname = window.location.pathname;
+  const authenticatedRoutes = [
+    '/login', '/signup', '/dashboard', '/services', '/customers', '/messages', 
+    '/settings', '/page-builder', '/marketplace', '/my-learning', '/my-site',
+    '/my-appointments', '/forgot-password', '/reset-password', '/specialist-settings',
+    '/customer-settings', '/privacy', '/terms', '/support'
+  ];
+  const isAuthenticatedRoute = authenticatedRoutes.some(route => pathname.startsWith(route));
+
   // Check if this is a public subdomain website (e.g., subdomain.specialistly.com)
-  // If so, show the public website viewer instead of the admin dashboard
-  if (isSubdomainWebsite()) {
+  // But NOT if they're accessing an authenticated route
+  if (!isAuthenticatedRoute && isSubdomainWebsite()) {
     const { subdomain } = getSubdomainInfo();
     return <PublicWebsite subdomain={subdomain || undefined} />;
   }
