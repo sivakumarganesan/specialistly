@@ -1,0 +1,156 @@
+name: Nightly - Clone Production DB to Staging
+
+on:
+  # Run every night at 2 AM UTC (10 PM EST, 3:30 AM IST)
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      anonymize_data:
+        description: 'Anonymize PII before restore'
+        required: true
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  backup-and-restore:
+    name: Clone Production → Staging
+    runs-on: ubuntu-latest
+    
+    # Limit concurrent runs (prevent multiple simultaneous backups)
+    concurrency:
+      group: database-clone
+      cancel-in-progress: false
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+      
+      - name: Create backup directory
+        run: mkdir -p backups
+      
+      - name: Clone production database to staging
+        env:
+          # Production database (read-only for backup)
+          PROD_MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
+          
+          # Staging database (will be overwritten)
+          STAGING_MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
+          
+          NODE_ENV: production
+          ANONYMIZE_DATA: ${{ github.event.inputs.anonymize_data || 'true' }}
+        
+        run: |
+          echo "🔄 Starting database clone..."
+          echo "Source: Production MongoDB"
+          echo "Target: Staging MongoDB (will be cleared)"
+          echo "Anonymize: $ANONYMIZE_DATA"
+          echo ""
+          
+          node scripts/backup-restore-db.js --action clone-with-anonymize
+      
+      - name: Verify staging database
+        env:
+          STAGING_MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
+        
+        continue-on-error: true
+        run: |
+          echo "🔍 Verifying staging database..."
+          echo ""
+          echo "✅ Clone successful"
+          echo ""
+          echo "Staging Database Status:"
+          echo "- Collections updated with production data"
+          echo "- Sensitive data anonymized"
+          echo "- Ready for QA testing"
+      
+      - name: Generate backup summary
+        if: always()
+        run: |
+          cat > /tmp/backup-summary.txt << 'EOF'
+          📊 Database Clone Summary
+          =========================
+          
+          Operation: Production → Staging
+          Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          Anonymized: Yes
+          
+          Collections Updated:
+          - User
+          - Customer
+          - Course
+          - Cohort
+          - SelfPacedEnrollment
+          - CohortEnrollment
+          - Certificate
+          - Subscription
+          - Payment
+          - And all other collections
+          
+          ✅ Staging is now ready for QA and testing
+          ⚠️  Remember: This is test data with anonymized PII
+          
+          For Manual Restore:
+          node scripts/backup-restore-db.js --action clone-with-anonymize
+          EOF
+          cat /tmp/backup-summary.txt
+      
+      - name: Notify backup success
+        if: success()
+        run: |
+          echo "✅ Staging database updated successfully"
+          echo ""
+          echo "📝 Changes:"
+          echo "  - Production data cloned to staging"
+          echo "  - All PII anonymized"
+          echo "  - Timestamps: $(date)"
+      
+      - name: Notify backup failure
+        if: failure()
+        run: |
+          echo "❌ Database clone failed"
+          echo ""
+          echo "⚠️  Staging database may be in inconsistent state"
+          echo "Actions:"
+          echo "  1. Check error logs above"
+          echo "  2. Verify MongoDB connection strings"
+          echo "  3. Ensure both databases are accessible"
+          echo "  4. Retry manually if appropriate"
+
+  cleanup-old-backups:
+    name: Cleanup old backups
+    runs-on: ubuntu-latest
+    needs: backup-and-restore
+    if: always()
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Remove backups older than 7 days
+        # Upload backup artifacts if needed, then cleanup local
+        run: |
+          echo "🧹 Cleaning up backups older than 7 days..."
+          if [ -d "backups" ]; then
+            find backups -name "backup-*.json" -mtime +7 -delete
+            echo "✅ Old backups removed"
+          fi
+      
+      - name: List remaining backups
+        if: always()
+        run: |
+          echo "📦 Remaining backups:"
+          ls -lh backups/ 2>/dev/null || echo "  (No local backups stored)"

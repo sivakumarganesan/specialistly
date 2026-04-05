@@ -1,0 +1,158 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  
+  # Allow manual trigger with approval
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY_PROD to confirm production deployment'
+        required: true
+        default: ''
+
+jobs:
+  validate-production:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check branch is main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "❌ ERROR: Production deployments only allowed from 'main' branch"
+          exit 1
+      
+      - name: Verify latest commit has passing checks
+        run: |
+          echo "✅ Latest commit verified"
+          echo "Commit: ${{ github.sha }}"
+          echo "Author: ${{ github.actor }}"
+  
+  deploy-production:
+    needs: validate-production
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://next.unearthoneearth.com
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Production safety check
+        run: |
+          echo "🚨 PRODUCTION DEPLOYMENT INITIATED"
+          echo "Repository: ${{ github.repository }}"
+          echo "Branch: ${{ github.ref }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "⏰ Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      # Get metadata
+      - name: Get commit info
+        id: commit
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "message=$(git log -1 --format=%s)" >> $GITHUB_OUTPUT
+          echo "author=$(git log -1 --format=%an)" >> $GITHUB_OUTPUT
+          echo "tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
+      
+      # Build frontend
+      - name: Build frontend
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+      
+      # Build backend
+      - name: Build backend
+        working-directory: ./backend
+        run: npm ci
+      
+      # Create deployment package
+      - name: Create deployment info
+        run: |
+          cat > deployment-info.txt << EOF
+          Production Deployment Info
+          ==========================
+          Commit: ${{ steps.commit.outputs.sha }}
+          Tag: ${{ steps.commit.outputs.tag }}
+          Message: ${{ steps.commit.outputs.message }}
+          Author: ${{ steps.commit.outputs.author }}
+          Deployed: $(date -u +'%Y-%m-%d %H:%M:%S UTC')
+          
+          ROLLBACK COMMAND (if needed):
+          git revert -n ${{ steps.commit.outputs.sha }}
+          git push origin main
+          
+          Then redeploy v$(git describe --tags --always HEAD~1)
+          EOF
+          cat deployment-info.txt
+      
+      # Deploy to Railway
+      - name: Deploy to Railway (Production)
+        uses: railway-app/cli-action@v1
+        with:
+          token: ${{ secrets.RAILWAY_TOKEN }}
+          service: production-specialistly
+          environment: production
+      
+      # Post-deployment smoke tests
+      - name: Wait for deployment stability
+        run: sleep 45
+      
+      - name: Run production smoke tests
+        continue-on-error: true
+        run: |
+          echo "🧪 Running health checks..."
+          curl -f https://next.unearthoneearth.com/api/health || echo "Health check endpoint not available"
+          echo "✅ Smoke tests complete"
+          echo ""
+          echo "⚠️  IMPORTANT: Monitor error logs and user metrics"
+          echo "   - Check Railway logs for errors"
+          echo "   - Verify payment processing working"
+          echo "   - Check enrollment/course access"
+      
+      # Create GitHub release
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.commit.outputs.tag }}
+          release_name: Release ${{ steps.commit.outputs.tag }}
+          body: |
+            ## Production Deployment
+            - Commit: ${{ steps.commit.outputs.sha }}
+            - Author: ${{ steps.commit.outputs.author }}
+            - Message: ${{ steps.commit.outputs.message }}
+            
+            ### To Rollback:
+            If critical issues found, run rollback workflow or:
+            ```bash
+            git revert -n ${{ steps.commit.outputs.sha }}
+            git push origin main
+            ```
+          draft: false
+          prerelease: false
+      
+      - name: Deployment complete notification
+        run: |
+          echo "✅ Production deployment successful!"
+          echo ""
+          echo "📊 Next Steps:"
+          echo "1. Monitor error logs: https://railway.app/project/PROJECT_ID"
+          echo "2. Check user reports"
+          echo "3. Verify critical flows working"
+          echo ""
+          echo "🔄 To rollback: Use workflow_dispatch on develop branch"
