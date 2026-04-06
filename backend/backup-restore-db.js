@@ -26,13 +26,36 @@ import dotenv from 'dotenv';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Load environment
-dotenv.config({ path: path.join(__dirname, '.env.production') });
-const stagingEnv = dotenv.parse(fs.readFileSync(path.join(__dirname, '.env.staging')));
+// Load environment - prioritize environment variables over .env files
+// Only load .env files if env vars are not already set
+if (!process.env.PROD_MONGODB_URI && !process.env.MONGODB_URI) {
+  dotenv.config({ path: path.join(__dirname, '.env.production') });
+}
 
-// Use env vars from GitHub Actions if provided, otherwise use dotenv values
+let stagingEnv = {};
+try {
+  stagingEnv = dotenv.parse(fs.readFileSync(path.join(__dirname, '.env.staging')));
+} catch (err) {
+  console.warn('⚠️  Warning: Could not load .env.staging file');
+}
+
+// Get database URIs - GitHub Actions secrets take precedence
 const PROD_DB_URI = process.env.PROD_MONGODB_URI || process.env.MONGODB_URI;
 const STAGING_DB_URI = process.env.STAGING_MONGODB_URI || stagingEnv.MONGODB_URI;
+
+// Validate URIs are set
+if (!PROD_DB_URI) {
+  console.error('❌ Error: PROD_MONGODB_URI environment variable not set');
+  console.error('   Set either PROD_MONGODB_URI or configure .env.production');
+  process.exit(1);
+}
+
+if (!STAGING_DB_URI) {
+  console.error('❌ Error: STAGING_MONGODB_URI environment variable not set');
+  console.error('   Set either STAGING_MONGODB_URI or configure .env.staging');
+  process.exit(1);
+}
+
 const BACKUP_DIR = path.join(__dirname, '../backups');
 
 // Ensure backup directory exists
