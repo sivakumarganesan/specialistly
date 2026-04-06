@@ -213,17 +213,9 @@ export const getMyCourses = async (req, res) => {
 
     // Query using $in to find enrollments with ANY of the possible customer IDs
     // This handles both new (Customer._id) and old (User._id) enrollments
-    // Convert string IDs to ObjectIds for proper matching against database
-    const customerIdListAsObjectIds = customerIdList.map(id => {
-      try {
-        return mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id;
-      } catch (e) {
-        return id;  // Keep as-is if conversion fails
-      }
-    });
-    
+    // Keep as strings since production database stores customerId as String type
     const enrollments = await SelfPacedEnrollment.find({ 
-      customerId: { $in: customerIdListAsObjectIds } 
+      customerId: { $in: customerIdList } 
     })
       .populate('courseId')
       .sort({ createdAt: -1 });
