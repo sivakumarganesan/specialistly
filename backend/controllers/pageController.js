@@ -527,50 +527,55 @@ export const getPublicPage = async (req, res) => {
     // Get all sections for the page
     const sections = await PageSection.find({ pageId: page._id }).sort({ order: 1 });
 
-    // Enrich courses and services sections with actual data from the specialist
-    const enrichedSections = await Promise.all(
-      sections.map(async (section) => {
-        if (section.type === 'courses') {
-          try {
-            const specialistCourses = await Course.find({
-              specialistEmail: website.creatorEmail,
-              status: 'published',
-            })
-              .select('_id title description thumbnail courseType price currency lessons startDate endDate startTime endTime timezone schedule meetingPlatform zoomLink cohortSize liveSessions')
-              .sort({ createdAt: -1 });
+    // OPTIMIZATION: Batch load all courses and services once, then map to sections
+    let specialistCourses = [];
+    let specialistServices = [];
+    
+    try {
+      // Check if any course/service sections exist before querying
+      const courseSection = sections.find(s => s.type === 'courses');
+      const serviceSection = sections.find(s => s.type === 'services');
+      
+      if (courseSection) {
+        specialistCourses = await Course.find({
+          specialistEmail: website.creatorEmail,
+          status: 'published',
+        })
+          .select('_id title description thumbnail courseType price currency lessons startDate endDate startTime endTime timezone schedule meetingPlatform zoomLink cohortSize liveSessions')
+          .sort({ createdAt: -1 });
+      }
+      
+      if (serviceSection) {
+        specialistServices = await Service.find({
+          creator: website.creatorEmail,
+          status: 'active',
+        })
+          .select('_id title type description price currency duration capacity thumbnail')
+          .sort({ createdAt: -1 });
+      }
+    } catch (err) {
+      console.error('Error fetching specialist courses/services:', err);
+    }
 
-            const sectionObj = section.toObject();
-            sectionObj.content = {
-              ...sectionObj.content,
-              fetchedCourses: specialistCourses,
-            };
-            return sectionObj;
-          } catch (err) {
-            console.error('Error enriching courses section:', err);
-            return section;
-          }
-        }
-        if (section.type === 'services') {
-          try {
-            const specialistServices = await Service.find({
-              creator: website.creatorEmail,
-              status: 'active',
-            })
-              .select('_id title type description price currency duration capacity thumbnail')
-              .sort({ createdAt: -1 });
-
-            const sectionObj = section.toObject();
-            sectionObj.content = {
-              ...sectionObj.content,
-              fetchedServices: specialistServices,
-              specialistEmail: website.creatorEmail,
-            };
-            return sectionObj;
-          } catch (err) {
-            console.error('Error enriching services section:', err);
-            return section;
-          }
-        }
+    // Now map sections without additional queries
+    const enrichedSections = sections.map((section) => {
+      if (section.type === 'courses') {
+        const sectionObj = section.toObject();
+        sectionObj.content = {
+          ...sectionObj.content,
+          fetchedCourses: specialistCourses,
+        };
+        return sectionObj;
+      }
+      if (section.type === 'services') {
+        const sectionObj = section.toObject();
+        sectionObj.content = {
+          ...sectionObj.content,
+          fetchedServices: specialistServices,
+          specialistEmail: website.creatorEmail,
+        };
+        return sectionObj;
+      }
         if (section.type === 'booking') {
           const sectionObj = section.toObject();
           sectionObj.content = {

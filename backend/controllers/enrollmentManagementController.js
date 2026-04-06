@@ -31,18 +31,21 @@ export const getCourseEnrollments = async (req, res) => {
         .populate('courseId', 'title price currency courseType')
         .lean();
 
-      // Add customer details
-      enrollments = await Promise.all(
-        enrollments.map(async (enrollment) => {
-          const customer = await Customer.findOne({ email: enrollment.customerEmail }).lean();
-          return {
-            ...enrollment,
-            type: 'self-paced',
-            customerName: customer?.name || 'Unknown',
-            customerPhone: customer?.phone || '',
-          };
-        })
-      );
+      // OPTIMIZATION: Batch customer lookup instead of N+1 queries
+      const customerEmails = [...new Set(enrollments.map(e => e.customerEmail))];
+      const customers = await Customer.find({ email: { $in: customerEmails } }).lean();
+      const customerMap = new Map(customers.map(c => [c.email?.toLowerCase(), c]));
+
+      // Add customer details using lookup map
+      enrollments = enrollments.map((enrollment) => {
+        const customer = customerMap.get(enrollment.customerEmail?.toLowerCase());
+        return {
+          ...enrollment,
+          type: 'self-paced',
+          customerName: customer?.name || 'Unknown',
+          customerPhone: customer?.phone || '',
+        };
+      });
     } else if (course.courseType === 'cohort' || course.courseType === 'cohort-based' || courseType === 'cohort-based') {
       // Get cohort enrollments
       const cohorts = await Cohort.find({ courseId }).lean();
@@ -52,20 +55,23 @@ export const getCourseEnrollments = async (req, res) => {
         .populate('cohortId', 'batchName')
         .lean();
 
+      // OPTIMIZATION: Batch customer lookup instead of N+1 queries
+      const customerEmails = [...new Set(enrollments.map(e => e.customerEmail))];
+      const customers = await Customer.find({ email: { $in: customerEmails } }).lean();
+      const customerMap = new Map(customers.map(c => [c.email?.toLowerCase(), c]));
+
       // Add customer and cohort details
-      enrollments = await Promise.all(
-        enrollments.map(async (enrollment) => {
-          const customer = await Customer.findOne({ email: enrollment.customerEmail }).lean();
-          const cohort = await Cohort.findById(enrollment.cohortId).lean();
-          return {
-            ...enrollment,
-            type: 'cohort-based',
-            batchName: cohort?.batchName || 'Unknown',
-            customerName: customer?.name || 'Unknown',
-            customerPhone: customer?.phone || '',
-          };
-        })
-      );
+      enrollments = enrollments.map((enrollment) => {
+        const customer = customerMap.get(enrollment.customerEmail?.toLowerCase());
+        const cohort = enrollment.cohortId ? cohorts.find(c => c._id.toString() === enrollment.cohortId.toString()) : null;
+        return {
+          ...enrollment,
+          type: 'cohort-based',
+          batchName: cohort?.batchName || 'Unknown',
+          customerName: customer?.name || 'Unknown',
+          customerPhone: customer?.phone || '',
+        };
+      });
     }
 
     res.status(200).json({

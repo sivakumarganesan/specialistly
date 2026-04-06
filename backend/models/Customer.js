@@ -125,6 +125,8 @@ const customerSchema = new mongoose.Schema({
   },
 });
 
+// Critical indexes for query performance
+customerSchema.index({ email: 1 }); // Frequently queried by email
 customerSchema.index({ 'specialists.specialistEmail': 1 });
 
 export default mongoose.model('Customer', customerSchema);

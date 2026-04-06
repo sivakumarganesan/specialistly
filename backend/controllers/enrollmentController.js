@@ -336,35 +336,40 @@ export const getEnrollmentDetails = async (req, res) => {
     }).filter(l => l !== null);
 
     // Fetch missing HLS URLs for videos with streamId but no playback URL
+    // OPTIMIZATION: Fetch in parallel instead of sequential
     const lessonsWithMissingURL = lessons.filter(l => l.cloudflareStreamId && !l.cloudflarePlaybackUrl);
     if (lessonsWithMissingURL.length > 0) {
       console.log(`[Enrollment] Fetching ${lessonsWithMissingURL.length} missing HLS URLs for enrollment ${enrollmentId}`);
       try {
-        for (const lesson of lessonsWithMissingURL) {
-          try {
-            console.log(`[Enrollment] Fetching HLS URL for video ${lesson.cloudflareStreamId}`);
-            const videoDetails = await cloudflareStreamService.getVideoDetails(lesson.cloudflareStreamId);
-            console.log(`[Enrollment] Got video details:`, { 
-              videoId: lesson.cloudflareStreamId, 
-              hlsUrl: videoDetails.hlsPlaybackUrl,
-              status: videoDetails.status 
-            });
-            
+        // Fetch all video details in parallel
+        const videoDetailPromises = lessonsWithMissingURL.map(lesson =>
+          cloudflareStreamService.getVideoDetails(lesson.cloudflareStreamId)
+            .then(videoDetails => ({ lesson, videoDetails }))
+            .catch(err => {
+              console.warn(`[Enrollment] Error fetching HLS for video ${lesson.cloudflareStreamId}:`, err.message);
+              return { lesson, videoDetails: null };
+            })
+        );
+
+        const results = await Promise.all(videoDetailPromises);
+
+        // Update all lessons with fetched data
+        results.forEach(({ lesson, videoDetails }) => {
+          if (videoDetails) {
+            console.log(`[Enrollment] Got video details for ${lesson.cloudflareStreamId}`);
             lesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
             
             // Also update the database for future requests
             const dbLesson = course.lessons.find(l => l._id.toString() === lesson._id.toString());
             if (dbLesson) {
-              console.log(`[Enrollment] Updating lesson ${lesson._id} in database with HLS URL`);
               dbLesson.cloudflarePlaybackUrl = videoDetails.hlsPlaybackUrl;
               dbLesson.cloudflareStatus = videoDetails.status || dbLesson.cloudflareStatus;
               if (!dbLesson.videoDuration && videoDetails.duration) dbLesson.videoDuration = videoDetails.duration;
               if (!dbLesson.videoThumbnail && videoDetails.thumbnail) dbLesson.videoThumbnail = videoDetails.thumbnail;
             }
-          } catch (singleError) {
-            console.warn(`[Enrollment] Error fetching HLS for video ${lesson.cloudflareStreamId}:`, singleError.message);
           }
-        }
+        });
+
         // Save updated course with HLS URLs
         if (lessonsWithMissingURL.length > 0) {
           await course.save().catch(err => console.warn('[Enrollment] Could not save updated HLS URLs:', err.message));
