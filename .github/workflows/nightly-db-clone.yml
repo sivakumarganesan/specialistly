@@ -38,7 +38,7 @@ jobs:
       
       - name: Install backend dependencies
         working-directory: ./backend
-        run: npm ci
+        run: npm install --legacy-peer-deps
       
       - name: Create backup directory
         run: mkdir -p backups
