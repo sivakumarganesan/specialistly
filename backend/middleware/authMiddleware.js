@@ -43,19 +43,33 @@ export const authMiddleware = (req, res, next) => {
 // Optional auth middleware - validates token if present, but doesn't fail if missing
 export const optionalAuthMiddleware = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.split(' ')[1];
+    
+    console.log('[optionalAuth] Checking for authentication...');
+    console.log('[optionalAuth] Authorization header present:', !!authHeader);
+    console.log('[optionalAuth] Token present:', !!token);
     
     if (token) {
+      console.log('[optionalAuth] Attempting to verify token...');
       const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
       req.user = decoded;
-      console.log('[optionalAuth] User authenticated:', decoded.userId);
+      console.log('[optionalAuth] ✓ User authenticated:', {
+        email: decoded.email,
+        userId: decoded.userId,
+      });
     } else {
       console.log('[optionalAuth] No token provided, proceeding unauthenticated');
+      console.log('[optionalAuth] ⚠️  Frontend should either:');
+      console.log('      a) Send Authorization: Bearer <token> header');
+      console.log('      b) Send X-Customer-Email header as fallback');
+      console.log('      c) Send customerId query parameter as fallback');
     }
     
     next();
   } catch (error) {
     console.log('[optionalAuth] Token validation failed:', error.message);
+    console.log('[optionalAuth] Error type:', error.name);
     // Don't return error - allow unauthenticated access
     next();
   }

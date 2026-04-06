@@ -6,6 +6,19 @@ import { useAuth } from "@/app/context/AuthContext";
 import { pageBuilderAPI } from "@/app/api/pageBuilderAPI";
 import BrandedPageBuilder from "@/app/components/PageBuilder/BrandedPageBuilder";
 
+// Helper to get the brand domain based on environment
+const getBrandDomain = (subdomain: string): string => {
+  if (typeof window === 'undefined') return `${subdomain}.specialistly.com`;
+  
+  const hostname = window.location.hostname;
+  const isStaging = hostname.includes('staging');
+  
+  if (isStaging) {
+    return `${subdomain}.staging.specialistly.com`;
+  }
+  return `${subdomain}.specialistly.com`;
+};
+
 interface Website {
   _id: string;
   name: string;
@@ -177,7 +190,7 @@ export function PageBuilder() {
                       <strong>Domain:</strong>
                       <br />
                       <code className="text-xs bg-gray-100 px-2 py-1 rounded mt-1 block">
-                        {website.subdomain}.specialistly.com
+                        https://{getBrandDomain(website.subdomain)}
                       </code>
                     </>
                   ) : (

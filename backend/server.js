@@ -41,10 +41,17 @@ import reportRoutes from './routes/reportRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 
 // Load environment-specific .env file
-const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
-dotenv.config({ path: path.resolve(__dirname, envFile) });
-// Also load base .env as fallback for any missing vars
+let envFile = '.env'; // default to development
 if (process.env.NODE_ENV === 'production') {
+  envFile = '.env.production';
+} else if (process.env.NODE_ENV === 'staging') {
+  envFile = '.env.staging';
+}
+
+dotenv.config({ path: path.resolve(__dirname, envFile) });
+
+// Also load base .env as fallback for any missing vars
+if (process.env.NODE_ENV !== 'development') {
   dotenv.config({ path: path.resolve(__dirname, '.env') });
 }
 
@@ -86,13 +93,13 @@ const isOriginAllowed = (origin) => {
   // Check exact matches
   if (allowedOrigins.includes(origin)) return true;
   
-  // Allow any subdomain of specialistly.com over HTTPS
-  if (origin.match(/^https:\/\/[a-z0-9-]+\.specialistly\.com(:[0-9]+)?$/)) {
+  // Allow any subdomain of specialistly.com over HTTPS (including multi-level like nest.staging.specialistly.com)
+  if (origin.match(/^https:\/\/[a-z0-9.-]+\.specialistly\.com(:[0-9]+)?$/)) {
     return true;
   }
   
   // Allow any subdomain of specialistly.local for local development
-  if (origin.match(/^https?:\/\/[a-z0-9-]+\.specialistly\.local(:[0-9]+)?$/)) {
+  if (origin.match(/^https?:\/\/[a-z0-9.-]+\.specialistly\.local(:[0-9]+)?$/)) {
     return true;
   }
 

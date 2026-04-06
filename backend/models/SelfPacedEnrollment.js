@@ -7,7 +7,8 @@ const selfPacedEnrollmentSchema = new mongoose.Schema({
     required: true,
   },
   customerId: {
-    type: String,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Customer',
     required: true,
   },
   customerEmail: {

@@ -3,6 +3,7 @@ import Certificate from '../models/Certificate.js';
 import Course from '../models/Course.js';
 import SelfPacedEnrollment from '../models/SelfPacedEnrollment.js';
 import Customer from '../models/Customer.js';
+import mongoose from 'mongoose';
 
 const generateCertificateId = () => {
   const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -168,27 +169,62 @@ export const getMyCourses = async (req, res) => {
       console.log('[getMyCourses] Using customerId from query parameter:', req.query.customerId);
     }
 
+    // Priority 3: IMPORTANT - If still no customer found and there's NO authentication,
+    // try to find customer from X-Customer-Email header (set by frontend when not authenticated)
+    // This is a workaround for when optionalAuthMiddleware doesn't provide auth
+    if (customerIdList.length === 0 && req.headers['x-customer-email']) {
+      const headerEmail = req.headers['x-customer-email'];
+      const customer = await Customer.findOne({ email: headerEmail });
+      if (customer) {
+        customerIdList.push(customer._id.toString());
+        console.log('[getMyCourses] Found customer from X-Customer-Email header:', headerEmail);
+      }
+    }
+
     // Log for debugging
     console.log('[getMyCourses] Request:', {
       hasAuth: !!req.user,
       userEmail: userEmail,
       userId: userId,
+      xCustomerEmail: req.headers['x-customer-email'],
       customerIdList: customerIdList,
+      specialistEmail: req.query.specialistEmail,
     });
 
     if (customerIdList.length === 0) {
       // Return empty list for unauthenticated requests instead of error
       // This allows users to browse courses without an account
-      console.log('[getMyCourses] No customer IDs found, returning empty enrollments');
+      console.log('[getMyCourses] No customer IDs found. Authentication issue:');
+      console.log('  - No auth token OR invalid token');
+      console.log('  - No customerId query parameter');
+      console.log('  - No X-Customer-Email header');
+      console.log('  - Frontend should either:');
+      console.log('    a) Include Authorization Bearer token in headers');
+      console.log('    b) Include ?customerId=<id> in query string');
+      console.log('    c) Include X-Customer-Email: <email> in request headers');
       return res.status(200).json({
         success: true,
         data: [],
+        debug: {
+          message: 'No customer identified. Please ensure authentication is working or pass customerId parameter.',
+        },
       });
     }
 
     // Query using $in to find enrollments with ANY of the possible customer IDs
     // This handles both new (Customer._id) and old (User._id) enrollments
-    const enrollments = await SelfPacedEnrollment.find({ customerId: { $in: customerIdList } })
+    // Convert string IDs to ObjectIds for proper matching against database
+    const customerIdListAsObjectIds = customerIdList.map(id => {
+      try {
+        return mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : id;
+      } catch (e) {
+        return id;  // Keep as-is if conversion fails
+      }
+    });
+    
+    const enrollments = await SelfPacedEnrollment.find({ 
+      customerId: { $in: customerIdListAsObjectIds } 
+    })
       .populate('courseId')
       .sort({ createdAt: -1 });
 

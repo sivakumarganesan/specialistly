@@ -65,9 +65,20 @@ export function AppContent() {
     return <PublicWebsite subdomain={domain} />;
   }
 
+  // Check if user is accessing an authenticated route (login, signup, dashboard, etc.)
+  // These should ALWAYS show the admin app, never the public website
+  const pathname = window.location.pathname;
+  const authenticatedRoutes = [
+    '/login', '/signup', '/dashboard', '/services', '/customers', '/messages', 
+    '/settings', '/page-builder', '/marketplace', '/my-learning', '/my-site',
+    '/my-appointments', '/forgot-password', '/reset-password', '/specialist-settings',
+    '/customer-settings', '/privacy', '/terms', '/support'
+  ];
+  const isAuthenticatedRoute = authenticatedRoutes.some(route => pathname.startsWith(route));
+
   // Check if this is a public subdomain website (e.g., subdomain.specialistly.com)
-  // If so, show the public website viewer instead of the admin dashboard
-  if (isSubdomainWebsite()) {
+  // But NOT if they're accessing an authenticated route
+  if (!isAuthenticatedRoute && isSubdomainWebsite()) {
     const { subdomain } = getSubdomainInfo();
     return <PublicWebsite subdomain={subdomain || undefined} />;
   }
@@ -89,6 +100,54 @@ export function AppContent() {
       }
     }
   }, []);
+
+  // Handle pathname-based routing (e.g., /login, /signup, /dashboard)
+  useEffect(() => {
+    const pathname = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    
+    // Don't override if already set by query parameter
+    if (params.has('page')) {
+      return;
+    }
+
+    // Map pathname to page
+    if (pathname === '/login') {
+      setCurrentPage('login');
+    } else if (pathname === '/signup') {
+      setCurrentPage('signup');
+    } else if (pathname === '/forgot-password' || pathname === '/forgotPassword') {
+      setCurrentPage('forgotPassword');
+    } else if (pathname === '/reset-password' || pathname === '/resetPassword') {
+      setCurrentPage('resetPassword');
+      const token = params.get('token');
+      if (token) {
+        setResetToken(token);
+      }
+    } else if (pathname === '/dashboard') {
+      setCurrentPage('dashboard');
+    } else if (pathname === '/services') {
+      setCurrentPage('services');
+    } else if (pathname === '/customers') {
+      setCurrentPage('customers');
+    } else if (pathname === '/messages') {
+      setCurrentPage('messages');
+    } else if (pathname === '/settings') {
+      setCurrentPage('settings');
+    } else if (pathname === '/page-builder') {
+      setCurrentPage('page-builder');
+    } else if (pathname === '/marketplace') {
+      setCurrentPage('marketplace');
+    } else if (pathname === '/my-learning') {
+      setCurrentPage('my-learning');
+    } else if (pathname === '/privacy') {
+      setCurrentPage('privacy');
+    } else if (pathname === '/terms') {
+      setCurrentPage('terms');
+    } else if (pathname === '/support') {
+      setCurrentPage('support');
+    }
+  }, [setCurrentPage]);
 
   // Fetch unread message count periodically
   useEffect(() => {
