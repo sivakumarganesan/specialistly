@@ -576,17 +576,16 @@ export const getPublicPage = async (req, res) => {
         };
         return sectionObj;
       }
-        if (section.type === 'booking') {
-          const sectionObj = section.toObject();
-          sectionObj.content = {
-            ...sectionObj.content,
-            specialistEmail: website.creatorEmail,
-          };
-          return sectionObj;
-        }
-        return section;
-      })
-    );
+      if (section.type === 'booking') {
+        const sectionObj = section.toObject();
+        sectionObj.content = {
+          ...sectionObj.content,
+          specialistEmail: website.creatorEmail,
+        };
+        return sectionObj;
+      }
+      return section;
+    });
 
     res.json({
       success: true,
