@@ -40,6 +40,24 @@ jobs:
         working-directory: ./backend
         run: npm install --prefer-offline --no-audit
       
+      - name: Verify secrets are configured
+        env:
+          PROD_MONGODB_URI: ${{ secrets.PROD_MONGODB_URI }}
+          STAGING_MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
+        run: |
+          if [ -z "$PROD_MONGODB_URI" ]; then
+            echo "❌ ERROR: PROD_MONGODB_URI secret is not configured in GitHub repository"
+            echo "   Go to: GitHub repo → Settings → Secrets and variables → Actions"
+            echo "   Add: PROD_MONGODB_URI = <your-production-mongodb-uri>"
+            exit 1
+          fi
+          if [ -z "$STAGING_MONGODB_URI" ]; then
+            echo "❌ ERROR: STAGING_MONGODB_URI secret is not configured"
+            echo "   Add: STAGING_MONGODB_URI = <your-staging-mongodb-uri>"
+            exit 1
+          fi
+          echo "✅ Secrets verified (URIs are configured)"
+      
       - name: Create backup directory
         run: mkdir -p backups
       
