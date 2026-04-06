@@ -54,6 +54,7 @@ jobs:
           NODE_ENV: production
           ANONYMIZE_DATA: ${{ github.event.inputs.anonymize_data || 'false' }}
         
+        working-directory: ./backend
         run: |
           echo "🔄 Starting database clone..."
           echo "Source: Production MongoDB"
@@ -62,9 +63,9 @@ jobs:
           echo ""
           
           if [ "$ANONYMIZE_DATA" = "true" ]; then
-            node scripts/backup-restore-db.js --action clone-with-anonymize
+            node backup-restore-db.js --action clone-with-anonymize
           else
-            node scripts/backup-restore-db.js --action clone-without-anonymize
+            node backup-restore-db.js --action clone-without-anonymize
           fi
       
       - name: Verify staging database
