@@ -347,6 +347,40 @@ async function cloneWithAnonymize() {
 }
 
 /**
+ * Step 5b: Clone WITHOUT anonymization (real data)
+ */
+async function cloneWithoutAnonymize() {
+  console.log('🔄 Starting production → staging clone WITHOUT anonymization\n');
+  console.log('⚠️  WARNING: Real production data will be copied to staging!\n');
+  
+  try {
+    // Step 1: Backup
+    const backupFile = await backupProductionDB();
+    console.log('');
+    
+    // Step 2: Restore directly without anonymization
+    await restoreStagingDB(backupFile);
+    
+    // Step 3: Validate and fix enrollment references
+    const validationResult = await validateAndFixEnrollmentReferences();
+    
+    console.log('\n✅ Clone complete!');
+    console.log('   Production data (REAL - NOT anonymized) is now in Staging');
+    console.log('   All real emails, phone numbers, payment IDs are present');
+    console.log('   Enrollment references validated and fixed\n');
+    console.log('⚠️  CAUTION:');
+    console.log('   - Real customer PII is now in staging');
+    console.log('   - Real payment information is exposed');
+    console.log('   - Do NOT share staging access publicly');
+    console.log(`   - All enrollments have valid references (${validationResult.validCount + validationResult.fixedCount} total)`);
+    
+  } catch (error) {
+    console.error('❌ Clone failed:', error.message);
+    process.exit(1);
+  }
+}
+
+/**
  * List all backups
  */
 async function listBackups() {
@@ -392,6 +426,8 @@ const action = args[0] || 'clone-with-anonymize';
         await restoreStagingDB(backupFile);
       } else if (cmd === 'clone-with-anonymize') {
         await cloneWithAnonymize();
+      } else if (cmd === 'clone-without-anonymize') {
+        await cloneWithoutAnonymize();
       } else if (cmd === 'validate-enrollments') {
         const result = await validateAndFixEnrollmentReferences();
         process.exit(result.success ? 0 : 1);
@@ -413,6 +449,7 @@ const action = args[0] || 'clone-with-anonymize';
           --action backup                  Create backup of production DB
           --action restore <file>          Restore specific backup to staging
           --action clone-with-anonymize    Full cycle: backup → anonymize → restore → validate
+          --action clone-without-anonymize Full cycle: backup → restore (REAL DATA) → validate
           --action validate-enrollments    Validate and fix enrollment references in staging
           --action list                    List all available backups
           --help                           Show this help
@@ -420,6 +457,7 @@ const action = args[0] || 'clone-with-anonymize';
         Examples:
           node scripts/backup-restore-db.js --action backup
           node scripts/backup-restore-db.js --action clone-with-anonymize
+          node scripts/backup-restore-db.js --action clone-without-anonymize
           node scripts/backup-restore-db.js --action validate-enrollments
           node scripts/backup-restore-db.js --action list
       `);

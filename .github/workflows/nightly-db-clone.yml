@@ -52,7 +52,7 @@ jobs:
           STAGING_MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
           
           NODE_ENV: production
-          ANONYMIZE_DATA: ${{ github.event.inputs.anonymize_data || 'true' }}
+          ANONYMIZE_DATA: ${{ github.event.inputs.anonymize_data || 'false' }}
         
         run: |
           echo "🔄 Starting database clone..."
@@ -61,11 +61,16 @@ jobs:
           echo "Anonymize: $ANONYMIZE_DATA"
           echo ""
           
-          node scripts/backup-restore-db.js --action clone-with-anonymize
+          if [ "$ANONYMIZE_DATA" = "true" ]; then
+            node scripts/backup-restore-db.js --action clone-with-anonymize
+          else
+            node scripts/backup-restore-db.js --action clone-without-anonymize
+          fi
       
       - name: Verify staging database
         env:
           STAGING_MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
+          ANONYMIZE_DATA: ${{ github.event.inputs.anonymize_data || 'false' }}
         
         continue-on-error: true
         run: |
@@ -75,8 +80,12 @@ jobs:
           echo ""
           echo "Staging Database Status:"
           echo "- Collections updated with production data"
-          echo "- Sensitive data anonymized"
-          echo "- Ready for QA testing"
+          if [ "$ANONYMIZE_DATA" = "true" ]; then
+            echo "- Sensitive data anonymized (PII protected)"
+          else
+            echo "- Real production data (NOT anonymized - real emails, phones, payment IDs)"
+          fi
+          echo "- Ready for testing"
       
       - name: Generate backup summary
         if: always()
