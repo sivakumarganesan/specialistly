@@ -30,8 +30,9 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '.env.production') });
 const stagingEnv = dotenv.parse(fs.readFileSync(path.join(__dirname, '.env.staging')));
 
-const PROD_DB_URI = process.env.MONGODB_URI;
-const STAGING_DB_URI = stagingEnv.MONGODB_URI;
+// Use env vars from GitHub Actions if provided, otherwise use dotenv values
+const PROD_DB_URI = process.env.PROD_MONGODB_URI || process.env.MONGODB_URI;
+const STAGING_DB_URI = process.env.STAGING_MONGODB_URI || stagingEnv.MONGODB_URI;
 const BACKUP_DIR = path.join(__dirname, '../backups');
 
 // Ensure backup directory exists
